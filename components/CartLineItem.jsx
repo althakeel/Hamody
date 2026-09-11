@@ -7,7 +7,7 @@ import Counter from '@/components/Counter';
 import { getProductSubtitle } from '@/lib/productDisplay';
 import { resolveCartLinePriceDisplay } from '@/lib/cartPriceDisplay';
 import { getProductThumbnailUrl } from '@/lib/productMedia';
-import { AedText } from '@/components/CurrencySymbol';
+import { AedText, StruckPrice } from '@/components/CurrencySymbol';
 import NewProductTagBadge from '@/components/NewProductTagBadge';
 
 const LINE_TOTAL_CLASS =
@@ -95,9 +95,9 @@ export default function CartLineItem({
                   </p>
                   {pricing.hasDiscount ? (
                     <>
-                      <span className="text-sm text-slate-400 line-through tabular-nums">
+                      <StruckPrice className="text-sm text-slate-400 tabular-nums">
                         {formatMoney(currency, pricing.regularUnit)}
-                      </span>
+                      </StruckPrice>
                       <span className="inline-flex rounded bg-red-50 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-red-600">
                         {pricing.discountPercent}% off
                       </span>
@@ -155,9 +155,9 @@ export default function CartLineItem({
                     {formatMoney(currency, pricing.saleLineTotal)}
                   </p>
                   {pricing.hasDiscount ? (
-                    <p className="text-xs text-slate-400 line-through tabular-nums">
+                    <StruckPrice className="text-xs text-slate-400 tabular-nums">
                       {formatMoney(currency, pricing.regularLineTotal)}
-                    </p>
+                    </StruckPrice>
                   ) : null}
                 </>
               )}

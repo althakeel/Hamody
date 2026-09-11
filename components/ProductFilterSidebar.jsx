@@ -235,7 +235,7 @@ export default function ProductFilterSidebar({
   return (
     <div
       dir={isArabic ? 'rtl' : 'ltr'}
-      className={`sticky top-20 flex h-fit w-full max-h-[calc(100vh-100px)] flex-col overflow-visible rounded-lg border border-gray-200 bg-white lg:w-72 ${className}`.trim()}
+      className={`sticky top-20 flex h-fit w-full max-h-[calc(100vh-100px)] flex-col overflow-visible rounded-lg border border-gray-200 bg-white lg:w-64 ${className}`.trim()}
     >
       <div className="shrink-0 border-b border-gray-100 p-4 pb-3">
         {subcategoryLinks.length > 0 ? (

@@ -244,7 +244,7 @@ export default function OffersPageClient({ initialData = null }) {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[288px_1fr]">
+            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[256px_1fr]">
               <aside className={`${showMobileFilters ? 'block' : 'hidden'} lg:sticky lg:top-24 lg:block`}>
                 <div className="mb-2 flex justify-end lg:hidden">
                   <button

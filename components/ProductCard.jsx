@@ -31,7 +31,7 @@ import { productToGa4Item } from '@/lib/ga4Item'
 import { GTM_EVENTS } from '@/lib/gtmEvents'
 import { STORE_CURRENCY } from '@/lib/storeCurrency'
 import { getProductPath } from '@/lib/productUrl'
-import CurrencySymbol from '@/components/CurrencySymbol'
+import CurrencySymbol, { StruckPrice } from '@/components/CurrencySymbol'
 import NewProductTagBadge from '@/components/NewProductTagBadge'
 
 const parseAmount = (value) => {
@@ -454,10 +454,10 @@ const ProductCard = ({
                   </span>
                 ) : null}
                 {AEDNum > 0 && AEDNum > priceNum ? (
-                  <span className="inline-flex shrink-0 items-baseline gap-0.5 text-[10px] leading-none text-slate-400 line-through sm:text-xs">
+                  <StruckPrice className="shrink-0 gap-0.5 text-[10px] leading-none text-slate-400 sm:text-xs">
                     <CurrencySymbol currency={market.currency} />
                     <span>{formatNumber(convertedAED, language, { maximumFractionDigits: 0 })}</span>
-                  </span>
+                  </StruckPrice>
                 ) : null}
               </span>
               {discount > 0 ? (

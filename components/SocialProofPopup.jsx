@@ -5,7 +5,7 @@ import { X } from 'lucide-react'
 import { useStorefrontMarket } from '@/lib/useStorefrontMarket'
 import { getProductThumbnailUrl } from '@/lib/productMedia'
 import { getProductPath } from '@/lib/productUrl'
-import CurrencySymbol from '@/components/CurrencySymbol'
+import CurrencySymbol, { StruckPrice } from '@/components/CurrencySymbol'
 
 const SocialProofPopup = () => {
   const [visible, setVisible] = useState(false)
@@ -195,10 +195,10 @@ const SocialProofPopup = () => {
                 {Math.round(convertPrice(Number(currentProduct.price) || 0))}
               </span>
               {currentProduct.AED > currentProduct.price && (
-                <span className="inline-flex items-baseline gap-1 text-xs text-white/70 line-through">
+                <StruckPrice className="gap-1 text-xs text-white/70">
                   <CurrencySymbol currency={market.currency} />
                   {Math.round(convertPrice(Number(currentProduct.AED) || 0))}
-                </span>
+                </StruckPrice>
               )}
             </div>
             <Link 

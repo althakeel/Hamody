@@ -32,6 +32,18 @@ export default function CurrencySymbol({
   );
 }
 
+export function StruckPrice({ children, className = '' }) {
+  return (
+    <span className={`relative inline-flex items-baseline ${className}`.trim()}>
+      {children}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-[0.58em] z-[1] h-px bg-current"
+      />
+    </span>
+  );
+}
+
 export function AedText({
   children,
   currency = 'AED',

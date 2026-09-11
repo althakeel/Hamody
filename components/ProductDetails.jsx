@@ -57,7 +57,7 @@ import { getAdjustedDeliveryDate } from '@/lib/deliveryEstimate';
 import { fetchShippingSettings } from '@/lib/shipping';
 import { getDefaultShippingOption } from '@/lib/shippingOptions';
 import ProductVariantPicker from './ProductVariantPicker';
-import CurrencySymbol, { AedText } from './CurrencySymbol';
+import CurrencySymbol, { AedText, StruckPrice } from './CurrencySymbol';
 import {
   buildVariantOptionGroups,
   cartVariantOptionsMatch,
@@ -3219,9 +3219,11 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                   </bdi>
                   {effAED > effPrice ? (
                     <>
-                      <bdi dir={isArabic ? 'rtl' : 'ltr'} className="text-sm text-gray-400 line-through">
-                        {displayMobileRegularPrice}
-                      </bdi>
+                      <StruckPrice className="text-sm text-gray-400">
+                        <bdi dir={isArabic ? 'rtl' : 'ltr'}>
+                          {displayMobileRegularPrice}
+                        </bdi>
+                      </StruckPrice>
                       <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-semibold text-[#E52721]">
                         <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                           <path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58s1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z" />
@@ -3504,9 +3506,9 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                   })}
                 </div>
                 {discountPercent > 0 && (
-                  <bdi dir="ltr" className="text-sm text-gray-500 line-through whitespace-nowrap">
+                  <StruckPrice className="text-sm text-gray-500 whitespace-nowrap">
                     <AedText>{formatMoney(convertedEffAED, true)}</AedText>
-                  </bdi>
+                  </StruckPrice>
                 )}
                 {discountPercent > 0 && (
                   <span className="text-sm text-green-600 font-semibold whitespace-nowrap">
@@ -3640,9 +3642,9 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                 </span>
 
                 {effAED > effPrice && (
-                  <bdi dir="ltr" className="text-sm text-gray-500 line-through whitespace-nowrap pb-1">
+                  <StruckPrice className="text-sm text-gray-500 whitespace-nowrap pb-1">
                     <AedText>{formatMoney(buyBoxRegularPrice, true)}</AedText>
-                  </bdi>
+                  </StruckPrice>
                 )}
 
                 {effAED > effPrice && (

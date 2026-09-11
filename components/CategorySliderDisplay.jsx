@@ -10,7 +10,7 @@ import { getProductPath } from '@/lib/productUrl';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 import { getContentDirection } from '@/lib/storefrontLanguage';
 import { getLocalizedCategorySliderSubtitle, getLocalizedCategorySliderTitle } from '@/lib/categorySliderCopy';
-import CurrencySymbol from '@/components/CurrencySymbol';
+import CurrencySymbol, { StruckPrice } from '@/components/CurrencySymbol';
 
 export default function CategorySliderDisplay({ slider }) {
   const scrollRef = useRef(null);
@@ -136,10 +136,10 @@ export default function CategorySliderDisplay({ slider }) {
                     {convertPrice(Number(product.basePrice || product.price || 0)).toLocaleString()}
                   </span>
                   {product.originalPrice && (
-                    <span className="qf-card__strike inline-flex items-baseline gap-1">
+                    <StruckPrice className="qf-card__strike gap-1">
                       <CurrencySymbol currency={market.currency} />
                       {convertPrice(Number(product.originalPrice || 0)).toLocaleString()}
-                    </span>
+                    </StruckPrice>
                   )}
                 </div>
 
@@ -368,7 +368,6 @@ export default function CategorySliderDisplay({ slider }) {
         .qf-card__strike {
           font-size: 12px;
           color: #94a3b8;
-          text-decoration: line-through;
         }
 
         .qf-card__rating {
