@@ -103,12 +103,12 @@ function countFilledSlots(item, slots) {
 export function SmoothPanel({ open, children }) {
   return (
     <div
-      className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+      className={`grid min-w-0 transition-[grid-template-rows] duration-300 ease-out ${
         open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
       }`}
     >
-      <div className="min-h-0 overflow-hidden">
-        <div className={`border-t border-slate-200 px-3 pb-3 pt-3 transition-opacity duration-300 ${
+      <div className={`min-h-0 min-w-0 ${open ? 'overflow-visible' : 'overflow-hidden'}`}>
+        <div className={`min-w-0 border-t border-slate-200 px-3 pb-3 pt-3 transition-opacity duration-300 ${
           open ? 'opacity-100' : 'opacity-0'
         }`}>
           {children}
@@ -120,7 +120,7 @@ export function SmoothPanel({ open, children }) {
 
 export function AccordionRow({ title, summary, open, onToggle, children, actions, className = '' }) {
   return (
-    <div className={`rounded-xl border border-slate-200 bg-white ${className}`.trim()}>
+    <div className={`min-w-0 rounded-xl border border-slate-200 bg-white ${className}`.trim()}>
       <div className="flex items-center gap-2 px-3 py-2.5">
         <button
           type="button"
@@ -218,19 +218,19 @@ function ShowcaseSelect({ label, value, options, onChange }) {
   const selected = options.find((option) => option.value === value) || options[0]
 
   return (
-    <div ref={rootRef} className="relative z-30">
+    <div ref={rootRef} className="relative z-30 min-w-0 w-full max-w-full">
       <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="flex w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-left text-sm font-medium text-slate-800 shadow-sm outline-none hover:border-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+        className="flex w-full min-w-0 items-center justify-between rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-left text-sm font-medium text-slate-800 shadow-sm outline-none hover:border-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
         aria-expanded={open}
       >
-        <span>{selected?.label}</span>
-        <ChevronDown size={16} className={`text-slate-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        <span className="min-w-0 truncate">{selected?.label}</span>
+        <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open ? (
-        <div className="absolute inset-x-0 top-[calc(100%+4px)] z-50 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-xl">
+        <div className="relative z-50 mt-2 w-full max-w-full overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-xl">
           {options.map((option) => {
             const isSelected = option.value === value
             return (
@@ -241,12 +241,12 @@ function ShowcaseSelect({ label, value, options, onChange }) {
                   onChange(option.value)
                   setOpen(false)
                 }}
-                className={`flex w-full items-center justify-between px-3 py-2.5 text-left text-sm ${
+                className={`flex w-full min-w-0 items-center justify-between px-3 py-2.5 text-left text-sm ${
                   isSelected ? 'bg-emerald-50 font-semibold text-emerald-800' : 'text-slate-700 hover:bg-slate-50'
                 }`}
               >
-                <span>{option.label}</span>
-                {isSelected ? <Check size={16} className="text-emerald-600" /> : null}
+                <span className="min-w-0 truncate">{option.label}</span>
+                {isSelected ? <Check size={16} className="shrink-0 text-emerald-600" /> : null}
               </button>
             )
           })}
@@ -272,12 +272,12 @@ function ShowcaseSearchDropdown({
   const rootRef = useClickOutside(open, () => setOpen(false))
 
   return (
-    <div ref={rootRef} className="relative z-20">
+    <div ref={rootRef} className="relative z-20 min-w-0 w-full max-w-full">
       <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-left shadow-sm outline-none hover:border-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+        className="flex w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-left shadow-sm outline-none hover:border-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
         aria-expanded={open}
       >
         <span className={`min-w-0 truncate text-sm ${selectedLabel ? 'font-medium text-slate-800' : 'text-slate-400'}`}>
@@ -286,9 +286,9 @@ function ShowcaseSearchDropdown({
         <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open ? (
-        <div className="absolute inset-x-0 top-[calc(100%+4px)] z-50 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
+        <div className="relative z-50 mt-2 w-full max-w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
           <div className="border-b border-slate-100 p-2">
-            <div className="relative">
+            <div className="relative min-w-0">
               <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="search"
@@ -296,11 +296,11 @@ function ShowcaseSearchDropdown({
                 value={query}
                 onChange={(event) => onQueryChange(event.target.value)}
                 placeholder="Search..."
-                className="w-full rounded-md border border-slate-200 py-2 pl-8 pr-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                className="w-full min-w-0 rounded-md border border-slate-200 py-2 pl-8 pr-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
               />
             </div>
           </div>
-          <div className="max-h-56 overflow-y-auto py-1">
+          <div className="max-h-56 overflow-x-hidden overflow-y-auto py-1">
             {items.length ? items.map((item) => {
               const isSelected = item.value === selectedValue
               return (
@@ -311,11 +311,11 @@ function ShowcaseSearchDropdown({
                     onSelect(item)
                     setOpen(false)
                   }}
-                  className={`flex w-full items-start justify-between gap-2 px-3 py-2.5 text-left ${
+                  className={`flex w-full min-w-0 items-start justify-between gap-2 px-3 py-2.5 text-left ${
                     isSelected ? 'bg-emerald-50' : 'hover:bg-slate-50'
                   }`}
                 >
-                  <span className="min-w-0 flex-1">{renderItem(item, isSelected)}</span>
+                  <span className="min-w-0 flex-1 overflow-hidden">{renderItem(item, isSelected)}</span>
                   {isSelected ? <Check size={16} className="mt-0.5 shrink-0 text-emerald-600" /> : null}
                 </button>
               )
@@ -375,7 +375,7 @@ export function ShowcaseLinkFields({
   const selectedProduct = productList.find((product) => (product?.slug || '') === choice.value)
 
   return (
-    <div className="grid gap-3">
+    <div className="grid min-w-0 gap-3">
       <ShowcaseSelect
         label="Link to"
         value={choice.type}
@@ -422,7 +422,7 @@ export function ShowcaseLinkFields({
           emptyText={productSearch ? 'No products match this search' : 'No products loaded'}
           onSelect={(item) => applyChoice('product', item.value, { useProductsPath: item.useProductsPath })}
           renderItem={(item, isSelected) => (
-            <span className="min-w-0">
+            <span className="block min-w-0 max-w-full overflow-hidden">
               <span className={`block truncate text-sm ${isSelected ? 'font-semibold text-emerald-800' : 'text-slate-800'}`}>
                 {item.label}
               </span>

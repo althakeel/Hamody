@@ -100,7 +100,7 @@ function CrossfadeProductMedia({
       <motion.div
         key={mediaKey}
         className="absolute inset-0"
-        initial={{ opacity: 0 }}
+        initial={false}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={GALLERY_CROSSFADE}
@@ -119,6 +119,7 @@ function CrossfadeProductMedia({
             src={displaySrc}
             alt={alt}
             fill
+            unoptimized
             sizes={sizes}
             quality={90}
             className={imageClassName}
@@ -2994,9 +2995,10 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                     <Image
                       src={item.poster || PLACEHOLDER_IMAGE}
                       alt={`${safeProductName} ${index + 1}`}
-                      width={60}
-                      height={60}
-                      className="object-cover w-full h-full"
+                      fill
+                      unoptimized
+                      sizes="48px"
+                      className="object-cover"
                       onError={(e) => { e.currentTarget.src = PLACEHOLDER_IMAGE; }}
                     />
                     {item.type === 'video' && (
@@ -3037,7 +3039,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
 
                 <div
                   ref={imageContainerRef}
-                  className={`overflow-hidden rounded w-full h-full relative ${activeMedia?.type === 'video' ? '' : 'cursor-crosshair'}`}
+                  className={`absolute inset-0 overflow-hidden rounded ${activeMedia?.type === 'video' ? '' : 'cursor-crosshair'}`}
                   onMouseEnter={(e) => {
                     if (activeMedia?.type === 'video') return;
                     setShowZoom(true);
@@ -3123,6 +3125,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                             src={item.src || PLACEHOLDER_IMAGE}
                             alt={`${safeProductName} ${index + 1}`}
                             fill
+                            unoptimized
                             sizes="100vw"
                             quality={90}
                             className="object-cover"
@@ -3176,9 +3179,10 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                   <Image
                     src={item.poster || PLACEHOLDER_IMAGE}
                     alt={`${safeProductName} ${index + 1}`}
-                    width={56}
-                    height={56}
-                    className="object-cover w-full h-full"
+                    fill
+                    unoptimized
+                    sizes="56px"
+                    className="object-cover"
                     onError={(e) => { e.currentTarget.src = PLACEHOLDER_IMAGE; }}
                   />
                   {item.type === 'video' && (
