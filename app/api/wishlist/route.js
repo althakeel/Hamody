@@ -3,6 +3,7 @@ import dbConnect from "@/lib/mongodb";
 import { getAuth } from "@/lib/firebase-admin";
 import WishlistItem from "@/models/WishlistItem";
 import Product from "@/models/Product";
+import { STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility';
 
 function parseAuthHeader(request) {
     const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
@@ -67,7 +68,10 @@ export async function GET(request) {
 
         if (validProductIds.length) {
             try {
-                products = await Product.find({ _id: { $in: validProductIds } })
+                products = await Product.find({
+                    _id: { $in: validProductIds },
+                    ...STOREFRONT_PUBLISHED_FILTER,
+                })
                     .select('_id name nameAr slug price mrp AED images inStock stockQuantity createdAt')
                     .lean();
             } catch (productError) {

@@ -2,6 +2,7 @@ import dbConnect from "@/lib/mongodb";
 import HomeSection from "@/models/HomeSection";
 import { NextResponse } from "next/server";
 import { verifyHomeSectionAccess } from "@/lib/homeSectionAccess";
+import { invalidateCategorySliderCaches } from "@/lib/categorySliderCache";
 
 // GET - Fetch single home section by id
 export async function GET(request, { params }) {
@@ -92,6 +93,7 @@ export async function PUT(request, { params }) {
         if (!updatedSection) {
             return NextResponse.json({ error: "Section not found" }, { status: 404 });
         }
+        invalidateCategorySliderCaches();
         return NextResponse.json({ section: updatedSection });
     } catch (error) {
         console.error('Error updating home section:', error);
@@ -119,6 +121,7 @@ export async function DELETE(request, { params }) {
         if (!deleted) {
             return NextResponse.json({ error: "Section not found" }, { status: 404 });
         }
+        invalidateCategorySliderCaches();
         return NextResponse.json({ message: "Section deleted successfully" });
     } catch (error) {
         console.error('Error deleting home section:', error);

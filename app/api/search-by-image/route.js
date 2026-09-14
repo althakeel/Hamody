@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
+import { STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility';
 
 export async function POST(request) {
   try {
@@ -73,7 +74,8 @@ export async function POST(request) {
       $or: [
         { name: { $regex: exactPhrase, $options: 'i' } },
       ],
-      inStock: true
+      inStock: true,
+      ...STOREFRONT_PUBLISHED_FILTER,
     })
     .select('_id name slug images price mrp AED category tags inStock')
     .limit(12)
@@ -89,7 +91,8 @@ export async function POST(request) {
           { category: mainKeywordRegex },
           { tags: mainKeywordRegex },
         ],
-        inStock: true
+        inStock: true,
+        ...STOREFRONT_PUBLISHED_FILTER,
       })
       .select('_id name slug images price mrp AED category tags inStock')
       .limit(12)
@@ -105,7 +108,8 @@ export async function POST(request) {
           { category: keywordRegex },
           { tags: keywordRegex },
         ],
-        inStock: true
+        inStock: true,
+        ...STOREFRONT_PUBLISHED_FILTER,
       })
       .select('_id name slug images price mrp AED category tags inStock')
       .limit(12)
@@ -114,7 +118,10 @@ export async function POST(request) {
 
     let recommendedProducts = [];
     if (products.length === 0) {
-      recommendedProducts = await Product.find({ inStock: true })
+      recommendedProducts = await Product.find({
+        inStock: true,
+        ...STOREFRONT_PUBLISHED_FILTER,
+      })
         .select('_id name slug images price mrp AED category tags inStock')
         .sort({ createdAt: -1 })
         .limit(12)

@@ -21,13 +21,7 @@ import { useAuth } from '@/lib/useAuth'
 import PageSkeleton from '@/components/PageSkeleton'
 import { getProductThumbnailUrl, normalizeProductImages } from '@/lib/productMedia'
 import { PLACEHOLDER_IMAGE } from '@/lib/mediaUrls'
-
-const normalizeKey = (value) =>
-    String(value || '')
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '')
+import { findTopDealsSection } from '@/lib/homeTopDeals'
 
 const normalizeProductId = (productId) => String(productId?._id || productId || '')
 
@@ -246,9 +240,7 @@ export default function TopDealsCustomizePage() {
                 ])
 
                 const sections = sectionsData.sections || []
-                const foundSection = sections.find((item) => normalizeKey(item.section) === 'top_deals')
-                    || sections.find((item) => normalizeKey(item.title) === 'top_deals')
-                    || null
+                const foundSection = findTopDealsSection(sections)
 
                 let initialSelected = []
                 if (foundSection) {

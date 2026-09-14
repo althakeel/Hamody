@@ -20,7 +20,8 @@ const FeaturedProducts = () => {
         const { data: featuredData } = await axios.get('/api/store/featured-products', {
           params: { includeProducts: true, limit: 12 },
         })
-        const products = Array.isArray(featuredData.products) ? featuredData.products : []
+        const products = (Array.isArray(featuredData.products) ? featuredData.products : [])
+          .filter((product) => product?.published !== false)
 
         if (products.length > 0) {
           setFeaturedProducts(products)

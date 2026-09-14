@@ -6,24 +6,7 @@ import ProductCard from '@/components/ProductCard'
 import { HOME_PRODUCT_GRID_CLASS, HOME_SECTION_CLASS, HOME_SECTION_GRID_INNER_CLASS, HOME_SECTION_TITLE_CLASS } from '@/lib/storefrontCarousel'
 import { localizeField } from '@/lib/storefrontLanguage'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
-
-const TOP_DEALS_SECTION_KEYS = new Set(['top_deals', 'top-deals', 'topdeals'])
-
-const normalizeKey = (value) =>
-  String(value || '')
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-
-function findTopDealsSection(homeSections = []) {
-  return (
-    homeSections.find((item) => TOP_DEALS_SECTION_KEYS.has(normalizeKey(item.section))) ||
-    homeSections.find((item) => normalizeKey(item.title) === 'top_deals') ||
-    homeSections.find((item) => item.category) ||
-    null
-  )
-}
+import { findTopDealsSection } from '@/lib/homeTopDeals'
 
 function TopDealsSkeleton() {
   return (
@@ -49,20 +32,21 @@ export default function TopDeals({
   homeSections = [],
   sectionsLoading = false,
   initialProducts = null,
-  initialTitle = 'Top Deals',
+  initialTitle = '',
 }) {
   const { language } = useStorefrontI18n()
+  const configuredSection = findTopDealsSection(homeSections)
   const hasInitialProducts = Array.isArray(initialProducts) && initialProducts.length > 0
   const [products, setProducts] = useState(hasInitialProducts ? initialProducts : [])
   const [loading, setLoading] = useState(!hasInitialProducts)
-  const [title, setTitle] = useState(initialTitle)
-  const [titleAr, setTitleAr] = useState('')
+  const [title, setTitle] = useState(initialTitle || configuredSection?.title || '')
+  const [titleAr, setTitleAr] = useState(configuredSection?.titleAr || '')
 
   useEffect(() => {
     if (hasInitialProducts) {
       setProducts(initialProducts)
-      setTitle(initialTitle)
-      setTitleAr('')
+      setTitle(initialTitle || configuredSection?.title || '')
+      setTitleAr(configuredSection?.titleAr || '')
       setLoading(false)
       return undefined
     }
@@ -79,12 +63,11 @@ export default function TopDeals({
 
       try {
         const section = findTopDealsSection(homeSections)
-        setTitle(section?.title || 'Top Deals')
+        setTitle(section?.title || '')
         setTitleAr(section?.titleAr || '')
 
         if (!section) {
-          const { data } = await axios.get('/api/products?limit=12')
-          if (!cancelled) setProducts(data.products || [])
+          if (!cancelled) setProducts([])
           return
         }
 
@@ -104,12 +87,10 @@ export default function TopDeals({
           return
         }
 
-        const { data } = await axios.get('/api/products?limit=12')
-        if (!cancelled) setProducts(data.products || [])
+        if (!cancelled) setProducts([])
       } catch {
         if (!cancelled) {
           setProducts([])
-          setTitle('Top Deals')
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -121,21 +102,25 @@ export default function TopDeals({
     return () => {
       cancelled = true
     }
-  }, [hasInitialProducts, homeSections, sectionsLoading, initialProducts, initialTitle])
+  }, [configuredSection?.title, configuredSection?.titleAr, hasInitialProducts, homeSections, sectionsLoading, initialProducts, initialTitle])
+
+  const displayTitle = localizeField(configuredSection, 'title', language)
+    || localizeField({ title, titleAr }, 'title', language)
+
+  if (!configuredSection) {
+    return null
+  }
 
   if (!loading && products.length === 0) {
     return null
   }
 
-  const section = findTopDealsSection(homeSections)
-  const displayTitle = localizeField(section, 'title', language)
-    || localizeField({ title, titleAr }, 'title', language)
-    || 'Top Deals'
-
   return (
     <section className={HOME_SECTION_CLASS}>
       <div className={HOME_SECTION_GRID_INNER_CLASS}>
-        <h2 className={HOME_SECTION_TITLE_CLASS}>{displayTitle}</h2>
+        {displayTitle ? (
+          <h2 className={HOME_SECTION_TITLE_CLASS}>{displayTitle}</h2>
+        ) : null}
 
         {loading ? (
           <TopDealsSkeleton />

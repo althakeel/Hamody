@@ -4,6 +4,7 @@ import Rating from "@/models/Rating";
 import Category from "@/models/Category";
 import { NextResponse } from "next/server";
 import { getCachedData, setCachedData, generateCacheKey } from "@/lib/cache";
+import { STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility';
 
 export async function GET(request) {
     try {
@@ -36,6 +37,7 @@ export async function GET(request) {
             { 
                 $match: { 
                     inStock: true,
+                    ...STOREFRONT_PUBLISHED_FILTER,
                     AED: { $exists: true, $ne: null },
                     price: { $exists: true, $ne: null }
                 } 
@@ -81,6 +83,7 @@ export async function GET(request) {
             { 
                 $match: { 
                     inStock: true,
+                    ...STOREFRONT_PUBLISHED_FILTER,
                     AED: { $exists: true, $ne: null },
                     price: { $exists: true, $ne: null }
                 } 

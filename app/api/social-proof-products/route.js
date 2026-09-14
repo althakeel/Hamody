@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import dbConnect from '@/lib/mongodb'
 import Product from '@/models/Product'
+import { STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility'
 
 export async function GET() {
   try {
@@ -13,6 +14,7 @@ export async function GET() {
       {
         $match: {
           inStock: true,
+          ...STOREFRONT_PUBLISHED_FILTER,
           images: { $exists: true, $ne: [] }
         }
       },

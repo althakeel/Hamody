@@ -241,8 +241,8 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
     ctaButtonLink: '/shop',
   });
 
-  const getAuthErrorMessage = (err, fallback = 'Something went wrong. Please try again.') => {
-    return getSharedAuthErrorMessage(err, fallback);
+  const getAuthErrorMessage = (err, fallback = 'Something went wrong. Please try again.', context = {}) => {
+    return getSharedAuthErrorMessage(err, fallback, context);
   };
 
   React.useEffect(() => {
@@ -540,7 +540,7 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
       await finishAuthSuccess(result.user, { isNewUser, method: 'google' });
     } catch (err) {
       console.error('Google sign-in error:', err);
-      const errorMessage = getAuthErrorMessage(err, 'Google sign-in failed. Please try again.');
+      const errorMessage = getAuthErrorMessage(err, 'Google sign-in failed. Please try again.', { provider: 'google' });
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -563,7 +563,7 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
       await finishAuthSuccess(result.user, { isNewUser, method: 'facebook' });
     } catch (err) {
       console.error('Facebook sign-in error:', err);
-      const errorMessage = getAuthErrorMessage(err, 'Facebook sign-in failed. Please try again.');
+      const errorMessage = getAuthErrorMessage(err, 'Facebook sign-in failed. Please try again.', { provider: 'facebook' });
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -1000,7 +1000,7 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
       if (err.status === 423) {
         setError(err.data?.error || 'Account locked. Try again later.');
       } else {
-        setError(getAuthErrorMessage(err, err.message || 'Sign in failed. Please try again.'));
+        setError(getAuthErrorMessage(err, err.message || 'Sign in failed. Please try again.', { provider: 'email' }));
       }
       void loadCaptcha();
     } finally {

@@ -3,6 +3,7 @@ import HomeSection from "@/models/HomeSection";
 import Product from "@/models/Product";
 import Store from "@/models/Store";
 import { NextResponse } from "next/server";
+import { STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility';
 
 export async function GET(request) {
   try {
@@ -26,7 +27,8 @@ export async function GET(request) {
 
       const products = await Product.find({
         _id: { $in: ids },
-        inStock: true
+        inStock: true,
+        ...STOREFRONT_PUBLISHED_FILTER,
       })
         .select('_id name slug price mrp AED images category inStock storeId')
         .lean();

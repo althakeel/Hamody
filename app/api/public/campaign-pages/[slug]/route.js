@@ -11,6 +11,7 @@ import {
 import { getProductThumbnailUrl } from '@/lib/productMedia';
 import { getProductPath } from '@/lib/productUrl';
 import { PLACEHOLDER_IMAGE } from '@/lib/mediaUrls';
+import { STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,7 +54,10 @@ export async function GET(_request, { params }) {
     const productIds = normalizeCampaignPageProductIds(page.productIds);
     let products = [];
     if (productIds.length) {
-      const docs = await Product.find({ _id: { $in: productIds } })
+      const docs = await Product.find({
+        _id: { $in: productIds },
+        ...STOREFRONT_PUBLISHED_FILTER,
+      })
         .select('_id name nameAr slug price salePrice originalPrice mrp AED images brand inStock stockQuantity')
         .lean();
       const byId = new Map(docs.map((doc) => [String(doc._id), doc]));

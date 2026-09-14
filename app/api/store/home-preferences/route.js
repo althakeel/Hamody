@@ -69,13 +69,15 @@ export async function GET(request) {
       fetchPickerPage(Product, { storeId, page, limit, search, sort }),
     ]);
 
-    const productIds = Array.isArray(store?.featuredProductIds)
+    const rawProductIds = Array.isArray(store?.featuredProductIds)
       ? store.featuredProductIds.map((id) => String(id)).filter(Boolean)
       : [];
 
-    const previewProducts = productIds.length
-      ? await fetchPickerProductsByIds(Product, storeId, productIds)
+    const previewProducts = rawProductIds.length
+      ? await fetchPickerProductsByIds(Product, storeId, rawProductIds)
       : [];
+    const existingIdSet = new Set(previewProducts.map((product) => String(product._id)));
+    const productIds = rawProductIds.filter((id) => existingIdSet.has(String(id)));
 
     return NextResponse.json({
       featured: {
@@ -95,6 +97,7 @@ export async function GET(request) {
       },
       categories: flattenCategoriesMinimal(categories),
       previewProducts,
+      missingProductCount: Math.max(0, rawProductIds.length - productIds.length),
       products: picker.products,
       pagination: picker.pagination,
     }, {

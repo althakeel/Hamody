@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { HOME_SECTION_STACK_CLASS } from '@/lib/storefrontCarousel';
+import { hasShowcaseBannerImage } from '@/lib/showcaseBannerImages';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 
 import HeroBannerSlider from '@/components/HeroBannerSlider';
@@ -83,7 +84,7 @@ export default function HomePageClient({ initialData }) {
 
   const secondaryBannerSlides = useMemo(() => {
     if (!shopShowcaseConfig) return [];
-    return (shopShowcaseConfig.secondaryBannerSliderItems || []).filter((item) => String(item?.image || '').trim());
+    return (shopShowcaseConfig.secondaryBannerSliderItems || []).filter((item) => hasShowcaseBannerImage(item));
   }, [shopShowcaseConfig]);
 
   const showSecondaryBannerAt = (placement) =>

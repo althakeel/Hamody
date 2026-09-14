@@ -7,6 +7,7 @@ import authSeller from '@/middlewares/authSeller'
 import Store from '@/models/Store'
 import Product from '@/models/Product'
 import { attachProductRatings } from '@/lib/attachProductRatings'
+import { STOREFRONT_PUBLISHED_FILTER, isProductPublished } from '@/lib/productVisibility'
 
 const DEFAULT_FEATURED_RESPONSE = {
     productIds: [],
@@ -48,7 +49,7 @@ const normalizeId = (value) => {
     return null
 }
 
-const buildProductProjection = '_id name nameAr slug price mrp AED images category categories tags inStock stockQuantity createdAt'
+const buildProductProjection = '_id name nameAr slug price mrp AED images category categories tags inStock stockQuantity published createdAt'
 
 async function getUserIdFromAuthHeader(request) {
     const authHeader = request.headers.get('authorization')
@@ -80,7 +81,7 @@ export async function GET(request) {
         }
 
         const isPublicRequest = !userId
-        const cacheKey = isPublicRequest ? `public:featured-products:api:v4:${includeProducts}:${limit}` : null
+        const cacheKey = isPublicRequest ? `public:featured-products:api:v5:${includeProducts}:${limit}` : null
         if (cacheKey) {
             const cached = getCachedData(cacheKey)
             if (cached) {
@@ -115,11 +116,16 @@ export async function GET(request) {
 
         const resolveProducts = async () => {
             if (isManualFeaturedSelection(sourceMode, productIds)) {
-                const productsRaw = await Product.find({ _id: { $in: productIds } })
+                const productsRaw = await Product.find({
+                    _id: { $in: productIds },
+                    ...STOREFRONT_PUBLISHED_FILTER,
+                })
                     .select(buildProductProjection)
                     .lean()
                 const productMap = new Map(productsRaw.map((product) => [product._id.toString(), product]))
-                return productIds.map((id) => productMap.get(id)).filter(Boolean)
+                return productIds
+                    .map((id) => productMap.get(id))
+                    .filter((product) => product && isProductPublished(product))
             }
 
             const { query, sort } = buildFeaturedProductsListQuery({

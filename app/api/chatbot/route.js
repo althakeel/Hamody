@@ -6,6 +6,7 @@ import Coupon from "@/models/Coupon";
 import Order from "@/models/Order";
 import { getExpectedTAT, checkPincodeServiceability, fetchNormalizedDelhiveryTracking } from "@/lib/delhivery";
 import { getDisplayOrderNumber } from "@/lib/orderDisplay";
+import { STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility';
 
 // Validate API key exists
 if (!process.env.GEMINI_API_KEY) {
@@ -384,7 +385,10 @@ export async function POST(request) {
                 }
             }
 
-            const products = await Product.find({ inStock: true })
+            const products = await Product.find({
+                inStock: true,
+                ...STOREFRONT_PUBLISHED_FILTER,
+            })
                 .select('_id name slug description price AED category inStock stockQuantity fastDelivery')
                 .limit(50)
                 .lean();
@@ -423,6 +427,7 @@ export async function POST(request) {
 
                 const regexMatches = await Product.find({
                     inStock: true,
+                    ...STOREFRONT_PUBLISHED_FILTER,
                     $or: orClauses
                 })
                     .select('_id name slug description price mrp AED category inStock stockQuantity fastDelivery')

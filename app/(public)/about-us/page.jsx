@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from '@/components/SafeNextImage';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 import {
   STORE1920_CUSTOMER_SUPPORT_PHONE,
@@ -12,11 +11,9 @@ import {
   STORE1920_LEGAL_NAME_AR,
   STORE1920_TRADE_LICENSE_NO,
 } from '@/lib/businessIdentity';
-import { STORE1920_LOGO_PATH } from '@/lib/brandLogo';
 
 const PAGE_COPY = {
   en: {
-    brand: 'Store1920',
     headline: 'Smart living.\nSmarter prices.',
     support:
       'Store1920 is a UAE online retailer offering electronics, home, and lifestyle essentials at competitive prices with fast delivery on eligible items.',
@@ -68,7 +65,6 @@ const PAGE_COPY = {
     closeCta: 'Browse the store',
   },
   ar: {
-    brand: 'Store1920',
     headline: 'حياة أذكى.\nبأسعار أوضح.',
     support:
       'Store1920 متجر تجزئة إلكتروني في الإمارات يقدّم الإلكترونيات ومستلزمات المنزل ونمط الحياة بأسعار تنافسية مع توصيل سريع للمنتجات المؤهلة.',
@@ -134,21 +130,6 @@ export default function AboutUsPage() {
         <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_24px_80px_-48px_rgba(15,23,42,0.45)]">
           <div className="grid lg:grid-cols-[1.15fr_0.85fr]">
             <div className="flex flex-col justify-center px-6 py-10 sm:px-10 sm:py-14 lg:px-14">
-              <div className="mb-6 flex items-center gap-3">
-                <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#111111]">
-                  <Image
-                    src={STORE1920_LOGO_PATH}
-                    alt="Store1920"
-                    width={96}
-                    height={32}
-                    className="h-6 w-auto object-contain brightness-0 invert"
-                    priority
-                  />
-                </span>
-                <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  {copy.brand}
-                </span>
-              </div>
               <h1 className="whitespace-pre-line text-4xl font-extrabold leading-[1.05] tracking-tight text-[#111111] sm:text-5xl lg:text-6xl">
                 <bdi>{copy.headline}</bdi>
               </h1>

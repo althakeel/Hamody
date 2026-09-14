@@ -2,6 +2,7 @@ import dbConnect from "@/lib/mongodb";
 import HomeSection from "@/models/HomeSection";
 import Product from "@/models/Product";
 import { NextResponse } from "next/server";
+import { STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility';
 
 const PRODUCT_SELECT = '_id name price mrp AED images inStock';
 
@@ -44,7 +45,10 @@ export async function GET() {
     ];
 
     const products = allProductIds.length
-      ? await Product.find({ _id: { $in: allProductIds } }).select(PRODUCT_SELECT).lean()
+      ? await Product.find({
+          _id: { $in: allProductIds },
+          ...STOREFRONT_PUBLISHED_FILTER,
+        }).select(PRODUCT_SELECT).lean()
       : [];
 
     const productMap = new Map(products.map((product) => [String(product._id), product]));

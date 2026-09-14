@@ -3,23 +3,24 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { withImageKitDelivery } from '@/lib/imageKitDelivery'
+import { hasShowcaseBannerImage, pickShowcaseBannerSources } from '@/lib/showcaseBannerImages'
+import { getShowcaseLinkProps } from '@/lib/showcaseBannerLinks'
+import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
 
 const MOBILE_AUTO_SCROLL_MS = 3500
 
 function ProductBannerCard({ banner, className = '' }) {
+  const { isArabic } = useStorefrontI18n()
   const link = String(banner?.link || '').trim()
   const Card = link ? Link : 'div'
-  const original = String(banner?.image || '').trim()
-  const image = original
-    ? withImageKitDelivery(original, { width: 640, quality: 72 })
-    : ''
-  const imageSrcSet = original
-    ? [
-      `${withImageKitDelivery(original, { width: 360, quality: 72 })} 360w`,
-      `${withImageKitDelivery(original, { width: 640, quality: 72 })} 640w`,
-    ].join(', ')
-    : undefined
-  const hasImage = Boolean(image)
+  const linkProps = link ? getShowcaseLinkProps(banner) : {}
+  const sources = pickShowcaseBannerSources(banner, isArabic)
+  const images = [
+    { key: 'mobile', src: sources.mobile, className: 'block md:hidden', width: 360 },
+    { key: 'tablet', src: sources.tablet, className: 'hidden md:block lg:hidden', width: 520 },
+    { key: 'desktop', src: sources.desktop, className: 'hidden lg:block', width: 640 },
+  ].filter((image) => image.src)
+  const hasImage = images.length > 0
   const hasTextOverlay =
     !hasImage &&
     (String(banner?.title || '').trim() ||
@@ -27,16 +28,25 @@ function ProductBannerCard({ banner, className = '' }) {
       String(banner?.buttonText || '').trim())
 
   return (
-    <Card href={link || undefined} className={`shop-showcase-product-card ${className}`.trim()}>
-      <img
-        className="shop-showcase-product-image"
-        src={image || '/assets/placeholder.png'}
-        srcSet={imageSrcSet}
-        sizes="(max-width: 639px) 90vw, 280px"
-        alt={banner?.title || 'Promotional banner'}
-        loading="lazy"
-        decoding="async"
-      />
+    <Card {...linkProps} className={`shop-showcase-product-card ${className}`.trim()}>
+      {hasImage ? images.map((image) => (
+        <img
+          key={image.key}
+          className={`shop-showcase-product-image ${image.className}`}
+          src={withImageKitDelivery(image.src, { width: image.width, quality: 72 })}
+          alt={banner?.title || 'Promotional banner'}
+          loading="lazy"
+          decoding="async"
+        />
+      )) : (
+        <img
+          className="shop-showcase-product-image"
+          src="/assets/placeholder.png"
+          alt={banner?.title || 'Promotional banner'}
+          loading="lazy"
+          decoding="async"
+        />
+      )}
       {hasTextOverlay ? (
         <>
           <div className="shop-showcase-product-overlay" />
@@ -58,6 +68,7 @@ function ProductBannerCard({ banner, className = '' }) {
 }
 
 export default function ShowcaseProductBanners({ banners = [] }) {
+  const { language } = useStorefrontI18n()
   const [activeIndex, setActiveIndex] = useState(0)
   const [isMobile, setIsMobile] = useState(false)
 
@@ -65,7 +76,7 @@ export default function ShowcaseProductBanners({ banners = [] }) {
     () =>
       (Array.isArray(banners) ? banners : [])
         .slice(0, 4)
-        .filter((banner) => String(banner?.image || '').trim()),
+        .filter((banner) => hasShowcaseBannerImage(banner)),
     [banners]
   )
 
@@ -84,8 +95,16 @@ export default function ShowcaseProductBanners({ banners = [] }) {
   }, [visibleBanners.length])
 
   const bannersSignature = useMemo(
-    () => visibleBanners.map((banner) => `${banner?.image || ''}:${banner?.link || ''}`).join('|'),
-    [visibleBanners],
+    () => `${language}|${visibleBanners.map((banner) => [
+      banner?.image || '',
+      banner?.tabletImage || '',
+      banner?.mobileImage || '',
+      banner?.imageAr || '',
+      banner?.tabletImageAr || '',
+      banner?.mobileImageAr || '',
+      banner?.link || '',
+    ].join(':')).join('|')}`,
+    [visibleBanners, language],
   )
 
   useEffect(() => {

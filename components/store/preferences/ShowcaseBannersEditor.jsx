@@ -3,17 +3,31 @@
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import Image from 'next/image'
-import { ChevronDown, ChevronUp, Loader2, Plus, Save, Trash2, Upload } from 'lucide-react'
+import { Check, ChevronDown, ChevronUp, Loader2, Plus, Save, Search, Trash2, Upload } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/lib/useAuth'
 import { createLargeBannerSlide, normalizeLargeBannerSliderItemsForEditor } from '@/lib/shopShowcaseLargeBanners'
+import { hasShowcaseBannerImage, serializeShowcaseImageFields } from '@/lib/showcaseBannerImages'
+import {
+  createShowcaseLinkFromChoice,
+  flattenShowcaseCategories,
+  inferShowcaseLinkType,
+  readShowcaseLinkChoice,
+} from '@/lib/showcaseBannerLinks'
 
 const createBanner = (overrides = {}) => ({
   image: '',
+  tabletImage: '',
+  mobileImage: '',
+  imageAr: '',
+  tabletImageAr: '',
+  mobileImageAr: '',
   title: '',
   subtitle: '',
   buttonText: '',
   link: '',
+  linkType: '',
+  targetBlank: false,
   file: null,
   previewUrl: '',
   ...overrides,
@@ -33,6 +47,587 @@ const sanitizeImageUrl = (value) => {
   } catch {
     return withoutPathTransform
   }
+}
+
+function sanitizeImageFields(item = {}) {
+  return {
+    image: sanitizeImageUrl(item.image || ''),
+    tabletImage: sanitizeImageUrl(item.tabletImage || ''),
+    mobileImage: sanitizeImageUrl(item.mobileImage || ''),
+    imageAr: sanitizeImageUrl(item.imageAr || ''),
+    tabletImageAr: sanitizeImageUrl(item.tabletImageAr || ''),
+    mobileImageAr: sanitizeImageUrl(item.mobileImageAr || ''),
+  }
+}
+
+const IMAGE_GROUPS = [
+  {
+    id: 'en',
+    title: 'English images',
+    hint: 'Used when the storefront is English. Also used as fallback if an Arabic image is empty.',
+    slots: [
+      { key: 'image', label: 'Desktop' },
+      { key: 'tabletImage', label: 'Tablet' },
+      { key: 'mobileImage', label: 'Mobile' },
+    ],
+  },
+  {
+    id: 'ar',
+    title: 'Arabic images',
+    hint: 'Used when the storefront is Arabic. Falls back to the English image for that device if empty.',
+    slots: [
+      { key: 'imageAr', label: 'Desktop' },
+      { key: 'tabletImageAr', label: 'Tablet' },
+      { key: 'mobileImageAr', label: 'Mobile' },
+    ],
+  },
+]
+
+const TOP_BANNER_SIZES = {
+  image: { width: 3054, height: 1080 },
+  tabletImage: { width: 1536, height: 544 },
+  mobileImage: { width: 768, height: 432 },
+  imageAr: { width: 3054, height: 1080 },
+  tabletImageAr: { width: 1536, height: 544 },
+  mobileImageAr: { width: 768, height: 432 },
+}
+
+const BOTTOM_BANNER_SIZES = {
+  image: { width: 3054, height: 370 },
+  tabletImage: { width: 1536, height: 186 },
+  mobileImage: { width: 768, height: 200 },
+  imageAr: { width: 3054, height: 370 },
+  tabletImageAr: { width: 1536, height: 186 },
+  mobileImageAr: { width: 768, height: 200 },
+}
+
+const PRODUCT_BANNER_SIZES = {
+  image: { width: 1225, height: 639 },
+  tabletImage: { width: 800, height: 418 },
+  mobileImage: { width: 640, height: 334 },
+  imageAr: { width: 1225, height: 639 },
+  tabletImageAr: { width: 800, height: 418 },
+  mobileImageAr: { width: 640, height: 334 },
+}
+
+function gcd(first, second) {
+  return second ? gcd(second, first % second) : first
+}
+
+function formatImageRatio(width, height) {
+  const divisor = gcd(width, height)
+  const ratioWidth = width / divisor
+  const ratioHeight = height / divisor
+  if (ratioWidth <= 40 && ratioHeight <= 40) {
+    return `${ratioWidth}:${ratioHeight}`
+  }
+  return `${(width / height).toFixed(2)}:1`
+}
+
+function ShowcaseImageSlot({ label, size, value, onUpload, onClear }) {
+  const width = Number(size?.width) || 0
+  const height = Number(size?.height) || 0
+  const ratio = width && height ? formatImageRatio(width, height) : ''
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-2">
+      <div className="mb-1.5">
+        <div className="text-xs font-semibold text-slate-700">{label}</div>
+        {width && height ? (
+          <p className="mt-0.5 text-[11px] leading-4 text-slate-500">
+            Width {width} px · Height {height} px · Ratio {ratio}
+          </p>
+        ) : null}
+      </div>
+      <div
+        className="relative mb-2 overflow-hidden rounded-md border border-dashed border-slate-300 bg-slate-50"
+        style={{ aspectRatio: width && height ? `${width} / ${height}` : '16 / 9' }}
+      >
+        {value ? (
+          <Image src={value} alt={label} fill unoptimized className="object-cover" />
+        ) : (
+          <div className="flex h-full items-center justify-center text-[11px] text-slate-400">No image</div>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50">
+          <Upload size={12} />
+          Upload
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(event) => {
+              onUpload(event.target.files?.[0] || null)
+              event.target.value = ''
+            }}
+          />
+        </label>
+        {value ? (
+          <button type="button" onClick={onClear} className="text-xs font-medium text-red-600 hover:underline">
+            Clear
+          </button>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+function countFilledSlots(item, slots) {
+  return slots.filter((slot) => String(item?.[slot.key] || '').trim()).length
+}
+
+function getLinkSummary(link, linkType) {
+  const choice = readShowcaseLinkChoice(link, linkType)
+  if (choice.type === 'category') return choice.value ? `Category · ${choice.value}` : 'Category · not selected'
+  if (choice.type === 'product') return choice.value ? `Product · ${choice.value}` : 'Product · not selected'
+  return choice.value ? `Custom URL · ${choice.value}` : 'Custom URL · not set'
+}
+
+function SmoothPanel({ open, children }) {
+  return (
+    <div
+      className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+        open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+      }`}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div className={`border-t border-slate-200 px-3 pb-3 pt-3 transition-opacity duration-300 ${
+          open ? 'opacity-100' : 'opacity-0'
+        }`}>
+          {children}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AccordionRow({ title, summary, open, onToggle, children, actions, className = '' }) {
+  return (
+    <div className={`rounded-xl border border-slate-200 bg-white ${className}`.trim()}>
+      <div className="flex items-center gap-2 px-3 py-2.5">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+          aria-expanded={open}
+        >
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold text-slate-900">{title}</div>
+            {summary ? <div className="truncate text-xs text-slate-500">{summary}</div> : null}
+          </div>
+          <ChevronDown
+            size={16}
+            className={`shrink-0 text-slate-500 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
+          />
+        </button>
+        {actions}
+      </div>
+      <SmoothPanel open={open}>{children}</SmoothPanel>
+    </div>
+  )
+}
+
+const LINK_TYPE_OPTIONS = [
+  { value: 'category', label: 'Category' },
+  { value: 'product', label: 'Product' },
+  { value: 'custom', label: 'Custom URL' },
+]
+
+function useClickOutside(open, onClose) {
+  const rootRef = useRef(null)
+
+  useEffect(() => {
+    if (!open) return undefined
+
+    const handlePointerDown = (event) => {
+      if (!rootRef.current?.contains(event.target)) onClose()
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    return () => document.removeEventListener('mousedown', handlePointerDown)
+  }, [open, onClose])
+
+  return rootRef
+}
+
+function ShowcaseSelect({ label, value, options, onChange }) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useClickOutside(open, () => setOpen(false))
+  const selected = options.find((option) => option.value === value) || options[0]
+
+  return (
+    <div ref={rootRef} className="relative z-30">
+      <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-left text-sm font-medium text-slate-800 shadow-sm outline-none hover:border-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+        aria-expanded={open}
+      >
+        <span>{selected?.label}</span>
+        <ChevronDown size={16} className={`text-slate-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open ? (
+        <div className="absolute inset-x-0 top-[calc(100%+4px)] z-50 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-xl">
+          {options.map((option) => {
+            const isSelected = option.value === value
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  onChange(option.value)
+                  setOpen(false)
+                }}
+                className={`flex w-full items-center justify-between px-3 py-2.5 text-left text-sm ${
+                  isSelected ? 'bg-emerald-50 font-semibold text-emerald-800' : 'text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <span>{option.label}</span>
+                {isSelected ? <Check size={16} className="text-emerald-600" /> : null}
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function ShowcaseSearchDropdown({
+  label,
+  placeholder,
+  query,
+  onQueryChange,
+  items,
+  selectedValue,
+  selectedLabel,
+  emptyText,
+  onSelect,
+  renderItem,
+}) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useClickOutside(open, () => setOpen(false))
+
+  return (
+    <div ref={rootRef} className="relative z-20">
+      <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-left shadow-sm outline-none hover:border-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+        aria-expanded={open}
+      >
+        <span className={`min-w-0 truncate text-sm ${selectedLabel ? 'font-medium text-slate-800' : 'text-slate-400'}`}>
+          {selectedLabel || placeholder}
+        </span>
+        <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open ? (
+        <div className="absolute inset-x-0 top-[calc(100%+4px)] z-50 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
+          <div className="border-b border-slate-100 p-2">
+            <div className="relative">
+              <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="search"
+                autoFocus
+                value={query}
+                onChange={(event) => onQueryChange(event.target.value)}
+                placeholder="Search..."
+                className="w-full rounded-md border border-slate-200 py-2 pl-8 pr-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+              />
+            </div>
+          </div>
+          <div className="max-h-56 overflow-y-auto py-1">
+            {items.length ? items.map((item) => {
+              const isSelected = item.value === selectedValue
+              return (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() => {
+                    onSelect(item)
+                    setOpen(false)
+                  }}
+                  className={`flex w-full items-start justify-between gap-2 px-3 py-2.5 text-left ${
+                    isSelected ? 'bg-emerald-50' : 'hover:bg-slate-50'
+                  }`}
+                >
+                  <span className="min-w-0 flex-1">{renderItem(item, isSelected)}</span>
+                  {isSelected ? <Check size={16} className="mt-0.5 shrink-0 text-emerald-600" /> : null}
+                </button>
+              )
+            }) : (
+              <p className="px-3 py-3 text-sm text-slate-500">{emptyText}</p>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function ShowcaseLinkAccordion(props) {
+  const [open, setOpen] = useState(false)
+  const summary = getLinkSummary(props.link, props.linkType)
+
+  return (
+    <AccordionRow
+      title="Link"
+      summary={`${summary} · click to ${open ? 'hide' : 'edit'}`}
+      open={open}
+      onToggle={() => setOpen((current) => !current)}
+      className="bg-slate-50/70"
+    >
+      <ShowcaseLinkFields {...props} />
+    </AccordionRow>
+  )
+}
+
+function ShowcaseLinkFields({
+  link,
+  linkType,
+  targetBlank,
+  categories,
+  products,
+  onLinkChange,
+  onLinkTypeChange,
+  onTargetBlankChange,
+}) {
+  const choice = readShowcaseLinkChoice(link, linkType)
+  const [categoryQuery, setCategoryQuery] = useState('')
+  const [productQuery, setProductQuery] = useState('')
+  const categoryRows = flattenShowcaseCategories(categories)
+  const categorySearch = categoryQuery.trim().toLowerCase()
+  const filteredCategories = categoryRows.filter((category) => {
+    if (!categorySearch) return true
+    return `${category.label} ${category.slug}`.toLowerCase().includes(categorySearch)
+  })
+  const productSearch = productQuery.trim().toLowerCase()
+  const productList = Array.isArray(products) ? products : []
+  const filteredProducts = productList.filter((product) => {
+    if (!productSearch) return true
+    return [product?.name, product?.slug, product?.sku]
+      .some((value) => String(value || '').toLowerCase().includes(productSearch))
+  })
+
+  const applyChoice = (type, value, extra = {}) => {
+    onLinkTypeChange(type)
+    onLinkChange(createShowcaseLinkFromChoice(type, value, extra))
+  }
+
+  const selectType = (type) => {
+    onLinkTypeChange(type)
+    const inferred = inferShowcaseLinkType(link)
+    if (type !== 'custom' && inferred.type !== type) {
+      onLinkChange('')
+    }
+    if (type !== 'product') setProductQuery('')
+    if (type !== 'category') setCategoryQuery('')
+  }
+
+  const selectedCategory = categoryRows.find((category) => category.slug === choice.value)
+  const selectedProduct = productList.find((product) => (product?.slug || '') === choice.value)
+
+  return (
+    <div className="grid gap-3">
+      <ShowcaseSelect
+        label="Link to"
+        value={choice.type}
+        options={LINK_TYPE_OPTIONS}
+        onChange={selectType}
+      />
+
+      {choice.type === 'category' ? (
+        <ShowcaseSearchDropdown
+          label="Category"
+          placeholder="Select a category"
+          query={categoryQuery}
+          onQueryChange={setCategoryQuery}
+          items={filteredCategories.map((category) => ({
+            value: category.slug,
+            label: category.label,
+          }))}
+          selectedValue={choice.value}
+          selectedLabel={selectedCategory?.label || choice.value}
+          emptyText={categorySearch ? 'No categories match this search' : 'No categories found'}
+          onSelect={(item) => applyChoice('category', item.value)}
+          renderItem={(item, isSelected) => (
+            <span className={`block truncate text-sm ${isSelected ? 'font-semibold text-emerald-800' : 'text-slate-700'}`}>
+              {item.label}
+            </span>
+          )}
+        />
+      ) : null}
+
+      {choice.type === 'product' ? (
+        <ShowcaseSearchDropdown
+          label="Product"
+          placeholder="Select a product"
+          query={productQuery}
+          onQueryChange={setProductQuery}
+          items={filteredProducts.map((product) => ({
+            value: product?.slug || '',
+            label: product?.name || product?.slug || '',
+            sku: product?.sku || product?.slug || '',
+            useProductsPath: Boolean(product?.useProductsPath),
+          }))}
+          selectedValue={choice.value}
+          selectedLabel={selectedProduct?.name || choice.value}
+          emptyText={productSearch ? 'No products match this search' : 'No products loaded'}
+          onSelect={(item) => applyChoice('product', item.value, { useProductsPath: item.useProductsPath })}
+          renderItem={(item, isSelected) => (
+            <span className="min-w-0">
+              <span className={`block truncate text-sm ${isSelected ? 'font-semibold text-emerald-800' : 'text-slate-800'}`}>
+                {item.label}
+              </span>
+              <span className="block truncate text-xs text-slate-500">{item.sku}</span>
+            </span>
+          )}
+        />
+      ) : null}
+
+      {choice.type === 'custom' ? (
+        <label className="block">
+          <span className="mb-1 block text-sm font-medium text-slate-700">Custom URL</span>
+          <input
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            value={choice.value}
+            onChange={(event) => applyChoice('custom', event.target.value)}
+            placeholder="/shop or https://example.com"
+          />
+        </label>
+      ) : null}
+
+      <label className="inline-flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2">
+        <span className="text-sm text-slate-700">Open in new window</span>
+        <input
+          type="checkbox"
+          checked={Boolean(targetBlank)}
+          onChange={(event) => onTargetBlankChange(event.target.checked)}
+        />
+      </label>
+    </div>
+  )
+}
+
+function ShowcaseLocaleImageGroups({ item, recommendedSizes, onUpload, onChange }) {
+  const [openGroups, setOpenGroups] = useState({})
+
+  return (
+    <div className="space-y-3">
+      {IMAGE_GROUPS.map((group) => {
+        const filled = countFilledSlots(item, group.slots)
+        const isOpen = !!openGroups[group.id]
+
+        return (
+          <AccordionRow
+            key={group.id}
+            title={group.title}
+            summary={`${filled} of ${group.slots.length} uploaded · click to ${isOpen ? 'hide' : 'edit'}`}
+            open={isOpen}
+            onToggle={() => setOpenGroups((prev) => ({ ...prev, [group.id]: !prev[group.id] }))}
+            className="bg-slate-50/70"
+          >
+            <p className="mb-3 text-xs text-slate-500">{group.hint}</p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {group.slots.map((slot) => (
+                <ShowcaseImageSlot
+                  key={slot.key}
+                  label={slot.label}
+                  size={recommendedSizes?.[slot.key]}
+                  value={item[slot.key]}
+                  onUpload={(file) => onUpload(slot.key, file)}
+                  onClear={() => onChange(slot.key, '')}
+                />
+              ))}
+            </div>
+          </AccordionRow>
+        )
+      })}
+    </div>
+  )
+}
+
+function slideOrdinalLabel(index) {
+  if (index === 0) return '1st in slider'
+  if (index === 1) return '2nd in slider'
+  if (index === 2) return '3rd in slider'
+  return `${index + 1}th in slider`
+}
+
+function LargeBannerSlideCard({
+  slide,
+  index,
+  total,
+  recommendedSizes,
+  open,
+  onToggle,
+  onMove,
+  onRemove,
+  onUpload,
+  onChange,
+  categoryOptions,
+  productOptions,
+}) {
+  return (
+    <AccordionRow
+      title={`Slide ${index + 1}`}
+      summary={`${slideOrdinalLabel(index)} · click to ${open ? 'hide' : 'edit'}`}
+      open={open}
+      onToggle={onToggle}
+      actions={(
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onMove(-1)}
+            disabled={index === 0}
+            title="Move up (earlier in slider)"
+            className="inline-flex items-center rounded-lg border border-slate-300 p-1.5 text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <ChevronUp size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onMove(1)}
+            disabled={index === total - 1}
+            title="Move down (later in slider)"
+            className="inline-flex items-center rounded-lg border border-slate-300 p-1.5 text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <ChevronDown size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={onRemove}
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+          >
+            <Trash2 size={14} />
+            Remove
+          </button>
+        </div>
+      )}
+    >
+      <div className="space-y-3">
+        <ShowcaseLocaleImageGroups
+          item={slide}
+          recommendedSizes={recommendedSizes}
+          onUpload={onUpload}
+          onChange={onChange}
+        />
+        <ShowcaseLinkAccordion
+          link={slide.link}
+          linkType={slide.linkType}
+          targetBlank={slide.targetBlank}
+          categories={categoryOptions}
+          products={productOptions}
+          onLinkChange={(value) => onChange('link', value)}
+          onLinkTypeChange={(value) => onChange('linkType', value)}
+          onTargetBlankChange={(value) => onChange('targetBlank', value)}
+        />
+      </div>
+    </AccordionRow>
+  )
 }
 
 const DEFAULT_FORM = {
@@ -79,7 +674,14 @@ function mapSliderItemsForEditor(showcase, itemsKey, legacyImageKey, legacyLinkK
     showcase?.[legacyImageKey],
     showcase?.[legacyLinkKey] || '/shop',
     prefix,
-  ).map((slide) => ({ ...slide, file: null, image: sanitizeImageUrl(slide.image || '') }))
+  ).map((slide) => ({
+    ...slide,
+    file: null,
+    ...sanitizeImageFields(slide),
+    linkType: ['category', 'product', 'custom'].includes(slide.linkType)
+      ? slide.linkType
+      : inferShowcaseLinkType(slide.link).type,
+  }))
 }
 
 function mergeSavedSliderItems(localItems = [], serverItems = []) {
@@ -87,19 +689,21 @@ function mergeSavedSliderItems(localItems = [], serverItems = []) {
     return serverItems.map((slide) => ({
       ...slide,
       file: null,
-      image: sanitizeImageUrl(slide.image || ''),
+      ...sanitizeImageFields(slide),
     }))
   }
 
   return localItems.map((localSlide, index) => {
     const serverSlide = serverItems.find((item) => item?.id && item.id === localSlide.id) || serverItems[index]
-    const image = sanitizeImageUrl(serverSlide?.image || localSlide.image || '')
-
-    return {
+    const merged = {
       ...localSlide,
       ...(serverSlide || {}),
+    }
+
+    return {
+      ...merged,
       id: localSlide.id || serverSlide?.id,
-      image,
+      ...sanitizeImageFields(merged),
       link: String(serverSlide?.link || localSlide.link || '/shop').trim(),
       alt: String(serverSlide?.alt || localSlide.alt || '').trim(),
       file: null,
@@ -178,11 +782,15 @@ function buildShowcaseFormState(showcase = {}, previousForm = null) {
         const normalizedLink = String(current.link || '').trim()
 
         return createBanner({
-          image: sanitizeImageUrl(current.image || ''),
+          ...sanitizeImageFields(current),
           title: normalizedTitle && normalizedTitle !== fallbackTitle ? normalizedTitle : '',
           subtitle: normalizedSubtitle && normalizedSubtitle !== 'Order now' ? normalizedSubtitle : '',
           buttonText: normalizedButtonText && normalizedButtonText !== 'Order now' ? normalizedButtonText : '',
           link: normalizedLink && normalizedLink !== '/shop' ? normalizedLink : '',
+          linkType: ['category', 'product', 'custom'].includes(current.linkType)
+            ? current.linkType
+            : inferShowcaseLinkType(normalizedLink).type,
+          targetBlank: Boolean(current.targetBlank),
           file: null,
           previewUrl: sanitizeImageUrl(current.image || ''),
         })
@@ -191,12 +799,15 @@ function buildShowcaseFormState(showcase = {}, previousForm = null) {
       if (previousForm?.productBanners?.length && previousForm.productBanners.length === mapped.length) {
         return previousForm.productBanners.map((localBanner, index) => {
           const serverBanner = mapped[index]
-          const image = sanitizeImageUrl(serverBanner?.image || localBanner.image || localBanner.previewUrl || '')
-          return {
+          const merged = {
             ...localBanner,
             ...serverBanner,
-            image,
-            previewUrl: localBanner.previewUrl || image,
+          }
+          const images = sanitizeImageFields(merged)
+          return {
+            ...merged,
+            ...images,
+            previewUrl: localBanner.previewUrl || images.image,
             file: null,
           }
         })
@@ -212,6 +823,14 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(DEFAULT_FORM)
+  const [categoryOptions, setCategoryOptions] = useState([])
+  const [productOptions, setProductOptions] = useState([])
+  const [openTopSlideId, setOpenTopSlideId] = useState(null)
+  const [openBottomSlideId, setOpenBottomSlideId] = useState(null)
+  const [openProductIndex, setOpenProductIndex] = useState(null)
+  const [openLayoutGuide, setOpenLayoutGuide] = useState(false)
+  const [openTopText, setOpenTopText] = useState(false)
+  const [openBottomText, setOpenBottomText] = useState(false)
   const [loadedShowcase, setLoadedShowcase] = useState({})
   const formRef = useRef(form)
   const loadedShowcaseRef = useRef(loadedShowcase)
@@ -238,6 +857,36 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
 
   useEffect(() => {
     loadData()
+  }, [])
+
+  useEffect(() => {
+    let active = true
+
+    const loadLinkTargets = async () => {
+      try {
+        const token = await getToken()
+        const [categoriesRes, productsRes] = await Promise.all([
+          axios.get('/api/store/categories', {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          }).catch(() => ({ data: { categories: [] } })),
+          fetch('/api/products?limit=400&slim=true', { cache: 'no-store' }),
+        ])
+        const categoriesData = categoriesRes?.data || {}
+        const productsData = productsRes.ok ? await productsRes.json() : { products: [] }
+        if (!active) return
+        setCategoryOptions(Array.isArray(categoriesData?.categories) ? categoriesData.categories : [])
+        setProductOptions(Array.isArray(productsData?.products) ? productsData.products : [])
+      } catch {
+        if (!active) return
+        setCategoryOptions([])
+        setProductOptions([])
+      }
+    }
+
+    loadLinkTargets()
+    return () => {
+      active = false
+    }
   }, [])
 
   const updateBanner = (index, key, value) => {
@@ -325,33 +974,47 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
     })
   }
 
-  const uploadLargeBannerSlide = async (itemsKey, index, file) => {
+  const uploadLargeBannerSlideField = async (itemsKey, index, field, file) => {
     if (!file) return
     try {
       const token = await getToken()
-      const image = sanitizeImageUrl(await uploadImage(file, token))
+      const url = sanitizeImageUrl(await uploadImage(file, token))
       setForm((prev) => ({
         ...prev,
         [itemsKey]: prev[itemsKey].map((slide, slideIndex) => (
-          slideIndex === index ? { ...slide, image, file: null } : slide
+          slideIndex === index ? { ...slide, [field]: url, file: null } : slide
         )),
       }))
-      toast.success('Banner slide uploaded')
+      toast.success('Image uploaded')
     } catch (error) {
-      toast.error('Failed to upload banner slide')
+      toast.error('Failed to upload image')
       console.error(error)
     }
   }
 
-  const handleImageChange = (index, file) => {
+  const uploadProductBannerField = async (index, field, file) => {
     if (!file) return
-    const previewUrl = URL.createObjectURL(file)
-    setForm((prev) => ({
-      ...prev,
-      productBanners: prev.productBanners.map((banner, bannerIndex) => (
-        bannerIndex === index ? { ...banner, file, previewUrl } : banner
-      ))
-    }))
+    try {
+      const token = await getToken()
+      const url = sanitizeImageUrl(await uploadImage(file, token))
+      setForm((prev) => ({
+        ...prev,
+        productBanners: prev.productBanners.map((banner, bannerIndex) => (
+          bannerIndex === index
+            ? {
+                ...banner,
+                [field]: url,
+                file: field === 'image' ? null : banner.file,
+                previewUrl: field === 'image' ? url : banner.previewUrl,
+              }
+            : banner
+        )),
+      }))
+      toast.success('Image uploaded')
+    } catch (error) {
+      toast.error('Failed to upload image')
+      console.error(error)
+    }
   }
 
   const handleHeroImageChange = (field, file) => {
@@ -387,50 +1050,71 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
 
       const productBanners = []
       for (const banner of currentForm.productBanners) {
-        let image = sanitizeImageUrl(banner.image || banner.previewUrl)
+        const persistedPreview = String(banner.previewUrl || '').startsWith('blob:')
+          ? ''
+          : banner.previewUrl
+        const images = serializeShowcaseImageFields({
+          ...banner,
+          image: sanitizeImageUrl(banner.image || persistedPreview),
+          tabletImage: sanitizeImageUrl(banner.tabletImage),
+          mobileImage: sanitizeImageUrl(banner.mobileImage),
+          imageAr: sanitizeImageUrl(banner.imageAr),
+          tabletImageAr: sanitizeImageUrl(banner.tabletImageAr),
+          mobileImageAr: sanitizeImageUrl(banner.mobileImageAr),
+        })
         if (banner.file) {
-          image = sanitizeImageUrl(await uploadImage(banner.file, token))
+          images.image = sanitizeImageUrl(await uploadImage(banner.file, token))
         }
-        if (!image) continue
+        if (!hasShowcaseBannerImage(images)) continue
 
         productBanners.push({
-          image,
+          ...images,
           title: String(banner.title || '').trim(),
           subtitle: String(banner.subtitle || '').trim(),
           buttonText: String(banner.buttonText || '').trim(),
-          link: String(banner.link || '').trim()
+          link: String(banner.link || '').trim(),
+          linkType: ['category', 'product', 'custom'].includes(banner.linkType)
+            ? banner.linkType
+            : inferShowcaseLinkType(banner.link).type,
+          targetBlank: Boolean(banner.targetBlank),
         })
       }
 
       let topBannerImage = sanitizeImageUrl(currentForm.topBannerImage)
       let bottomBannerImage = sanitizeImageUrl(currentForm.bottomBannerImage)
 
+      const serializeSlideForSave = async (slide, fallbackLink) => {
+        const images = serializeShowcaseImageFields({
+          image: sanitizeImageUrl(slide.image),
+          tabletImage: sanitizeImageUrl(slide.tabletImage),
+          mobileImage: sanitizeImageUrl(slide.mobileImage),
+          imageAr: sanitizeImageUrl(slide.imageAr),
+          tabletImageAr: sanitizeImageUrl(slide.tabletImageAr),
+          mobileImageAr: sanitizeImageUrl(slide.mobileImageAr),
+        })
+        if (slide.file) {
+          images.image = sanitizeImageUrl(await uploadImage(slide.file, token))
+        }
+        return {
+          id: slide.id,
+          ...images,
+          link: String(slide.link || fallbackLink || '/shop').trim(),
+          linkType: ['category', 'product', 'custom'].includes(slide.linkType)
+            ? slide.linkType
+            : inferShowcaseLinkType(slide.link).type,
+          targetBlank: Boolean(slide.targetBlank),
+          alt: String(slide.alt || '').trim(),
+        }
+      }
+
       const topBannerSliderItems = []
       for (const slide of currentForm.topBannerSliderItems) {
-        let image = sanitizeImageUrl(slide.image)
-        if (slide.file) {
-          image = sanitizeImageUrl(await uploadImage(slide.file, token))
-        }
-        topBannerSliderItems.push({
-          id: slide.id,
-          image,
-          link: String(slide.link || currentForm.topBannerLink || '/shop').trim(),
-          alt: String(slide.alt || '').trim(),
-        })
+        topBannerSliderItems.push(await serializeSlideForSave(slide, currentForm.topBannerLink))
       }
 
       const bottomBannerSliderItems = []
       for (const slide of currentForm.bottomBannerSliderItems) {
-        let image = sanitizeImageUrl(slide.image)
-        if (slide.file) {
-          image = sanitizeImageUrl(await uploadImage(slide.file, token))
-        }
-        bottomBannerSliderItems.push({
-          id: slide.id,
-          image,
-          link: String(slide.link || currentForm.bottomBannerLink || '/shop').trim(),
-          alt: String(slide.alt || '').trim(),
-        })
+        bottomBannerSliderItems.push(await serializeSlideForSave(slide, currentForm.bottomBannerLink))
       }
 
       topBannerImage = topBannerSliderItems.find((slide) => slide.image)?.image || topBannerImage
@@ -515,10 +1199,15 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
           </>
         )}
 
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-900">Layout Upload Guide</h2>
-          <p className="mt-1 text-xs text-slate-500">
-            Upload each image in the matching field below. This preview mirrors the storefront layout.
+        <AccordionRow
+          title="Layout Upload Guide"
+          summary={`Click to ${openLayoutGuide ? 'hide' : 'show'} the storefront layout preview`}
+          open={openLayoutGuide}
+          onToggle={() => setOpenLayoutGuide((current) => !current)}
+          className="mt-4 shadow-sm"
+        >
+          <p className="mb-3 text-xs text-slate-500">
+            English and Arabic can use different photos. Each language has separate Desktop, Tablet, and Mobile uploads with width, height, and ratio shown next to the image.
           </p>
 
           <div className="mt-4 grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
@@ -539,7 +1228,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
                       <div className="flex h-full items-center justify-center text-xs text-slate-300">Top Large Banner image</div>
                     )}
                     <span className="absolute left-2 top-2 rounded bg-black/70 px-2 py-1 text-[11px] font-semibold text-white">
-                      Top Large Banner field
+                      Top Large Banner · 3054 × 1080 px · {formatImageRatio(3054, 1080)}
                     </span>
                   </div>
                 </div>
@@ -554,14 +1243,14 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
                       <div className="flex h-full items-center justify-center text-xs text-slate-300">Bottom Large Banner image</div>
                     )}
                     <span className="absolute left-2 top-2 rounded bg-black/70 px-2 py-1 text-[11px] font-semibold text-white">
-                      Bottom Large Banner field
+                      Bottom Large Banner · 3054 × 370 px · {formatImageRatio(3054, 370)}
                     </span>
                   </div>
                 </div>
               </div>
 
               <div className={`grid gap-2 ${(() => {
-                const count = form.productBanners.filter((banner) => banner.previewUrl || banner.image).length || form.productBanners.length
+                const count = form.productBanners.filter((banner) => banner.previewUrl || hasShowcaseBannerImage(banner)).length || form.productBanners.length
                 if (count <= 1) return 'grid-cols-1'
                 if (count === 2) return 'grid-cols-2'
                 if (count === 3) return 'grid-cols-3'
@@ -571,9 +1260,9 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
                   <div key={`layout-slot-${index}`} className="rounded-xl border border-slate-200 bg-slate-50 p-2">
                     <div className="relative overflow-hidden rounded-lg border border-slate-200 bg-slate-900">
                       <div className="relative aspect-[1225/639] w-full">
-                        {banner.previewUrl ? (
+                        {banner.previewUrl || banner.image || banner.imageAr ? (
                           <Image
-                            src={banner.previewUrl}
+                            src={banner.previewUrl || banner.image || banner.imageAr}
                             alt={`${PRODUCT_SLOT_LABELS[index] || `Card ${index + 1}`} preview`}
                             fill
                             unoptimized
@@ -585,7 +1274,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
                           </div>
                         )}
                         <span className="absolute left-1.5 top-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                          {PRODUCT_SLOT_LABELS[index] || `Card ${index + 1}`}
+                          {PRODUCT_SLOT_LABELS[index] || `Card ${index + 1}`} · 1225 × 639 · {formatImageRatio(1225, 639)}
                         </span>
                       </div>
                     </div>
@@ -594,7 +1283,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
               </div>
             </div>
           </div>
-        </div>
+        </AccordionRow>
 
         <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
@@ -646,86 +1335,27 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
               />
             </label>
 
-            <div className="space-y-4">
-              {form.topBannerSliderItems.map((slide, index) => (
-                <div key={slide.id || `top-slide-${index}`} className="rounded-xl border border-slate-200 p-3">
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-sm font-semibold text-slate-900">Slide {index + 1}</h3>
-                      {index === 0 ? (
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800">
-                          1st in slider
-                        </span>
-                      ) : (
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
-                          {index + 1}{index === 1 ? 'nd' : index === 2 ? 'rd' : 'th'} in slider
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => moveLargeBannerSlide('topBannerSliderItems', index, -1)}
-                        disabled={index === 0}
-                        title="Move up (earlier in slider)"
-                        className="inline-flex items-center rounded-lg border border-slate-300 p-1.5 text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        <ChevronUp size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => moveLargeBannerSlide('topBannerSliderItems', index, 1)}
-                        disabled={index === form.topBannerSliderItems.length - 1}
-                        title="Move down (later in slider)"
-                        className="inline-flex items-center rounded-lg border border-slate-300 p-1.5 text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        <ChevronDown size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeLargeBannerSlide('topBannerSliderItems', index)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                      >
-                        <Trash2 size={14} />
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                  <div className="relative mb-3 overflow-hidden rounded-lg border border-dashed border-slate-300 bg-slate-50">
-                    <div className="relative aspect-[3054/1080] w-full">
-                      {slide.image ? (
-                        <Image src={slide.image} alt={slide.alt || `Top slide ${index + 1}`} fill unoptimized className="object-cover" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-xs text-slate-400">No image selected</div>
-                      )}
-                    </div>
-                  </div>
-                  <label className="mb-3 inline-flex w-fit cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                    <Upload size={16} />
-                    Upload slide image
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(event) => uploadLargeBannerSlide('topBannerSliderItems', index, event.target.files?.[0] || null)}
-                    />
-                  </label>
-                  <div className="grid gap-3">
-                    <input
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                      placeholder="Image URL"
-                      value={slide.image}
-                      onChange={(event) => updateLargeBannerSlide('topBannerSliderItems', index, 'image', event.target.value)}
-                    />
-                    <input
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                      placeholder="Link (optional)"
-                      value={slide.link}
-                      onChange={(event) => updateLargeBannerSlide('topBannerSliderItems', index, 'link', event.target.value)}
-                    />
-                  </div>
-                </div>
-              ))}
+            <div className="space-y-3">
+              {form.topBannerSliderItems.map((slide, index) => {
+                const slideId = slide.id || `top-slide-${index}`
+                return (
+                  <LargeBannerSlideCard
+                    key={slideId}
+                    slide={slide}
+                    index={index}
+                    total={form.topBannerSliderItems.length}
+                    recommendedSizes={TOP_BANNER_SIZES}
+                    open={openTopSlideId === slideId}
+                    onToggle={() => setOpenTopSlideId((current) => (current === slideId ? null : slideId))}
+                    onMove={(direction) => moveLargeBannerSlide('topBannerSliderItems', index, direction)}
+                    onRemove={() => removeLargeBannerSlide('topBannerSliderItems', index)}
+                    onUpload={(field, file) => uploadLargeBannerSlideField('topBannerSliderItems', index, field, file)}
+                    onChange={(field, value) => updateLargeBannerSlide('topBannerSliderItems', index, field, value)}
+                    categoryOptions={categoryOptions}
+                    productOptions={productOptions}
+                  />
+                )
+              })}
             </div>
 
             <button
@@ -737,9 +1367,18 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
               <Plus size={16} />
               Add top banner slide
             </button>
-            <p className="mt-2 text-xs text-slate-500">Recommended size: 3054 x 1080 px</p>
+            <p className="mt-2 text-xs text-slate-500">
+              Desktop: width 3054 px · height 1080 px · ratio {formatImageRatio(3054, 1080)}. Tablet and mobile sizes are shown on each upload.
+            </p>
 
-            <div className="mt-4 grid gap-3">
+            <AccordionRow
+              title="Top banner text"
+              summary={`Title, subtitle, and button · click to ${openTopText ? 'hide' : 'edit'}`}
+              open={openTopText}
+              onToggle={() => setOpenTopText((current) => !current)}
+              className="mt-4"
+            >
+            <div className="grid gap-3">
               <label className="block">
                 <span className="mb-1 block text-sm font-medium text-slate-700">Title</span>
                 <input
@@ -812,6 +1451,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
                 </label>
               </div>
             </div>
+            </AccordionRow>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -842,86 +1482,27 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
               />
             </label>
 
-            <div className="space-y-4">
-              {form.bottomBannerSliderItems.map((slide, index) => (
-                <div key={slide.id || `bottom-slide-${index}`} className="rounded-xl border border-slate-200 p-3">
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-sm font-semibold text-slate-900">Slide {index + 1}</h3>
-                      {index === 0 ? (
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800">
-                          1st in slider
-                        </span>
-                      ) : (
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
-                          {index + 1}{index === 1 ? 'nd' : index === 2 ? 'rd' : 'th'} in slider
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => moveLargeBannerSlide('bottomBannerSliderItems', index, -1)}
-                        disabled={index === 0}
-                        title="Move up (earlier in slider)"
-                        className="inline-flex items-center rounded-lg border border-slate-300 p-1.5 text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        <ChevronUp size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => moveLargeBannerSlide('bottomBannerSliderItems', index, 1)}
-                        disabled={index === form.bottomBannerSliderItems.length - 1}
-                        title="Move down (later in slider)"
-                        className="inline-flex items-center rounded-lg border border-slate-300 p-1.5 text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        <ChevronDown size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeLargeBannerSlide('bottomBannerSliderItems', index)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                      >
-                        <Trash2 size={14} />
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                  <div className="relative mb-3 overflow-hidden rounded-lg border border-dashed border-slate-300 bg-slate-50">
-                    <div className="relative aspect-[3054/370] w-full">
-                      {slide.image ? (
-                        <Image src={slide.image} alt={slide.alt || `Bottom slide ${index + 1}`} fill unoptimized className="object-cover" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-xs text-slate-400">No image selected</div>
-                      )}
-                    </div>
-                  </div>
-                  <label className="mb-3 inline-flex w-fit cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                    <Upload size={16} />
-                    Upload slide image
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(event) => uploadLargeBannerSlide('bottomBannerSliderItems', index, event.target.files?.[0] || null)}
-                    />
-                  </label>
-                  <div className="grid gap-3">
-                    <input
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                      placeholder="Image URL"
-                      value={slide.image}
-                      onChange={(event) => updateLargeBannerSlide('bottomBannerSliderItems', index, 'image', event.target.value)}
-                    />
-                    <input
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                      placeholder="Link (optional)"
-                      value={slide.link}
-                      onChange={(event) => updateLargeBannerSlide('bottomBannerSliderItems', index, 'link', event.target.value)}
-                    />
-                  </div>
-                </div>
-              ))}
+            <div className="space-y-3">
+              {form.bottomBannerSliderItems.map((slide, index) => {
+                const slideId = slide.id || `bottom-slide-${index}`
+                return (
+                  <LargeBannerSlideCard
+                    key={slideId}
+                    slide={slide}
+                    index={index}
+                    total={form.bottomBannerSliderItems.length}
+                    recommendedSizes={BOTTOM_BANNER_SIZES}
+                    open={openBottomSlideId === slideId}
+                    onToggle={() => setOpenBottomSlideId((current) => (current === slideId ? null : slideId))}
+                    onMove={(direction) => moveLargeBannerSlide('bottomBannerSliderItems', index, direction)}
+                    onRemove={() => removeLargeBannerSlide('bottomBannerSliderItems', index)}
+                    onUpload={(field, file) => uploadLargeBannerSlideField('bottomBannerSliderItems', index, field, file)}
+                    onChange={(field, value) => updateLargeBannerSlide('bottomBannerSliderItems', index, field, value)}
+                    categoryOptions={categoryOptions}
+                    productOptions={productOptions}
+                  />
+                )
+              })}
             </div>
 
             <button
@@ -933,9 +1514,18 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
               <Plus size={16} />
               Add bottom banner slide
             </button>
-            <p className="mt-2 text-xs text-slate-500">Recommended size: 3054 x 370 px</p>
+            <p className="mt-2 text-xs text-slate-500">
+              Desktop: width 3054 px · height 370 px · ratio {formatImageRatio(3054, 370)}. Tablet and mobile sizes are shown on each upload.
+            </p>
 
-            <div className="mt-4 grid gap-3">
+            <AccordionRow
+              title="Bottom banner text"
+              summary={`Title, subtitle, and button · click to ${openBottomText ? 'hide' : 'edit'}`}
+              open={openBottomText}
+              onToggle={() => setOpenBottomText((current) => !current)}
+              className="mt-4"
+            >
+            <div className="grid gap-3">
               <label className="block">
                 <span className="mb-1 block text-sm font-medium text-slate-700">Title</span>
                 <input
@@ -1008,6 +1598,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
                 </label>
               </div>
             </div>
+            </AccordionRow>
           </div>
         </div>
       </div>
@@ -1031,12 +1622,14 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
           </button>
         </div>
         {form.productBanners.map((banner, index) => (
-          <div key={`product-banner-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-semibold text-slate-900">Banner {index + 1}</h2>
-                <span className="text-xs font-medium text-slate-500">{PRODUCT_SLOT_LABELS[index] || `Card ${index + 1}`}</span>
-              </div>
+          <AccordionRow
+            key={`product-banner-${index}`}
+            title={`Banner ${index + 1}`}
+            summary={`${PRODUCT_SLOT_LABELS[index] || `Card ${index + 1}`} · 1225 × 639 px · ratio ${formatImageRatio(1225, 639)} · click to ${openProductIndex === index ? 'hide' : 'edit'}`}
+            open={openProductIndex === index}
+            onToggle={() => setOpenProductIndex((current) => (current === index ? null : index))}
+            className="shadow-sm"
+            actions={(
               <div className="flex items-center gap-1">
                 <button
                   type="button"
@@ -1065,44 +1658,20 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
                   Remove
                 </button>
               </div>
-            </div>
-            <p className="mb-3 text-xs font-medium text-slate-500">Cards without an image are hidden on the storefront</p>
+            )}
+          >
+            <p className="mb-3 text-xs font-medium text-slate-500">
+              Cards without any image are hidden on the storefront. Desktop width 1225 px · height 639 px · ratio {formatImageRatio(1225, 639)}.
+            </p>
 
-            <label className="mb-4 block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Banner image</span>
-              <div className="flex flex-col gap-3">
-                <div className="relative overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50">
-                  <div className="relative aspect-[1225/639] w-full">
-                    {banner.previewUrl ? (
-                      <Image
-                        src={banner.previewUrl}
-                        alt={`Banner ${index + 1}`}
-                        fill
-                        unoptimized
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-sm text-slate-400">
-                        No image selected
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <label className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                  <Upload size={16} />
-                  Upload image
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(event) => handleImageChange(index, event.target.files?.[0] || null)}
-                  />
-                </label>
-                <p className="text-xs text-slate-500">
-                  Recommended size: 1225 x 639 px
-                </p>
-              </div>
-            </label>
+            <div className="mb-4">
+              <ShowcaseLocaleImageGroups
+                item={banner}
+                recommendedSizes={PRODUCT_BANNER_SIZES}
+                onUpload={(field, file) => uploadProductBannerField(index, field, file)}
+                onChange={(field, value) => updateBanner(index, field, value)}
+              />
+            </div>
 
             <div className="grid gap-3">
               <label className="block">
@@ -1132,17 +1701,18 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
                 />
               </label>
 
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Link</span>
-                <input
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2"
-                  value={banner.link}
-                  onChange={(event) => updateBanner(index, 'link', event.target.value)}
-                  placeholder="/shop"
-                />
-              </label>
+              <ShowcaseLinkAccordion
+                link={banner.link}
+                linkType={banner.linkType}
+                targetBlank={banner.targetBlank}
+                categories={categoryOptions}
+                products={productOptions}
+                onLinkChange={(value) => updateBanner(index, 'link', value)}
+                onLinkTypeChange={(value) => updateBanner(index, 'linkType', value)}
+                onTargetBlankChange={(value) => updateBanner(index, 'targetBlank', value)}
+              />
             </div>
-          </div>
+          </AccordionRow>
         ))}
       </div>
 

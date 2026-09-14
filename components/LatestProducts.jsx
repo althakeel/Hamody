@@ -132,7 +132,8 @@ const BestSelling = ({
           setSectionDescriptionAr(featuredData.sectionDescriptionAr)
         }
 
-        const resolvedProducts = Array.isArray(featuredData.products) ? featuredData.products : []
+        const resolvedProducts = (Array.isArray(featuredData.products) ? featuredData.products : [])
+          .filter((product) => product?.published !== false)
         if (resolvedProducts.length > 0) {
           featuredProductsLengthRef.current = resolvedProducts.length
           setFeaturedProducts(resolvedProducts)

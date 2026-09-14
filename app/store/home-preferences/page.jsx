@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { motion } from 'framer-motion'
 import { useAuth } from '@/lib/useAuth'
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
 import Image from 'next/image'
+import Link from 'next/link'
 import PageSkeleton from '@/components/PageSkeleton'
 import { getProductThumbnailUrl, normalizeProductImages } from '@/lib/productMedia'
 import { PLACEHOLDER_IMAGE } from '@/lib/mediaUrls'
@@ -23,6 +25,10 @@ import {
     Columns3,
     Eye,
     Languages,
+    GripVertical,
+    ChevronsUp,
+    X,
+    ArrowLeft,
 } from 'lucide-react'
 
 const FEATURED_SAVE_TOAST_ID = 'featured-section-saved'
@@ -38,7 +44,45 @@ const PRODUCTS_PER_PAGE = 24
 const PREVIEW_DEBOUNCE_MS = 450
 
 function normalizeProductId(productId) {
-    return String(productId?._id || productId || '')
+    if (productId == null) return ''
+    if (typeof productId === 'string' || typeof productId === 'number') {
+        return String(productId).trim()
+    }
+    if (typeof productId === 'object') {
+        if (productId.$oid) return String(productId.$oid).trim()
+        if (productId._id) return normalizeProductId(productId._id)
+        const asString = productId.toString?.()
+        if (asString && asString !== '[object Object]') return String(asString).trim()
+    }
+    return ''
+}
+
+async function fetchStoreProductsByIds(ids, getToken) {
+    const normalized = [...new Set((ids || []).map(normalizeProductId).filter(Boolean))]
+    if (!normalized.length) return []
+
+    const token = await getToken()
+    const loaded = []
+    for (let index = 0; index < normalized.length; index += 80) {
+        const chunk = normalized.slice(index, index + 80)
+        const { data } = await axios.post(
+            '/api/store/product/by-ids',
+            { ids: chunk },
+            { headers: { Authorization: `Bearer ${token}` } }
+        )
+        loaded.push(...(Array.isArray(data?.products) ? data.products : []))
+    }
+    return loaded
+}
+
+function moveIdInList(ids, fromId, toId) {
+    const next = [...ids]
+    const fromIndex = next.indexOf(fromId)
+    const toIndex = next.indexOf(toId)
+    if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return ids
+    const [moved] = next.splice(fromIndex, 1)
+    next.splice(toIndex, 0, moved)
+    return next
 }
 
 function buildPreviewFromSelection(selectedIds, productPool = []) {
@@ -112,6 +156,16 @@ export default function HomePreferences() {
     const productsAbortRef = useRef(null)
     const previewCacheRef = useRef(new Map())
     const skipNextProductsFetchRef = useRef(false)
+    const orderReadyRef = useRef(false)
+    const persistOrderTimerRef = useRef(null)
+    const [pickerView, setPickerView] = useState('catalog')
+    const [dragProductId, setDragProductId] = useState('')
+    const [dragPoint, setDragPoint] = useState({ x: 0, y: 0 })
+    const dragOffsetRef = useRef({ x: 0, y: 0 })
+    const selectedProductsRef = useRef(selectedProducts)
+    selectedProductsRef.current = selectedProducts
+    const [arrangedProducts, setArrangedProducts] = useState([])
+    const [arrangeLoading, setArrangeLoading] = useState(false)
     const [featuredSectionTitle, setFeaturedSectionTitle] = useState('Craziest sale of the year!')
     const [featuredSectionSubtitle, setFeaturedSectionSubtitle] = useState('Select products to display in the featured section on your home page')
     const [featuredSectionTitleAr, setFeaturedSectionTitleAr] = useState('')
@@ -132,6 +186,45 @@ export default function HomePreferences() {
             previewCacheRef.current.set(normalizeProductId(product), product)
         }
     }, [])
+
+    const fetchArrangedProducts = useCallback(async (productIds = [], productPool = []) => {
+        const ids = productIds.map(normalizeProductId).filter(Boolean)
+        if (!ids.length) {
+            setArrangedProducts([])
+            return
+        }
+
+        cachePreviewProducts(productPool)
+        const fromCache = ids.map((id) => previewCacheRef.current.get(id)).filter(Boolean)
+        if (fromCache.length) {
+            setArrangedProducts(fromCache)
+        }
+
+        const missingIds = ids.filter((id) => !previewCacheRef.current.has(id))
+        if (!missingIds.length) {
+            setArrangedProducts(ids.map((id) => previewCacheRef.current.get(id)).filter(Boolean))
+            return
+        }
+
+        setArrangeLoading(fromCache.length === 0)
+        try {
+            cachePreviewProducts(await fetchStoreProductsByIds(missingIds, getToken))
+            const resolved = ids.map((id) => previewCacheRef.current.get(id)).filter(Boolean)
+            setArrangedProducts(resolved)
+            if (resolved.length === 0 && ids.length > 0) {
+                toast.error(
+                    'These saved products are no longer in the catalog. Select them again from Catalog.',
+                    { id: 'featured-missing-products', duration: 8000 }
+                )
+                setPickerView('catalog')
+            }
+        } catch (error) {
+            console.error(error)
+            toast.error('Failed to load selected products for arranging')
+        } finally {
+            setArrangeLoading(false)
+        }
+    }, [cachePreviewProducts, getToken])
 
     const fetchPreviewProducts = useCallback(async (productIds = [], productPool = []) => {
         const ids = productIds.slice(0, 5).map(normalizeProductId).filter(Boolean)
@@ -158,12 +251,7 @@ export default function HomePreferences() {
         }
 
         try {
-            const token = await getToken()
-            const { data } = await axios.get('/api/store/product', {
-                params: { ids: missingIds.join(',') },
-                headers: { Authorization: `Bearer ${token}` },
-            })
-            cachePreviewProducts(data.products || [])
+            cachePreviewProducts(await fetchStoreProductsByIds(missingIds, getToken))
             setPreviewProducts(ids.map((id) => previewCacheRef.current.get(id)).filter(Boolean))
         } catch {
             setPreviewProducts(buildPreviewFromSelection(ids, productPool))
@@ -233,9 +321,18 @@ export default function HomePreferences() {
 
             const featuredData = data.featured || {}
             const initialSelected = (featuredData.productIds || []).map(normalizeProductId)
+            const missingSavedCount = Number(data.missingProductCount || 0)
 
             setCategories(data.categories || [])
             setSelectedProducts(initialSelected)
+            orderReadyRef.current = initialSelected.length > 0
+            if (missingSavedCount > 0) {
+                toast.error(
+                    `${missingSavedCount} saved product(s) are no longer in the catalog. Select them again from Catalog.`,
+                    { id: 'featured-missing-products', duration: 8000 }
+                )
+                setPickerView('catalog')
+            }
             setSourceMode(featuredData.sourceMode || 'manual')
             setSelectedCategoryIds(featuredData.categoryIds || [])
             setSelectedTagsText(Array.isArray(featuredData.tags) ? featuredData.tags.join(', ') : '')
@@ -263,7 +360,25 @@ export default function HomePreferences() {
             setProducts(initialProducts)
             cachePreviewProducts(initialProducts)
             cachePreviewProducts(data.previewProducts || [])
-            setPreviewProducts(data.previewProducts || buildPreviewFromSelection(initialSelected, initialProducts))
+            const missingSelected = initialSelected.filter((id) => !previewCacheRef.current.has(id))
+            if (missingSelected.length) {
+                try {
+                    cachePreviewProducts(await fetchStoreProductsByIds(missingSelected, getToken))
+                } catch (error) {
+                    console.error(error)
+                }
+            }
+            setArrangedProducts(
+                initialSelected
+                    .map((id) => previewCacheRef.current.get(id))
+                    .filter(Boolean)
+            )
+            setPreviewProducts(
+                initialSelected
+                    .slice(0, 5)
+                    .map((id) => previewCacheRef.current.get(id))
+                    .filter(Boolean)
+            )
             setPagination(data.pagination || {
                 page: 1,
                 limit: PRODUCTS_PER_PAGE,
@@ -281,6 +396,9 @@ export default function HomePreferences() {
 
     useEffect(() => {
         fetchInitialData()
+        return () => {
+            if (persistOrderTimerRef.current) clearTimeout(persistOrderTimerRef.current)
+        }
     }, [])
 
     useEffect(() => {
@@ -304,6 +422,11 @@ export default function HomePreferences() {
     }, [loading, sourceMode, pagination.page, debouncedSearch, sortBy, fetchProductsPage])
 
     useEffect(() => {
+        if (sourceMode !== 'manual' || pickerView !== 'arrange') return
+        fetchArrangedProducts(selectedProducts, products)
+    }, [sourceMode, pickerView, selectedProducts, products, fetchArrangedProducts])
+
+    useEffect(() => {
         if (sourceMode !== 'manual') return
 
         const localPreview = buildPreviewFromSelection(selectedProducts, [
@@ -323,6 +446,113 @@ export default function HomePreferences() {
             if (previewDebounceRef.current) clearTimeout(previewDebounceRef.current)
         }
     }, [selectedProducts, sourceMode, products, fetchPreviewProducts])
+
+    const persistSelectedOrder = useCallback(async (nextIds) => {
+        if (!orderReadyRef.current || sourceMode !== 'manual') return
+
+        try {
+            const token = await getToken()
+            const normalizedTags = selectedTagsText
+                .split(',')
+                .map((tag) => tag.trim())
+                .filter(Boolean)
+            await axios.post('/api/store/featured-products',
+                {
+                    productIds: nextIds,
+                    sourceMode,
+                    categoryIds: selectedCategoryIds,
+                    tags: normalizedTags,
+                    sectionTitle: featuredSectionTitle,
+                    sectionDescription: featuredSectionSubtitle,
+                    sectionTitleAr: featuredSectionTitleAr,
+                    sectionDescriptionAr: featuredSectionSubtitleAr,
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            )
+        } catch (error) {
+            console.error(error)
+            toast.error('Failed to save product order')
+        }
+    }, [
+        featuredSectionSubtitle,
+        featuredSectionSubtitleAr,
+        featuredSectionTitle,
+        featuredSectionTitleAr,
+        getToken,
+        selectedCategoryIds,
+        selectedTagsText,
+        sourceMode,
+    ])
+
+    const schedulePersistSelectedOrder = useCallback((nextIds) => {
+        if (persistOrderTimerRef.current) clearTimeout(persistOrderTimerRef.current)
+        persistOrderTimerRef.current = setTimeout(() => {
+            persistSelectedOrder(nextIds)
+        }, 400)
+    }, [persistSelectedOrder])
+
+    const moveSelectedProduct = (fromId, toId, persist = true) => {
+        const from = normalizeProductId(fromId)
+        const to = normalizeProductId(toId)
+        if (!from || !to || from === to) return
+        setSelectedProducts((prev) => {
+            const next = moveIdInList(prev, from, to)
+            if (next === prev) return prev
+            if (persist) schedulePersistSelectedOrder(next)
+            return next
+        })
+    }
+
+    const startArrangeDrag = (event, id) => {
+        if (event.button !== 0) return
+        if (event.target.closest('button')) return
+        const card = event.currentTarget
+        const rect = card.getBoundingClientRect()
+        dragOffsetRef.current = {
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top,
+        }
+        setDragProductId(id)
+        setDragPoint({ x: event.clientX, y: event.clientY })
+        card.setPointerCapture?.(event.pointerId)
+    }
+
+    const updateArrangeDrag = (event) => {
+        if (!dragProductId) return
+        event.preventDefault()
+        setDragPoint({ x: event.clientX, y: event.clientY })
+        const under = document.elementFromPoint(event.clientX, event.clientY)
+        const overId = under?.closest?.('[data-arrange-id]')?.getAttribute('data-arrange-id')
+        if (overId) moveSelectedProduct(dragProductId, overId, false)
+    }
+
+    const endArrangeDrag = () => {
+        if (!dragProductId) return
+        schedulePersistSelectedOrder(selectedProductsRef.current)
+        setDragProductId('')
+    }
+
+    const moveSelectedToTop = (productId) => {
+        const id = normalizeProductId(productId)
+        if (!id) return
+        setSelectedProducts((prev) => {
+            if (!prev.includes(id) || prev[0] === id) return prev
+            const next = [id, ...prev.filter((existingId) => existingId !== id)]
+            schedulePersistSelectedOrder(next)
+            return next
+        })
+    }
+
+    const removeSelectedProduct = (productId) => {
+        const id = normalizeProductId(productId)
+        if (!id) return
+        setSelectedProducts((prev) => {
+            if (!prev.includes(id)) return prev
+            const next = prev.filter((existingId) => existingId !== id)
+            schedulePersistSelectedOrder(next)
+            return next
+        })
+    }
 
     const toggleProduct = (productId) => {
         const id = normalizeProductId(productId)
@@ -490,7 +720,11 @@ export default function HomePreferences() {
                 window.localStorage.setItem('featuredSectionLive', JSON.stringify(payload))
                 window.dispatchEvent(new CustomEvent('featuredSectionLiveUpdate', { detail: payload }))
             }
-            toast.success('Featured section saved', { id: FEATURED_SAVE_TOAST_ID })
+            orderReadyRef.current = true
+            if (sourceMode === 'manual' && selectedProducts.length > 0) {
+                setPickerView('arrange')
+            }
+            toast.success('Featured section saved. Drag selected items to set homepage order.', { id: FEATURED_SAVE_TOAST_ID })
         } catch (error) {
             toast.error('Failed to save featured products', { id: FEATURED_SAVE_TOAST_ID })
             console.error(error)
@@ -526,6 +760,15 @@ export default function HomePreferences() {
         [selectedProducts]
     )
 
+    const arrangedById = useMemo(() => {
+        const map = new Map()
+        for (const product of arrangedProducts) {
+            const id = normalizeProductId(product)
+            if (id) map.set(id, product)
+        }
+        return map
+    }, [arrangedProducts])
+
     const sourceSummary = sourceMode === 'manual'
         ? `${selectedProducts.length} selected`
         : sourceMode === 'category'
@@ -548,6 +791,13 @@ export default function HomePreferences() {
             <div className="border-b border-slate-200 bg-white">
                 <div className="flex w-full flex-col gap-4 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8 lg:py-6">
                     <div>
+                        <Link
+                            href="/store/customize"
+                            className="mb-3 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-slate-900"
+                        >
+                            <ArrowLeft size={16} />
+                            Customize
+                        </Link>
                         <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">
                             <Sparkles size={14} />
                             Storefront
@@ -867,31 +1117,66 @@ export default function HomePreferences() {
                                     <div className="border-b border-slate-100 px-4 py-4 sm:px-6">
                                         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                                             <div>
-                                                <h2 className="text-base font-semibold text-slate-900">Select products</h2>
+                                                <h2 className="text-base font-semibold text-slate-900">
+                                                    {pickerView === 'arrange' ? 'Arrange selected' : 'Select products'}
+                                                </h2>
                                                 <p className="text-xs text-slate-500">
                                                     {selectedProducts.length} selected · {pagination.total} total products
+                                                    {pickerView === 'arrange' ? ' · drag to set homepage order' : ''}
                                                 </p>
                                             </div>
                                             <div className="flex flex-wrap gap-2">
+                                                <div className="flex overflow-hidden rounded-lg border border-slate-200">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPickerView('catalog')}
+                                                        className={`px-3 py-1.5 text-xs font-medium transition ${
+                                                            pickerView === 'catalog'
+                                                                ? 'bg-slate-900 text-white'
+                                                                : 'bg-white text-slate-700 hover:bg-slate-50'
+                                                        }`}
+                                                    >
+                                                        Catalog
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPickerView('arrange')}
+                                                        disabled={!selectedProducts.length}
+                                                        className={`px-3 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                                                            pickerView === 'arrange'
+                                                                ? 'bg-slate-900 text-white'
+                                                                : 'bg-white text-slate-700 hover:bg-slate-50'
+                                                        }`}
+                                                    >
+                                                        Arrange selected
+                                                    </button>
+                                                </div>
+                                                {pickerView === 'catalog' ? (
+                                                    <>
+                                                        <button
+                                                            type="button"
+                                                            onClick={selectCurrentPage}
+                                                            disabled={productsLoading || !products.length}
+                                                            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                                                        >
+                                                            Select page
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={selectAllProducts}
+                                                            disabled={selectingAll || productsLoading}
+                                                            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                                                        >
+                                                            {selectingAll ? 'Selecting...' : `Select all${debouncedSearch ? ' matching' : ''}`}
+                                                        </button>
+                                                    </>
+                                                ) : null}
                                                 <button
                                                     type="button"
-                                                    onClick={selectCurrentPage}
-                                                    disabled={productsLoading || !products.length}
-                                                    className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-                                                >
-                                                    Select page
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={selectAllProducts}
-                                                    disabled={selectingAll || productsLoading}
-                                                    className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-                                                >
-                                                    {selectingAll ? 'Selecting...' : `Select all${debouncedSearch ? ' matching' : ''}`}
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setSelectedProducts([])}
+                                                    onClick={() => {
+                                                        setSelectedProducts([])
+                                                        setPickerView('catalog')
+                                                    }}
                                                     className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
                                                 >
                                                     Clear
@@ -899,34 +1184,156 @@ export default function HomePreferences() {
                                             </div>
                                         </div>
 
-                                        <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_180px] lg:grid-cols-[1fr_200px]">
-                                            <div className="relative">
-                                                <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                                <input
-                                                    type="text"
-                                                    placeholder="Search name or SKU..."
-                                                    value={searchQuery}
-                                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                                    className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-3 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
-                                                />
+                                        {pickerView === 'catalog' ? (
+                                            <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_180px] lg:grid-cols-[1fr_200px]">
+                                                <div className="relative">
+                                                    <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Search name or SKU..."
+                                                        value={searchQuery}
+                                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                                        className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-3 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
+                                                    />
+                                                </div>
+                                                <select
+                                                    value={sortBy}
+                                                    onChange={(e) => {
+                                                        setSortBy(e.target.value)
+                                                        setPagination((current) => ({ ...current, page: 1 }))
+                                                    }}
+                                                    className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
+                                                >
+                                                    <option value="name">Name A–Z</option>
+                                                    <option value="price">Price low–high</option>
+                                                    <option value="newest">Newest first</option>
+                                                </select>
                                             </div>
-                                            <select
-                                                value={sortBy}
-                                                onChange={(e) => {
-                                                    setSortBy(e.target.value)
-                                                    setPagination((current) => ({ ...current, page: 1 }))
-                                                }}
-                                                className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
-                                            >
-                                                <option value="name">Name A–Z</option>
-                                                <option value="price">Price low–high</option>
-                                                <option value="newest">Newest first</option>
-                                            </select>
-                                        </div>
+                                        ) : (
+                                            <p className="mt-3 text-xs text-slate-500">
+                                                First item appears first on the home page. Drag to reorder, or use X to remove a product.
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="relative p-4 sm:p-6">
-                                        {productsLoading ? (
+                                        {pickerView === 'arrange' ? (
+                                            arrangeLoading && arrangedProducts.length === 0 ? (
+                                                <div className="flex items-center justify-center py-20">
+                                                    <Loader size={28} className="animate-spin text-violet-500" />
+                                                </div>
+                                            ) : selectedProducts.length === 0 || arrangedProducts.length === 0 ? (
+                                                <div className="flex flex-col items-center justify-center py-16 text-center">
+                                                    <Package size={40} className="text-slate-300" />
+                                                    <p className="mt-3 text-sm font-medium text-slate-600">No selected products to arrange</p>
+                                                    <p className="text-xs text-slate-400">Switch to Catalog and pick products that are in the catalog now</p>
+                                                </div>
+                                            ) : (
+                                                <div className={`grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 ${dragProductId ? 'select-none' : ''}`}>
+                                                    {selectedProducts.map((id, index) => {
+                                                        const product = arrangedById.get(id) || previewCacheRef.current.get(id)
+                                                        if (!product) return null
+                                                        const isDragging = dragProductId === id
+                                                        return (
+                                                            <motion.div
+                                                                key={id}
+                                                                layout
+                                                                data-arrange-id={id}
+                                                                transition={{ type: 'spring', stiffness: 420, damping: 38, mass: 0.6 }}
+                                                                onPointerDown={(event) => startArrangeDrag(event, id)}
+                                                                onPointerMove={updateArrangeDrag}
+                                                                onPointerUp={endArrangeDrag}
+                                                                onPointerCancel={endArrangeDrag}
+                                                                className={`group relative cursor-grab touch-none rounded-2xl border bg-white p-3 text-left active:cursor-grabbing ${
+                                                                    isDragging
+                                                                        ? 'opacity-30 shadow-none'
+                                                                        : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                                                                }`}
+                                                            >
+                                                                <span className="absolute left-2 top-2 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-slate-900 px-1 text-[10px] font-semibold text-white">
+                                                                    {index + 1}
+                                                                </span>
+                                                                <div
+                                                                    className="absolute right-2 top-2 flex items-center gap-1"
+                                                                    onPointerDown={(event) => event.stopPropagation()}
+                                                                >
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => moveSelectedToTop(id)}
+                                                                        className="rounded-full border border-slate-200 bg-white p-1 text-slate-400 hover:border-violet-300 hover:text-violet-600"
+                                                                        title="Move to top"
+                                                                        aria-label={`Move ${product.name} to top`}
+                                                                    >
+                                                                        <ChevronsUp size={12} />
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => removeSelectedProduct(id)}
+                                                                        className="rounded-full border border-slate-200 bg-white p-1 text-slate-400 hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                                                                        title="Remove from section"
+                                                                        aria-label={`Remove ${product.name}`}
+                                                                    >
+                                                                        <X size={12} />
+                                                                    </button>
+                                                                    <span className="rounded-full border border-slate-200 bg-white p-1 text-slate-400" title="Drag to reorder">
+                                                                        <GripVertical size={12} />
+                                                                    </span>
+                                                                </div>
+
+                                                                <div className="mb-3 mt-4 flex justify-center">
+                                                                    {product ? (
+                                                                        <ProductThumb product={product} size={88} />
+                                                                    ) : (
+                                                                        <div className="flex h-[88px] w-[88px] items-center justify-center rounded-xl bg-slate-100 text-slate-300">
+                                                                            <Package size={24} />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+
+                                                                <p className="line-clamp-2 text-xs font-semibold leading-snug text-slate-800">
+                                                                    {product?.name || `Product ${id.slice(-6)}`}
+                                                                </p>
+                                                                {product?.sku ? (
+                                                                    <p className="mt-1 truncate text-[10px] text-slate-400">{product.sku}</p>
+                                                                ) : null}
+                                                                <div className="mt-2 text-sm font-bold text-slate-900">
+                                                                    {currency}{Number(product?.price || 0).toFixed(0)}
+                                                                </div>
+                                                            </motion.div>
+                                                        )
+                                                    })}
+                                                    {dragProductId ? (
+                                                        <div
+                                                            className="pointer-events-none fixed z-[80] w-[148px] rounded-2xl border border-violet-300 bg-white p-3 shadow-2xl ring-2 ring-violet-200"
+                                                            style={{
+                                                                left: dragPoint.x - dragOffsetRef.current.x,
+                                                                top: dragPoint.y - dragOffsetRef.current.y,
+                                                                transform: 'scale(1.04) rotate(-1.5deg)',
+                                                            }}
+                                                        >
+                                                            {(() => {
+                                                                const product = arrangedById.get(dragProductId)
+                                                                    || previewCacheRef.current.get(dragProductId)
+                                                                if (!product) return null
+                                                                return (
+                                                                    <>
+                                                                        <div className="mb-3 flex justify-center">
+                                                                            <ProductThumb product={product} size={88} />
+                                                                        </div>
+                                                                        <p className="line-clamp-2 text-xs font-semibold leading-snug text-slate-800">
+                                                                            {product.name}
+                                                                        </p>
+                                                                        <div className="mt-2 text-sm font-bold text-slate-900">
+                                                                            {currency}{Number(product.price || 0).toFixed(0)}
+                                                                        </div>
+                                                                    </>
+                                                                )
+                                                            })()}
+                                                        </div>
+                                                    ) : null}
+                                                </div>
+                                            )
+                                        ) : productsLoading ? (
                                             <div className="flex items-center justify-center py-20">
                                                 <Loader size={28} className="animate-spin text-violet-500" />
                                             </div>
@@ -990,7 +1397,7 @@ export default function HomePreferences() {
                                         )}
                                     </div>
 
-                                    {pagination.totalPages > 1 ? (
+                                    {pickerView === 'catalog' && pagination.totalPages > 1 ? (
                                         <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                                             <p className="text-xs text-slate-500">
                                                 Page {pagination.page} of {pagination.totalPages}

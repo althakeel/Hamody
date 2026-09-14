@@ -5,13 +5,54 @@ import Link from 'next/link';
 import { Search, Truck } from 'lucide-react';
 import { useInfiniteBannerCarousel } from '@/lib/useInfiniteBannerCarousel';
 import { withImageKitDelivery } from '@/lib/imageKitDelivery';
+import { hasShowcaseBannerImage, pickShowcaseBannerSources } from '@/lib/showcaseBannerImages';
+import { getShowcaseLinkProps } from '@/lib/showcaseBannerLinks';
+import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 
 function getDisplayImageUrl(value, width = 1400) {
   return withImageKitDelivery(value, { width, quality: 72 });
 }
 
-function buildSlidesSignature(slides = []) {
-  return slides.map((slide) => `${slide.id || ''}:${slide.image || ''}`).join('|');
+function buildSlidesSignature(slides = [], language = 'en') {
+  return `${language}|${slides.map((slide) => [
+    slide.id || '',
+    slide.sources?.desktop || '',
+    slide.sources?.tablet || '',
+    slide.sources?.mobile || '',
+  ].join(':')).join('|')}`;
+}
+
+function ShowcaseDeviceImages({
+  sources,
+  alt,
+  loading,
+  fetchPriority,
+  widths,
+  onError,
+}) {
+  const images = [
+    { key: 'mobile', src: sources.mobile, className: 'block md:hidden', width: widths.mobile },
+    { key: 'tablet', src: sources.tablet, className: 'hidden md:block lg:hidden', width: widths.tablet },
+    { key: 'desktop', src: sources.desktop, className: 'hidden lg:block', width: widths.desktop },
+  ];
+
+  return images.map((image) => {
+    if (!image.src) return null;
+    const displaySrc = getDisplayImageUrl(image.src, image.width);
+    return (
+      <img
+        key={image.key}
+        src={displaySrc}
+        alt={alt}
+        loading={loading}
+        fetchPriority={fetchPriority}
+        decoding="async"
+        draggable={false}
+        onError={() => onError(image.src)}
+        className={`pointer-events-none absolute inset-0 h-full w-full scale-[1.01] object-cover object-center ${image.className}`}
+      />
+    );
+  });
 }
 
 export default function ShowcaseLargeBannerSlider({
@@ -23,6 +64,7 @@ export default function ShowcaseLargeBannerSlider({
   fallback = null,
   showTruckIcon = false,
 }) {
+  const { language, isArabic } = useStorefrontI18n();
   const bannerRowClassName = [
     'group relative overflow-hidden rounded-xl border-0 bg-transparent shadow-none shop-showcase-banner-row',
     bannerVariant === 'main' ? 'shop-showcase-banner-row--main' : '',
@@ -30,34 +72,39 @@ export default function ShowcaseLargeBannerSlider({
   ].filter(Boolean).join(' ');
 
   const desktopWidth = bannerVariant === 'secondary' ? 1100 : 1400;
+  const deviceWidths = {
+    mobile: 800,
+    tablet: 1100,
+    desktop: desktopWidth,
+  };
 
   const activeSlides = useMemo(
     () => slides
       .map((slide) => {
-        const original = String(slide.image || '').trim();
-        if (!original) return null;
+        if (!hasShowcaseBannerImage(slide)) return null;
+        const sources = pickShowcaseBannerSources(slide, isArabic);
+        if (!sources.desktop && !sources.tablet && !sources.mobile) return null;
         return {
           ...slide,
-          image: getDisplayImageUrl(original, desktopWidth),
-          imageSrcSet: [
-            `${getDisplayImageUrl(original, 800)} 800w`,
-            `${getDisplayImageUrl(original, desktopWidth)} ${desktopWidth}w`,
-          ].join(', '),
+          sources,
         };
       })
       .filter(Boolean),
-    [slides, desktopWidth],
+    [slides, isArabic],
   );
 
   const slidesSignature = useMemo(
-    () => buildSlidesSignature(activeSlides),
-    [activeSlides],
+    () => buildSlidesSignature(activeSlides, language),
+    [activeSlides, language],
   );
 
   const [failedImages, setFailedImages] = useState(() => new Set());
 
   const visibleSlides = useMemo(
-    () => activeSlides.filter((slide) => !failedImages.has(slide.image)),
+    () => activeSlides.filter((slide) => {
+      const urls = [slide.sources.desktop, slide.sources.tablet, slide.sources.mobile];
+      return urls.some((url) => url && !failedImages.has(url));
+    }),
     [activeSlides, failedImages],
   );
 
@@ -133,7 +180,7 @@ export default function ShowcaseLargeBannerSlider({
   }
 
   const currentSlide = visibleSlides[activeDotIndex] || visibleSlides[0];
-  const href = currentSlide?.link || fallback?.href || '/shop';
+  const linkProps = getShowcaseLinkProps(currentSlide, fallback?.href || '/shop');
 
   const handleLinkClick = (event) => {
     if (shouldSuppressClick()) {
@@ -144,7 +191,7 @@ export default function ShowcaseLargeBannerSlider({
 
   return (
     <Link
-      href={href}
+      {...linkProps}
       className={`${bannerRowClassName} ${cursorClass} select-none`.trim()}
       style={{ gridRow }}
       dir="ltr"
@@ -161,21 +208,17 @@ export default function ShowcaseLargeBannerSlider({
         >
           {loopSlides.map((slide, slideIndex) => (
             <div
-              key={`${slide.id || slide.image}-${slideIndex}`}
+              key={`${slide.id || slide.sources?.desktop || slideIndex}-${slideIndex}`}
               className="relative h-full min-h-full shrink-0 grow-0 overflow-hidden"
               style={{ width: `${slideWidthPercent}%` }}
             >
-              <img
-                src={slide.image}
-                srcSet={slide.imageSrcSet}
-                sizes="(max-width: 640px) 100vw, (max-width: 1400px) 70vw, 980px"
+              <ShowcaseDeviceImages
+                sources={slide.sources}
                 alt={slide.alt || fallback?.title || 'Showcase banner'}
                 loading={slideIndex <= 1 ? 'eager' : 'lazy'}
                 fetchPriority={slideIndex === 0 ? 'high' : 'auto'}
-                decoding="async"
-                draggable={false}
-                onError={() => handleImageError(slide.image)}
-                className="pointer-events-none absolute inset-0 block h-full w-full scale-[1.01] object-cover object-center"
+                widths={deviceWidths}
+                onError={handleImageError}
               />
             </div>
           ))}

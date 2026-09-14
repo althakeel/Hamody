@@ -28,11 +28,13 @@ import {
   renderSharedCampaignHtml,
 } from '@/lib/emailMarketingCampaignSend';
 import mongoose from 'mongoose';
+import { STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility';
 
 async function loadFeaturedProducts() {
   const featuredProducts = await Product.find({
     inStock: true,
     stockQuantity: { $gt: 0 },
+    ...STOREFRONT_PUBLISHED_FILTER,
   })
     .sort({ createdAt: -1 })
     .limit(12)

@@ -6,9 +6,10 @@ import Store from '@/models/Store'
 import mongoose from 'mongoose'
 import { getCachedData, setCachedData } from '@/lib/cache'
 import { applyLargeBannerSliderDefaults } from '@/lib/shopShowcaseLargeBanners'
+import { hasShowcaseBannerImage, serializeShowcaseImageFields } from '@/lib/showcaseBannerImages'
 import { resolvePublicStorePreference } from '@/lib/storePreferencePublic'
 
-const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v2'
+const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v5'
 
 const DEFAULT_SHOWCASE = {
   enabled: true,
@@ -123,11 +124,13 @@ function normalizeSecondaryBannerSliderItems(items) {
     .slice(0, 6)
     .map((item, index) => ({
       id: (item?.id || `secondary-banner-slider-${index + 1}`).toString().trim(),
-      image: (item?.image || '').toString().trim(),
-      mobileImage: (item?.mobileImage || '').toString().trim(),
+      ...serializeShowcaseImageFields(item),
       link: (item?.link || '/shop').toString().trim(),
-      alt: (item?.alt || `Lower Banner ${index + 1}`).toString().trim()
+      linkType: ['category', 'product', 'custom'].includes(item?.linkType) ? item.linkType : '',
+      targetBlank: Boolean(item?.targetBlank),
+      alt: (item?.alt || `Lower Banner ${index + 1}`).toString().trim(),
     }))
+    .filter((item) => hasShowcaseBannerImage(item))
 
   return normalized.length ? normalized : DEFAULT_SHOWCASE.secondaryBannerSliderItems
 }
@@ -144,13 +147,15 @@ function normalizeProductBanners(items) {
   return items
     .slice(0, 4)
     .map((item) => ({
-      image: (item?.image || '').toString().trim(),
+      ...serializeShowcaseImageFields(item),
       title: (item?.title || '').toString().trim(),
       subtitle: (item?.subtitle || '').toString().trim(),
       buttonText: (item?.buttonText || '').toString().trim(),
       link: (item?.link || '').toString().trim(),
+      linkType: ['category', 'product', 'custom'].includes(item?.linkType) ? item.linkType : '',
+      targetBlank: Boolean(item?.targetBlank),
     }))
-    .filter((item) => item.image)
+    .filter((item) => hasShowcaseBannerImage(item))
 }
 
 function normalize(data = {}) {

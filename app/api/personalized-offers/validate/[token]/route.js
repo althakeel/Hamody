@@ -58,11 +58,11 @@ export async function GET(req, context) {
     // Fetch product details
     const product = await Product.findById(offer.productId)
       .select(
-        "_id name slug price mrp AED images description shortDescription category categories inStock stockQuantity sku hasVariants variants attributes hasBulkPricing bulkPricing fastDelivery allowReturn allowReplacement imageAspectRatio"
+        "_id name slug price mrp AED images description shortDescription category categories inStock stockQuantity sku hasVariants variants attributes hasBulkPricing bulkPricing fastDelivery allowReturn allowReplacement imageAspectRatio published"
       )
       .lean();
 
-    if (!product) {
+    if (!product || product.published === false) {
       return NextResponse.json(
         { error: "Product not found for this offer" },
         { status: 404 }

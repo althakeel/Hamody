@@ -12,12 +12,22 @@ const TopBarItemSchema = new mongoose.Schema(
   { _id: false }
 )
 
+const ShowcaseLocaleImageFields = {
+  tabletImage: { type: String, trim: true, default: '' },
+  mobileImage: { type: String, trim: true, default: '' },
+  imageAr: { type: String, trim: true, default: '' },
+  tabletImageAr: { type: String, trim: true, default: '' },
+  mobileImageAr: { type: String, trim: true, default: '' },
+}
+
 const BannerSliderItemSchema = new mongoose.Schema(
   {
     id: { type: String, trim: true, default: '' },
     image: { type: String, trim: true, default: '' },
-    mobileImage: { type: String, trim: true, default: '' },
+    ...ShowcaseLocaleImageFields,
     link: { type: String, trim: true, default: '/shop' },
+    linkType: { type: String, trim: true, default: '' },
+    targetBlank: { type: Boolean, default: false },
     alt: { type: String, trim: true, default: '' }
   },
   { _id: false }
@@ -26,10 +36,13 @@ const BannerSliderItemSchema = new mongoose.Schema(
 const ProductBannerSchema = new mongoose.Schema(
   {
     image: { type: String, trim: true, default: '' },
+    ...ShowcaseLocaleImageFields,
     title: { type: String, trim: true, default: 'Product Title' },
     subtitle: { type: String, trim: true, default: 'Order now' },
     buttonText: { type: String, trim: true, default: 'Order now' },
-    link: { type: String, trim: true, default: '/shop' }
+    link: { type: String, trim: true, default: '/shop' },
+    linkType: { type: String, trim: true, default: '' },
+    targetBlank: { type: Boolean, default: false }
   },
   { _id: false }
 )
@@ -385,6 +398,41 @@ if (!StorePreferenceModel.schema.path('mobileFeatures')) {
     },
   })
 }
+
+function addMissingShowcaseImageFields(nestedSchema) {
+  if (!nestedSchema) return
+  if (!nestedSchema.path('tabletImage')) {
+    nestedSchema.add({ tabletImage: { type: String, trim: true, default: '' } })
+  }
+  if (!nestedSchema.path('mobileImage')) {
+    nestedSchema.add({ mobileImage: { type: String, trim: true, default: '' } })
+  }
+  if (!nestedSchema.path('imageAr')) {
+    nestedSchema.add({ imageAr: { type: String, trim: true, default: '' } })
+  }
+  if (!nestedSchema.path('tabletImageAr')) {
+    nestedSchema.add({ tabletImageAr: { type: String, trim: true, default: '' } })
+  }
+  if (!nestedSchema.path('mobileImageAr')) {
+    nestedSchema.add({ mobileImageAr: { type: String, trim: true, default: '' } })
+  }
+  if (!nestedSchema.path('targetBlank')) {
+    nestedSchema.add({ targetBlank: { type: Boolean, default: false } })
+  }
+  if (!nestedSchema.path('linkType')) {
+    nestedSchema.add({ linkType: { type: String, trim: true, default: '' } })
+  }
+}
+
+;[
+  'shopShowcase.topBannerSliderItems',
+  'shopShowcase.bottomBannerSliderItems',
+  'shopShowcase.bannerSliderItems',
+  'shopShowcase.secondaryBannerSliderItems',
+  'shopShowcase.productBanners',
+].forEach((pathName) => {
+  addMissingShowcaseImageFields(StorePreferenceModel.schema.path(pathName)?.schema)
+})
 
 if (!StorePreferenceModel.schema.path('checkoutAlert')) {
   StorePreferenceModel.schema.add({

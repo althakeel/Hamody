@@ -3,6 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import BrowseHistory from '@/models/BrowseHistory';
 import Product from '@/models/Product';
 import { getAuth } from '@/lib/firebase-admin';
+import { STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility';
 
 // GET - Fetch user's browse history
 export async function GET(request) {
@@ -26,7 +27,10 @@ export async function GET(request) {
 
     // Get product details
     const productIds = history.map(h => h.productId);
-    const products = await Product.find({ _id: { $in: productIds } })
+    const products = await Product.find({
+      _id: { $in: productIds },
+      ...STOREFRONT_PUBLISHED_FILTER,
+    })
       .select('_id name slug images price mrp AED category inStock stockQuantity')
       .lean();
 

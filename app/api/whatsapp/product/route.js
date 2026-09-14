@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import Product from '@/models/Product';
 import { verifyWhatsAppWebhookRequest } from '@/lib/whatsapp/webhookAuth';
 import { buildWhatsAppProductPayload } from '@/lib/whatsapp/productPayload';
+import { isProductPublished } from '@/lib/productVisibility';
 
 export async function GET(request) {
   const auth = verifyWhatsAppWebhookRequest(request);
@@ -33,7 +34,7 @@ export async function GET(request) {
     product = await Product.findById(productId).lean();
   }
 
-  if (!product) {
+  if (!product || !isProductPublished(product)) {
     return NextResponse.json({ success: false, error: 'Product not found' }, { status: 404 });
   }
 

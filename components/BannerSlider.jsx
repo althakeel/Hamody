@@ -3,6 +3,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useInfiniteBannerCarousel } from '@/lib/useInfiniteBannerCarousel';
+import { hasShowcaseBannerImage, pickShowcaseBannerSources } from '@/lib/showcaseBannerImages';
+import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 
 const sliderFieldMap = {
   primary: {
@@ -33,6 +35,7 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
   const [fetchComplete, setFetchComplete] = useState(false);
   const [slideInterval, setSlideInterval] = useState(4000);
   const router = useRouter();
+  const { isArabic } = useStorefrontI18n();
   const fieldMap = sliderFieldMap[variant] || sliderFieldMap.primary;
   const showcaseConfig = configProp ?? fetchedConfig;
   const isLoaded = configProp ? true : fetchComplete;
@@ -46,12 +49,19 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
       return [];
     }
 
-    return Array.isArray(showcaseConfig?.[fieldMap.items])
-      ? showcaseConfig[fieldMap.items].filter((item) =>
-          String(item?.image || '').trim() || String(item?.mobileImage || '').trim()
-        )
+    const items = Array.isArray(showcaseConfig?.[fieldMap.items])
+      ? showcaseConfig[fieldMap.items]
       : [];
-  }, [fieldMap.enabled, fieldMap.items, isLoaded, showcaseConfig]);
+
+    return items
+      .filter((item) => hasShowcaseBannerImage(item))
+      .map((item) => {
+        const sources = pickShowcaseBannerSources(item, isArabic);
+        if (!sources.desktop && !sources.tablet && !sources.mobile) return null;
+        return { ...item, sources };
+      })
+      .filter(Boolean);
+  }, [fieldMap.enabled, fieldMap.items, isArabic, isLoaded, showcaseConfig]);
 
   useEffect(() => {
     if (configProp) {
@@ -122,9 +132,15 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
     interval: slideInterval,
   });
 
-  const handleClick = (link) => {
+  const handleClick = (banner) => {
     if (shouldSuppressClick()) return;
+    const link = String(banner?.link || '').trim();
     if (!link) return;
+
+    if (banner?.targetBlank) {
+      window.open(link, '_blank', 'noopener,noreferrer');
+      return;
+    }
 
     if (/^https?:\/\//i.test(link)) {
       window.location.href = link;
@@ -195,33 +211,52 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
           onTransitionEnd={handleTrackTransitionEnd}
           style={trackStyle}
         >
-          {loopSlides.map((banner, i) => (
-            <div
-              key={`${banner.id || banner.image || 'banner'}-${i}`}
-              onClick={() => handleClick(banner.link)}
-              className="banner-slider__slide relative shrink-0 grow-0 overflow-hidden"
-              style={{ width: `${slideWidthPercent}%` }}
-            >
-              <Image
-                src={banner.mobileImage || banner.image}
-                alt={banner.alt || `Banner ${i + 1}`}
-                fill
-                sizes="100vw"
-                draggable={false}
-                className={`pointer-events-none object-center sm:hidden ${banner.mobileImage ? 'object-cover' : 'object-contain bg-slate-100'}`}
-                priority={i <= 1}
-              />
-              <Image
-                src={banner.image || banner.mobileImage}
-                alt={banner.alt || `Banner ${i + 1}`}
-                fill
-                sizes="(max-width: 1400px) 100vw, 1400px"
-                draggable={false}
-                className={`pointer-events-none scale-[1.01] object-cover object-center ${banner.mobileImage ? 'hidden sm:block' : ''}`}
-                priority={i <= 1}
-              />
-            </div>
-          ))}
+          {loopSlides.map((banner, i) => {
+            const sources = banner.sources || {};
+            const alt = banner.alt || `Banner ${i + 1}`;
+            return (
+              <div
+                key={`${banner.id || sources.desktop || banner.image || 'banner'}-${i}`}
+                onClick={() => handleClick(banner)}
+                className="banner-slider__slide relative shrink-0 grow-0 overflow-hidden"
+                style={{ width: `${slideWidthPercent}%` }}
+              >
+                {sources.mobile ? (
+                  <Image
+                    src={sources.mobile}
+                    alt={alt}
+                    fill
+                    sizes="100vw"
+                    draggable={false}
+                    className="pointer-events-none object-cover object-center md:hidden"
+                    priority={i <= 1}
+                  />
+                ) : null}
+                {sources.tablet ? (
+                  <Image
+                    src={sources.tablet}
+                    alt={alt}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 1100px"
+                    draggable={false}
+                    className="pointer-events-none hidden scale-[1.01] object-cover object-center md:block lg:hidden"
+                    priority={i <= 1}
+                  />
+                ) : null}
+                {sources.desktop ? (
+                  <Image
+                    src={sources.desktop}
+                    alt={alt}
+                    fill
+                    sizes="(max-width: 1400px) 100vw, 1400px"
+                    draggable={false}
+                    className="pointer-events-none hidden scale-[1.01] object-cover object-center lg:block"
+                    priority={i <= 1}
+                  />
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       </div>
 

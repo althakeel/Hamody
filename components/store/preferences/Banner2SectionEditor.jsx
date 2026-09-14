@@ -2,11 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import axios from 'axios'
-import Image from 'next/image'
 import Link from 'next/link'
-import { Loader2, Save, ShieldAlert, Upload } from 'lucide-react'
+import { Loader2, Save, ShieldAlert } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/lib/useAuth'
+import { serializeShowcaseImageFields } from '@/lib/showcaseBannerImages'
+import { inferShowcaseLinkType } from '@/lib/showcaseBannerLinks'
+import {
+  AccordionRow,
+  ShowcaseLinkAccordion,
+  ShowcaseLocaleImageGroups,
+} from '@/components/store/preferences/bannerEditorShared'
 
 const sanitizeImageUrl = (value) => {
   const raw = String(value || '').trim()
@@ -24,26 +30,35 @@ const sanitizeImageUrl = (value) => {
   }
 }
 
-const resolvePersistedImageUrl = (storedValue, previewValue) => {
-  const stored = sanitizeImageUrl(storedValue)
-  if (stored) return stored
+function sanitizeImageFields(item = {}) {
+  return {
+    image: sanitizeImageUrl(item.image || ''),
+    tabletImage: sanitizeImageUrl(item.tabletImage || ''),
+    mobileImage: sanitizeImageUrl(item.mobileImage || ''),
+    imageAr: sanitizeImageUrl(item.imageAr || ''),
+    tabletImageAr: sanitizeImageUrl(item.tabletImageAr || ''),
+    mobileImageAr: sanitizeImageUrl(item.mobileImageAr || ''),
+  }
+}
 
-  const preview = sanitizeImageUrl(previewValue)
-  if (preview && !preview.startsWith('blob:')) return preview
-
-  return ''
+const BANNER2_IMAGE_SIZES = {
+  image: { width: 1600, height: 500 },
+  tabletImage: { width: 1100, height: 400 },
+  mobileImage: { width: 750, height: 420 },
+  imageAr: { width: 1600, height: 500 },
+  tabletImageAr: { width: 1100, height: 400 },
+  mobileImageAr: { width: 750, height: 420 },
 }
 
 const createBannerSliderItem = (overrides = {}) => ({
   id: overrides.id || `banner-2-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-  image: sanitizeImageUrl(overrides.image || ''),
-  mobileImage: sanitizeImageUrl(overrides.mobileImage || ''),
+  ...serializeShowcaseImageFields(sanitizeImageFields(overrides)),
   link: overrides.link || '/shop',
+  linkType: ['category', 'product', 'custom'].includes(overrides.linkType)
+    ? overrides.linkType
+    : inferShowcaseLinkType(overrides.link || '/shop').type,
+  targetBlank: Boolean(overrides.targetBlank),
   alt: overrides.alt || '',
-  file: null,
-  previewUrl: sanitizeImageUrl(overrides.image || overrides.previewUrl || ''),
-  mobileFile: null,
-  mobilePreviewUrl: sanitizeImageUrl(overrides.mobileImage || overrides.mobilePreviewUrl || ''),
 })
 
 const DEFAULT_FORM = {
@@ -58,12 +73,21 @@ const DEFAULT_FORM = {
   ],
 }
 
+function getSlideImageCount(item) {
+  return ['image', 'tabletImage', 'mobileImage', 'imageAr', 'tabletImageAr', 'mobileImageAr']
+    .filter((key) => String(item?.[key] || '').trim())
+    .length
+}
+
 export default function Banner2SectionEditor({ embedded = false }) {
   const { user, loading: authLoading, getToken } = useAuth()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(DEFAULT_FORM)
   const [loadedShowcase, setLoadedShowcase] = useState({})
+  const [categoryOptions, setCategoryOptions] = useState([])
+  const [productOptions, setProductOptions] = useState([])
+  const [openSlideId, setOpenSlideId] = useState(null)
 
   const loadData = async () => {
     try {
@@ -89,10 +113,8 @@ export default function Banner2SectionEditor({ embedded = false }) {
         items: Array.from({ length: Math.max(1, savedItems.length || 2) }, (_, index) => {
           const current = savedItems[index] || {}
           return createBannerSliderItem({
+            ...current,
             id: current.id || `banner-2-slide-${index + 1}`,
-            image: current.image,
-            mobileImage: current.mobileImage,
-            link: current.link,
             alt: current.alt || `Banner 2 Slide ${index + 1}`,
           })
         }),
@@ -113,6 +135,36 @@ export default function Banner2SectionEditor({ embedded = false }) {
     }
     loadData()
   }, [authLoading, user])
+
+  useEffect(() => {
+    let active = true
+
+    const loadLinkTargets = async () => {
+      try {
+        const token = await getToken()
+        const [categoriesRes, productsRes] = await Promise.all([
+          axios.get('/api/store/categories', {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          }).catch(() => ({ data: { categories: [] } })),
+          fetch('/api/products?limit=400&slim=true', { cache: 'no-store' }),
+        ])
+        const categoriesData = categoriesRes?.data || {}
+        const productsData = productsRes.ok ? await productsRes.json() : { products: [] }
+        if (!active) return
+        setCategoryOptions(Array.isArray(categoriesData?.categories) ? categoriesData.categories : [])
+        setProductOptions(Array.isArray(productsData?.products) ? productsData.products : [])
+      } catch {
+        if (!active) return
+        setCategoryOptions([])
+        setProductOptions([])
+      }
+    }
+
+    loadLinkTargets()
+    return () => {
+      active = false
+    }
+  }, [])
 
   const updateItem = (index, key, value) => {
     setForm((prev) => ({
@@ -138,68 +190,21 @@ export default function Banner2SectionEditor({ embedded = false }) {
     return response.data.url
   }
 
-  const handleImageChange = async (index, file) => {
+  const uploadItemField = async (index, field, file) => {
     if (!file) return
-
-    const previewUrl = URL.createObjectURL(file)
-    setForm((prev) => ({
-      ...prev,
-      items: prev.items.map((item, itemIndex) => (
-        itemIndex === index ? { ...item, file, previewUrl } : item
-      )),
-    }))
 
     try {
       const token = await getToken()
       if (!token) {
-        toast.error('Please sign in again to upload the desktop banner')
+        toast.error('Please sign in again to upload the banner')
         return
       }
 
       const url = sanitizeImageUrl(await uploadImage(file, token))
-      setForm((prev) => ({
-        ...prev,
-        items: prev.items.map((item, itemIndex) => (
-          itemIndex === index
-            ? { ...item, image: url, previewUrl: url, file: null }
-            : item
-        )),
-      }))
+      updateItem(index, field, url)
+      toast.success('Image uploaded')
     } catch (error) {
-      toast.error('Desktop banner upload failed')
-      console.error(error)
-    }
-  }
-
-  const handleMobileImageChange = async (index, file) => {
-    if (!file) return
-
-    const mobilePreviewUrl = URL.createObjectURL(file)
-    setForm((prev) => ({
-      ...prev,
-      items: prev.items.map((item, itemIndex) => (
-        itemIndex === index ? { ...item, mobileFile: file, mobilePreviewUrl } : item
-      )),
-    }))
-
-    try {
-      const token = await getToken()
-      if (!token) {
-        toast.error('Please sign in again to upload the mobile banner')
-        return
-      }
-
-      const url = sanitizeImageUrl(await uploadImage(file, token))
-      setForm((prev) => ({
-        ...prev,
-        items: prev.items.map((item, itemIndex) => (
-          itemIndex === index
-            ? { ...item, mobileImage: url, mobilePreviewUrl: url, mobileFile: null }
-            : item
-        )),
-      }))
-    } catch (error) {
-      toast.error('Mobile banner upload failed')
+      toast.error('Banner upload failed')
       console.error(error)
     }
   }
@@ -207,21 +212,24 @@ export default function Banner2SectionEditor({ embedded = false }) {
   const addItem = () => {
     setForm((prev) => {
       if (prev.items.length >= 6) return prev
+      const nextItem = createBannerSliderItem({ alt: `Banner 2 Slide ${prev.items.length + 1}` })
+      setOpenSlideId(nextItem.id)
       return {
         ...prev,
-        items: [
-          ...prev.items,
-          createBannerSliderItem({ alt: `Banner 2 Slide ${prev.items.length + 1}` }),
-        ],
+        items: [...prev.items, nextItem],
       }
     })
   }
 
   const removeItem = (index) => {
-    setForm((prev) => ({
-      ...prev,
-      items: prev.items.filter((_, itemIndex) => itemIndex !== index),
-    }))
+    setForm((prev) => {
+      const removed = prev.items[index]
+      const items = prev.items.filter((_, itemIndex) => itemIndex !== index)
+      if (removed?.id && openSlideId === removed.id) {
+        setOpenSlideId(null)
+      }
+      return { ...prev, items }
+    })
   }
 
   const save = async () => {
@@ -238,26 +246,19 @@ export default function Banner2SectionEditor({ embedded = false }) {
         return
       }
 
-      const secondaryBannerSliderItems = []
-      for (const item of form.items) {
-        let image = resolvePersistedImageUrl(item.image, item.previewUrl)
-        if (item.file) {
-          image = sanitizeImageUrl(await uploadImage(item.file, token))
-        }
-
-        let mobileImage = resolvePersistedImageUrl(item.mobileImage, item.mobilePreviewUrl)
-        if (item.mobileFile) {
-          mobileImage = sanitizeImageUrl(await uploadImage(item.mobileFile, token))
-        }
-
-        secondaryBannerSliderItems.push({
+      const secondaryBannerSliderItems = form.items.map((item, index) => {
+        const images = serializeShowcaseImageFields(sanitizeImageFields(item))
+        return {
           id: item.id,
-          image,
-          mobileImage,
+          ...images,
           link: String(item.link || '/shop').trim(),
-          alt: String(item.alt || '').trim(),
-        })
-      }
+          linkType: ['category', 'product', 'custom'].includes(item.linkType)
+            ? item.linkType
+            : inferShowcaseLinkType(item.link).type,
+          targetBlank: Boolean(item.targetBlank),
+          alt: String(item.alt || `Banner 2 Slide ${index + 1}`).trim(),
+        }
+      })
 
       const response = await axios.put('/api/store/preferences/shop-showcase', {
         ...loadedShowcase,
@@ -334,7 +335,7 @@ export default function Banner2SectionEditor({ embedded = false }) {
           <div>
             <h2 className="text-base font-semibold text-slate-900">Banner slider</h2>
             <p className="mt-1 text-sm text-slate-600">
-              This section appears directly below Top Deals on the homepage.
+              This section appears directly below Top Deals on the homepage. Each slide can have English and Arabic images for desktop, tablet, and mobile, plus a category, product, or custom link.
             </p>
           </div>
           <label className="inline-flex cursor-pointer items-center gap-2">
@@ -460,74 +461,50 @@ export default function Banner2SectionEditor({ embedded = false }) {
           </label>
         </div>
 
-        <div className="space-y-4">
-          {form.items.map((item, index) => (
-            <div key={item.id || `banner-2-slide-${index}`} className="rounded-xl border border-slate-200 p-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <h3 className="text-sm font-semibold text-slate-900">Slide {index + 1}</h3>
-                <button
-                  type="button"
-                  onClick={() => removeItem(index)}
-                  disabled={form.items.length <= 1}
-                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Remove
-                </button>
-              </div>
+        <div className="space-y-3">
+          {form.items.map((item, index) => {
+            const slideId = item.id || `banner-2-slide-${index}`
+            const isOpen = openSlideId === slideId
+            const imageCount = getSlideImageCount(item)
+            const linkLabel = item.link || '/shop'
 
-              <div className="grid gap-4 lg:grid-cols-2">
-                <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Desktop banner</p>
-                  <div className="relative overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50">
-                    <div className="relative aspect-[16/5] w-full">
-                      {item.previewUrl ? (
-                        <Image src={item.previewUrl} alt={item.alt || `Slide ${index + 1} desktop`} fill unoptimized className="object-cover" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-xs text-slate-400">No desktop image</div>
-                      )}
-                    </div>
-                  </div>
-                  <label className="mt-3 inline-flex w-fit cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                    <Upload size={16} />
-                    Upload desktop banner
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(event) => handleImageChange(index, event.target.files?.[0] || null)}
-                    />
-                  </label>
-                  <p className="mt-2 text-xs text-slate-500">Recommended: wide banner, 1600 x 500 px or similar</p>
-                </div>
+            return (
+              <AccordionRow
+                key={slideId}
+                title={`Slide ${index + 1}`}
+                summary={`${imageCount} of 6 images · ${linkLabel}${item.targetBlank ? ' · new window' : ''} · click to ${isOpen ? 'hide' : 'edit'}`}
+                open={isOpen}
+                onToggle={() => setOpenSlideId((current) => (current === slideId ? null : slideId))}
+                actions={(
+                  <button
+                    type="button"
+                    onClick={() => removeItem(index)}
+                    disabled={form.items.length <= 1}
+                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Remove
+                  </button>
+                )}
+              >
+                <div className="space-y-3">
+                  <ShowcaseLocaleImageGroups
+                    item={item}
+                    recommendedSizes={BANNER2_IMAGE_SIZES}
+                    onUpload={(field, file) => uploadItemField(index, field, file)}
+                    onChange={(field, value) => updateItem(index, field, value)}
+                  />
 
-                <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Mobile banner</p>
-                  <div className="relative overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50">
-                    <div className="relative aspect-[16/9] w-full">
-                      {item.mobilePreviewUrl ? (
-                        <Image src={item.mobilePreviewUrl} alt={item.alt || `Slide ${index + 1} mobile`} fill unoptimized className="object-cover" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center px-4 text-center text-xs text-slate-400">
-                          No mobile image (desktop banner will be used on mobile)
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <label className="mt-3 inline-flex w-fit cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                    <Upload size={16} />
-                    Upload mobile banner
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(event) => handleMobileImageChange(index, event.target.files?.[0] || null)}
-                    />
-                  </label>
-                  <p className="mt-2 text-xs text-slate-500">Recommended: 750 x 420 px or similar. Use a mobile-sized image to avoid cropping text.</p>
-                </div>
-              </div>
+                  <ShowcaseLinkAccordion
+                    link={item.link}
+                    linkType={item.linkType}
+                    targetBlank={item.targetBlank}
+                    categories={categoryOptions}
+                    products={productOptions}
+                    onLinkChange={(value) => updateItem(index, 'link', value)}
+                    onLinkTypeChange={(value) => updateItem(index, 'linkType', value)}
+                    onTargetBlankChange={(value) => updateItem(index, 'targetBlank', value)}
+                  />
 
-              <div className="mt-4 grid gap-3">
                   <label className="block">
                     <span className="mb-1 block text-sm font-medium text-slate-700">Alt text</span>
                     <input
@@ -536,18 +513,10 @@ export default function Banner2SectionEditor({ embedded = false }) {
                       onChange={(event) => updateItem(index, 'alt', event.target.value)}
                     />
                   </label>
-                  <label className="block">
-                    <span className="mb-1 block text-sm font-medium text-slate-700">Link</span>
-                    <input
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2"
-                      value={item.link}
-                      onChange={(event) => updateItem(index, 'link', event.target.value)}
-                      placeholder="/shop"
-                    />
-                  </label>
-              </div>
-            </div>
-          ))}
+                </div>
+              </AccordionRow>
+            )
+          })}
         </div>
 
         <button

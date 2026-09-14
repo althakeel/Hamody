@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import PersonalizedOffer from "@/models/PersonalizedOffer";
 import Product from "@/models/Product";
+import { isProductPublished } from '@/lib/productVisibility';
 
 function extractSlugFromRequest(req, paramsSlug) {
   const fromParams = decodeURIComponent(String(paramsSlug || "").trim());
@@ -44,11 +45,11 @@ export async function GET(req, context) {
 
     const product = await Product.findOne({ slug })
       .select(
-        "_id name slug price mrp AED images description shortDescription category categories inStock stockQuantity sku hasVariants variants attributes hasBulkPricing bulkPricing fastDelivery allowReturn allowReplacement imageAspectRatio"
+        "_id name slug price mrp AED images description shortDescription category categories inStock stockQuantity sku hasVariants variants attributes hasBulkPricing bulkPricing fastDelivery allowReturn allowReplacement imageAspectRatio published"
       )
       .lean();
 
-    if (!product) {
+    if (!product || !isProductPublished(product)) {
       return NextResponse.json(
         { error: "Product not found" },
         { status: 404 }

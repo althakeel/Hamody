@@ -4,9 +4,10 @@ import mongoose from 'mongoose'
 import connectDB from '@/lib/mongodb'
 import StorePreference from '@/models/StorePreference'
 import authSeller from '@/middlewares/authSeller'
-import { deleteCacheKey } from '@/lib/cache'
+import { deleteCacheKey, invalidateCachePattern } from '@/lib/cache'
 import { HOMEPAGE_CACHE_KEY } from '@/lib/categorySliderCache'
 import { applyLargeBannerSliderDefaults, serializeLargeBannerSliderItems } from '@/lib/shopShowcaseLargeBanners'
+import { hasShowcaseBannerImage, serializeShowcaseImageFields } from '@/lib/showcaseBannerImages'
 
 function resolveStoreObjectId(storeId) {
   const value = String(storeId || '').trim()
@@ -15,7 +16,8 @@ function resolveStoreObjectId(storeId) {
 }
 
 function invalidateShopShowcaseCaches() {
-  deleteCacheKey('public:shop-showcase:v2')
+  invalidateCachePattern('public:shop-showcase')
+  invalidateCachePattern('server:homepage')
   deleteCacheKey(HOMEPAGE_CACHE_KEY)
   deleteCacheKey('server:homepage:v3')
 
@@ -143,10 +145,11 @@ function normalizeSecondaryBannerSliderItems(items) {
     .slice(0, 6)
     .map((item, index) => ({
       id: (item?.id || `secondary-banner-slider-${index + 1}`).toString().trim(),
-      image: (item?.image || '').toString().trim(),
-      mobileImage: (item?.mobileImage || '').toString().trim(),
+      ...serializeShowcaseImageFields(item),
       link: (item?.link || '/shop').toString().trim(),
-      alt: (item?.alt || `Lower Banner ${index + 1}`).toString().trim()
+      linkType: ['category', 'product', 'custom'].includes(item?.linkType) ? item.linkType : '',
+      targetBlank: Boolean(item?.targetBlank),
+      alt: (item?.alt || `Lower Banner ${index + 1}`).toString().trim(),
     }))
 
   return normalized.length ? normalized : DEFAULT_SHOWCASE.secondaryBannerSliderItems
@@ -158,13 +161,15 @@ function normalizeProductBanners(items) {
   return items
     .slice(0, 4)
     .map((item) => ({
-      image: (item?.image || '').toString().trim(),
+      ...serializeShowcaseImageFields(item),
       title: (item?.title || '').toString().trim(),
       subtitle: (item?.subtitle || '').toString().trim(),
       buttonText: (item?.buttonText || '').toString().trim(),
       link: (item?.link || '').toString().trim(),
+      linkType: ['category', 'product', 'custom'].includes(item?.linkType) ? item.linkType : '',
+      targetBlank: Boolean(item?.targetBlank),
     }))
-    .filter((item) => item.image)
+    .filter((item) => hasShowcaseBannerImage(item))
 }
 
 function normalizeString(value, fallback = '') {

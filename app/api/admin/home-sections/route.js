@@ -6,6 +6,7 @@ import HomeSection from "@/models/HomeSection";
 import { NextResponse } from "next/server";
 import { localizeRecord, resolveStorefrontLanguage } from "@/lib/storefrontLanguage";
 import { verifyHomeSectionAccess } from "@/lib/homeSectionAccess";
+import { invalidateCategorySliderCaches } from "@/lib/categorySliderCache";
 
 // Simple in-memory cache
 let _cache = { sections: null, lastFetch: 0 };
@@ -84,6 +85,7 @@ export async function POST(request) {
         });
         _cache.sections = null;
         _cache.lastFetch = 0;
+        invalidateCategorySliderCaches();
         return NextResponse.json({ section: newSection }, { status: 201 });
     } catch (error) {
         console.error('Error creating home section:', error);

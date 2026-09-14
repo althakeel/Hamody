@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
 import { getCartEntryProductId, getCartEntryQuantity, isFreeGiftEntry } from '@/lib/freeGiftUtils';
+import { isProductPublished } from '@/lib/productVisibility';
 
 export async function POST(req) {
     try {
@@ -24,9 +25,9 @@ export async function POST(req) {
             
             try {
                 const product = await Product.findById(productId)
-                  .select('_id name slug price mrp AED images inStock stockQuantity')
+                  .select('_id name slug price mrp AED images inStock stockQuantity published')
                   .lean();
-                if (!product) {
+                if (!product || !isProductPublished(product)) {
                     invalidItems.push({
                         productId,
                         reason: 'Product not found or deleted'

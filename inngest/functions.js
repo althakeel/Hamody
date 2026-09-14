@@ -225,7 +225,8 @@ export const sendDailyPromotionalEmail = inngest.createFunction(
         const products = await step.run('fetch-products', async () => {
             await connectDB();
             const Product = (await import('@/models/Product')).default;
-            const featuredProducts = await Product.find({ inStock: true, stockQuantity: { $gt: 0 } }).sort({ createdAt: -1 }).limit(4).select('_id name slug AED price images description category stockQuantity').lean();
+            const { STOREFRONT_PUBLISHED_FILTER } = await import('@/lib/productVisibility');
+            const featuredProducts = await Product.find({ inStock: true, stockQuantity: { $gt: 0 }, ...STOREFRONT_PUBLISHED_FILTER }).sort({ createdAt: -1 }).limit(4).select('_id name slug AED price images description category stockQuantity').lean();
             return featuredProducts.map(p => ({ 
               id: p._id.toString(), 
               slug: p.slug, 

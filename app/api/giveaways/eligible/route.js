@@ -8,6 +8,7 @@ import {
   isFreeGiftEntry,
   selectBestEligibleCampaign,
 } from '@/lib/freeGiftUtils';
+import { isProductPublished } from '@/lib/productVisibility';
 
 export async function POST(request) {
   try {
@@ -67,11 +68,12 @@ export async function POST(request) {
     }
 
     const giftProduct = await Product.findById(campaign.giftProductId)
-      .select('_id name slug images price salePrice inStock stockQuantity storeId')
+      .select('_id name slug images price salePrice inStock stockQuantity storeId published')
       .lean();
 
     const giftOutOfStock =
       !giftProduct ||
+      !isProductPublished(giftProduct) ||
       giftProduct.inStock === false ||
       (typeof giftProduct.stockQuantity === 'number' && giftProduct.stockQuantity <= 0);
 

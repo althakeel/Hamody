@@ -69,7 +69,7 @@ export default function StoreLogin() {
       router.push('/store')
     } catch (error) {
       console.error('Login error:', error)
-      toast.error(getAuthErrorMessage(error, 'Invalid credentials'));
+      toast.error(getAuthErrorMessage(error, 'Invalid credentials', { provider: 'email' }));
     } finally {
       setLoading(false)
     }
