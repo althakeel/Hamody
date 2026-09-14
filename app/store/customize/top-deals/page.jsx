@@ -14,7 +14,6 @@ import {
     FolderTree,
     Check,
     Eye,
-    Settings2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/lib/useAuth'
@@ -114,7 +113,6 @@ export default function TopDealsCustomizePage() {
     const [sortBy, setSortBy] = useState('name')
     const [sectionId, setSectionId] = useState('')
     const [form, setForm] = useState(DEFAULT_FORM)
-    const [showAdvanced, setShowAdvanced] = useState(false)
     const [pagination, setPagination] = useState({ page: 1, limit: PRODUCTS_PER_PAGE, total: 0, totalPages: 1 })
     const searchDebounceRef = useRef(null)
     const previewDebounceRef = useRef(null)
@@ -435,7 +433,7 @@ export default function TopDealsCustomizePage() {
             }
 
             const payload = {
-                section: form.section || 'top_deals',
+                section: 'top_deals',
                 sectionType: form.sectionType,
                 category: form.sectionType === 'category' ? form.category : '',
                 tag: form.tag || '',
@@ -698,51 +696,6 @@ export default function TopDealsCustomizePage() {
                                 />
                                 <span className="font-medium text-slate-700">Show on website</span>
                             </label>
-                        </div>
-
-                        <div className="rounded-2xl border border-slate-200 bg-white">
-                            <button
-                                type="button"
-                                onClick={() => setShowAdvanced((prev) => !prev)}
-                                className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold text-slate-900"
-                            >
-                                <span className="inline-flex items-center gap-2">
-                                    <Settings2 size={16} />
-                                    Advanced settings
-                                </span>
-                                <span className="text-xs text-slate-400">{showAdvanced ? 'Hide' : 'Show'}</span>
-                            </button>
-                            {showAdvanced ? (
-                                <div className="space-y-3 border-t border-slate-100 px-4 pb-4 pt-3">
-                                    <div>
-                                        <label className="mb-1.5 block text-xs font-medium text-slate-500">Section key</label>
-                                        <input
-                                            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
-                                            value={form.section}
-                                            onChange={(event) => setForm((prev) => ({ ...prev, section: event.target.value }))}
-                                            placeholder="top_deals"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="mb-1.5 block text-xs font-medium text-slate-500">Sort order</label>
-                                        <input
-                                            type="number"
-                                            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
-                                            value={form.sortOrder}
-                                            onChange={(event) => setForm((prev) => ({ ...prev, sortOrder: Number(event.target.value) }))}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="mb-1.5 block text-xs font-medium text-slate-500">Tag</label>
-                                        <input
-                                            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
-                                            value={form.tag}
-                                            onChange={(event) => setForm((prev) => ({ ...prev, tag: event.target.value }))}
-                                            placeholder="e.g. summer-sale"
-                                        />
-                                    </div>
-                                </div>
-                            ) : null}
                         </div>
                     </div>
 

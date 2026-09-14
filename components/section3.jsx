@@ -6,7 +6,7 @@ import ProductCard from '@/components/ProductCard'
 import { HOME_PRODUCT_GRID_CLASS, HOME_SECTION_CLASS, HOME_SECTION_GRID_INNER_CLASS, HOME_SECTION_TITLE_CLASS } from '@/lib/storefrontCarousel'
 import { localizeField } from '@/lib/storefrontLanguage'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
-import { findTopDealsSection } from '@/lib/homeTopDeals'
+import { findTopDealsSection, isTopDealsVisibleOnWebsite } from '@/lib/homeTopDeals'
 
 function TopDealsSkeleton() {
   return (
@@ -66,7 +66,7 @@ export default function TopDeals({
         setTitle(section?.title || '')
         setTitleAr(section?.titleAr || '')
 
-        if (!section) {
+        if (!isTopDealsVisibleOnWebsite(section)) {
           if (!cancelled) setProducts([])
           return
         }
@@ -107,7 +107,7 @@ export default function TopDeals({
   const displayTitle = localizeField(configuredSection, 'title', language)
     || localizeField({ title, titleAr }, 'title', language)
 
-  if (!configuredSection) {
+  if (!isTopDealsVisibleOnWebsite(configuredSection)) {
     return null
   }
 
