@@ -17,7 +17,10 @@ import {
   normalizeNavbarLayout,
 } from '@/lib/navbarLayoutSettings';
 import {
+  DEFAULT_OFFERS_NAV_STYLE,
+  OFFERS_NAV_ANIMATION_OPTIONS,
   OFFERS_NAV_FONT_OPTIONS,
+  OFFERS_NAV_WEIGHT_OPTIONS,
   getOffersNavButtonAppearance,
 } from '@/lib/offersPageSettings';
 import {
@@ -27,6 +30,7 @@ import {
 } from '@/lib/categoryNavigation';
 import { toPublicCategoryPath } from '@/lib/categorySlug';
 import {
+  ChevronDown,
   Eye,
   Loader2,
   Menu,
@@ -44,18 +48,35 @@ import {
   X,
 } from 'lucide-react';
 
-function ExtraButtonStyleEditor({ style, previewLabel, onChange, disabled = false }) {
-  const navStyle = style || DEFAULT_CATEGORIES_BUTTON_STYLE;
+function ExtraButtonStyleEditor({ style, previewLabel, onChange, disabled = false, fallbackStyle = DEFAULT_CATEGORIES_BUTTON_STYLE }) {
+  const [open, setOpen] = useState(false);
+  const navStyle = style || fallbackStyle;
   const preview = getOffersNavButtonAppearance(navStyle, 'desktop');
   const fontLabel = OFFERS_NAV_FONT_OPTIONS.find((font) => font.id === (navStyle.fontFamily || 'inherit'))?.label || 'Default';
 
   return (
     <div className={`mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 ${disabled ? 'pointer-events-none opacity-50' : ''}`}>
-      <h3 className="text-xs font-semibold text-slate-800">Font and design</h3>
-      <p className="mt-1 text-[11px] text-slate-400">
-        Font, size, color, border, radius, and transparent or solid background.
-      </p>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex w-full items-center justify-between gap-3 text-left"
+        aria-expanded={open}
+      >
+        <span>
+          <span className="block text-xs font-semibold text-slate-800">Font and design</span>
+          <span className="mt-0.5 block text-[11px] text-slate-400">
+            {open
+              ? 'Font, weight, animation, size, color, border, radius, and background.'
+              : 'Closed. Click to edit style.'}
+          </span>
+        </span>
+        <ChevronDown
+          size={16}
+          className={`shrink-0 text-slate-500 transition ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
 
+      {open ? (
       <div className="mt-3 space-y-3">
         <label className="block">
           <span className="mb-1.5 block text-xs font-medium text-slate-500">Font</span>
@@ -73,8 +94,57 @@ function ExtraButtonStyleEditor({ style, previewLabel, onChange, disabled = fals
           </select>
         </label>
 
+        <div>
+          <span className="mb-1.5 block text-xs font-medium text-slate-500">Weight</span>
+          <div className="flex flex-wrap gap-1.5">
+            {OFFERS_NAV_WEIGHT_OPTIONS.map((weight) => {
+              const active = String(navStyle.fontWeight || '800') === weight.id;
+              return (
+                <button
+                  key={weight.id}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => onChange({ fontWeight: weight.id })}
+                  className={`rounded-lg px-2.5 py-1 text-[11px] transition ${
+                    active
+                      ? 'bg-slate-900 text-white'
+                      : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                  }`}
+                  style={{ fontWeight: weight.value }}
+                >
+                  {weight.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <span className="mb-1.5 block text-xs font-medium text-slate-500">Animation</span>
+          <div className="flex flex-wrap gap-1.5">
+            {OFFERS_NAV_ANIMATION_OPTIONS.map((animation) => {
+              const active = String(navStyle.animation || 'none') === animation.id;
+              return (
+                <button
+                  key={animation.id}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => onChange({ animation: animation.id })}
+                  className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                    active
+                      ? 'bg-slate-900 text-white'
+                      : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                  }`}
+                >
+                  {animation.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <div
-          className="inline-flex items-center font-extrabold leading-none tracking-[0.04em]"
+          className={`inline-flex items-center leading-none tracking-[0.04em] ${preview.animationClass || ''}`}
           data-font={preview.fontId || 'inherit'}
           style={preview.style}
         >
@@ -287,6 +357,7 @@ function ExtraButtonStyleEditor({ style, previewLabel, onChange, disabled = fals
           </div>
         </div>
       </div>
+      ) : null}
     </div>
   );
 }
@@ -1557,6 +1628,19 @@ export default function MenuManagementPage() {
                       Remove
                     </button>
                   </div>
+                  <ExtraButtonStyleEditor
+                    style={button.style}
+                    fallbackStyle={DEFAULT_OFFERS_NAV_STYLE}
+                    previewLabel={button.label || 'Button preview'}
+                    onChange={(patch) => setNavbarLayout((prev) => ({
+                      ...prev,
+                      extraButtons: prev.extraButtons.map((item, itemIndex) => (
+                        itemIndex === index
+                          ? { ...item, style: { ...(item.style || {}), ...patch } }
+                          : item
+                      )),
+                    }))}
+                  />
                 </div>
               ))}
             </div>

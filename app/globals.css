@@ -142,9 +142,61 @@
 
     .navbar-deals-btn:hover {
         box-shadow: none;
-        transform: none;
         opacity: 0.92;
     }
+
+    .navbar-deals-btn:hover:not(.navbar-btn-anim) {
+        transform: none;
+    }
+
+    .navbar-btn-anim {
+        display: inline-flex;
+        transform-origin: center;
+        will-change: transform, opacity, filter;
+    }
+
+    @keyframes navbarBtnPopup {
+        0%, 100% { transform: scale(1); }
+        35% { transform: scale(1.16); }
+        55% { transform: scale(0.94); }
+        75% { transform: scale(1.06); }
+    }
+
+    @keyframes navbarBtnPulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.08); opacity: 0.82; }
+    }
+
+    @keyframes navbarBtnBounce {
+        0%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-6px); }
+        60% { transform: translateY(2px); }
+    }
+
+    @keyframes navbarBtnShake {
+        0%, 100% { transform: translateX(0) rotate(0deg); }
+        20% { transform: translateX(-3px) rotate(-4deg); }
+        40% { transform: translateX(3px) rotate(4deg); }
+        60% { transform: translateX(-2px) rotate(-2deg); }
+        80% { transform: translateX(2px) rotate(2deg); }
+    }
+
+    @keyframes navbarBtnGlow {
+        0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0)); }
+        50% { filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.85)); }
+    }
+
+    @keyframes navbarBtnFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-4px); }
+    }
+
+    .navbar-btn-anim-popup { animation: navbarBtnPopup 1.35s ease-in-out infinite; }
+    .navbar-btn-anim-pulse { animation: navbarBtnPulse 1.5s ease-in-out infinite; }
+    .navbar-btn-anim-bounce { animation: navbarBtnBounce 1.2s ease-in-out infinite; }
+    .navbar-btn-anim-shake { animation: navbarBtnShake 0.7s ease-in-out infinite; }
+    .navbar-btn-anim-glow { animation: navbarBtnGlow 1.6s ease-in-out infinite; }
+    .navbar-btn-anim-float { animation: navbarBtnFloat 2s ease-in-out infinite; }
 
     .navbar-deals-btn[data-font="poppins"],
     .navbar-deals-btn[data-font="poppins"] * {

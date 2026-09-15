@@ -174,7 +174,7 @@ export default function NavbarPreview({
     if (itemId === 'deals') {
       return (
         <span
-          className="navbar-deals-btn inline-flex shrink-0 items-center font-extrabold leading-none tracking-[0.04em]"
+          className={`navbar-deals-btn inline-flex shrink-0 items-center font-extrabold leading-none tracking-[0.04em] ${dealsAppearance.animationClass || ''}`}
           data-font={dealsAppearance.fontId || 'inherit'}
           style={dealsAppearance.style}
         >
@@ -194,7 +194,7 @@ export default function NavbarPreview({
     if (itemId === 'categories') {
       return (
         <span
-          className="inline-flex shrink-0 items-center gap-1.5 font-medium leading-none"
+          className={`inline-flex shrink-0 items-center gap-1.5 font-medium leading-none ${categoriesAppearance.animationClass || ''}`}
           data-font={categoriesAppearance.fontId || 'inherit'}
           style={{
             ...categoriesAppearance.style,
@@ -258,8 +258,13 @@ export default function NavbarPreview({
 
     const extraButton = previewExtraButtons.find((button) => button.id === itemId);
     if (!extraButton) return null;
+    const extraAppearance = getOffersNavButtonAppearance(extraButton.style, 'desktop');
     return (
-      <span className="inline-flex shrink-0 items-center font-extrabold leading-none tracking-[0.04em] text-white">
+      <span
+        className={`inline-flex shrink-0 items-center leading-none tracking-[0.04em] ${extraAppearance.animationClass || ''}`}
+        data-font={extraAppearance.fontId || 'inherit'}
+        style={extraAppearance.style}
+      >
         {extraButton.displayLabel}
       </span>
     );

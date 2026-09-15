@@ -29,7 +29,9 @@ import {
   DEFAULT_OFFERS_PAGE,
   OFFERS_DISCOUNT_PRESETS,
   OFFERS_NAV_EMOJI_PRESETS,
+  OFFERS_NAV_ANIMATION_OPTIONS,
   OFFERS_NAV_FONT_OPTIONS,
+  OFFERS_NAV_WEIGHT_OPTIONS,
   OFFERS_NAV_LABEL_MAX,
   expandOffersNavShortcodes,
   getOffersNavButtonAppearance,
@@ -778,10 +780,60 @@ export default function OffersCustomizePage() {
                         </option>
                       ))}
                     </select>
+                  </label>
+
+                  <div>
+                    <span className="mb-1.5 block text-xs font-medium text-slate-500">Weight</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {OFFERS_NAV_WEIGHT_OPTIONS.map((weight) => {
+                        const active = String(navStyle.fontWeight || '800') === weight.id;
+                        return (
+                          <button
+                            key={weight.id}
+                            type="button"
+                            onClick={() => updateNavStyle({ fontWeight: weight.id })}
+                            className={`rounded-lg px-2.5 py-1 text-[11px] transition ${
+                              active
+                                ? 'bg-slate-900 text-white'
+                                : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                            }`}
+                            style={{ fontWeight: weight.value }}
+                          >
+                            {weight.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="mb-1.5 block text-xs font-medium text-slate-500">Animation</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {OFFERS_NAV_ANIMATION_OPTIONS.map((animation) => {
+                        const active = String(navStyle.animation || 'none') === animation.id;
+                        return (
+                          <button
+                            key={animation.id}
+                            type="button"
+                            onClick={() => updateNavStyle({ animation: animation.id })}
+                            className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                              active
+                                ? 'bg-slate-900 text-white'
+                                : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                            }`}
+                          >
+                            {animation.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <label className="block">
                     <p
-                      className="navbar-deals-btn mt-2 text-sm font-semibold text-slate-800"
+                      className={`navbar-deals-btn mt-2 text-sm text-slate-800 ${navButtonPreview.animationClass || ''}`}
                       data-font={navStyle.fontFamily || 'inherit'}
-                      style={{ fontFamily: navButtonPreview.style.fontFamily }}
+                      style={{ fontFamily: navButtonPreview.style.fontFamily, fontWeight: navButtonPreview.style.fontWeight }}
                     >
                       <OffersNavLabel
                         label={`${form.navLabel || "Today's Deals"} · ${OFFERS_NAV_FONT_OPTIONS.find((font) => font.id === (navStyle.fontFamily || 'inherit'))?.label || 'Default'}`}

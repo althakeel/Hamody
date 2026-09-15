@@ -305,7 +305,7 @@ const Navbar = () => {
       <Link
         href="/offers"
         aria-label={dealsNavLabel}
-        className={`navbar-deals-btn shrink-0 font-extrabold tracking-[0.04em] transition hover:opacity-90 ${
+        className={`navbar-deals-btn shrink-0 font-extrabold tracking-[0.04em] transition hover:opacity-90 ${appearance.animationClass || ''} ${
           isDesktop
             ? 'hidden lg:inline-flex shrink-0 items-center leading-none'
             : `inline-flex flex-col items-center justify-center leading-[1.05] ${
@@ -1690,7 +1690,7 @@ const Navbar = () => {
         >
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 font-medium leading-none transition hover:opacity-90"
+            className={`inline-flex items-center gap-1.5 font-medium leading-none transition hover:opacity-90 ${categoriesAppearance.animationClass || ''}`}
             data-font={categoriesAppearance.fontId || 'inherit'}
             style={{
               ...categoriesAppearance.style,
@@ -1841,10 +1841,13 @@ const Navbar = () => {
 
     const extraButton = desktopExtraButtons.find((button) => button.id === itemId);
     if (!extraButton) return null;
+    const extraAppearance = getOffersNavButtonAppearance(extraButton.style, 'desktop');
     return (
       <Link
         href={extraButton.link || '/offers'}
-        className="inline-flex shrink-0 items-center font-extrabold leading-none tracking-[0.04em] text-white transition hover:opacity-90"
+        className={`inline-flex shrink-0 items-center leading-none tracking-[0.04em] transition hover:opacity-90 ${extraAppearance.animationClass || ''}`}
+        data-font={extraAppearance.fontId || 'inherit'}
+        style={extraAppearance.style}
       >
         {extraButton.displayLabel}
       </Link>
