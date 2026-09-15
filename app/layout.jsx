@@ -10,7 +10,7 @@ import {
   STOREFRONT_LANGUAGE_COOKIE,
   detectLanguageFromAcceptLanguage,
 } from "@/lib/storefrontLanguage";
-import { GTM_ID, getGtmHeadScript, getGtmNoscriptSrc } from "@/lib/gtm";
+import { getGtmNoscriptSrc } from "@/lib/gtm";
 import { META_PIXEL_ID, getMetaPixelBootstrapScript } from "@/lib/metaPixelConfig";
 import { TIKTOK_PIXEL_ID, getTikTokPixelBootstrapScript } from "@/lib/tiktokPixelConfig";
 import OrganizationJsonLd from "@/components/OrganizationJsonLd";
@@ -141,14 +141,7 @@ export default async function RootLayout({ children }) {
         </div>
         <noscript
           dangerouslySetInnerHTML={{
-            __html: `<iframe src="${getGtmNoscriptSrc(GTM_ID)}" height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager"></iframe>`,
-          }}
-        />
-        <Script
-          id="google-tag-manager"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: getGtmHeadScript(GTM_ID),
+            __html: `<iframe src="${getGtmNoscriptSrc()}" height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager"></iframe>`,
           }}
         />
         <Script

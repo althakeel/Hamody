@@ -9,6 +9,7 @@ import Footer from "@/components/Footer";
 import DynamicMetaTags from "@/components/DynamicMetaTags";
 import MetaPixel from "@/components/MetaPixel";
 import TikTokPixel from "@/components/TikTokPixel";
+import GtmBootstrap from "@/components/GtmBootstrap";
 import GtmPageView from "@/components/GtmPageView";
 import { Toaster } from "react-hot-toast";
 import SilentDomErrorBoundary from "@/components/SilentDomErrorBoundary";
@@ -66,6 +67,7 @@ export default function ClientLayout({ children, initialStorefrontLanguage = 'en
   return (
     <ReduxProvider>
       <Suspense fallback={null}>
+        <GtmBootstrap />
         <GtmPageView />
         <MetaPixel />
         <TikTokPixel />
