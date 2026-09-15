@@ -3,6 +3,7 @@ import Product from '@/models/Product';
 import authSeller from '@/middlewares/authSeller';
 import { invalidateStorefrontProductCaches } from '@/lib/cache';
 import { getAuth } from '@/lib/firebase-admin';
+import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 
 export async function POST(request) {
@@ -34,7 +35,7 @@ export async function POST(request) {
     await dbConnect();
 
     const product = await Product.findOne({ _id: productId, storeId })
-      .select('_id published')
+      .select('_id published slug')
       .lean();
 
     if (!product) {
@@ -45,6 +46,14 @@ export async function POST(request) {
 
     await Product.findByIdAndUpdate(productId, { published: nextPublished });
     invalidateStorefrontProductCaches();
+
+    const slug = String(product.slug || '').trim();
+    if (slug) {
+      revalidatePath(`/product/${slug}`);
+      revalidatePath(`/products/${slug}`);
+    }
+    revalidatePath('/');
+    revalidatePath('/shop');
 
     return NextResponse.json({
       message: nextPublished ? 'Product is now online' : 'Product is now offline',

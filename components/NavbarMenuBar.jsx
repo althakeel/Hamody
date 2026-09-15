@@ -32,7 +32,7 @@ const defaultActionsVisibility = {
   cart: true,
 };
 
-const NAVBAR_CONTAINER_CLASS = 'mx-auto w-full max-w-[1400px] px-4 sm:px-6';
+const NAVBAR_CONTAINER_CLASS = 'mx-auto w-full px-4 sm:px-6';
 
 const defaultMenuStyle = {
   barBackgroundColor: '',
@@ -245,6 +245,7 @@ export default function NavbarMenuBar() {
   const [loadedOnce, setLoadedOnce] = useState(false);
   const [menuStyle, setMenuStyle] = useState(defaultMenuStyle);
   const [storefrontLanguage, setStorefrontLanguage] = useState('en');
+  const [navbarMaxWidth, setNavbarMaxWidth] = useState(1400);
 
   const megaTimer = useRef(null);
   const categoryTimer = useRef(null);
@@ -293,6 +294,10 @@ export default function NavbarMenuBar() {
     const cachedActions = safeJsonParse(window.sessionStorage.getItem(ACTIONS_VISIBILITY_CACHE_KEY), defaultActionsVisibility);
     const cachedStyle = safeJsonParse(window.sessionStorage.getItem(MENU_STYLE_CACHE_KEY), defaultMenuStyle);
     const cachedNavbarBg = readCachedNavbarBg();
+    const cachedMaxWidth = Number(safeJsonParse(window.localStorage.getItem(NAVBAR_APPEARANCE_CACHE_KEY), null)?.navbarMaxWidth);
+    if (Number.isFinite(cachedMaxWidth) && cachedMaxWidth >= 1000) {
+      setNavbarMaxWidth(cachedMaxWidth);
+    }
 
     if (Array.isArray(cachedCategories)) setCategories(cachedCategories);
     if (Array.isArray(cachedMenu)) setNavMenuItems(sanitizeMenuItems(cachedMenu));
@@ -353,6 +358,10 @@ export default function NavbarMenuBar() {
     const handleMenuUpdated = () => revalidate();
     const handleNavbarAppearance = (e) => {
       const bg = e?.detail?.backgroundColor;
+      const nextMaxWidth = Number(e?.detail?.navbarMaxWidth);
+      if (Number.isFinite(nextMaxWidth) && nextMaxWidth >= 1000) {
+        setNavbarMaxWidth(nextMaxWidth);
+      }
       if (bg) {
         setMenuStyle((prev) => ({ ...prev, barBackgroundColor: bg }));
       } else {
@@ -413,7 +422,7 @@ export default function NavbarMenuBar() {
         boxShadow: 'inset 0 1px 0 var(--menu-bar-border)',
       }}
     >
-      <div className={`${NAVBAR_CONTAINER_CLASS} overflow-x-auto scrollbar-hide`}>
+      <div className={`${NAVBAR_CONTAINER_CLASS} overflow-x-auto scrollbar-hide`} style={{ maxWidth: navbarMaxWidth }}>
         <div className="relative flex items-center py-2 whitespace-nowrap">
           {effectiveMenuItems.map((item, index) => {
             const dropdownLinks = Array.isArray(item?.megaMenu?.links) ? item.megaMenu.links : [];

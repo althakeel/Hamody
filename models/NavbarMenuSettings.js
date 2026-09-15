@@ -93,6 +93,52 @@ const NavbarMenuSettingsSchema = new mongoose.Schema(
         },
       },
     ],
+    navExtraButtons: [
+      {
+        id: { type: String, default: '' },
+        label: { type: String, default: '' },
+        labelAr: { type: String, default: '' },
+        link: { type: String, default: '/offers' },
+        enabled: { type: Boolean, default: true },
+        style: { type: mongoose.Schema.Types.Mixed, default: {} },
+      },
+    ],
+    searchMaxWidth: {
+      type: Number,
+      default: 600,
+    },
+    searchPlaceholder: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    searchPlaceholderAr: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    navbarMaxWidth: {
+      type: Number,
+      default: 1400,
+    },
+    stickyHeader: {
+      type: Boolean,
+      default: false,
+    },
+    showCategoriesButton: {
+      type: Boolean,
+      default: true,
+    },
+    categoriesButtonLabel: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    categoriesButtonLabelAr: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     items: [
       {
         label: {
@@ -204,6 +250,47 @@ if (!NavbarMenuSettingsModel.schema.path('navMenuUseParentCategories')) {
       type: Boolean,
       default: false,
     },
+  });
+}
+
+if (!NavbarMenuSettingsModel.schema.path('navExtraButtons')) {
+  NavbarMenuSettingsModel.schema.add({
+    navExtraButtons: [
+      {
+        id: { type: String, default: '' },
+        label: { type: String, default: '' },
+        labelAr: { type: String, default: '' },
+        link: { type: String, default: '/offers' },
+        enabled: { type: Boolean, default: true },
+        style: { type: mongoose.Schema.Types.Mixed, default: {} },
+      },
+    ],
+    searchMaxWidth: { type: Number, default: 600 },
+    searchPlaceholder: { type: String, default: '', trim: true },
+    searchPlaceholderAr: { type: String, default: '', trim: true },
+    navbarMaxWidth: { type: Number, default: 1400 },
+    stickyHeader: { type: Boolean, default: false },
+  });
+}
+
+const extraButtonsPath = NavbarMenuSettingsModel.schema.path('navExtraButtons');
+if (extraButtonsPath?.schema && !extraButtonsPath.schema.path('style')) {
+  extraButtonsPath.schema.add({
+    style: { type: mongoose.Schema.Types.Mixed, default: {} },
+  });
+}
+
+if (!NavbarMenuSettingsModel.schema.path('stickyHeader')) {
+  NavbarMenuSettingsModel.schema.add({
+    stickyHeader: { type: Boolean, default: false },
+  });
+}
+
+if (!NavbarMenuSettingsModel.schema.path('showCategoriesButton')) {
+  NavbarMenuSettingsModel.schema.add({
+    showCategoriesButton: { type: Boolean, default: true },
+    categoriesButtonLabel: { type: String, default: '', trim: true },
+    categoriesButtonLabelAr: { type: String, default: '', trim: true },
   });
 }
 

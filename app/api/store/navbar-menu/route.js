@@ -2,6 +2,7 @@ import dbConnect from '@/lib/mongodb';
 import NavbarMenuSettings from '@/models/NavbarMenuSettings';
 import { NextResponse } from 'next/server';
 import { getAuth } from '@/lib/firebase-admin';
+import { DEFAULT_NAVBAR_LAYOUT, normalizeNavbarLayout } from '@/lib/navbarLayoutSettings';
 
 const MAX_ITEMS = 20;
 
@@ -18,6 +19,20 @@ function toFiniteNumber(value) {
   const parsedFloat = Number.parseFloat(String(value));
   if (Number.isFinite(parsedFloat)) return parsedFloat;
   return null;
+}
+
+function pickNavbarLayout(settings = {}) {
+  return normalizeNavbarLayout({
+    extraButtons: settings?.navExtraButtons,
+    searchMaxWidth: settings?.searchMaxWidth,
+    searchPlaceholder: settings?.searchPlaceholder,
+    searchPlaceholderAr: settings?.searchPlaceholderAr,
+    navbarMaxWidth: settings?.navbarMaxWidth,
+    stickyHeader: settings?.stickyHeader,
+    showCategoriesButton: settings?.showCategoriesButton,
+    categoriesButtonLabel: settings?.categoriesButtonLabel,
+    categoriesButtonLabelAr: settings?.categoriesButtonLabelAr,
+  });
 }
 
 function pickFooterBranding(settings = {}, navbarLogoUrl = '') {
@@ -126,6 +141,7 @@ export async function GET(req) {
           logoHeight: resolvedHeight ?? 40,
           backgroundColor: settings?.backgroundColor || '#8f3404',
           items: settings?.items || [],
+          ...pickNavbarLayout(settings),
           ...pickFooterBranding(settings, resolvedLogoUrl),
         };
 
@@ -162,16 +178,29 @@ export async function GET(req) {
     let resolvedWidth = toFiniteNumber(settings?.logoWidth);
     let resolvedHeight = toFiniteNumber(settings?.logoHeight);
 
-    if ((resolvedWidth == null || resolvedHeight == null) && settings?.storeId) {
-      const fallbackDoc = await NavbarMenuSettings.findOne({
+    if (settings?.storeId) {
+      const latestStoreDoc = await NavbarMenuSettings.findOne({
         storeId: settings.storeId,
-        logoWidth: { $exists: true },
-        logoHeight: { $exists: true },
       })
         .sort({ updatedAt: -1, _id: -1 })
         .lean();
-      resolvedWidth = toFiniteNumber(fallbackDoc?.logoWidth) ?? resolvedWidth;
-      resolvedHeight = toFiniteNumber(fallbackDoc?.logoHeight) ?? resolvedHeight;
+
+      if (latestStoreDoc) {
+        if (resolvedWidth == null) resolvedWidth = toFiniteNumber(latestStoreDoc.logoWidth);
+        if (resolvedHeight == null) resolvedHeight = toFiniteNumber(latestStoreDoc.logoHeight);
+        settings = {
+          ...settings,
+          navExtraButtons: latestStoreDoc.navExtraButtons ?? settings.navExtraButtons,
+          searchMaxWidth: latestStoreDoc.searchMaxWidth ?? settings.searchMaxWidth,
+          searchPlaceholder: latestStoreDoc.searchPlaceholder ?? settings.searchPlaceholder,
+          searchPlaceholderAr: latestStoreDoc.searchPlaceholderAr ?? settings.searchPlaceholderAr,
+          navbarMaxWidth: latestStoreDoc.navbarMaxWidth ?? settings.navbarMaxWidth,
+          stickyHeader: latestStoreDoc.stickyHeader ?? settings.stickyHeader,
+          showCategoriesButton: latestStoreDoc.showCategoriesButton ?? settings.showCategoriesButton,
+          categoriesButtonLabel: latestStoreDoc.categoriesButtonLabel ?? settings.categoriesButtonLabel,
+          categoriesButtonLabelAr: latestStoreDoc.categoriesButtonLabelAr ?? settings.categoriesButtonLabelAr,
+        };
+      }
     }
 
     return NextResponse.json(
@@ -182,11 +211,12 @@ export async function GET(req) {
         logoHeight: resolvedHeight ?? 40,
         backgroundColor: settings?.backgroundColor || '#8f3404',
         items: settings?.items || [],
+        ...pickNavbarLayout(settings),
         ...pickFooterBranding(settings, settings?.logoUrl || ''),
       },
       {
         status: 200,
-        headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
+        headers: { 'Cache-Control': 'no-store' },
       }
     );
   } catch (error) {
@@ -204,6 +234,7 @@ export async function GET(req) {
         footerLogoWidth: 160,
         footerLogoHeight: 40,
         resolvedFooterLogoUrl: '',
+        ...DEFAULT_NAVBAR_LAYOUT,
       },
       { status: 200, headers: { 'Cache-Control': 'no-store' } }
     );
@@ -232,6 +263,15 @@ export async function POST(req) {
       backgroundColor = '#8f3404',
       clearLogo = false,
       removeLogo = false,
+      extraButtons,
+      searchMaxWidth,
+      searchPlaceholder,
+      searchPlaceholderAr,
+      navbarMaxWidth,
+      stickyHeader,
+      showCategoriesButton,
+      categoriesButtonLabel,
+      categoriesButtonLabelAr,
     } = body || {};
 
     if (!Array.isArray(items)) {
@@ -298,6 +338,18 @@ export async function POST(req) {
       ? ''
       : (incomingLogoUrl || existingLogoUrl);
 
+    const nextLayout = normalizeNavbarLayout({
+      extraButtons: extraButtons ?? existing?.navExtraButtons,
+      searchMaxWidth: searchMaxWidth ?? existing?.searchMaxWidth,
+      searchPlaceholder: searchPlaceholder ?? existing?.searchPlaceholder,
+      searchPlaceholderAr: searchPlaceholderAr ?? existing?.searchPlaceholderAr,
+      navbarMaxWidth: navbarMaxWidth ?? existing?.navbarMaxWidth,
+      stickyHeader: stickyHeader ?? existing?.stickyHeader,
+      showCategoriesButton: showCategoriesButton ?? existing?.showCategoriesButton,
+      categoriesButtonLabel: categoriesButtonLabel ?? existing?.categoriesButtonLabel,
+      categoriesButtonLabelAr: categoriesButtonLabelAr ?? existing?.categoriesButtonLabelAr,
+    });
+
     console.log('[API /store/navbar-menu POST] Saving:', {
       userId,
       logoUrl: nextLogoUrl || '(empty)',
@@ -317,6 +369,15 @@ export async function POST(req) {
           logoHeight: nextLogoHeight,
           backgroundColor: nextBackgroundColor,
           items: sanitizedItems,
+          navExtraButtons: nextLayout.extraButtons,
+          searchMaxWidth: nextLayout.searchMaxWidth,
+          searchPlaceholder: nextLayout.searchPlaceholder,
+          searchPlaceholderAr: nextLayout.searchPlaceholderAr,
+          navbarMaxWidth: nextLayout.navbarMaxWidth,
+          stickyHeader: nextLayout.stickyHeader,
+          showCategoriesButton: nextLayout.showCategoriesButton,
+          categoriesButtonLabel: nextLayout.categoriesButtonLabel,
+          categoriesButtonLabelAr: nextLayout.categoriesButtonLabelAr,
         },
       },
       { upsert: true, new: true, setDefaultsOnInsert: true, runValidators: true }
@@ -331,6 +392,15 @@ export async function POST(req) {
           logoWidth: nextLogoWidth,
           logoHeight: nextLogoHeight,
           backgroundColor: nextBackgroundColor,
+          navExtraButtons: nextLayout.extraButtons,
+          searchMaxWidth: nextLayout.searchMaxWidth,
+          searchPlaceholder: nextLayout.searchPlaceholder,
+          searchPlaceholderAr: nextLayout.searchPlaceholderAr,
+          navbarMaxWidth: nextLayout.navbarMaxWidth,
+          stickyHeader: nextLayout.stickyHeader,
+          showCategoriesButton: nextLayout.showCategoriesButton,
+          categoriesButtonLabel: nextLayout.categoriesButtonLabel,
+          categoriesButtonLabelAr: nextLayout.categoriesButtonLabelAr,
         },
       }
     );
@@ -393,6 +463,7 @@ export async function POST(req) {
           logoHeight: finalSavedHeight,
           backgroundColor: settings.backgroundColor,
           items: settings.items,
+          ...pickNavbarLayout(settings),
         },
         meta: {
           storeId: settings.storeId,

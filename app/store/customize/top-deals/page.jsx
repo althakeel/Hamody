@@ -14,6 +14,7 @@ import {
     FolderTree,
     Check,
     Eye,
+    Languages,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/lib/useAuth'
@@ -103,6 +104,7 @@ export default function TopDealsCustomizePage() {
     const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || 'AED'
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
+    const [translatingCopy, setTranslatingCopy] = useState(false)
     const [productsLoading, setProductsLoading] = useState(false)
     const [selectingAll, setSelectingAll] = useState(false)
     const [products, setProducts] = useState([])
@@ -402,6 +404,56 @@ export default function TopDealsCustomizePage() {
         }
     }
 
+    const translateCopyToArabic = async () => {
+        const englishTitle = String(form.title || '').trim()
+        const englishSubtitle = String(form.subtitle || '').trim()
+        if (!englishTitle && !englishSubtitle) {
+            toast.error('Enter English title or subtitle first')
+            return
+        }
+
+        try {
+            setTranslatingCopy(true)
+            const token = await getToken()
+            if (!token) {
+                toast.error('Please sign in again')
+                return
+            }
+
+            const translateText = async (text) => {
+                if (!text) return ''
+                const { data } = await axios.post(
+                    '/api/store/categories/translate-arabic',
+                    { text },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                )
+                return String(data?.descriptionAr || '').trim()
+            }
+
+            const [titleAr, subtitleAr] = await Promise.all([
+                translateText(englishTitle),
+                translateText(englishSubtitle),
+            ])
+
+            if (!titleAr && !subtitleAr) {
+                toast.error('Could not translate to Arabic')
+                return
+            }
+
+            setForm((prev) => ({
+                ...prev,
+                ...(titleAr ? { titleAr } : {}),
+                ...(subtitleAr ? { subtitleAr } : {}),
+            }))
+            toast.success('Arabic fields updated')
+        } catch (error) {
+            console.error('Translate Top Deals copy failed:', error)
+            toast.error(error?.response?.data?.error || 'Failed to translate to Arabic')
+        } finally {
+            setTranslatingCopy(false)
+        }
+    }
+
     const submit = async (event) => {
         event.preventDefault()
 
@@ -591,7 +643,18 @@ export default function TopDealsCustomizePage() {
                         </div>
 
                         <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
-                            <h2 className="mb-4 text-sm font-semibold text-slate-900">Section copy</h2>
+                            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                                <h2 className="text-sm font-semibold text-slate-900">Section copy</h2>
+                                <button
+                                    type="button"
+                                    onClick={translateCopyToArabic}
+                                    disabled={translatingCopy}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:border-violet-300 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    {translatingCopy ? <Loader2 size={13} className="animate-spin" /> : <Languages size={13} />}
+                                    {translatingCopy ? 'Translating...' : 'Translate to Arabic'}
+                                </button>
+                            </div>
                             <div className="space-y-3">
                                 <div>
                                     <label className="mb-1.5 block text-xs font-medium text-slate-500">Title (English)</label>

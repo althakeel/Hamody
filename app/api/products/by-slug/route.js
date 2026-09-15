@@ -3,7 +3,7 @@ import Product from "@/models/Product";
 import { NextResponse } from "next/server";
 import { localizeRecord, resolveStorefrontLanguage } from "@/lib/storefrontLanguage";
 import { getCachedData, setCachedData } from "@/lib/cache";
-import { isProductPublished } from '@/lib/productVisibility';
+import { isProductPublished, STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility';
 
 const CACHE_TTL_SECONDS = 300;
 
@@ -32,13 +32,13 @@ export async function GET(request) {
     }
 
     await dbConnect();
-    const selectFields = 'name nameAr slug description descriptionAr shortDescription shortDescriptionAr shortDescription2 aPlusDesktop aPlusMobile aPlusDesktopAr aPlusMobileAr aPlusDesktopImages aPlusMobileImages brand brandAr AED price images category categories sku inStock stockQuantity hasVariants variants attributes hasBulkPricing bulkPricing fastDelivery freeShippingEligible allowReturn allowReplacement specTableEnabled specTableColumns specTableRows storeId imageAspectRatio cardVideoPreviewEnabled cardVideoPreviewDelaySec createdAt updatedAt seoTitle seoH1 seoH1Ar seoDescription seoKeywords tags';
-    let product = await Product.findOne({ slug })
+    const selectFields = 'name nameAr slug description descriptionAr shortDescription shortDescriptionAr shortDescription2 aPlusDesktop aPlusMobile aPlusDesktopAr aPlusMobileAr aPlusDesktopImages aPlusMobileImages brand brandAr AED price images category categories sku inStock stockQuantity hasVariants variants attributes hasBulkPricing bulkPricing fastDelivery freeShippingEligible allowReturn allowReplacement specTableEnabled specTableColumns specTableRows storeId imageAspectRatio cardVideoPreviewEnabled cardVideoPreviewDelaySec createdAt updatedAt seoTitle seoH1 seoH1Ar seoDescription seoKeywords tags published';
+    let product = await Product.findOne({ slug, ...STOREFRONT_PUBLISHED_FILTER })
         .select(selectFields)
         .lean();
 
     if (!product && /^[a-fA-F0-9]{24}$/.test(slug)) {
-        product = await Product.findById(slug)
+        product = await Product.findOne({ _id: slug, ...STOREFRONT_PUBLISHED_FILTER })
             .select(selectFields)
             .lean();
     }

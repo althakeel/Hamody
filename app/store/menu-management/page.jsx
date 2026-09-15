@@ -6,7 +6,19 @@ import { useAuth } from '@/lib/useAuth';
 import toast from 'react-hot-toast';
 import PageSkeleton from '@/components/PageSkeleton';
 import NavbarPreview from '@/components/store/NavbarPreview';
+import StoreDropdown from '@/components/store/StoreDropdown';
 import { STORE1920_LOGO_PATH } from '@/lib/brandLogo';
+import {
+  DEFAULT_NAVBAR_LAYOUT,
+  createNavbarExtraButton,
+  normalizeNavbarLayout,
+} from '@/lib/navbarLayoutSettings';
+import {
+  DEFAULT_OFFERS_NAV_STYLE,
+  OFFERS_NAV_FONT_OPTIONS,
+  getOffersNavButtonAppearance,
+  normalizeOffersNavStyle,
+} from '@/lib/offersPageSettings';
 import {
   filterParentCategories,
   getCategoryDisplayName,
@@ -24,10 +36,195 @@ import {
   Sparkles,
   Store,
   Heart,
+  Languages,
   Package,
+  Plus,
   Trash2,
   X,
 } from 'lucide-react';
+
+function ExtraButtonStyleEditor({ style, previewLabel, onChange }) {
+  const navStyle = style || DEFAULT_OFFERS_NAV_STYLE;
+  const preview = getOffersNavButtonAppearance(navStyle, 'desktop');
+  const fontLabel = OFFERS_NAV_FONT_OPTIONS.find((font) => font.id === (navStyle.fontFamily || 'inherit'))?.label || 'Default';
+
+  return (
+    <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+      <h3 className="text-xs font-semibold text-slate-800">Font and design</h3>
+      <p className="mt-1 text-[11px] text-slate-400">
+        Same style options as LAST CHANCE: font, size, color, border, and background.
+      </p>
+
+      <div className="mt-3 space-y-3">
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-medium text-slate-500">Font</span>
+          <select
+            value={navStyle.fontFamily || 'inherit'}
+            onChange={(event) => onChange({ fontFamily: event.target.value })}
+            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+          >
+            {OFFERS_NAV_FONT_OPTIONS.map((font) => (
+              <option key={font.id} value={font.id}>
+                {font.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div
+          className="inline-flex items-center font-extrabold leading-none tracking-[0.04em]"
+          data-font={preview.fontId || 'inherit'}
+          style={preview.style}
+        >
+          {previewLabel || 'Button preview'}
+          <span className="ms-2 text-[10px] font-medium tracking-normal text-slate-400">{fontLabel}</span>
+        </div>
+
+        <label className="block">
+          <span className="mb-1 flex items-center justify-between text-xs font-medium text-slate-500">
+            Font size
+            <span className="tabular-nums text-slate-700">{navStyle.fontSize}px</span>
+          </span>
+          <input
+            type="range"
+            min={8}
+            max={22}
+            value={navStyle.fontSize}
+            onChange={(event) => onChange({ fontSize: Number(event.target.value) })}
+            className="w-full accent-indigo-600"
+          />
+        </label>
+
+        <div>
+          <div className="mb-1.5 flex items-center justify-between gap-2">
+            <span className="text-xs font-medium text-slate-500">Font color</span>
+            <button
+              type="button"
+              onClick={() => onChange({ fontColorAuto: !navStyle.fontColorAuto })}
+              className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                navStyle.fontColorAuto
+                  ? 'bg-slate-900 text-white'
+                  : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+              }`}
+            >
+              Auto
+            </button>
+          </div>
+          <div
+            className={`flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5 ${
+              navStyle.fontColorAuto ? 'opacity-50' : ''
+            }`}
+          >
+            <input
+              type="color"
+              value={navStyle.fontColor || '#ffffff'}
+              disabled={navStyle.fontColorAuto}
+              onChange={(event) => onChange({ fontColor: event.target.value, fontColorAuto: false })}
+              className="h-8 w-10 cursor-pointer rounded border-0 bg-transparent p-0 disabled:cursor-not-allowed"
+              aria-label="Font color"
+            />
+            <input
+              type="text"
+              value={navStyle.fontColorAuto ? 'auto' : navStyle.fontColor}
+              disabled={navStyle.fontColorAuto}
+              onChange={(event) => onChange({ fontColor: event.target.value, fontColorAuto: false })}
+              className="w-full border-0 bg-transparent text-sm text-slate-700 outline-none disabled:cursor-not-allowed"
+            />
+          </div>
+        </div>
+
+        <div>
+          <span className="mb-1 flex items-center justify-between text-xs font-medium text-slate-500">
+            Border
+            <span className="tabular-nums text-slate-700">{navStyle.borderWidth}px</span>
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={6}
+            value={navStyle.borderWidth}
+            onChange={(event) => onChange({ borderWidth: Number(event.target.value) })}
+            className="w-full accent-indigo-600"
+          />
+          <div className="mt-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5">
+            <input
+              type="color"
+              value={navStyle.borderColor}
+              onChange={(event) => onChange({ borderColor: event.target.value })}
+              className="h-8 w-10 cursor-pointer rounded border-0 bg-transparent p-0"
+              aria-label="Border color"
+            />
+            <input
+              type="text"
+              value={navStyle.borderColor}
+              onChange={(event) => onChange({ borderColor: event.target.value })}
+              className="w-full border-0 bg-transparent text-sm text-slate-700 outline-none"
+            />
+          </div>
+        </div>
+
+        <label className="block">
+          <span className="mb-1 flex items-center justify-between text-xs font-medium text-slate-500">
+            Border radius
+            <span className="tabular-nums text-slate-700">{navStyle.borderRadius}px</span>
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={24}
+            value={navStyle.borderRadius}
+            onChange={(event) => onChange({ borderRadius: Number(event.target.value) })}
+            className="w-full accent-indigo-600"
+          />
+        </label>
+
+        <div>
+          <div className="mb-1.5 flex items-center justify-between gap-2">
+            <span className="text-xs font-medium text-slate-500">Background</span>
+            <button
+              type="button"
+              onClick={() => onChange({ backgroundTransparent: !navStyle.backgroundTransparent })}
+              className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                navStyle.backgroundTransparent
+                  ? 'bg-slate-900 text-white'
+                  : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+              }`}
+            >
+              Transparent
+            </button>
+          </div>
+          <div
+            className={`flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5 ${
+              navStyle.backgroundTransparent ? 'opacity-50' : ''
+            }`}
+          >
+            <input
+              type="color"
+              value={navStyle.backgroundColor}
+              disabled={navStyle.backgroundTransparent}
+              onChange={(event) => onChange({
+                backgroundColor: event.target.value,
+                backgroundTransparent: false,
+              })}
+              className="h-8 w-10 cursor-pointer rounded border-0 bg-transparent p-0 disabled:cursor-not-allowed"
+              aria-label="Background color"
+            />
+            <input
+              type="text"
+              value={navStyle.backgroundTransparent ? 'transparent' : navStyle.backgroundColor}
+              disabled={navStyle.backgroundTransparent}
+              onChange={(event) => onChange({
+                backgroundColor: event.target.value,
+                backgroundTransparent: false,
+              })}
+              className="w-full border-0 bg-transparent text-sm text-slate-700 outline-none disabled:cursor-not-allowed"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const createMenuItem = () => ({
   name: '',
@@ -146,6 +343,24 @@ const EXISTING_PAGES = [
   '/warranty-policy',
 ];
 
+const EXISTING_PAGE_OPTIONS = EXISTING_PAGES.map((pagePath) => ({
+  value: pagePath,
+  label: pagePath === '/'
+    ? 'Home'
+    : pagePath
+      .replace(/^\//, '')
+      .split('-')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' '),
+}));
+
+const LINK_TYPE_OPTIONS = [
+  { value: 'category', label: 'Category' },
+  { value: 'product', label: 'Product' },
+  { value: 'page', label: 'Existing page' },
+  { value: 'custom', label: 'Custom URL' },
+];
+
 const safeDecode = (value) => {
   try {
     return decodeURIComponent(String(value || ''));
@@ -219,10 +434,112 @@ export default function MenuManagementPage() {
   const [uploadingNavbarLogo, setUploadingNavbarLogo] = useState(false);
   const [pendingClearLogo, setPendingClearLogo] = useState(false);
   const [navbarBranding, setNavbarBranding] = useState(defaultNavbarBranding);
+  const [navbarLayout, setNavbarLayout] = useState(DEFAULT_NAVBAR_LAYOUT);
   const [legacyNavbarItems, setLegacyNavbarItems] = useState([]);
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const [translatingKey, setTranslatingKey] = useState('');
 
   const closeConfirmDialog = () => setConfirmDialog(null);
+
+  const translateTextToArabic = async (text) => {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('Please sign in again');
+    }
+    const response = await fetch('/api/store/categories/translate-arabic', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ text }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data?.error || 'Failed to translate to Arabic');
+    }
+    return String(data?.descriptionAr || '').trim();
+  };
+
+  const translateExtraButtonToArabic = async (index) => {
+    const english = String(navbarLayout.extraButtons[index]?.label || '').trim();
+    if (!english) {
+      toast.error('Enter English text first');
+      return;
+    }
+    try {
+      setTranslatingKey(`button-${index}`);
+      const labelAr = await translateTextToArabic(english);
+      if (!labelAr) {
+        toast.error('Could not translate to Arabic');
+        return;
+      }
+      setNavbarLayout((prev) => ({
+        ...prev,
+        extraButtons: prev.extraButtons.map((item, itemIndex) => (
+          itemIndex === index ? { ...item, labelAr } : item
+        )),
+      }));
+      toast.success('Arabic text updated');
+    } catch (error) {
+      toast.error(error?.message || 'Failed to translate to Arabic');
+    } finally {
+      setTranslatingKey('');
+    }
+  };
+
+  const updateExtraButtonLink = (index, type, value) => {
+    setNavbarLayout((prev) => ({
+      ...prev,
+      extraButtons: prev.extraButtons.map((item, itemIndex) => (
+        itemIndex === index ? { ...item, link: createLinkFromChoice(type, value) } : item
+      )),
+    }));
+  };
+
+  const translateCategoriesButtonToArabic = async () => {
+    const english = String(navbarLayout.categoriesButtonLabel || '').trim();
+    if (!english) {
+      toast.error('Enter English Categories text first');
+      return;
+    }
+    try {
+      setTranslatingKey('categories');
+      const categoriesButtonLabelAr = await translateTextToArabic(english);
+      if (!categoriesButtonLabelAr) {
+        toast.error('Could not translate to Arabic');
+        return;
+      }
+      setNavbarLayout((prev) => ({ ...prev, categoriesButtonLabelAr }));
+      toast.success('Arabic Categories text updated');
+    } catch (error) {
+      toast.error(error?.message || 'Failed to translate to Arabic');
+    } finally {
+      setTranslatingKey('');
+    }
+  };
+
+  const translateSearchPlaceholderToArabic = async () => {
+    const english = String(navbarLayout.searchPlaceholder || '').trim();
+    if (!english) {
+      toast.error('Enter English search placeholder first');
+      return;
+    }
+    try {
+      setTranslatingKey('search');
+      const searchPlaceholderAr = await translateTextToArabic(english);
+      if (!searchPlaceholderAr) {
+        toast.error('Could not translate to Arabic');
+        return;
+      }
+      setNavbarLayout((prev) => ({ ...prev, searchPlaceholderAr }));
+      toast.success('Arabic placeholder updated');
+    } catch (error) {
+      toast.error(error?.message || 'Failed to translate to Arabic');
+    } finally {
+      setTranslatingKey('');
+    }
+  };
 
   const loadSettings = async () => {
     try {
@@ -273,6 +590,7 @@ export default function MenuManagementPage() {
         });
         setPendingClearLogo(false);
         setLegacyNavbarItems(Array.isArray(brandingData?.items) ? brandingData.items : []);
+        setNavbarLayout(normalizeNavbarLayout(brandingData));
       }
     } catch (error) {
       toast.error(error?.message || 'Failed to load menu settings');
@@ -366,6 +684,15 @@ export default function MenuManagementPage() {
       logoHeight: Math.max(10, Math.min(200, Number(navbarBranding.logoHeight) || defaultNavbarBranding.logoHeight)),
       backgroundColor: String(navbarBranding.backgroundColor || defaultNavbarBranding.backgroundColor).trim(),
       clearLogo: pendingClearLogo,
+      extraButtons: navbarLayout.extraButtons,
+      searchMaxWidth: navbarLayout.searchMaxWidth,
+      searchPlaceholder: navbarLayout.searchPlaceholder,
+      searchPlaceholderAr: navbarLayout.searchPlaceholderAr,
+      navbarMaxWidth: navbarLayout.navbarMaxWidth,
+      stickyHeader: navbarLayout.stickyHeader,
+      showCategoriesButton: navbarLayout.showCategoriesButton,
+      categoriesButtonLabel: navbarLayout.categoriesButtonLabel,
+      categoriesButtonLabelAr: navbarLayout.categoriesButtonLabelAr,
     };
 
     const response = await fetch('/api/store/navbar-menu', {
@@ -394,6 +721,9 @@ export default function MenuManagementPage() {
       logoHeight: data?.data?.logoHeight ?? prev.logoHeight,
     }));
     setPendingClearLogo(false);
+    if (data?.data) {
+      setNavbarLayout(normalizeNavbarLayout(data.data));
+    }
 
     if (typeof window !== 'undefined') {
       try {
@@ -405,6 +735,7 @@ export default function MenuManagementPage() {
           logoWidth: payload.logoWidth,
           logoHeight: payload.logoHeight,
           backgroundColor: payload.backgroundColor,
+          ...navbarLayout,
         }));
       } catch {
         // Ignore storage write failures.
@@ -415,6 +746,7 @@ export default function MenuManagementPage() {
           logoWidth: payload.logoWidth,
           logoHeight: payload.logoHeight,
           backgroundColor: payload.backgroundColor,
+          ...navbarLayout,
         },
       }));
     }
@@ -837,7 +1169,13 @@ export default function MenuManagementPage() {
                 categoryOptions={categoryOptions}
                 navActionsVisibility={form.navActionsVisibility}
                 userName={user?.displayName || user?.email?.split('@')[0] || 'store1920'}
-                searchPlaceholder="Wireless Headphones"
+                searchPlaceholder={navbarLayout.searchPlaceholder || 'Wireless Headphones'}
+                extraButtons={navbarLayout.extraButtons}
+                searchMaxWidth={navbarLayout.searchMaxWidth}
+                navbarMaxWidth={navbarLayout.navbarMaxWidth}
+                showCategoriesButton={navbarLayout.showCategoriesButton}
+                categoriesButtonLabel={navbarLayout.categoriesButtonLabel}
+                showMenuBar={false}
               />
             </div>
           </div>
@@ -1003,6 +1341,297 @@ export default function MenuManagementPage() {
               </div>
             </div>
           </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+            <h2 className="text-sm font-semibold text-slate-900">Buttons next to LAST CHANCE</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Add extra text buttons after LAST CHANCE and before search. Up to 3 buttons.
+            </p>
+            <div className="mt-4 space-y-3">
+              {navbarLayout.extraButtons.map((button, index) => (
+                <div key={button.id || index} className="overflow-visible rounded-xl border border-slate-200 p-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="block space-y-1">
+                      <span className="text-xs font-medium text-slate-600">Text (English)</span>
+                      <input
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                        value={button.label}
+                        onChange={(event) => setNavbarLayout((prev) => ({
+                          ...prev,
+                          extraButtons: prev.extraButtons.map((item, itemIndex) => (
+                            itemIndex === index ? { ...item, label: event.target.value } : item
+                          )),
+                        }))}
+                        placeholder="New Arrivals"
+                      />
+                    </label>
+                    <label className="block space-y-1">
+                      <span className="flex items-center justify-between gap-2 text-xs font-medium text-slate-600">
+                        Text (Arabic)
+                        <button
+                          type="button"
+                          onClick={() => translateExtraButtonToArabic(index)}
+                          disabled={translatingKey === `button-${index}` || !String(button.label || '').trim()}
+                          className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:border-violet-300 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {translatingKey === `button-${index}` ? <Loader2 size={12} className="animate-spin" /> : <Languages size={12} />}
+                          {translatingKey === `button-${index}` ? 'Translating...' : 'Translate'}
+                        </button>
+                      </span>
+                      <input
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                        dir="rtl"
+                        value={button.labelAr}
+                        onChange={(event) => setNavbarLayout((prev) => ({
+                          ...prev,
+                          extraButtons: prev.extraButtons.map((item, itemIndex) => (
+                            itemIndex === index ? { ...item, labelAr: event.target.value } : item
+                          )),
+                        }))}
+                        placeholder="وصل حديثاً"
+                      />
+                    </label>
+                    <div className="space-y-1 sm:col-span-2">
+                      <span className="text-xs font-medium text-slate-600">Link</span>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <StoreDropdown
+                          value={readLinkChoice(button.link).type}
+                          onChange={(type) => updateExtraButtonLink(index, type, '')}
+                          options={LINK_TYPE_OPTIONS}
+                          placeholder="Select link type"
+                        />
+
+                        {readLinkChoice(button.link).type === 'category' ? (
+                          <StoreDropdown
+                            searchable
+                            value={readLinkChoice(button.link).value}
+                            onChange={(value) => updateExtraButtonLink(index, 'category', value)}
+                            options={categoryOptions.map((category) => ({
+                              value: category?.slug || category?._id || '',
+                              label: category?.name || category?.slug || category?._id || 'Category',
+                            }))}
+                            placeholder="Select category"
+                            searchPlaceholder="Search categories"
+                          />
+                        ) : null}
+
+                        {readLinkChoice(button.link).type === 'product' ? (
+                          <StoreDropdown
+                            searchable
+                            value={readLinkChoice(button.link).value}
+                            onChange={(value) => updateExtraButtonLink(index, 'product', value)}
+                            options={productOptions.map((product) => ({
+                              value: product?.slug || product?._id || '',
+                              label: product?.name || product?.slug || product?._id || 'Product',
+                            }))}
+                            placeholder="Select product"
+                            searchPlaceholder="Search products"
+                          />
+                        ) : null}
+
+                        {readLinkChoice(button.link).type === 'page' ? (
+                          <StoreDropdown
+                            searchable
+                            value={readLinkChoice(button.link).value}
+                            onChange={(value) => updateExtraButtonLink(index, 'page', value)}
+                            options={EXISTING_PAGE_OPTIONS}
+                            placeholder="Select page"
+                            searchPlaceholder="Search pages"
+                          />
+                        ) : null}
+
+                        {readLinkChoice(button.link).type === 'custom' ? (
+                          <input
+                            type="text"
+                            value={readLinkChoice(button.link).value}
+                            onChange={(event) => updateExtraButtonLink(index, 'custom', event.target.value)}
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                            placeholder="https://example.com or /custom-page"
+                          />
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={button.enabled !== false}
+                        onChange={(event) => setNavbarLayout((prev) => ({
+                          ...prev,
+                          extraButtons: prev.extraButtons.map((item, itemIndex) => (
+                            itemIndex === index ? { ...item, enabled: event.target.checked } : item
+                          )),
+                        }))}
+                      />
+                      Show on website
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setNavbarLayout((prev) => ({
+                        ...prev,
+                        extraButtons: prev.extraButtons.filter((_, itemIndex) => itemIndex !== index),
+                      }))}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 hover:underline"
+                    >
+                      <Trash2 size={13} />
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              disabled={navbarLayout.extraButtons.length >= 3}
+              onClick={() => setNavbarLayout((prev) => ({
+                ...prev,
+                extraButtons: [...prev.extraButtons, createNavbarExtraButton()],
+              }))}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Plus size={14} />
+              Add button
+            </button>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">Sticky header</h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  Keep the desktop navbar on screen while customers scroll. Turn off to let it scroll away.
+                </p>
+              </div>
+              <label className="relative inline-flex cursor-pointer items-center">
+                <input
+                  type="checkbox"
+                  checked={navbarLayout.stickyHeader === true}
+                  onChange={(event) => setNavbarLayout((prev) => ({ ...prev, stickyHeader: event.target.checked }))}
+                  className="peer sr-only"
+                />
+                <span className="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-indigo-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-5" />
+              </label>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">Categories button</h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  Show Categories as its own button, separate from the search field.
+                </p>
+              </div>
+              <label className="relative inline-flex cursor-pointer items-center">
+                <input
+                  type="checkbox"
+                  checked={navbarLayout.showCategoriesButton !== false}
+                  onChange={(event) => setNavbarLayout((prev) => ({ ...prev, showCategoriesButton: event.target.checked }))}
+                  className="peer sr-only"
+                />
+                <span className="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-indigo-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-5" />
+              </label>
+            </div>
+            <div className={`mt-4 grid gap-4 md:grid-cols-2 ${navbarLayout.showCategoriesButton === false ? 'opacity-50' : ''}`}>
+              <label className="block space-y-1">
+                <span className="text-xs font-medium text-slate-600">Button text (English)</span>
+                <input
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  value={navbarLayout.categoriesButtonLabel}
+                  onChange={(event) => setNavbarLayout((prev) => ({ ...prev, categoriesButtonLabel: event.target.value }))}
+                  placeholder="Categories"
+                  disabled={navbarLayout.showCategoriesButton === false}
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="flex items-center justify-between gap-2 text-xs font-medium text-slate-600">
+                  Button text (Arabic)
+                  <button
+                    type="button"
+                    onClick={translateCategoriesButtonToArabic}
+                    disabled={translatingKey === 'categories' || !String(navbarLayout.categoriesButtonLabel || '').trim() || navbarLayout.showCategoriesButton === false}
+                    className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:border-violet-300 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {translatingKey === 'categories' ? <Loader2 size={12} className="animate-spin" /> : <Languages size={12} />}
+                    {translatingKey === 'categories' ? 'Translating...' : 'Translate'}
+                  </button>
+                </span>
+                <input
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  dir="rtl"
+                  value={navbarLayout.categoriesButtonLabelAr}
+                  onChange={(event) => setNavbarLayout((prev) => ({ ...prev, categoriesButtonLabelAr: event.target.value }))}
+                  placeholder="الفئات"
+                  disabled={navbarLayout.showCategoriesButton === false}
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+            <h2 className="text-sm font-semibold text-slate-900">Search and width</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Control the customer search field and how wide the navbar is on the website.
+            </p>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <label className="block space-y-1">
+                <span className="text-xs font-medium text-slate-600">Search placeholder (English)</span>
+                <input
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  value={navbarLayout.searchPlaceholder}
+                  onChange={(event) => setNavbarLayout((prev) => ({ ...prev, searchPlaceholder: event.target.value }))}
+                  placeholder="Wireless Headphones"
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="flex items-center justify-between gap-2 text-xs font-medium text-slate-600">
+                  Search placeholder (Arabic)
+                  <button
+                    type="button"
+                    onClick={translateSearchPlaceholderToArabic}
+                    disabled={translatingKey === 'search' || !String(navbarLayout.searchPlaceholder || '').trim()}
+                    className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:border-violet-300 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {translatingKey === 'search' ? <Loader2 size={12} className="animate-spin" /> : <Languages size={12} />}
+                    {translatingKey === 'search' ? 'Translating...' : 'Translate'}
+                  </button>
+                </span>
+                <input
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  dir="rtl"
+                  value={navbarLayout.searchPlaceholderAr}
+                  onChange={(event) => setNavbarLayout((prev) => ({ ...prev, searchPlaceholderAr: event.target.value }))}
+                  placeholder="سماعات لاسلكية"
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-xs font-medium text-slate-600">Search max width ({navbarLayout.searchMaxWidth}px)</span>
+                <input
+                  type="range"
+                  min="320"
+                  max="900"
+                  step="10"
+                  className="w-full accent-indigo-600"
+                  value={navbarLayout.searchMaxWidth}
+                  onChange={(event) => setNavbarLayout((prev) => ({ ...prev, searchMaxWidth: Number(event.target.value) }))}
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-xs font-medium text-slate-600">Navbar max width ({navbarLayout.navbarMaxWidth}px)</span>
+                <input
+                  type="range"
+                  min="1000"
+                  max="1800"
+                  step="20"
+                  className="w-full accent-indigo-600"
+                  value={navbarLayout.navbarMaxWidth}
+                  onChange={(event) => setNavbarLayout((prev) => ({ ...prev, navbarMaxWidth: Number(event.target.value) }))}
+                />
+                <span className="text-[11px] text-slate-500">Used for the customer navbar and menu row.</span>
+              </label>
+            </div>
+          </div>
         </div>
       ) : null}
 
@@ -1025,7 +1654,12 @@ export default function MenuManagementPage() {
               categoryOptions={categoryOptions}
               navActionsVisibility={form.navActionsVisibility}
               userName={user?.displayName || user?.email?.split('@')[0] || 'store1920'}
-              searchPlaceholder="Coffee Maker"
+              searchPlaceholder={navbarLayout.searchPlaceholder || 'Coffee Maker'}
+              extraButtons={navbarLayout.extraButtons}
+              searchMaxWidth={navbarLayout.searchMaxWidth}
+              navbarMaxWidth={navbarLayout.navbarMaxWidth}
+              showCategoriesButton={navbarLayout.showCategoriesButton}
+              categoriesButtonLabel={navbarLayout.categoriesButtonLabel}
             />
           </div>
         </div>

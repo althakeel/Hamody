@@ -48,6 +48,7 @@ import { getProductPath } from '@/lib/productUrl';
 import NewProductTagBadge from '@/components/NewProductTagBadge';
 import { secureSignOut } from '@/lib/authClient';
 import { showStorefrontActionToast } from '@/lib/storefrontActionToast';
+import { DEFAULT_NAVBAR_LAYOUT, getNavbarCategoriesButtonLabel, normalizeNavbarLayout, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';
 
 const NAVBAR_SELECTED_ADDRESS_KEY = 'navbarSelectedAddressId';
 const NAVBAR_APPEARANCE_CACHE_KEY = 'navbarAppearanceCache';
@@ -59,8 +60,10 @@ const EMPTY_NAVBAR_APPEARANCE = {
   logoWidth: 120,
   logoHeight: 40,
   backgroundColor: '',
+  ...DEFAULT_NAVBAR_LAYOUT,
 };
-const NAVBAR_CONTAINER_CLASS = 'mx-auto w-full max-w-[1400px] px-4 sm:px-6';
+const getNavbarContainerStyle = (maxWidth = 1400) => ({ maxWidth: Number(maxWidth) || 1400 });
+const NAVBAR_CONTAINER_CLASS = 'mx-auto w-full px-4 sm:px-6';
 
 const resolveNavbarLogoSrc = (logoUrl) => String(logoUrl || '').trim();
 
@@ -69,6 +72,7 @@ const normalizeNavbarAppearance = (appearance = {}) => ({
   logoWidth: Number(appearance.logoWidth) > 0 ? Number(appearance.logoWidth) : 120,
   logoHeight: Number(appearance.logoHeight) > 0 ? Number(appearance.logoHeight) : 40,
   backgroundColor: String(appearance.backgroundColor || '').trim(),
+  ...normalizeNavbarLayout(appearance),
 });
 
 const readCachedNavbarAppearance = () => {
@@ -555,9 +559,10 @@ const Navbar = () => {
 
     const fetchNavbarAppearance = async () => {
       try {
-        const response = await fetch('/api/store/navbar-menu', {
+        const response = await fetch(`/api/store/navbar-menu?t=${Date.now()}`, {
           // Always use public storefront navbar appearance.
           // Passing auth headers can switch to user-scoped settings and clear the logo.
+          cache: 'no-store',
           headers: {},
           signal: controller.signal,
         });
@@ -573,12 +578,7 @@ const Navbar = () => {
           backgroundColor: data.backgroundColor || '(empty)',
         });
 
-        const nextAppearance = normalizeNavbarAppearance({
-          logoUrl: data.logoUrl || '',
-          logoWidth: data.logoWidth ?? 120,
-          logoHeight: data.logoHeight ?? 40,
-          backgroundColor: data.backgroundColor || '',
-        });
+        const nextAppearance = normalizeNavbarAppearance(data);
 
         setNavbarAppearance(nextAppearance);
         try {
@@ -655,6 +655,8 @@ const Navbar = () => {
       }
       
       setNavbarAppearance((prev) => normalizeNavbarAppearance({
+        ...prev,
+        ...detail,
         logoUrl: hasValidLogoUrl ? detail.logoUrl : prev.logoUrl,
         logoWidth: (typeof detail.logoWidth === 'number' && detail.logoWidth > 0) ? detail.logoWidth : prev.logoWidth,
         logoHeight: (typeof detail.logoHeight === 'number' && detail.logoHeight > 0) ? detail.logoHeight : prev.logoHeight,
@@ -866,8 +868,13 @@ const Navbar = () => {
         'Phone Case',
       ];
 
+  const customSearchPlaceholder = storefrontLanguage === 'ar'
+    ? (navbarAppearance.searchPlaceholderAr || navbarAppearance.searchPlaceholder || '')
+    : (navbarAppearance.searchPlaceholder || navbarAppearance.searchPlaceholderAr || '');
+
   // Typewriter effect for search placeholder
   useEffect(() => {
+    if (customSearchPlaceholder) return undefined;
     const currentProduct = productNames[productIndex];
     const typingSpeed = isDeleting ? 50 : 100;
     
@@ -893,7 +900,7 @@ const Navbar = () => {
     }, typingSpeed);
 
     return () => clearTimeout(timer);
-  }, [searchPlaceholder, isDeleting, productIndex, productNames]);
+  }, [customSearchPlaceholder, searchPlaceholder, isDeleting, productIndex, productNames]);
 
   useEffect(() => {
     return () => {
@@ -1521,7 +1528,7 @@ const Navbar = () => {
       </div>
 
       <div className="relative z-50 hidden overflow-hidden border-b border-slate-200 bg-slate-200 lg:block">
-        <div className={`${NAVBAR_CONTAINER_CLASS} flex items-center gap-3 py-2.5 lg:gap-4`}>
+        <div className={`${NAVBAR_CONTAINER_CLASS} flex items-center gap-3 py-2.5 lg:gap-4`} style={getNavbarContainerStyle(navbarAppearance.navbarMaxWidth)}>
           <div className="h-10 w-[120px] shrink-0 animate-pulse rounded-md bg-slate-300 xl:w-[160px]" />
           <div className="hidden h-4 w-28 animate-pulse rounded-full bg-slate-300/80 xl:block" />
           <div className="h-11 min-w-0 flex-1 animate-pulse rounded-2xl bg-slate-300/70" />
@@ -1685,7 +1692,7 @@ const Navbar = () => {
                 ref={mobileSearchInputRef}
                 type="search"
                 enterKeyHint="search"
-                placeholder={searchPlaceholder || t('navbar.searchFragrances')}
+                placeholder={customSearchPlaceholder || searchPlaceholder || t('navbar.searchFragrances')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onFocus={() => setSearchFocused(true)}
@@ -1764,7 +1771,7 @@ const Navbar = () => {
 
       {/* Original Full Navbar (Desktop only) */}
       <div
-        className="relative z-50 hidden overflow-visible lg:block"
+        className={`${navbarAppearance.stickyHeader ? 'sticky top-0 z-[60]' : 'relative z-50'} hidden overflow-visible lg:block`}
         onMouseLeave={categoriesDropdownOpen ? closeCategoriesDropdown : undefined}
       >
       <nav
@@ -1775,7 +1782,7 @@ const Navbar = () => {
           color: navbarTextColor,
         }}
       >
-      <div className={NAVBAR_CONTAINER_CLASS}>
+      <div className={NAVBAR_CONTAINER_CLASS} style={getNavbarContainerStyle(navbarAppearance.navbarMaxWidth)}>
         <div className="flex min-w-0 items-center gap-2 py-2.5 lg:gap-3">
           {/* Left — logo */}
           <div className="flex min-w-0 shrink-0 items-center gap-2">
@@ -1822,7 +1829,37 @@ const Navbar = () => {
           {/* Center — today's deals + search */}
           <div className="relative hidden min-w-0 flex-1 items-center justify-center gap-3 lg:flex xl:gap-4">
             {renderTodaysDealsButton({ variant: 'desktop' })}
-            <div className="relative z-[70] min-w-0 w-full max-w-[440px] lg:max-w-[min(48vw,540px)] xl:max-w-[min(44vw,600px)] 2xl:max-w-[640px]">
+            {visibleNavbarExtraButtons(navbarAppearance.extraButtons, storefrontLanguage).map((button) => (
+              <Link
+                key={button.id}
+                href={button.link || '/offers'}
+                className="hidden shrink-0 items-center font-extrabold leading-none tracking-[0.04em] text-white transition hover:opacity-90 lg:inline-flex"
+              >
+                {button.displayLabel}
+              </Link>
+            ))}
+            {navbarAppearance.showCategoriesButton !== false ? (
+              <div
+                ref={categoriesTriggerRef}
+                className="relative hidden shrink-0 lg:block"
+                onMouseEnter={openCategoriesDropdown}
+              >
+                <button
+                  type="button"
+                  className="inline-flex h-[44px] items-center gap-1.5 rounded-2xl border bg-white px-3 text-[13px] font-medium leading-none text-slate-700 shadow-sm transition hover:bg-slate-50 xl:px-4"
+                  style={{ borderColor: 'rgba(255,255,255,0.92)' }}
+                >
+                  <span>
+                    {getNavbarCategoriesButtonLabel(navbarAppearance, storefrontLanguage, t('navbar.categories'))}
+                  </span>
+                  <span className="text-[11px] text-slate-400">▾</span>
+                </button>
+              </div>
+            ) : null}
+            <div
+              className="relative z-[70] min-w-0 w-full"
+              style={{ maxWidth: Number(navbarAppearance.searchMaxWidth) || 600 }}
+            >
             <form
               onSubmit={handleSearch}
               className="w-full"
@@ -1834,24 +1871,9 @@ const Navbar = () => {
                   backgroundColor: '#ffffff',
                 }}
               >
-                <div
-                  ref={categoriesTriggerRef}
-                  className="flex shrink-0 items-center"
-                  onMouseEnter={openCategoriesDropdown}
-                >
-                  <button
-                    type="button"
-                    className="group inline-flex items-center gap-1 rounded-xl px-1.5 py-1 text-[13px] font-medium leading-none text-slate-700 transition hover:bg-slate-50 xl:gap-1.5 xl:px-2"
-                  >
-                    <span className="hidden xl:inline">{t('navbar.categories')}</span>
-                    <span className="xl:hidden">Cat</span>
-                    <span className="text-[11px] text-slate-400 transition group-hover:translate-y-[1px]">▾</span>
-                  </button>
-                  <span className="mx-1.5 h-5 w-px shrink-0 bg-slate-200 xl:mx-2" />
-                </div>
                 <input
                   type="text"
-                  placeholder={searchPlaceholder || t('navbar.searchFragrances')}
+                  placeholder={customSearchPlaceholder || searchPlaceholder || t('navbar.searchFragrances')}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   onFocus={() => setSearchFocused(true)}

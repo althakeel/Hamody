@@ -4,10 +4,11 @@ import { useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import axios from 'axios'
 import ProductCard from '@/components/ProductCard'
 import ProductFilterSidebar from '@/components/ProductFilterSidebar'
+import { PRODUCT_CARD_GRID_CLASS_5 } from '@/lib/storefrontCarousel'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
 
 const NEW_ARRIVALS_LIMIT = 500
-const PAGE_SIZE = 24
+const PAGE_SIZE = 25
 
 const DEFAULT_FILTERS = {
   categories: [],
@@ -17,10 +18,10 @@ const DEFAULT_FILTERS = {
   sortBy: 'newest',
 }
 
-function NewArrivalsGridSkeleton() {
+function NewArrivalsGridSkeleton({ count = PAGE_SIZE }) {
   return (
-    <div className="grid grid-cols-2 items-stretch gap-3 md:grid-cols-3 lg:grid-cols-6">
-      {Array.from({ length: PAGE_SIZE }).map((_, index) => (
+    <div className={PRODUCT_CARD_GRID_CLASS_5}>
+      {Array.from({ length: count }).map((_, index) => (
         <div
           key={index}
           className="aspect-[3/4] animate-pulse rounded-lg border border-gray-200 bg-white"
@@ -35,9 +36,10 @@ export default function NewProductsPage() {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [activeFilters, setActiveFilters] = useState(DEFAULT_FILTERS)
-  const skipScrollRef = useRef(true)
+  const sentinelRef = useRef(null)
+  const loadingMoreRef = useRef(false)
 
   useEffect(() => {
     let cancelled = false
@@ -147,45 +149,41 @@ export default function NewProductsPage() {
   }, [newProducts, applyFilters, sortProducts])
 
   const totalProducts = filteredAndSortedProducts.length
-  const totalPages = Math.max(1, Math.ceil(totalProducts / PAGE_SIZE))
-  const safeCurrentPage = Math.min(currentPage, totalPages)
-
-  const paginatedProducts = useMemo(() => {
-    const start = (safeCurrentPage - 1) * PAGE_SIZE
-    return filteredAndSortedProducts.slice(start, start + PAGE_SIZE)
-  }, [filteredAndSortedProducts, safeCurrentPage])
-
-  const paginationStart = totalProducts ? ((safeCurrentPage - 1) * PAGE_SIZE) + 1 : 0
-  const paginationEnd = totalProducts
-    ? Math.min(safeCurrentPage * PAGE_SIZE, totalProducts)
-    : 0
+  const safeVisibleCount = Math.min(visibleCount, totalProducts)
+  const visibleProducts = useMemo(
+    () => filteredAndSortedProducts.slice(0, safeVisibleCount || PAGE_SIZE),
+    [filteredAndSortedProducts, safeVisibleCount]
+  )
+  const hasMore = safeVisibleCount < totalProducts
 
   useEffect(() => {
-    if (currentPage !== safeCurrentPage) {
-      setCurrentPage(safeCurrentPage)
-    }
-  }, [currentPage, safeCurrentPage])
-
-  useEffect(() => {
-    setCurrentPage(1)
+    setVisibleCount(PAGE_SIZE)
   }, [activeFilters])
 
   useEffect(() => {
-    if (loading) return
-    if (skipScrollRef.current) {
-      skipScrollRef.current = false
-      return
-    }
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }, [safeCurrentPage, loading])
+    const node = sentinelRef.current
+    if (!node || loading || !hasMore) return undefined
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0]
+        if (!entry?.isIntersecting || loadingMoreRef.current) return
+        loadingMoreRef.current = true
+        setVisibleCount((current) => current + PAGE_SIZE)
+        window.setTimeout(() => {
+          loadingMoreRef.current = false
+        }, 80)
+      },
+      { root: null, rootMargin: '400px 0px', threshold: 0 },
+    )
+
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [loading, hasMore, safeVisibleCount])
 
   const handleFilterChange = useCallback((filters) => {
     setActiveFilters(filters)
   }, [])
-
-  const goToPage = (nextPage) => {
-    setCurrentPage(Math.min(Math.max(1, nextPage), totalPages))
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -239,55 +237,26 @@ export default function NewProductsPage() {
               </div>
             ) : (
               <>
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm text-gray-600">
-                    {t('shop.showingRange', {
-                      from: paginationStart,
-                      to: paginationEnd,
-                      total: totalProducts,
-                      label: totalProducts === 1 ? t('common.product') : t('common.products'),
-                    })}
-                  </p>
-                  {totalPages > 1 ? (
-                    <p className="text-sm text-gray-500">
-                      {t('shop.pageOf', { page: safeCurrentPage, total: totalPages })}
-                    </p>
-                  ) : null}
-                </div>
+                <p className="mb-4 text-sm text-gray-600">
+                  {t('shop.showingRange', {
+                    from: totalProducts ? 1 : 0,
+                    to: safeVisibleCount,
+                    total: totalProducts,
+                    label: totalProducts === 1 ? t('common.product') : t('common.products'),
+                  })}
+                </p>
 
-                <div className="grid grid-cols-2 items-stretch gap-3 md:grid-cols-3 lg:grid-cols-6">
-                  {paginatedProducts.map((product, idx) => (
+                <div className={PRODUCT_CARD_GRID_CLASS_5}>
+                  {visibleProducts.map((product, idx) => (
                     <ProductCard
                       key={product._id || product.id || product.slug || idx}
                       product={product}
-                      priorityImages={safeCurrentPage === 1 && idx < 6}
+                      priorityImages={idx < 5}
                     />
                   ))}
                 </div>
 
-                {totalPages > 1 ? (
-                  <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => goToPage(safeCurrentPage - 1)}
-                      disabled={safeCurrentPage <= 1}
-                      className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {t('shop.previous')}
-                    </button>
-                    <span className="px-3 text-sm text-gray-600">
-                      {t('shop.pageOf', { page: safeCurrentPage, total: totalPages })}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => goToPage(safeCurrentPage + 1)}
-                      disabled={safeCurrentPage >= totalPages}
-                      className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {t('shop.next')}
-                    </button>
-                  </div>
-                ) : null}
+                <div ref={sentinelRef} className="h-8 w-full" aria-hidden="true" />
               </>
             )}
           </div>
