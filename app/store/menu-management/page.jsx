@@ -6,18 +6,19 @@ import { useAuth } from '@/lib/useAuth';
 import toast from 'react-hot-toast';
 import PageSkeleton from '@/components/PageSkeleton';
 import NavbarPreview from '@/components/store/NavbarPreview';
+import NavbarItemArrange from '@/components/store/NavbarItemArrange';
 import StoreDropdown from '@/components/store/StoreDropdown';
 import { STORE1920_LOGO_PATH } from '@/lib/brandLogo';
 import {
+  DEFAULT_CATEGORIES_BUTTON_STYLE,
   DEFAULT_NAVBAR_LAYOUT,
   createNavbarExtraButton,
+  normalizeNavbarItemOrder,
   normalizeNavbarLayout,
 } from '@/lib/navbarLayoutSettings';
 import {
-  DEFAULT_OFFERS_NAV_STYLE,
   OFFERS_NAV_FONT_OPTIONS,
   getOffersNavButtonAppearance,
-  normalizeOffersNavStyle,
 } from '@/lib/offersPageSettings';
 import {
   filterParentCategories,
@@ -43,16 +44,16 @@ import {
   X,
 } from 'lucide-react';
 
-function ExtraButtonStyleEditor({ style, previewLabel, onChange }) {
-  const navStyle = style || DEFAULT_OFFERS_NAV_STYLE;
+function ExtraButtonStyleEditor({ style, previewLabel, onChange, disabled = false }) {
+  const navStyle = style || DEFAULT_CATEGORIES_BUTTON_STYLE;
   const preview = getOffersNavButtonAppearance(navStyle, 'desktop');
   const fontLabel = OFFERS_NAV_FONT_OPTIONS.find((font) => font.id === (navStyle.fontFamily || 'inherit'))?.label || 'Default';
 
   return (
-    <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+    <div className={`mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 ${disabled ? 'pointer-events-none opacity-50' : ''}`}>
       <h3 className="text-xs font-semibold text-slate-800">Font and design</h3>
       <p className="mt-1 text-[11px] text-slate-400">
-        Same style options as LAST CHANCE: font, size, color, border, and background.
+        Font, size, color, border, radius, and transparent or solid background.
       </p>
 
       <div className="mt-3 space-y-3">
@@ -61,6 +62,7 @@ function ExtraButtonStyleEditor({ style, previewLabel, onChange }) {
           <select
             value={navStyle.fontFamily || 'inherit'}
             onChange={(event) => onChange({ fontFamily: event.target.value })}
+            disabled={disabled}
             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
           >
             {OFFERS_NAV_FONT_OPTIONS.map((font) => (
@@ -91,6 +93,7 @@ function ExtraButtonStyleEditor({ style, previewLabel, onChange }) {
             max={22}
             value={navStyle.fontSize}
             onChange={(event) => onChange({ fontSize: Number(event.target.value) })}
+            disabled={disabled}
             className="w-full accent-indigo-600"
           />
         </label>
@@ -101,6 +104,7 @@ function ExtraButtonStyleEditor({ style, previewLabel, onChange }) {
             <button
               type="button"
               onClick={() => onChange({ fontColorAuto: !navStyle.fontColorAuto })}
+              disabled={disabled}
               className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
                 navStyle.fontColorAuto
                   ? 'bg-slate-900 text-white'
@@ -118,7 +122,7 @@ function ExtraButtonStyleEditor({ style, previewLabel, onChange }) {
             <input
               type="color"
               value={navStyle.fontColor || '#ffffff'}
-              disabled={navStyle.fontColorAuto}
+              disabled={disabled || navStyle.fontColorAuto}
               onChange={(event) => onChange({ fontColor: event.target.value, fontColorAuto: false })}
               className="h-8 w-10 cursor-pointer rounded border-0 bg-transparent p-0 disabled:cursor-not-allowed"
               aria-label="Font color"
@@ -126,7 +130,7 @@ function ExtraButtonStyleEditor({ style, previewLabel, onChange }) {
             <input
               type="text"
               value={navStyle.fontColorAuto ? 'auto' : navStyle.fontColor}
-              disabled={navStyle.fontColorAuto}
+              disabled={disabled || navStyle.fontColorAuto}
               onChange={(event) => onChange({ fontColor: event.target.value, fontColorAuto: false })}
               className="w-full border-0 bg-transparent text-sm text-slate-700 outline-none disabled:cursor-not-allowed"
             />
@@ -135,22 +139,37 @@ function ExtraButtonStyleEditor({ style, previewLabel, onChange }) {
 
         <div>
           <span className="mb-1 flex items-center justify-between text-xs font-medium text-slate-500">
-            Border
-            <span className="tabular-nums text-slate-700">{navStyle.borderWidth}px</span>
+            Border width
+            <span className="tabular-nums text-slate-700">{navStyle.borderWidth ?? 0}px</span>
           </span>
-          <input
-            type="range"
-            min={0}
-            max={6}
-            value={navStyle.borderWidth}
-            onChange={(event) => onChange({ borderWidth: Number(event.target.value) })}
-            className="w-full accent-indigo-600"
-          />
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0}
+              max={8}
+              value={navStyle.borderWidth ?? 0}
+              onChange={(event) => onChange({ borderWidth: Number(event.target.value) })}
+              disabled={disabled}
+              className="min-w-0 flex-1 accent-indigo-600"
+            />
+            <input
+              type="number"
+              min={0}
+              max={8}
+              value={navStyle.borderWidth ?? 0}
+              onChange={(event) => onChange({ borderWidth: Number(event.target.value) || 0 })}
+              disabled={disabled}
+              className="w-16 shrink-0 rounded-lg border border-slate-200 bg-white px-2 py-1 text-center text-xs tabular-nums"
+              aria-label="Border width"
+            />
+          </div>
+          <p className="mt-1 text-[11px] text-slate-400">0px removes the border.</p>
           <div className="mt-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5">
             <input
               type="color"
               value={navStyle.borderColor}
               onChange={(event) => onChange({ borderColor: event.target.value })}
+              disabled={disabled}
               className="h-8 w-10 cursor-pointer rounded border-0 bg-transparent p-0"
               aria-label="Border color"
             />
@@ -158,6 +177,7 @@ function ExtraButtonStyleEditor({ style, previewLabel, onChange }) {
               type="text"
               value={navStyle.borderColor}
               onChange={(event) => onChange({ borderColor: event.target.value })}
+              disabled={disabled}
               className="w-full border-0 bg-transparent text-sm text-slate-700 outline-none"
             />
           </div>
@@ -166,16 +186,60 @@ function ExtraButtonStyleEditor({ style, previewLabel, onChange }) {
         <label className="block">
           <span className="mb-1 flex items-center justify-between text-xs font-medium text-slate-500">
             Border radius
-            <span className="tabular-nums text-slate-700">{navStyle.borderRadius}px</span>
+            <span className="tabular-nums text-slate-700">{navStyle.borderRadius ?? 0}px</span>
           </span>
-          <input
-            type="range"
-            min={0}
-            max={24}
-            value={navStyle.borderRadius}
-            onChange={(event) => onChange({ borderRadius: Number(event.target.value) })}
-            className="w-full accent-indigo-600"
-          />
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0}
+              max={40}
+              value={navStyle.borderRadius ?? 0}
+              onChange={(event) => onChange({ borderRadius: Number(event.target.value) })}
+              disabled={disabled}
+              className="min-w-0 flex-1 accent-indigo-600"
+            />
+            <input
+              type="number"
+              min={0}
+              max={40}
+              value={navStyle.borderRadius ?? 0}
+              onChange={(event) => onChange({ borderRadius: Number(event.target.value) || 0 })}
+              disabled={disabled}
+              className="w-16 shrink-0 rounded-lg border border-slate-200 bg-white px-2 py-1 text-center text-xs tabular-nums"
+              aria-label="Border radius"
+            />
+          </div>
+          <p className="mt-1 text-[11px] text-slate-400">0px is square. Increase for a rounder button.</p>
+        </label>
+
+        <label className="block">
+          <span className="mb-1 flex items-center justify-between text-xs font-medium text-slate-500">
+            Button width
+            <span className="tabular-nums text-slate-700">{navStyle.width ? `${navStyle.width}px` : 'Auto'}</span>
+          </span>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0}
+              max={400}
+              step={2}
+              value={navStyle.width ?? 0}
+              onChange={(event) => onChange({ width: Number(event.target.value) })}
+              disabled={disabled}
+              className="min-w-0 flex-1 accent-indigo-600"
+            />
+            <input
+              type="number"
+              min={0}
+              max={400}
+              value={navStyle.width ?? 0}
+              onChange={(event) => onChange({ width: Number(event.target.value) || 0 })}
+              disabled={disabled}
+              className="w-16 shrink-0 rounded-lg border border-slate-200 bg-white px-2 py-1 text-center text-xs tabular-nums"
+              aria-label="Button width"
+            />
+          </div>
+          <p className="mt-1 text-[11px] text-slate-400">0 is auto width. Type a pixel width to lock the size.</p>
         </label>
 
         <div>
@@ -184,6 +248,7 @@ function ExtraButtonStyleEditor({ style, previewLabel, onChange }) {
             <button
               type="button"
               onClick={() => onChange({ backgroundTransparent: !navStyle.backgroundTransparent })}
+              disabled={disabled}
               className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
                 navStyle.backgroundTransparent
                   ? 'bg-slate-900 text-white'
@@ -201,7 +266,7 @@ function ExtraButtonStyleEditor({ style, previewLabel, onChange }) {
             <input
               type="color"
               value={navStyle.backgroundColor}
-              disabled={navStyle.backgroundTransparent}
+              disabled={disabled || navStyle.backgroundTransparent}
               onChange={(event) => onChange({
                 backgroundColor: event.target.value,
                 backgroundTransparent: false,
@@ -212,7 +277,7 @@ function ExtraButtonStyleEditor({ style, previewLabel, onChange }) {
             <input
               type="text"
               value={navStyle.backgroundTransparent ? 'transparent' : navStyle.backgroundColor}
-              disabled={navStyle.backgroundTransparent}
+              disabled={disabled || navStyle.backgroundTransparent}
               onChange={(event) => onChange({
                 backgroundColor: event.target.value,
                 backgroundTransparent: false,
@@ -693,6 +758,8 @@ export default function MenuManagementPage() {
       showCategoriesButton: navbarLayout.showCategoriesButton,
       categoriesButtonLabel: navbarLayout.categoriesButtonLabel,
       categoriesButtonLabelAr: navbarLayout.categoriesButtonLabelAr,
+      categoriesButtonStyle: navbarLayout.categoriesButtonStyle,
+      itemOrder: navbarLayout.itemOrder,
     };
 
     const response = await fetch('/api/store/navbar-menu', {
@@ -1175,10 +1242,18 @@ export default function MenuManagementPage() {
                 navbarMaxWidth={navbarLayout.navbarMaxWidth}
                 showCategoriesButton={navbarLayout.showCategoriesButton}
                 categoriesButtonLabel={navbarLayout.categoriesButtonLabel}
+                categoriesButtonStyle={navbarLayout.categoriesButtonStyle}
+                itemOrder={navbarLayout.itemOrder}
                 showMenuBar={false}
               />
             </div>
           </div>
+
+          <NavbarItemArrange
+            layout={navbarLayout}
+            visibility={form.navActionsVisibility}
+            onChange={(itemOrder) => setNavbarLayout((prev) => ({ ...prev, itemOrder }))}
+          />
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3">
@@ -1468,10 +1543,14 @@ export default function MenuManagementPage() {
                     </label>
                     <button
                       type="button"
-                      onClick={() => setNavbarLayout((prev) => ({
-                        ...prev,
-                        extraButtons: prev.extraButtons.filter((_, itemIndex) => itemIndex !== index),
-                      }))}
+                      onClick={() => setNavbarLayout((prev) => {
+                        const extraButtons = prev.extraButtons.filter((_, itemIndex) => itemIndex !== index);
+                        return {
+                          ...prev,
+                          extraButtons,
+                          itemOrder: normalizeNavbarItemOrder(prev.itemOrder, extraButtons),
+                        };
+                      })}
                       className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 hover:underline"
                     >
                       <Trash2 size={13} />
@@ -1484,10 +1563,14 @@ export default function MenuManagementPage() {
             <button
               type="button"
               disabled={navbarLayout.extraButtons.length >= 3}
-              onClick={() => setNavbarLayout((prev) => ({
-                ...prev,
-                extraButtons: [...prev.extraButtons, createNavbarExtraButton()],
-              }))}
+              onClick={() => setNavbarLayout((prev) => {
+                const extraButtons = [...prev.extraButtons, createNavbarExtraButton()];
+                return {
+                  ...prev,
+                  extraButtons,
+                  itemOrder: normalizeNavbarItemOrder(prev.itemOrder, extraButtons),
+                };
+              })}
               className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus size={14} />
@@ -1567,6 +1650,18 @@ export default function MenuManagementPage() {
                 />
               </label>
             </div>
+            <ExtraButtonStyleEditor
+              style={navbarLayout.categoriesButtonStyle}
+              previewLabel={navbarLayout.categoriesButtonLabel || 'Categories'}
+              disabled={navbarLayout.showCategoriesButton === false}
+              onChange={(patch) => setNavbarLayout((prev) => ({
+                ...prev,
+                categoriesButtonStyle: {
+                  ...(prev.categoriesButtonStyle || {}),
+                  ...patch,
+                },
+              }))}
+            />
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
@@ -1660,6 +1755,8 @@ export default function MenuManagementPage() {
               navbarMaxWidth={navbarLayout.navbarMaxWidth}
               showCategoriesButton={navbarLayout.showCategoriesButton}
               categoriesButtonLabel={navbarLayout.categoriesButtonLabel}
+              categoriesButtonStyle={navbarLayout.categoriesButtonStyle}
+              itemOrder={navbarLayout.itemOrder}
             />
           </div>
         </div>

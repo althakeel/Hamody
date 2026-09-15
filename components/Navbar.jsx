@@ -48,7 +48,7 @@ import { getProductPath } from '@/lib/productUrl';
 import NewProductTagBadge from '@/components/NewProductTagBadge';
 import { secureSignOut } from '@/lib/authClient';
 import { showStorefrontActionToast } from '@/lib/storefrontActionToast';
-import { DEFAULT_NAVBAR_LAYOUT, getNavbarCategoriesButtonLabel, normalizeNavbarLayout, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';
+import { DEFAULT_NAVBAR_LAYOUT, getNavbarCategoriesButtonAppearance, getNavbarCategoriesButtonLabel, isNavbarItemVisible, normalizeNavbarItemOrder, normalizeNavbarLayout, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';
 
 const NAVBAR_SELECTED_ADDRESS_KEY = 'navbarSelectedAddressId';
 const NAVBAR_APPEARANCE_CACHE_KEY = 'navbarAppearanceCache';
@@ -358,6 +358,10 @@ const Navbar = () => {
   const navbarTextColor = getContrastColor(desktopNavbarBackgroundColor);
   const navbarLogoSrc = resolveNavbarLogoSrc(navbarAppearance.logoUrl);
   const searchAccentColor = resolvedNavbarBg || '#0f172a';
+  const categoriesAppearance = getNavbarCategoriesButtonAppearance(navbarAppearance, 'desktop');
+  const desktopExtraButtons = visibleNavbarExtraButtons(navbarAppearance.extraButtons, storefrontLanguage);
+  const desktopItemOrder = normalizeNavbarItemOrder(navbarAppearance.itemOrder, navbarAppearance.extraButtons)
+    .filter((id) => isNavbarItemVisible(id, navbarAppearance, navActionsVisibility));
 
   const renderNavbarLogoImage = ({
     width,
@@ -1644,6 +1648,209 @@ const Navbar = () => {
     </div>
   ) : null;
 
+  const renderDesktopNavbarItem = (itemId) => {
+    if (itemId === 'logo') {
+      return (
+        <div className="flex min-w-0 shrink-0 items-center gap-2">
+          {isHomePage && (
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 hover:bg-gray-100 rounded-full transition"
+            >
+              {mobileMenuOpen ? <X size={24} className="text-gray-900" /> : <Menu size={24} className="text-gray-900" />}
+            </button>
+          )}
+          <Link
+            href="/"
+            onClick={handleLogoNavigation}
+            className="flex items-center gap-2 flex-shrink-0"
+          >
+            {renderNavbarLogoImage({
+              width: navbarAppearance.logoWidth,
+              height: navbarAppearance.logoHeight,
+              className: 'h-auto w-auto max-w-[88px] object-contain flex-shrink-0 xl:max-w-[180px]',
+              style: { maxHeight: '50px' },
+              priority: true,
+            })}
+          </Link>
+        </div>
+      );
+    }
+
+    if (itemId === 'deals') {
+      return renderTodaysDealsButton({ variant: 'desktop' });
+    }
+
+    if (itemId === 'categories') {
+      return (
+        <div
+          ref={categoriesTriggerRef}
+          className="relative shrink-0"
+          onMouseEnter={openCategoriesDropdown}
+        >
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 font-medium leading-none transition hover:opacity-90"
+            data-font={categoriesAppearance.fontId || 'inherit'}
+            style={{
+              ...categoriesAppearance.style,
+              minHeight: 44,
+              height: 44,
+            }}
+          >
+            <span>
+              {getNavbarCategoriesButtonLabel(navbarAppearance, storefrontLanguage, t('navbar.categories'))}
+            </span>
+            <span
+              className="text-[11px]"
+              style={{ color: categoriesAppearance.textColor || undefined, opacity: 0.55 }}
+            >
+              ▾
+            </span>
+          </button>
+        </div>
+      );
+    }
+
+    if (itemId === 'search') {
+      return (
+        <div
+          className="relative z-[70] min-w-0 w-full"
+          style={{ maxWidth: Number(navbarAppearance.searchMaxWidth) || 600 }}
+        >
+          <form onSubmit={handleSearch} className="w-full">
+            <div
+              className="flex h-[44px] w-full min-w-0 items-center overflow-hidden rounded-2xl border px-2 shadow-sm xl:px-3"
+              style={{
+                borderColor: 'rgba(255,255,255,0.92)',
+                backgroundColor: '#ffffff',
+              }}
+            >
+              <input
+                type="text"
+                placeholder={customSearchPlaceholder || searchPlaceholder || t('navbar.searchFragrances')}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+                className="min-w-0 flex-1 bg-transparent text-[14px] leading-none text-slate-800 outline-none placeholder:text-slate-400"
+              />
+              <button
+                type="submit"
+                className="ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition hover:bg-slate-100"
+                style={{ color: searchAccentColor }}
+                aria-label="Search"
+              >
+                <Search size={15} />
+              </button>
+            </div>
+          </form>
+          {renderSearchSuggestionsDropdown(
+            'absolute left-0 right-0 top-full z-[80] mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl',
+          )}
+        </div>
+      );
+    }
+
+    if (itemId === 'account') {
+      return firebaseUser ? (
+        <div className="flex items-center">
+          <div className="relative" ref={userDropdownRef}>
+            {renderAccountMenuTrigger({
+              signedIn: true,
+              onClick: () => setUserDropdownOpen((prev) => !prev),
+              tone: 'light',
+            })}
+            {userDropdownOpen && (
+              <div className="absolute right-0 top-12 min-w-[220px] bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-2">
+                {isSeller && (
+                  <button
+                    className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm"
+                    onClick={() => router.push('/store')}
+                  >
+                    {t('navbar.sellerDashboard')}
+                  </button>
+                )}
+                <Link href="/dashboard/profile" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm" onClick={() => setUserDropdownOpen(false)}>{t('navbar.profile')}</Link>
+                <Link href="/dashboard/security" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm" onClick={() => setUserDropdownOpen(false)}>Security</Link>
+                <Link href="/dashboard/orders" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm" onClick={() => setUserDropdownOpen(false)}>{t('navbar.orders')}</Link>
+                {storefrontWalletEnabled ? (
+                  <Link href="/wallet" className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm" onClick={() => setUserDropdownOpen(false)}>
+                    <Image src={WalletIcon} alt="" width={18} height={18} className="shrink-0 object-contain" aria-hidden="true" />
+                    <span>{walletCoins > 0 ? formatWalletAmount(walletCoins) : t('navbar.wallet')}</span>
+                  </Link>
+                ) : null}
+                <Link href="/dashboard/wishlist" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm" onClick={() => setUserDropdownOpen(false)}>{t('navbar.wishlist')}</Link>
+                <Link href="/dashboard/addresses" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm" onClick={() => setUserDropdownOpen(false)}>{t('navbar.addresses')}</Link>
+                <div className="my-1 border-t border-gray-200" />
+                <Link href="/dashboard/settings" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm" onClick={() => setUserDropdownOpen(false)}>{t('navbar.accountSettings')}</Link>
+                <button
+                  className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition text-sm font-medium"
+                  onClick={() => openSignOutConfirm('desktop')}
+                >
+                  {t('navbar.signOut')}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        renderAccountMenuTrigger({
+          signedIn: false,
+          onClick: () => {
+            setSignInMode('login');
+            setSignInOpen(true);
+          },
+          tone: 'light',
+        })
+      );
+    }
+
+    if (itemId === 'orders') {
+      return renderLabeledNavAction({
+        href: '/dashboard/orders',
+        onClick: handleOrdersClick,
+        icon: Package,
+        label: t('navbar.orders'),
+        ariaLabel: t('navbar.orders'),
+        tone: 'light',
+      });
+    }
+
+    if (itemId === 'wishlist') {
+      return renderLabeledNavAction({
+        href: firebaseUser ? '/dashboard/wishlist' : '/wishlist',
+        icon: HeartIcon,
+        label: t('navbar.wishlist'),
+        badgeCount: wishlistCount,
+        ariaLabel: t('navbar.wishlist'),
+        tone: 'light',
+      });
+    }
+
+    if (itemId === 'cart') {
+      return renderLabeledNavAction({
+        onClick: handleCartClick,
+        icon: ShoppingCart,
+        label: t('navbar.cart'),
+        badgeCount: isClient ? cartCount : 0,
+        ariaLabel: t('navbar.cart'),
+        tone: 'light',
+      });
+    }
+
+    const extraButton = desktopExtraButtons.find((button) => button.id === itemId);
+    if (!extraButton) return null;
+    return (
+      <Link
+        href={extraButton.link || '/offers'}
+        className="inline-flex shrink-0 items-center font-extrabold leading-none tracking-[0.04em] text-white transition hover:opacity-90"
+      >
+        {extraButton.displayLabel}
+      </Link>
+    );
+  };
+
   return (
     <>
       {navbarAppearanceLoading ? navbarSkeleton : (
@@ -1784,206 +1991,18 @@ const Navbar = () => {
       >
       <div className={NAVBAR_CONTAINER_CLASS} style={getNavbarContainerStyle(navbarAppearance.navbarMaxWidth)}>
         <div className="flex min-w-0 items-center gap-2 py-2.5 lg:gap-3">
-          {/* Left — logo */}
-          <div className="flex min-w-0 shrink-0 items-center gap-2">
-            {/* Hamburger Menu - Mobile Only on Home Page */}
-            {isHomePage && (
-              <button 
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
-                className="lg:hidden p-2 hover:bg-gray-100 rounded-full transition"
-              >
-                {mobileMenuOpen ? <X size={24} className="text-gray-900" /> : <Menu size={24} className="text-gray-900" />}
-              </button>
-            )}
-            
-            <Link
-              href="/"
-              onClick={handleLogoNavigation}
-              className="flex items-center gap-2 flex-shrink-0"
-            >
-              {renderNavbarLogoImage({
-                width: navbarAppearance.logoWidth,
-                height: navbarAppearance.logoHeight,
-                className: 'h-auto w-auto max-w-[88px] object-contain flex-shrink-0 xl:max-w-[180px]',
-                style: { maxHeight: '50px' },
-                priority: true,
-              })}
-            </Link>
-
-            <button
-              type="button"
-              onClick={handleDeliveryLocationClick}
-              className="hidden items-center gap-2 rounded-xl border px-3 py-1.5 text-left transition"
-              style={{ borderColor: 'rgba(255,255,255,0.25)', backgroundColor: 'rgba(255,255,255,0.12)', color: '#ffffff' }}
-            >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full shadow-sm" style={{ backgroundColor: 'rgba(255,255,255,0.92)', color: '#111827' }}>
-                <MapPin size={14} />
-              </span>
-              <span className="flex flex-col leading-tight min-w-0">
-                <span className="text-[10px] font-medium uppercase tracking-[0.08em] opacity-70">{t('navbar.deliverTo')}</span>
-                <span className="max-w-[130px] truncate text-xs font-semibold">{selectedDeliveryLabel}</span>
-              </span>
-            </button>
-          </div>
-
-          {/* Center — today's deals + search */}
-          <div className="relative hidden min-w-0 flex-1 items-center justify-center gap-3 lg:flex xl:gap-4">
-            {renderTodaysDealsButton({ variant: 'desktop' })}
-            {visibleNavbarExtraButtons(navbarAppearance.extraButtons, storefrontLanguage).map((button) => (
-              <Link
-                key={button.id}
-                href={button.link || '/offers'}
-                className="hidden shrink-0 items-center font-extrabold leading-none tracking-[0.04em] text-white transition hover:opacity-90 lg:inline-flex"
-              >
-                {button.displayLabel}
-              </Link>
-            ))}
-            {navbarAppearance.showCategoriesButton !== false ? (
+          {desktopItemOrder.map((itemId) => {
+            const node = renderDesktopNavbarItem(itemId);
+            if (!node) return null;
+            return (
               <div
-                ref={categoriesTriggerRef}
-                className="relative hidden shrink-0 lg:block"
-                onMouseEnter={openCategoriesDropdown}
+                key={itemId}
+                className={itemId === 'search' ? 'relative z-[70] min-w-0 flex-1' : 'shrink-0'}
               >
-                <button
-                  type="button"
-                  className="inline-flex h-[44px] items-center gap-1.5 rounded-2xl border bg-white px-3 text-[13px] font-medium leading-none text-slate-700 shadow-sm transition hover:bg-slate-50 xl:px-4"
-                  style={{ borderColor: 'rgba(255,255,255,0.92)' }}
-                >
-                  <span>
-                    {getNavbarCategoriesButtonLabel(navbarAppearance, storefrontLanguage, t('navbar.categories'))}
-                  </span>
-                  <span className="text-[11px] text-slate-400">▾</span>
-                </button>
+                {node}
               </div>
-            ) : null}
-            <div
-              className="relative z-[70] min-w-0 w-full"
-              style={{ maxWidth: Number(navbarAppearance.searchMaxWidth) || 600 }}
-            >
-            <form
-              onSubmit={handleSearch}
-              className="w-full"
-            >
-              <div
-                className="flex h-[44px] w-full min-w-0 items-center overflow-hidden rounded-2xl border px-2 shadow-sm xl:px-3"
-                style={{
-                  borderColor: 'rgba(255,255,255,0.92)',
-                  backgroundColor: '#ffffff',
-                }}
-              >
-                <input
-                  type="text"
-                  placeholder={customSearchPlaceholder || searchPlaceholder || t('navbar.searchFragrances')}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onFocus={() => setSearchFocused(true)}
-                  onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
-                  className="min-w-0 flex-1 bg-transparent text-[14px] leading-none text-slate-800 outline-none placeholder:text-slate-400"
-                />
-                <button
-                  type="submit"
-                  className="ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition hover:bg-slate-100"
-                  style={{ color: searchAccentColor }}
-                  aria-label="Search"
-                >
-                  <Search size={15} />
-                </button>
-              </div>
-            </form>
-            {renderSearchSuggestionsDropdown(
-              'absolute left-0 right-0 top-full z-[80] mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl',
-            )}
-            </div>
-          </div>
-
-          {/* Right — account + actions */}
-          <div className="hidden min-w-0 shrink-0 items-center justify-end gap-1 lg:flex xl:gap-2">
-            {firebaseUser ? (
-              <div className="flex items-center">
-              <div
-                className="relative"
-                ref={userDropdownRef}
-              >
-                {renderAccountMenuTrigger({
-                  signedIn: true,
-                  onClick: () => setUserDropdownOpen((prev) => !prev),
-                  tone: 'light',
-                })}
-                {userDropdownOpen && (
-                  <div className="absolute right-0 top-12 min-w-[220px] bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-2">
-                    {isSeller && (
-                      <button
-                        className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm"
-                        onClick={() => router.push('/store')}
-                      >
-                        {t('navbar.sellerDashboard')}
-                      </button>
-                    )}
-                    <Link href="/dashboard/profile" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm" onClick={() => setUserDropdownOpen(false)}>{t('navbar.profile')}</Link>
-                    <Link href="/dashboard/security" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm" onClick={() => setUserDropdownOpen(false)}>Security</Link>
-                    <Link href="/dashboard/orders" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm" onClick={() => setUserDropdownOpen(false)}>{t('navbar.orders')}</Link>
-                    {storefrontWalletEnabled ? (
-                    <Link href="/wallet" className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm" onClick={() => setUserDropdownOpen(false)}>
-                      <Image src={WalletIcon} alt="" width={18} height={18} className="shrink-0 object-contain" aria-hidden="true" />
-                      <span>{walletCoins > 0 ? formatWalletAmount(walletCoins) : t('navbar.wallet')}</span>
-                    </Link>
-                    ) : null}
-                    <Link href="/dashboard/wishlist" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm" onClick={() => setUserDropdownOpen(false)}>{t('navbar.wishlist')}</Link>
-                    <Link href="/dashboard/addresses" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm" onClick={() => setUserDropdownOpen(false)}>{t('navbar.addresses')}</Link>
-                    <div className="my-1 border-t border-gray-200" />
-                    <Link href="/dashboard/settings" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm" onClick={() => setUserDropdownOpen(false)}>{t('navbar.accountSettings')}</Link>
-                    <button
-                      className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition text-sm font-medium"
-                      onClick={() => openSignOutConfirm('desktop')}
-                    >
-                      {t('navbar.signOut')}
-                    </button>
-                  </div>
-                )}
-              </div>
-              </div>
-            ) : (
-              renderAccountMenuTrigger({
-                signedIn: false,
-                onClick: () => {
-                  setSignInMode('login');
-                  setSignInOpen(true);
-                },
-                tone: 'light',
-              })
-            )}
-
-            <span className="mx-1 hidden h-7 w-px shrink-0 bg-white/25 xl:mx-2 xl:block" aria-hidden="true" />
-
-            <div className="flex min-w-0 shrink-0 items-center gap-3 xl:gap-4">
-            {navActionsVisibility.orders && renderLabeledNavAction({
-              href: '/dashboard/orders',
-              onClick: handleOrdersClick,
-              icon: Package,
-              label: t('navbar.orders'),
-              ariaLabel: t('navbar.orders'),
-              tone: 'light',
-            })}
-
-            {navActionsVisibility.wishlist && renderLabeledNavAction({
-              href: firebaseUser ? '/dashboard/wishlist' : '/wishlist',
-              icon: HeartIcon,
-              label: t('navbar.wishlist'),
-              badgeCount: wishlistCount,
-              ariaLabel: t('navbar.wishlist'),
-              tone: 'light',
-            })}
-
-            {navActionsVisibility.cart && renderLabeledNavAction({
-              onClick: handleCartClick,
-              icon: ShoppingCart,
-              label: t('navbar.cart'),
-              badgeCount: isClient ? cartCount : 0,
-              ariaLabel: t('navbar.cart'),
-              tone: 'light',
-            })}
-            </div>
-          </div>
+            );
+          })}
         </div>
       </div>
       </nav>

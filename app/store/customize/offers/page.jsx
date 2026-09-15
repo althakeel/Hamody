@@ -852,17 +852,29 @@ export default function OffersCustomizePage() {
 
                   <div>
                     <span className="mb-1 flex items-center justify-between text-xs font-medium text-slate-500">
-                      Border
-                      <span className="tabular-nums text-slate-700">{navStyle.borderWidth}px</span>
+                      Border width
+                      <span className="tabular-nums text-slate-700">{navStyle.borderWidth ?? 0}px</span>
                     </span>
-                    <input
-                      type="range"
-                      min={0}
-                      max={6}
-                      value={navStyle.borderWidth}
-                      onChange={(e) => updateNavStyle({ borderWidth: Number(e.target.value) })}
-                      className="w-full accent-rose-600"
-                    />
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={0}
+                        max={8}
+                        value={navStyle.borderWidth ?? 0}
+                        onChange={(e) => updateNavStyle({ borderWidth: Number(e.target.value) })}
+                        className="min-w-0 flex-1 accent-rose-600"
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        max={8}
+                        value={navStyle.borderWidth ?? 0}
+                        onChange={(e) => updateNavStyle({ borderWidth: Number(e.target.value) || 0 })}
+                        className="w-16 shrink-0 rounded-lg border border-slate-200 bg-white px-2 py-1 text-center text-xs tabular-nums"
+                        aria-label="Border width"
+                      />
+                    </div>
+                    <p className="mt-1 text-[11px] text-slate-400">0px removes the border.</p>
                     <div className="mt-2 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-1.5">
                       <input
                         type="color"
@@ -883,16 +895,56 @@ export default function OffersCustomizePage() {
                   <label className="block">
                     <span className="mb-1 flex items-center justify-between text-xs font-medium text-slate-500">
                       Border radius
-                      <span className="tabular-nums text-slate-700">{navStyle.borderRadius}px</span>
+                      <span className="tabular-nums text-slate-700">{navStyle.borderRadius ?? 0}px</span>
                     </span>
-                    <input
-                      type="range"
-                      min={0}
-                      max={24}
-                      value={navStyle.borderRadius}
-                      onChange={(e) => updateNavStyle({ borderRadius: Number(e.target.value) })}
-                      className="w-full accent-rose-600"
-                    />
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={0}
+                        max={40}
+                        value={navStyle.borderRadius ?? 0}
+                        onChange={(e) => updateNavStyle({ borderRadius: Number(e.target.value) })}
+                        className="min-w-0 flex-1 accent-rose-600"
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        max={40}
+                        value={navStyle.borderRadius ?? 0}
+                        onChange={(e) => updateNavStyle({ borderRadius: Number(e.target.value) || 0 })}
+                        className="w-16 shrink-0 rounded-lg border border-slate-200 bg-white px-2 py-1 text-center text-xs tabular-nums"
+                        aria-label="Border radius"
+                      />
+                    </div>
+                    <p className="mt-1 text-[11px] text-slate-400">0px is square. Increase for a rounder button.</p>
+                  </label>
+
+                  <label className="block">
+                    <span className="mb-1 flex items-center justify-between text-xs font-medium text-slate-500">
+                      Button width
+                      <span className="tabular-nums text-slate-700">{navStyle.width ? `${navStyle.width}px` : 'Auto'}</span>
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={0}
+                        max={400}
+                        step={2}
+                        value={navStyle.width ?? 0}
+                        onChange={(e) => updateNavStyle({ width: Number(e.target.value) })}
+                        className="min-w-0 flex-1 accent-rose-600"
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        max={400}
+                        value={navStyle.width ?? 0}
+                        onChange={(e) => updateNavStyle({ width: Number(e.target.value) || 0 })}
+                        className="w-16 shrink-0 rounded-lg border border-slate-200 bg-white px-2 py-1 text-center text-xs tabular-nums"
+                        aria-label="Button width"
+                      />
+                    </div>
+                    <p className="mt-1 text-[11px] text-slate-400">0 is auto width. Type a pixel width to lock the size.</p>
                   </label>
 
                   <div>

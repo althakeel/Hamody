@@ -160,7 +160,17 @@ export async function GET(request) {
             },
         }));
 
-        const payload = { reviews: enrichedReviews };
+        let slug = '';
+        try {
+            const Product = (await import('@/models/Product')).default;
+            const product = await Product.findById(productId).select('slug').lean();
+            slug = String(product?.slug || '').trim();
+        } catch {
+            slug = '';
+        }
+
+        const { mergeProductSeoReviews } = await import('@/lib/productSeoReviewOverrides');
+        const payload = { reviews: mergeProductSeoReviews(enrichedReviews, slug) };
         setCachedData(cacheKey, payload, 120);
 
         const isDev = process.env.NODE_ENV !== 'production';

@@ -139,6 +139,14 @@ const NavbarMenuSettingsSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    categoriesButtonStyle: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+    navbarItemOrder: {
+      type: [String],
+      default: [],
+    },
     items: [
       {
         label: {
@@ -291,6 +299,19 @@ if (!NavbarMenuSettingsModel.schema.path('showCategoriesButton')) {
     showCategoriesButton: { type: Boolean, default: true },
     categoriesButtonLabel: { type: String, default: '', trim: true },
     categoriesButtonLabelAr: { type: String, default: '', trim: true },
+    categoriesButtonStyle: { type: mongoose.Schema.Types.Mixed, default: {} },
+  });
+}
+
+if (!NavbarMenuSettingsModel.schema.path('categoriesButtonStyle')) {
+  NavbarMenuSettingsModel.schema.add({
+    categoriesButtonStyle: { type: mongoose.Schema.Types.Mixed, default: {} },
+  });
+}
+
+if (!NavbarMenuSettingsModel.schema.path('navbarItemOrder')) {
+  NavbarMenuSettingsModel.schema.add({
+    navbarItemOrder: { type: [String], default: [] },
   });
 }
 

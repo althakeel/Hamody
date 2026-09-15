@@ -14,7 +14,7 @@ import {
   normalizeOffersNavStyle,
   splitOffersNavLabel,
 } from '@/lib/offersPageSettings';
-import { getNavbarCategoriesButtonLabel, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';
+import { getNavbarArrangeItems, getNavbarCategoriesButtonAppearance, getNavbarCategoriesButtonLabel, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';
 
 const DEFAULT_BG = '#9f4b1d';
 const PREVIEW_WIDTH = 1400;
@@ -47,6 +47,8 @@ export default function NavbarPreview({
   navbarMaxWidth = 1400,
   showCategoriesButton = true,
   categoriesButtonLabel = '',
+  categoriesButtonStyle,
+  itemOrder,
   showMenuBar = true,
 }) {
   const bg = backgroundColor || DEFAULT_BG;
@@ -108,8 +110,17 @@ export default function NavbarPreview({
 
   const resolvedDealsLabel = offersNav.label || DEFAULT_OFFERS_NAV_LABEL;
   const dealsAppearance = getOffersNavButtonAppearance(offersNav.style || DEFAULT_OFFERS_NAV_STYLE, 'desktop');
+  const categoriesAppearance = getNavbarCategoriesButtonAppearance({ categoriesButtonStyle }, 'desktop');
   const dealsParts = splitOffersNavLabel(resolvedDealsLabel);
   const previewExtraButtons = visibleNavbarExtraButtons(extraButtons, 'en');
+  const previewLayout = {
+    extraButtons,
+    showCategoriesButton,
+    categoriesButtonLabel,
+    categoriesButtonStyle,
+    itemOrder,
+  };
+  const previewItems = getNavbarArrangeItems(previewLayout, navActionsVisibility);
   const frameRef = useRef(null);
   const contentRef = useRef(null);
   const [scale, setScale] = useState(1);
@@ -131,7 +142,7 @@ export default function NavbarPreview({
     observer.observe(frame);
     observer.observe(content);
     return () => observer.disconnect();
-  }, [menuItems.length, navMenuEnabled, resolvedDealsLabel, offersNav.gifUrl]);
+  }, [menuItems.length, navMenuEnabled, resolvedDealsLabel, offersNav.gifUrl, previewItems.map((item) => item.id).join('|')]);
 
   const renderPreviewAction = (Icon, label, badge) => (
     <span className="relative inline-flex shrink-0 items-center gap-2 px-1 py-1 text-white transition">
@@ -146,6 +157,113 @@ export default function NavbarPreview({
       <span className="whitespace-nowrap text-[14px] font-normal leading-none">{label}</span>
     </span>
   );
+
+  const renderPreviewItem = (itemId) => {
+    if (itemId === 'logo') {
+      return (
+        <img
+          src={resolvedLogoUrl}
+          alt="Store logo"
+          width={logoW}
+          height={logoH}
+          className="h-auto w-auto max-w-[88px] shrink-0 object-contain xl:max-w-[180px]"
+          style={{ maxHeight: '50px' }}
+        />
+      );
+    }
+    if (itemId === 'deals') {
+      return (
+        <span
+          className="navbar-deals-btn inline-flex shrink-0 items-center font-extrabold leading-none tracking-[0.04em]"
+          data-font={dealsAppearance.fontId || 'inherit'}
+          style={dealsAppearance.style}
+        >
+          <span className="flex items-center leading-[1.05]">
+            <OffersNavLabel
+              label={resolvedDealsLabel}
+              gifUrl={offersNav.gifUrl}
+              shineClass={dealsAppearance.useShine ? 'navbar-deals-text-shine' : ''}
+              gifSize={18}
+              top={dealsParts.top}
+              bottom={dealsParts.bottom}
+            />
+          </span>
+        </span>
+      );
+    }
+    if (itemId === 'categories') {
+      return (
+        <span
+          className="inline-flex shrink-0 items-center gap-1.5 font-medium leading-none"
+          data-font={categoriesAppearance.fontId || 'inherit'}
+          style={{
+            ...categoriesAppearance.style,
+            minHeight: 44,
+            height: 44,
+          }}
+        >
+          <span>{getNavbarCategoriesButtonLabel({ categoriesButtonLabel }, 'en', 'Categories')}</span>
+          <span
+            className="text-[11px]"
+            style={{ color: categoriesAppearance.textColor || undefined, opacity: 0.55 }}
+          >
+            ▾
+          </span>
+        </span>
+      );
+    }
+    if (itemId === 'search') {
+      return (
+        <div className="min-w-0 w-full" style={{ maxWidth: Number(searchMaxWidth) || 600 }}>
+          <div
+            className="flex h-[44px] w-full min-w-0 items-center overflow-hidden rounded-2xl border px-2 shadow-sm xl:px-3"
+            style={{
+              borderColor: 'rgba(255,255,255,0.92)',
+              backgroundColor: '#ffffff',
+            }}
+          >
+            <span className="min-w-0 flex-1 truncate text-[14px] leading-none text-slate-400">
+              {searchPlaceholder}
+            </span>
+            <span
+              className="ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+              style={{ color: searchAccentColor }}
+            >
+              <Search size={15} />
+            </span>
+          </div>
+        </div>
+      );
+    }
+    if (itemId === 'account') {
+      return (
+        <span className="inline-flex max-w-[148px] items-center gap-2 rounded-md px-1 py-1 text-left text-white xl:max-w-[168px] xl:gap-2.5">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center">
+            <User size={22} strokeWidth={1.85} />
+          </span>
+          <span className="flex min-w-0 flex-col leading-[1.15]">
+            <span className="truncate text-[13px] font-bold leading-none text-white xl:text-[14px]">
+              Sign In / Register
+            </span>
+            <span className="mt-1 truncate text-[11px] font-normal leading-none text-white/85">
+              Orders &amp; Account
+            </span>
+          </span>
+        </span>
+      );
+    }
+    if (itemId === 'orders') return renderPreviewAction(Package, 'Orders');
+    if (itemId === 'wishlist') return renderPreviewAction(Heart, 'Wishlist', '1');
+    if (itemId === 'cart') return renderPreviewAction(ShoppingCart, 'Cart', '2');
+
+    const extraButton = previewExtraButtons.find((button) => button.id === itemId);
+    if (!extraButton) return null;
+    return (
+      <span className="inline-flex shrink-0 items-center font-extrabold leading-none tracking-[0.04em] text-white">
+        {extraButton.displayLabel}
+      </span>
+    );
+  };
 
   return (
     <div
@@ -171,98 +289,18 @@ export default function NavbarPreview({
         >
           <div className="mx-auto w-full px-4 sm:px-6" style={{ maxWidth: Number(navbarMaxWidth) || 1400 }}>
             <div className="flex min-w-0 items-center gap-2 py-2.5 lg:gap-3">
-              <div className="flex min-w-0 shrink-0 items-center gap-2">
-                <div className="flex shrink-0 items-center gap-2">
-                  <img
-                    src={resolvedLogoUrl}
-                    alt="Store logo"
-                    width={logoW}
-                    height={logoH}
-                    className="h-auto w-auto max-w-[88px] shrink-0 object-contain xl:max-w-[180px]"
-                    style={{ maxHeight: '50px' }}
-                  />
-                </div>
-              </div>
-
-              <div className="relative flex min-w-0 flex-1 items-center justify-center gap-3 xl:gap-4">
-                <span
-                  className="navbar-deals-btn hidden shrink-0 items-center font-extrabold leading-none tracking-[0.04em] lg:inline-flex"
-                  data-font={dealsAppearance.fontId || 'inherit'}
-                  style={dealsAppearance.style}
-                >
-                  <span className="flex items-center leading-[1.05]">
-                    <OffersNavLabel
-                      label={resolvedDealsLabel}
-                      gifUrl={offersNav.gifUrl}
-                      shineClass={dealsAppearance.useShine ? 'navbar-deals-text-shine' : ''}
-                      gifSize={18}
-                      top={dealsParts.top}
-                      bottom={dealsParts.bottom}
-                    />
-                  </span>
-                </span>
-                {previewExtraButtons.map((button) => (
-                  <span
-                    key={button.id}
-                    className="hidden shrink-0 items-center font-extrabold leading-none tracking-[0.04em] text-white lg:inline-flex"
-                  >
-                    {button.displayLabel}
-                  </span>
-                ))}
-
-                {showCategoriesButton !== false ? (
-                  <span className="inline-flex h-[44px] shrink-0 items-center gap-1.5 rounded-2xl border bg-white px-3 text-[13px] font-medium leading-none text-slate-700 shadow-sm xl:px-4">
-                    <span>{getNavbarCategoriesButtonLabel({ categoriesButtonLabel }, 'en', 'Categories')}</span>
-                    <span className="text-[11px] text-slate-400">▾</span>
-                  </span>
-                ) : null}
-                <div
-                  className="min-w-0 w-full"
-                  style={{ maxWidth: Number(searchMaxWidth) || 600 }}
-                >
+              {previewItems.map((item) => {
+                const node = renderPreviewItem(item.id);
+                if (!node) return null;
+                return (
                   <div
-                    className="flex h-[44px] w-full min-w-0 items-center overflow-hidden rounded-2xl border px-2 shadow-sm xl:px-3"
-                    style={{
-                      borderColor: 'rgba(255,255,255,0.92)',
-                      backgroundColor: '#ffffff',
-                    }}
+                    key={item.id}
+                    className={item.id === 'search' ? 'min-w-0 flex-1' : 'shrink-0'}
                   >
-                    <span className="min-w-0 flex-1 truncate text-[14px] leading-none text-slate-400">
-                      {searchPlaceholder}
-                    </span>
-                    <span
-                      className="ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-                      style={{ color: searchAccentColor }}
-                    >
-                      <Search size={15} />
-                    </span>
+                    {node}
                   </div>
-                </div>
-              </div>
-
-              <div className="flex min-w-0 shrink-0 items-center justify-end gap-1 xl:gap-2">
-                <span className="group inline-flex max-w-[148px] items-center gap-2 rounded-md px-1 py-1 text-left text-white xl:max-w-[168px] xl:gap-2.5">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center">
-                    <User size={22} strokeWidth={1.85} />
-                  </span>
-                  <span className="flex min-w-0 flex-col leading-[1.15]">
-                    <span className="truncate text-[13px] font-bold leading-none text-white xl:text-[14px]">
-                      Sign In / Register
-                    </span>
-                    <span className="mt-1 truncate text-[11px] font-normal leading-none text-white/85">
-                      Orders &amp; Account
-                    </span>
-                  </span>
-                </span>
-
-                <span className="mx-1 hidden h-7 w-px shrink-0 bg-white/25 xl:mx-2 xl:block" aria-hidden="true" />
-
-                <div className="flex min-w-0 shrink-0 items-center gap-3 xl:gap-4">
-                  {navActionsVisibility.orders !== false ? renderPreviewAction(Package, 'Orders') : null}
-                  {navActionsVisibility.wishlist !== false ? renderPreviewAction(Heart, 'Wishlist', '1') : null}
-                  {navActionsVisibility.cart !== false ? renderPreviewAction(ShoppingCart, 'Cart', '2') : null}
-                </div>
-              </div>
+                );
+              })}
             </div>
           </div>
         </div>

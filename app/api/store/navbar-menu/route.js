@@ -32,6 +32,8 @@ function pickNavbarLayout(settings = {}) {
     showCategoriesButton: settings?.showCategoriesButton,
     categoriesButtonLabel: settings?.categoriesButtonLabel,
     categoriesButtonLabelAr: settings?.categoriesButtonLabelAr,
+    categoriesButtonStyle: settings?.categoriesButtonStyle,
+    itemOrder: settings?.navbarItemOrder || settings?.itemOrder,
   });
 }
 
@@ -199,6 +201,8 @@ export async function GET(req) {
           showCategoriesButton: latestStoreDoc.showCategoriesButton ?? settings.showCategoriesButton,
           categoriesButtonLabel: latestStoreDoc.categoriesButtonLabel ?? settings.categoriesButtonLabel,
           categoriesButtonLabelAr: latestStoreDoc.categoriesButtonLabelAr ?? settings.categoriesButtonLabelAr,
+          categoriesButtonStyle: latestStoreDoc.categoriesButtonStyle ?? settings.categoriesButtonStyle,
+          navbarItemOrder: latestStoreDoc.navbarItemOrder ?? settings.navbarItemOrder,
         };
       }
     }
@@ -272,6 +276,9 @@ export async function POST(req) {
       showCategoriesButton,
       categoriesButtonLabel,
       categoriesButtonLabelAr,
+      categoriesButtonStyle,
+      itemOrder,
+      navbarItemOrder,
     } = body || {};
 
     if (!Array.isArray(items)) {
@@ -348,6 +355,8 @@ export async function POST(req) {
       showCategoriesButton: showCategoriesButton ?? existing?.showCategoriesButton,
       categoriesButtonLabel: categoriesButtonLabel ?? existing?.categoriesButtonLabel,
       categoriesButtonLabelAr: categoriesButtonLabelAr ?? existing?.categoriesButtonLabelAr,
+      categoriesButtonStyle: categoriesButtonStyle ?? existing?.categoriesButtonStyle,
+      itemOrder: itemOrder ?? navbarItemOrder ?? existing?.navbarItemOrder ?? existing?.itemOrder,
     });
 
     console.log('[API /store/navbar-menu POST] Saving:', {
@@ -378,6 +387,8 @@ export async function POST(req) {
           showCategoriesButton: nextLayout.showCategoriesButton,
           categoriesButtonLabel: nextLayout.categoriesButtonLabel,
           categoriesButtonLabelAr: nextLayout.categoriesButtonLabelAr,
+          categoriesButtonStyle: nextLayout.categoriesButtonStyle,
+          navbarItemOrder: nextLayout.itemOrder,
         },
       },
       { upsert: true, new: true, setDefaultsOnInsert: true, runValidators: true }
@@ -401,6 +412,8 @@ export async function POST(req) {
           showCategoriesButton: nextLayout.showCategoriesButton,
           categoriesButtonLabel: nextLayout.categoriesButtonLabel,
           categoriesButtonLabelAr: nextLayout.categoriesButtonLabelAr,
+          categoriesButtonStyle: nextLayout.categoriesButtonStyle,
+          navbarItemOrder: nextLayout.itemOrder,
         },
       }
     );
