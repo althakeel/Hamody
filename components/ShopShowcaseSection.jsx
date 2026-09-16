@@ -30,6 +30,11 @@ import {
 } from '@/lib/storefrontLanguage'
 import { getLocalizedCategoryName } from '@/lib/categoryLocalization'
 import { getCategoryIcon } from '@/lib/categoryIcons'
+import {
+  getNavbarCategoriesButtonAppearance,
+  getNavbarCategoriesButtonLabel,
+  normalizeNavbarLayout,
+} from '@/lib/navbarLayoutSettings'
 
 const NAVBAR_APPEARANCE_CACHE_KEY = 'navbarAppearanceCache'
 const DEFAULT_NAVBAR_BG = '#8f3404'
@@ -52,11 +57,24 @@ function readCachedNavbarBg() {
   return DEFAULT_NAVBAR_BG
 }
 
+function readCachedNavbarLayout() {
+  if (typeof window === 'undefined') return normalizeNavbarLayout({})
+  try {
+    const raw = window.localStorage.getItem(NAVBAR_APPEARANCE_CACHE_KEY)
+    if (!raw) return normalizeNavbarLayout({})
+    return normalizeNavbarLayout(JSON.parse(raw) || {})
+  } catch {
+    return normalizeNavbarLayout({})
+  }
+}
+
 function useNavbarBackgroundColor() {
   const [navbarBg, setNavbarBg] = useState(DEFAULT_NAVBAR_BG)
+  const [navbarLayout, setNavbarLayout] = useState(() => normalizeNavbarLayout({}))
 
   useEffect(() => {
     setNavbarBg(readCachedNavbarBg())
+    setNavbarLayout(readCachedNavbarLayout())
 
     const controller = new AbortController()
 
@@ -65,16 +83,16 @@ function useNavbarBackgroundColor() {
       .then((data) => {
         const nextBg = String(data?.backgroundColor || '').trim()
         if (nextBg) setNavbarBg(nextBg)
+        if (data) setNavbarLayout(normalizeNavbarLayout(data))
       })
       .catch(() => {})
 
     const handleNavbarAppearanceUpdate = (event) => {
-      const nextBg = event?.detail?.backgroundColor
-      if (typeof nextBg === 'string' && nextBg.trim()) {
-        setNavbarBg(nextBg.trim())
-        return
-      }
-      setNavbarBg(readCachedNavbarBg())
+      const detail = event?.detail && typeof event.detail === 'object' ? event.detail : {}
+      const nextBg = String(detail.backgroundColor || '').trim()
+      if (nextBg) setNavbarBg(nextBg)
+      else setNavbarBg(readCachedNavbarBg())
+      setNavbarLayout(normalizeNavbarLayout(Object.keys(detail).length ? detail : readCachedNavbarLayout()))
     }
 
     window.addEventListener('navbarAppearanceUpdated', handleNavbarAppearanceUpdate)
@@ -84,7 +102,7 @@ function useNavbarBackgroundColor() {
     }
   }, [])
 
-  return navbarBg
+  return { navbarBg, navbarLayout }
 }
 
 function getCategoryHref(category, allCategories = []) {
@@ -272,7 +290,8 @@ export default function ShopShowcaseSection({
   const flyoutRef = useRef(null)
   const flyoutLinksRef = useRef([])
   const { market, convertPrice } = useStorefrontMarket()
-  const navbarBg = useNavbarBackgroundColor()
+  const { navbarBg, navbarLayout } = useNavbarBackgroundColor()
+  const categoriesAppearance = getNavbarCategoriesButtonAppearance(navbarLayout, 'desktop')
   const [language, setLanguage] = useState('en')
   const isArabic = language === 'ar'
   const MenuChevron = isArabic ? ChevronLeft : ChevronRight
@@ -714,9 +733,23 @@ export default function ShopShowcaseSection({
                 setHoveredMenuIndex(null)
               }}
             >
-              <div className="flex items-center gap-2 text-[14px] font-semibold">
+              <div
+                className={`flex items-center gap-2 text-[14px] font-semibold ${categoriesAppearance.animationClass || ''}`}
+                data-font={categoriesAppearance.fontId || 'inherit'}
+                style={{
+                  ...categoriesAppearance.style,
+                  minHeight: 28,
+                  height: 'auto',
+                }}
+              >
                 <span className="text-lg leading-none">☰</span>
-                <span>{isArabic ? 'جميع الفئات' : 'All Categories'}</span>
+                <span>
+                  {getNavbarCategoriesButtonLabel(
+                    navbarLayout,
+                    language,
+                    isArabic ? 'جميع الفئات' : 'All Categories',
+                  )}
+                </span>
               </div>
             </div>
 

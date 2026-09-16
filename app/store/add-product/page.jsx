@@ -371,6 +371,52 @@ const DEFAULT_BADGE_OPTIONS = [
     'Limited Stock',
     'Free Shipping',
 ]
+const DEFAULT_BADGE_STYLE_MAP = {
+    'price lower than usual': { backgroundColor: '#007600', textColor: '#ffffff' },
+    'hot deal': { backgroundColor: '#cc0c39', textColor: '#ffffff' },
+    'best seller': { backgroundColor: '#c45500', textColor: '#ffffff' },
+    'new arrival': { backgroundColor: '#0066c0', textColor: '#ffffff' },
+    'limited stock': { backgroundColor: '#b12704', textColor: '#ffffff' },
+    'free shipping': { backgroundColor: '#007185', textColor: '#ffffff' },
+}
+
+const getBadgeLabel = (badge) => (
+    typeof badge === 'string' ? badge.trim() : String(badge?.label || '').trim()
+)
+
+const normalizeHexColor = (value, fallback = '#565959') => {
+    const raw = String(value || '').trim()
+    return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(raw) ? raw : fallback
+}
+
+const normalizeProductBadge = (badge, colorLookup = {}) => {
+    const label = getBadgeLabel(badge)
+    if (!label) return null
+    const lookup = colorLookup[label.toLowerCase()] || DEFAULT_BADGE_STYLE_MAP[label.toLowerCase()] || {}
+    const fromBadge = typeof badge === 'object' && badge ? badge : {}
+    return {
+        label,
+        backgroundColor: normalizeHexColor(fromBadge.backgroundColor || lookup.backgroundColor, '#565959'),
+        textColor: normalizeHexColor(fromBadge.textColor || lookup.textColor, '#ffffff'),
+    }
+}
+
+const badgesHaveLabel = (badges, label) => {
+    const key = String(label || '').trim().toLowerCase()
+    return (badges || []).some((badge) => getBadgeLabel(badge).toLowerCase() === key)
+}
+
+const mergeProductBadges = (existing = [], incoming = [], colorLookup = {}) => {
+    const merged = (existing || []).map((badge) => normalizeProductBadge(badge, colorLookup)).filter(Boolean)
+    const seen = new Set(merged.map((badge) => badge.label.toLowerCase()))
+    incoming.forEach((item) => {
+        const next = normalizeProductBadge(item, colorLookup)
+        if (!next || seen.has(next.label.toLowerCase())) return
+        seen.add(next.label.toLowerCase())
+        merged.push(next)
+    })
+    return merged
+}
 
 const isVideoSource = (value = '') => {
     const raw = String(value || '').toLowerCase().split('?')[0]
@@ -738,7 +784,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
         const [draggingMediaKey, setDraggingMediaKey] = useState(null);
         const [dragOverMediaKey, setDragOverMediaKey] = useState(null);
         const [productInfo, setProductInfo] = useState({
-            name: '', nameAr: '', slug: '', brand: '', brandAr: '', shortDescription: '', shortDescriptionAr: '', shortDescription2: '', shortDescription2Ar: '', specTableEnabled: false, specTableTitle: 'Product information', specTableTitleAr: 'مواصفات المنتج', specTableColumns: ['Property', 'Value'], specTableColumnsAr: ['الخاصية', 'القيمة'], specTableRows: [['', '']], specTableRowsAr: [['', '']], description: '', descriptionAr: '', aPlusDesktop: '', aPlusMobile: '', aPlusDesktopAr: '', aPlusMobileAr: '', aPlusDesktopImages: [], aPlusMobileImages: [], AED: '', price: '', priceAr: '', AEDAr: '', category: '', sku: '', stockQuantity: 50, soldCount: 0, colors: [], sizes: [], fastDelivery: false, freeShippingEligible: false, useProductsPath: false, allowReturn: true, allowReplacement: true, reviews: [], badges: [], imageAspectRatio: '1:1', cardVideoPreviewEnabled: true, cardVideoPreviewDelaySec: 24, tags: [], seoTitle: '', seoH1: '', seoH1Ar: '', seoDescription: '', seoKeywords: [], deliveredBy: '', soldBy: '', paymentInfo: '', hsCode: '', originCountry: '', shippingWeightKg: ''
+            name: '', nameAr: '', slug: '', brand: '', brandAr: '', shortDescription: '', shortDescriptionAr: '', shortDescription2: '', shortDescription2Ar: '', aboutThisItemTitle: 'About this item', aboutThisItemTitleAr: 'عن هذا المنتج', specTableEnabled: false, specTableTitle: 'Product information', specTableTitleAr: 'مواصفات المنتج', specTableColumns: ['Property', 'Value'], specTableColumnsAr: ['الخاصية', 'القيمة'], specTableRows: [['', '']], specTableRowsAr: [['', '']], description: '', descriptionAr: '', aPlusDesktop: '', aPlusMobile: '', aPlusDesktopAr: '', aPlusMobileAr: '', aPlusDesktopImages: [], aPlusMobileImages: [], AED: '', price: '', priceAr: '', AEDAr: '', category: '', sku: '', stockQuantity: 50, soldCount: 0, colors: [], sizes: [], fastDelivery: false, freeShippingEligible: false, useProductsPath: false, allowReturn: true, allowReplacement: true, reviews: [], badges: [], imageAspectRatio: '1:1', cardVideoPreviewEnabled: true, cardVideoPreviewDelaySec: 24, tags: [], seoTitle: '', seoH1: '', seoH1Ar: '', seoDescription: '', seoKeywords: [], deliveredBy: '', soldBy: '', paymentInfo: '', hsCode: '', originCountry: '', shippingWeightKg: ''
         });
         const [tagInput, setTagInput] = useState('');
         const [seoKeywordInput, setSeoKeywordInput] = useState('');
@@ -802,7 +848,11 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
     // Only PATCH FBT after config loaded — otherwise every save wiped the bundle to empty.
     const [fbtConfigLoaded, setFbtConfigLoaded] = useState(!product?._id)
     const [fbtConfigDirty, setFbtConfigDirty] = useState(false)
-    const [storeBadgeOptions, setStoreBadgeOptions] = useState(DEFAULT_BADGE_OPTIONS)
+    const [storeBadgeOptions, setStoreBadgeOptions] = useState(
+        DEFAULT_BADGE_OPTIONS.map((label) => normalizeProductBadge(label)).filter(Boolean)
+    )
+    const [badgeInput, setBadgeInput] = useState('')
+    const [badgeColor, setBadgeColor] = useState('#565959')
 
     const { user, loading: authLoading, getToken } = useAuth();
 
@@ -936,7 +986,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                 const data = await res.json()
                 const configuredBadges = Array.isArray(data?.productPageInfo?.badgeSettings?.badges)
                     ? data.productPageInfo.badgeSettings.badges
-                        .map((badge) => String(badge?.label || '').trim())
+                        .map((badge) => normalizeProductBadge(badge))
                         .filter(Boolean)
                     : []
 
@@ -1028,6 +1078,8 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                 shortDescriptionAr: product.shortDescriptionAr || "",
                 shortDescription2: product.shortDescription2 || product.attributes?.shortDescription2 || "",
                 shortDescription2Ar: product.attributes?.shortDescription2Ar || "",
+                aboutThisItemTitle: product.attributes?.aboutThisItemTitle || product.aboutThisItemTitle || 'About this item',
+                aboutThisItemTitleAr: product.attributes?.aboutThisItemTitleAr || product.aboutThisItemTitleAr || 'عن هذا المنتج',
                 specTableEnabled: Boolean(product.specTableEnabled ?? product.attributes?.specTableEnabled ?? false),
                 specTableTitle: product.attributes?.specTableTitle || product.specTableTitle || 'Product information',
                 specTableTitleAr: product.attributes?.specTableTitleAr || 'مواصفات المنتج',
@@ -1074,7 +1126,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                 allowReturn: product.allowReturn !== undefined ? product.allowReturn : true,
                 allowReplacement: product.allowReplacement !== undefined ? product.allowReplacement : true,
                 reviews: product.reviews || [],
-                badges: product.attributes?.badges || [],
+                badges: mergeProductBadges([], product.attributes?.badges || []),
                 imageAspectRatio: product.imageAspectRatio || '1:1',
                 cardVideoPreviewEnabled: product.cardVideoPreviewEnabled !== false,
                 cardVideoPreviewDelaySec: Number(product.cardVideoPreviewDelaySec) || 24,
@@ -1553,7 +1605,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                     seoH1Ar: data?.seoH1Ar || prev.seoH1Ar,
                     seoDescription: data?.seoDescription || prev.seoDescription,
                     seoKeywords: appendUniqueTags(prev.seoKeywords || [], data?.seoKeywords || []),
-                    badges: appendUniqueTags(prev.badges || [], data?.badges || []),
+                    badges: mergeProductBadges(prev.badges || [], data?.badges || []),
                     deliveredBy: data?.deliveredBy || prev.deliveredBy,
                     soldBy: data?.soldBy || prev.soldBy,
                     paymentInfo: data?.paymentInfo || prev.paymentInfo,
@@ -2231,6 +2283,8 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                 shortDescriptionAr: productInfo.shortDescriptionAr || '',
                 shortDescription2: productInfo.shortDescription2 || '',
                 shortDescription2Ar: productInfo.shortDescription2Ar || '',
+                aboutThisItemTitle: productInfo.aboutThisItemTitle || 'About this item',
+                aboutThisItemTitleAr: productInfo.aboutThisItemTitleAr || 'عن هذا المنتج',
                 priceAr: productInfo.priceAr || '',
                 AEDAr: productInfo.AEDAr || '',
                 specTableEnabled: Boolean(productInfo.specTableEnabled),
@@ -2240,7 +2294,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                 specTableColumnsAr: Array.isArray(productInfo.specTableColumnsAr) ? productInfo.specTableColumnsAr : ['الخاصية', 'القيمة'],
                 specRows: Array.isArray(productInfo.specTableRows) ? productInfo.specTableRows : [],
                 specRowsAr: Array.isArray(productInfo.specTableRowsAr) ? productInfo.specTableRowsAr : [],
-                badges: productInfo.badges || [],
+                badges: mergeProductBadges([], productInfo.badges || []),
                 deliveredBy: productInfo.deliveredBy,
                 soldBy: productInfo.soldBy,
                 paymentInfo: productInfo.paymentInfo,
@@ -2260,6 +2314,8 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                 shortDescriptionAr: productInfo.shortDescriptionAr || '',
                 shortDescription2: productInfo.shortDescription2 || '',
                 shortDescription2Ar: productInfo.shortDescription2Ar || '',
+                aboutThisItemTitle: productInfo.aboutThisItemTitle || 'About this item',
+                aboutThisItemTitleAr: productInfo.aboutThisItemTitleAr || 'عن هذا المنتج',
                 description,
                 descriptionAr,
                 aPlusDesktop,
@@ -2371,10 +2427,90 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
         }
     }
 
-    const availableBadgeOptions = Array.from(new Set([
-        ...(storeBadgeOptions || []),
-        ...((productInfo.badges || []).map((badge) => String(badge || '').trim()).filter(Boolean))
-    ]))
+    const storeBadgeColorMap = useMemo(() => (
+        (storeBadgeOptions || []).reduce((accumulator, badge) => {
+            const normalized = normalizeProductBadge(badge)
+            if (normalized) accumulator[normalized.label.toLowerCase()] = normalized
+            return accumulator
+        }, {})
+    ), [storeBadgeOptions])
+
+    const availableBadgeOptions = useMemo(() => {
+        const seen = new Set()
+        const options = []
+        const addOption = (badge) => {
+            const normalized = normalizeProductBadge(badge, storeBadgeColorMap)
+            if (!normalized) return
+            const key = normalized.label.toLowerCase()
+            if (seen.has(key)) return
+            seen.add(key)
+            options.push(normalized)
+        }
+        ;(storeBadgeOptions || []).forEach(addOption)
+        ;(productInfo.badges || []).forEach(addOption)
+        return options
+    }, [storeBadgeOptions, productInfo.badges, storeBadgeColorMap])
+
+    const toggleBadge = (option) => {
+        const label = getBadgeLabel(option)
+        setProductInfo((prev) => {
+            if (badgesHaveLabel(prev.badges, label)) {
+                return {
+                    ...prev,
+                    badges: (prev.badges || []).filter((badge) => getBadgeLabel(badge).toLowerCase() !== label.toLowerCase()),
+                }
+            }
+            const next = normalizeProductBadge(option, storeBadgeColorMap)
+            return { ...prev, badges: [...(prev.badges || []), next].filter(Boolean) }
+        })
+    }
+
+    const addCustomBadge = () => {
+        const next = normalizeProductBadge({
+            label: badgeInput,
+            backgroundColor: badgeColor,
+            textColor: '#ffffff',
+        }, storeBadgeColorMap)
+        if (!next) {
+            toast.error('Enter a badge name')
+            return
+        }
+        setProductInfo((prev) => {
+            if (badgesHaveLabel(prev.badges, next.label)) {
+                return {
+                    ...prev,
+                    badges: (prev.badges || []).map((badge) => (
+                        getBadgeLabel(badge).toLowerCase() === next.label.toLowerCase()
+                            ? { ...normalizeProductBadge(badge, storeBadgeColorMap), backgroundColor: next.backgroundColor }
+                            : normalizeProductBadge(badge, storeBadgeColorMap)
+                    )).filter(Boolean),
+                }
+            }
+            return {
+                ...prev,
+                badges: [...mergeProductBadges(prev.badges || [], [], storeBadgeColorMap), next],
+            }
+        })
+        setBadgeInput('')
+    }
+
+    const updateBadgeColor = (index, color) => {
+        setProductInfo((prev) => ({
+            ...prev,
+            badges: (prev.badges || []).map((badge, idx) => (
+                idx === index
+                    ? { ...normalizeProductBadge(badge, storeBadgeColorMap), backgroundColor: normalizeHexColor(color) }
+                    : normalizeProductBadge(badge, storeBadgeColorMap)
+            )).filter(Boolean),
+        }))
+    }
+
+    const removeBadge = (index) => {
+        setProductInfo((prev) => ({
+            ...prev,
+            badges: (prev.badges || []).filter((_, idx) => idx !== index),
+        }))
+    }
 
     const isEditing = Boolean(product)
     const sectionLinks = [
@@ -2657,6 +2793,15 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                         <RichTextDescriptionEditor label="" value={productInfo.descriptionAr || ''} onChange={(nextValue) => setProductInfo(prev => ({ ...prev, descriptionAr: nextValue }))} placeholder="اكتب وصفًا تفصيليًا للمنتج بالعربية..." getAuthTokenOrThrow={getAuthTokenOrThrow} dir="rtl" />
                       </div>
                       <div>
+                        <label className="block text-xs font-semibold mb-1 text-amber-800">Section title</label>
+                        <input
+                          name="aboutThisItemTitleAr"
+                          value={productInfo.aboutThisItemTitleAr || ''}
+                          onChange={onChangeHandler}
+                          dir="rtl"
+                          className="mb-2 w-full border border-amber-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-200 text-right"
+                          placeholder="عن هذا المنتج"
+                        />
                         <ShortDescriptionRichTextEditor
                           label="الوصف القصير الثاني"
                           value={productInfo.shortDescription2Ar || ''}
@@ -2984,7 +3129,17 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                     ) : (
                         <p className="text-xs text-gray-400 italic">Toggle on to add a spec/details table to this product.</p>
                     )}
-                    <div className="pt-2 border-t border-gray-100">
+                    <div className="pt-2 border-t border-gray-100 space-y-2">
+                    <div>
+                      <label className="block text-sm font-medium mb-1 text-gray-700">Section title</label>
+                      <input
+                        name="aboutThisItemTitle"
+                        value={productInfo.aboutThisItemTitle || ''}
+                        onChange={onChangeHandler}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-200"
+                        placeholder="About this item"
+                      />
+                    </div>
                     <ShortDescriptionRichTextEditor
                         label="2nd Short Description (About this item)"
                         value={productInfo.shortDescription2 || ''}
@@ -3120,11 +3275,87 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                         </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-100">
-                  <label className="block text-xs font-semibold mb-2 text-gray-500 uppercase tracking-wide">Product Badges</label>
+                <div className="pt-4 border-t border-slate-100 space-y-3">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">Product Badges</label>
+                  <p className="text-xs text-gray-500">Select a preset or add a new badge and choose its color.</p>
                   <div className="flex flex-wrap gap-2">
-                    {availableBadgeOptions.map((badge) => (<button key={badge} type="button" onClick={() => { if (productInfo.badges.includes(badge)) { setProductInfo(prev => ({ ...prev, badges: prev.badges.filter(b => b !== badge) })) } else { setProductInfo(prev => ({ ...prev, badges: [...prev.badges, badge] })) } }} className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${productInfo.badges.includes(badge) ? 'bg-rose-500 text-white border-rose-500 shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}>{productInfo.badges.includes(badge) ? '✓ ' : ''}{badge}</button>))}
+                    {availableBadgeOptions.map((badge) => {
+                      const selected = badgesHaveLabel(productInfo.badges, badge.label)
+                      const selectedBadge = (productInfo.badges || []).find((item) => getBadgeLabel(item).toLowerCase() === badge.label.toLowerCase())
+                      const selectedColor = normalizeProductBadge(selectedBadge || badge, storeBadgeColorMap)?.backgroundColor
+                      return (
+                        <button
+                          key={badge.label}
+                          type="button"
+                          onClick={() => toggleBadge(badge)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+                            selected ? 'text-white border-transparent shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+                          }`}
+                          style={selected ? { backgroundColor: selectedColor } : undefined}
+                        >
+                          {selected ? '✓ ' : ''}{badge.label}
+                        </button>
+                      )
+                    })}
                   </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      type="text"
+                      value={badgeInput}
+                      onChange={(e) => setBadgeInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          addCustomBadge()
+                        }
+                      }}
+                      className="min-w-[180px] flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                      placeholder="New badge name, e.g. 1-Year Warranty"
+                    />
+                    <input
+                      type="color"
+                      value={badgeColor}
+                      onChange={(e) => setBadgeColor(e.target.value)}
+                      className="h-10 w-12 cursor-pointer rounded border border-gray-200 bg-white p-1"
+                      title="Badge color"
+                    />
+                    <button
+                      type="button"
+                      onClick={addCustomBadge}
+                      className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900"
+                    >
+                      Add badge
+                    </button>
+                  </div>
+                  {Array.isArray(productInfo.badges) && productInfo.badges.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {productInfo.badges.map((badge, idx) => {
+                        const normalized = normalizeProductBadge(badge, storeBadgeColorMap)
+                        if (!normalized) return null
+                        return (
+                          <span key={`${normalized.label}-${idx}`} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-2 py-1">
+                            <span className="px-2 py-0.5 text-xs font-semibold text-white" style={{ backgroundColor: normalized.backgroundColor }}>
+                              {normalized.label}
+                            </span>
+                            <input
+                              type="color"
+                              value={normalized.backgroundColor}
+                              onChange={(e) => updateBadgeColor(idx, e.target.value)}
+                              className="h-7 w-8 cursor-pointer rounded border border-gray-200 p-0.5"
+                              title="Change color"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeBadge(idx)}
+                              className="font-bold text-gray-400 hover:text-gray-800"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        )
+                      })}
+                    </div>
+                  ) : null}
                 </div>
                   </div>
                 </FormSection>

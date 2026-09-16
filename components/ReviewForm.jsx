@@ -1,13 +1,14 @@
 'use client'
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 
-import { StarIcon } from "lucide-react"
+import { Camera, StarIcon } from "lucide-react"
 import Image from "next/image"
 import axios from "axios"
 import { toast } from "react-hot-toast"
 import { useRouter } from "next/navigation"
 
 import { auth } from '../lib/firebase';
+import { useNavbarColor } from '@/lib/useNavbarColor';
 export default function ReviewForm({
   productId,
   onReviewAdded,
@@ -21,6 +22,7 @@ export default function ReviewForm({
     const [isSignedIn, setIsSignedIn] = useState(false);
     const [getToken, setGetToken] = useState(() => async () => null);
     const router = useRouter();
+    const navbarColor = useNavbarColor();
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
             setUser(firebaseUser);
@@ -36,6 +38,8 @@ export default function ReviewForm({
     const [images, setImages] = useState([])
     const [imagePreviews, setImagePreviews] = useState([])
     const [submitting, setSubmitting] = useState(false)
+    const fileInputRef = useRef(null)
+    const cameraInputRef = useRef(null)
 
     useEffect(() => {
         setShowForm(startOpen)
@@ -198,13 +202,42 @@ export default function ReviewForm({
                         Add Photos (Optional)
                     </label>
                     <input
+                        ref={fileInputRef}
                         type="file"
                         accept="image/*"
                         multiple
                         onChange={handleImageChange}
-                        className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                        className="sr-only"
                         disabled={images.length >= 5}
                     />
+                    <input
+                        ref={cameraInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleImageChange}
+                        className="sr-only"
+                        disabled={images.length >= 5}
+                    />
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={images.length >= 5}
+                            className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            Choose file
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => cameraInputRef.current?.click()}
+                            disabled={images.length >= 5}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 lg:hidden"
+                        >
+                            <Camera size={16} />
+                            Camera
+                        </button>
+                    </div>
                     <p className="text-xs text-gray-500 mt-1">
                         You can upload up to 5 photos ({images.length}/5)
                     </p>
@@ -242,7 +275,8 @@ export default function ReviewForm({
                     <button
                         type="submit"
                         disabled={submitting || submitDisabled}
-                        className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition disabled:cursor-not-allowed disabled:bg-gray-400"
+                        className="px-6 py-2.5 text-white text-sm font-medium rounded transition hover:brightness-95 disabled:cursor-not-allowed disabled:bg-gray-400"
+                        style={submitting || submitDisabled ? undefined : { backgroundColor: navbarColor }}
                     >
                         {submitting ? 'Submitting...' : 'Submit Review'}
                     </button>

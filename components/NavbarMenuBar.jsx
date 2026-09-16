@@ -422,7 +422,7 @@ export default function NavbarMenuBar() {
         boxShadow: 'inset 0 1px 0 var(--menu-bar-border)',
       }}
     >
-      <div className={`${NAVBAR_CONTAINER_CLASS} overflow-x-auto scrollbar-hide`} style={{ maxWidth: navbarMaxWidth }}>
+      <div className={`${NAVBAR_CONTAINER_CLASS} overflow-x-auto scrollbar-hide`} style={{ maxWidth: Math.min(1400, Number(navbarMaxWidth) || 1400) }}>
         <div className="relative flex items-center py-2 whitespace-nowrap">
           {effectiveMenuItems.map((item, index) => {
             const dropdownLinks = Array.isArray(item?.megaMenu?.links) ? item.megaMenu.links : [];

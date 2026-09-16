@@ -12,7 +12,10 @@ import { STORE1920_LOGO_PATH } from '@/lib/brandLogo';
 import {
   DEFAULT_CATEGORIES_BUTTON_STYLE,
   DEFAULT_NAVBAR_LAYOUT,
+  DEFAULT_SEARCH_STYLE,
   createNavbarExtraButton,
+  getNavbarCategoriesButtonAppearance,
+  getNavbarSearchAppearance,
   normalizeNavbarItemOrder,
   normalizeNavbarLayout,
 } from '@/lib/navbarLayoutSettings';
@@ -34,25 +37,115 @@ import {
   Eye,
   Loader2,
   Menu,
+  Monitor,
   Palette,
   Save,
   Settings2,
   ShoppingCart,
+  Smartphone,
   Sparkles,
   Store,
   Heart,
   Languages,
   Package,
   Plus,
+  Search,
   Trash2,
   X,
 } from 'lucide-react';
 
-function ExtraButtonStyleEditor({ style, previewLabel, onChange, disabled = false, fallbackStyle = DEFAULT_CATEGORIES_BUTTON_STYLE }) {
-  const [open, setOpen] = useState(false);
+function SearchFieldPreview({
+  searchStyle,
+  placeholder = 'Search products...',
+  maxWidth = 600,
+  backgroundColor = '#8f3404',
+}) {
+  const appearance = getNavbarSearchAppearance({ searchStyle }, 'desktop');
+  return (
+    <div
+      className="rounded-xl px-3 py-3 sm:px-4"
+      style={{ backgroundColor: backgroundColor || '#8f3404' }}
+    >
+      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-white/70">
+        Live search preview
+      </p>
+      <div className="flex w-full min-w-0 items-center">
+        <div className="min-w-0 flex-1 basis-0">
+          <div className="w-full" style={{ maxWidth: Number(maxWidth) || 600 }}>
+            <div
+              className="flex h-[44px] w-full min-w-0 items-center overflow-hidden px-3 shadow-sm"
+              data-font={appearance.fontId || 'inherit'}
+              style={appearance.boxStyle}
+            >
+              <span className="min-w-0 flex-1 truncate opacity-70" style={appearance.inputStyle}>
+                {placeholder}
+              </span>
+              <Search
+                size={15}
+                className="ms-2 shrink-0"
+                style={{ color: appearance.textColor || '#64748b' }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CategoriesButtonPreview({
+  style,
+  label = 'Categories',
+  backgroundColor = '#8f3404',
+}) {
+  const appearance = getNavbarCategoriesButtonAppearance({ categoriesButtonStyle: style }, 'desktop');
+  return (
+    <div
+      className="rounded-xl px-3 py-3 sm:px-4"
+      style={{ backgroundColor: backgroundColor || '#8f3404' }}
+    >
+      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-white/70">
+        Live categories preview
+      </p>
+      <span
+        className={`inline-flex items-center gap-1.5 leading-none ${appearance.animationClass || ''}`}
+        data-font={appearance.fontId || 'inherit'}
+        style={{
+          ...appearance.style,
+          minHeight: 44,
+          height: 44,
+        }}
+      >
+        <span>{label}</span>
+        <ChevronDown
+          size={appearance.chevronSize || 13}
+          strokeWidth={2.4}
+          className="shrink-0"
+          style={{ color: appearance.textColor || 'currentColor' }}
+          aria-hidden="true"
+        />
+      </span>
+    </div>
+  );
+}
+
+function ExtraButtonStyleEditor({
+  style,
+  previewLabel,
+  onChange,
+  disabled = false,
+  fallbackStyle = DEFAULT_CATEGORIES_BUTTON_STYLE,
+  hideAnimation = false,
+  hideWidth = false,
+  previewKind = 'button',
+}) {
+  const [open, setOpen] = useState(previewKind === 'search' || previewKind === 'categories');
   const navStyle = style || fallbackStyle;
   const preview = getOffersNavButtonAppearance(navStyle, 'desktop');
+  const categoriesPreview = getNavbarCategoriesButtonAppearance({ categoriesButtonStyle: navStyle }, 'desktop');
   const fontLabel = OFFERS_NAV_FONT_OPTIONS.find((font) => font.id === (navStyle.fontFamily || 'inherit'))?.label || 'Default';
+  const isSearchPreview = previewKind === 'search';
+  const isCategoriesPreview = previewKind === 'categories';
 
   return (
     <div className={`mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 ${disabled ? 'pointer-events-none opacity-50' : ''}`}>
@@ -63,10 +156,14 @@ function ExtraButtonStyleEditor({ style, previewLabel, onChange, disabled = fals
         aria-expanded={open}
       >
         <span>
-          <span className="block text-xs font-semibold text-slate-800">Font and design</span>
+          <span className="block text-xs font-semibold text-slate-800">
+            {isSearchPreview ? 'Search design' : 'Font and design'}
+          </span>
           <span className="mt-0.5 block text-[11px] text-slate-400">
             {open
-              ? 'Font, weight, animation, size, color, border, radius, and background.'
+              ? (isSearchPreview
+                ? 'Font, size, color, border, radius, and background.'
+                : 'Font, weight, animation, size, color, border, radius, and background.')
               : 'Closed. Click to edit style.'}
           </span>
         </span>
@@ -119,6 +216,7 @@ function ExtraButtonStyleEditor({ style, previewLabel, onChange, disabled = fals
           </div>
         </div>
 
+        {hideAnimation ? null : (
         <div>
           <span className="mb-1.5 block text-xs font-medium text-slate-500">Animation</span>
           <div className="flex flex-wrap gap-1.5">
@@ -142,15 +240,28 @@ function ExtraButtonStyleEditor({ style, previewLabel, onChange, disabled = fals
             })}
           </div>
         </div>
+        )}
 
-        <div
-          className={`inline-flex items-center leading-none tracking-[0.04em] ${preview.animationClass || ''}`}
-          data-font={preview.fontId || 'inherit'}
-          style={preview.style}
-        >
-          {previewLabel || 'Button preview'}
-          <span className="ms-2 text-[10px] font-medium tracking-normal text-slate-400">{fontLabel}</span>
-        </div>
+        {isSearchPreview ? null : (
+          <div
+            className={`inline-flex items-center gap-1.5 leading-none tracking-[0.04em] ${preview.animationClass || ''}`}
+            data-font={preview.fontId || 'inherit'}
+            style={preview.style}
+          >
+            <span>{previewLabel || 'Button preview'}</span>
+            {isCategoriesPreview ? (
+              <ChevronDown
+                size={categoriesPreview.chevronSize || 13}
+                strokeWidth={2.4}
+                className="shrink-0"
+                style={{ color: categoriesPreview.textColor || 'currentColor' }}
+                aria-hidden="true"
+              />
+            ) : (
+              <span className="text-[10px] font-medium tracking-normal text-slate-400">{fontLabel}</span>
+            )}
+          </div>
+        )}
 
         <label className="block">
           <span className="mb-1 flex items-center justify-between text-xs font-medium text-slate-500">
@@ -282,6 +393,7 @@ function ExtraButtonStyleEditor({ style, previewLabel, onChange, disabled = fals
           <p className="mt-1 text-[11px] text-slate-400">0px is square. Increase for a rounder button.</p>
         </label>
 
+        {hideWidth ? null : (
         <label className="block">
           <span className="mb-1 flex items-center justify-between text-xs font-medium text-slate-500">
             Button width
@@ -311,6 +423,7 @@ function ExtraButtonStyleEditor({ style, previewLabel, onChange, disabled = fals
           </div>
           <p className="mt-1 text-[11px] text-slate-400">0 is auto width. Type a pixel width to lock the size.</p>
         </label>
+        )}
 
         <div>
           <div className="mb-1.5 flex items-center justify-between gap-2">
@@ -571,6 +684,7 @@ export default function MenuManagementPage() {
   const [pendingClearLogo, setPendingClearLogo] = useState(false);
   const [navbarBranding, setNavbarBranding] = useState(defaultNavbarBranding);
   const [navbarLayout, setNavbarLayout] = useState(DEFAULT_NAVBAR_LAYOUT);
+  const [previewDevice, setPreviewDevice] = useState('desktop');
   const [legacyNavbarItems, setLegacyNavbarItems] = useState([]);
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [translatingKey, setTranslatingKey] = useState('');
@@ -824,7 +938,10 @@ export default function MenuManagementPage() {
       searchMaxWidth: navbarLayout.searchMaxWidth,
       searchPlaceholder: navbarLayout.searchPlaceholder,
       searchPlaceholderAr: navbarLayout.searchPlaceholderAr,
+      searchStyle: navbarLayout.searchStyle,
       navbarMaxWidth: navbarLayout.navbarMaxWidth,
+      itemGap: navbarLayout.itemGap,
+      mobileItemGap: navbarLayout.mobileItemGap,
       stickyHeader: navbarLayout.stickyHeader,
       showCategoriesButton: navbarLayout.showCategoriesButton,
       categoriesButtonLabel: navbarLayout.categoriesButtonLabel,
@@ -1291,9 +1408,42 @@ export default function MenuManagementPage() {
       {activePanel === 'settings' ? (
         <div className="space-y-5">
           <div className="overflow-visible rounded-2xl border border-slate-200 bg-white">
-            <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 sm:px-5">
-              <Eye size={14} />
-              Navbar preview
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 sm:px-5">
+              <div>
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <Eye size={14} />
+                  Navbar preview
+                </div>
+                <p className="mt-1 text-[11px] font-normal normal-case tracking-normal text-slate-400">
+                  Same layout as the website. Click Save settings to update the live store.
+                </p>
+              </div>
+              <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setPreviewDevice('desktop')}
+                  className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition ${
+                    previewDevice === 'desktop'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <Monitor size={13} />
+                  Desktop
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewDevice('mobile')}
+                  className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition ${
+                    previewDevice === 'mobile'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <Smartphone size={13} />
+                  Mobile
+                </button>
+              </div>
             </div>
             <div className="overflow-visible p-4 sm:p-5">
               <NavbarPreview
@@ -1310,13 +1460,61 @@ export default function MenuManagementPage() {
                 searchPlaceholder={navbarLayout.searchPlaceholder || 'Wireless Headphones'}
                 extraButtons={navbarLayout.extraButtons}
                 searchMaxWidth={navbarLayout.searchMaxWidth}
+                searchStyle={navbarLayout.searchStyle}
                 navbarMaxWidth={navbarLayout.navbarMaxWidth}
                 showCategoriesButton={navbarLayout.showCategoriesButton}
                 categoriesButtonLabel={navbarLayout.categoriesButtonLabel}
                 categoriesButtonStyle={navbarLayout.categoriesButtonStyle}
                 itemOrder={navbarLayout.itemOrder}
+                itemGap={navbarLayout.itemGap}
+                mobileItemGap={navbarLayout.mobileItemGap}
+                device={previewDevice}
                 showMenuBar={false}
               />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <label className="block min-w-0 flex-1 space-y-1">
+                <span className="text-xs font-medium text-slate-600">
+                  {previewDevice === 'mobile'
+                    ? `Mobile item gap (${navbarLayout.mobileItemGap}px)`
+                    : `Item gap (${navbarLayout.itemGap}px)`}
+                </span>
+                <input
+                  type="range"
+                  min="0"
+                  max={previewDevice === 'mobile' ? '24' : '48'}
+                  step="1"
+                  className="w-full accent-indigo-600"
+                  value={previewDevice === 'mobile' ? navbarLayout.mobileItemGap : navbarLayout.itemGap}
+                  onChange={(event) => {
+                    const next = Number(event.target.value);
+                    setNavbarLayout((prev) => (
+                      previewDevice === 'mobile'
+                        ? { ...prev, mobileItemGap: next }
+                        : { ...prev, itemGap: next }
+                    ));
+                  }}
+                />
+                <span className="text-[11px] text-slate-500">
+                  {previewDevice === 'mobile'
+                    ? 'Space between menu, logo, search, and icons on the phone navbar.'
+                    : 'Space between logo, buttons, search, and icons in the navbar.'}
+                </span>
+              </label>
+              <button
+                type="button"
+                onClick={() => setNavbarLayout((prev) => (
+                  previewDevice === 'mobile'
+                    ? { ...prev, mobileItemGap: DEFAULT_NAVBAR_LAYOUT.mobileItemGap }
+                    : { ...prev, itemGap: DEFAULT_NAVBAR_LAYOUT.itemGap }
+                ))}
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Reset gap
+              </button>
             </div>
           </div>
 
@@ -1700,6 +1898,13 @@ export default function MenuManagementPage() {
                 <span className="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-indigo-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-5" />
               </label>
             </div>
+            <div className="sticky top-3 z-20 mt-4 rounded-xl bg-white/95 pb-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+              <CategoriesButtonPreview
+                style={navbarLayout.categoriesButtonStyle}
+                label={navbarLayout.categoriesButtonLabel || 'Categories'}
+                backgroundColor={navbarBranding.backgroundColor || defaultNavbarBranding.backgroundColor}
+              />
+            </div>
             <div className={`mt-4 grid gap-4 md:grid-cols-2 ${navbarLayout.showCategoriesButton === false ? 'opacity-50' : ''}`}>
               <label className="block space-y-1">
                 <span className="text-xs font-medium text-slate-600">Button text (English)</span>
@@ -1737,6 +1942,7 @@ export default function MenuManagementPage() {
             <ExtraButtonStyleEditor
               style={navbarLayout.categoriesButtonStyle}
               previewLabel={navbarLayout.categoriesButtonLabel || 'Categories'}
+              previewKind="categories"
               disabled={navbarLayout.showCategoriesButton === false}
               onChange={(patch) => setNavbarLayout((prev) => ({
                 ...prev,
@@ -1751,8 +1957,16 @@ export default function MenuManagementPage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
             <h2 className="text-sm font-semibold text-slate-900">Search and width</h2>
             <p className="mt-1 text-xs text-slate-500">
-              Control the customer search field and how wide the navbar is on the website.
+              Control the customer search field design, placeholder, and how wide the navbar is on the website.
             </p>
+            <div className="sticky top-3 z-20 mt-4 rounded-xl bg-white/95 pb-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+              <SearchFieldPreview
+                searchStyle={navbarLayout.searchStyle}
+                placeholder={navbarLayout.searchPlaceholder || 'Wireless Headphones'}
+                maxWidth={navbarLayout.searchMaxWidth}
+                backgroundColor={navbarBranding.backgroundColor || defaultNavbarBranding.backgroundColor}
+              />
+            </div>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <label className="block space-y-1">
                 <span className="text-xs font-medium text-slate-600">Search placeholder (English)</span>
@@ -1784,6 +1998,23 @@ export default function MenuManagementPage() {
                   placeholder="سماعات لاسلكية"
                 />
               </label>
+            </div>
+            <ExtraButtonStyleEditor
+              style={navbarLayout.searchStyle}
+              fallbackStyle={DEFAULT_SEARCH_STYLE}
+              previewLabel={navbarLayout.searchPlaceholder || 'Wireless Headphones'}
+              hideAnimation
+              hideWidth
+              previewKind="search"
+              onChange={(patch) => setNavbarLayout((prev) => ({
+                ...prev,
+                searchStyle: {
+                  ...(prev.searchStyle || DEFAULT_SEARCH_STYLE),
+                  ...patch,
+                },
+              }))}
+            />
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
               <label className="block space-y-1">
                 <span className="text-xs font-medium text-slate-600">Search max width ({navbarLayout.searchMaxWidth}px)</span>
                 <input
@@ -1800,15 +2031,36 @@ export default function MenuManagementPage() {
                 <span className="text-xs font-medium text-slate-600">Navbar max width ({navbarLayout.navbarMaxWidth}px)</span>
                 <input
                   type="range"
-                  min="1000"
-                  max="1800"
+                  min="1100"
+                  max="1400"
                   step="20"
                   className="w-full accent-indigo-600"
                   value={navbarLayout.navbarMaxWidth}
                   onChange={(event) => setNavbarLayout((prev) => ({ ...prev, navbarMaxWidth: Number(event.target.value) }))}
                 />
-                <span className="text-[11px] text-slate-500">Used for the customer navbar and menu row.</span>
+                <span className="text-[11px] text-slate-500">Default limit is 1400px. Search width does not change this.</span>
               </label>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <label className="block min-w-0 flex-1 space-y-1">
+                  <span className="text-xs font-medium text-slate-600">Item gap ({navbarLayout.itemGap}px)</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="48"
+                    step="1"
+                    className="w-full accent-indigo-600"
+                    value={navbarLayout.itemGap}
+                    onChange={(event) => setNavbarLayout((prev) => ({ ...prev, itemGap: Number(event.target.value) }))}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setNavbarLayout((prev) => ({ ...prev, itemGap: DEFAULT_NAVBAR_LAYOUT.itemGap }))}
+                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Reset gap
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1817,9 +2069,37 @@ export default function MenuManagementPage() {
       {activePanel === 'menu' ? (
       <div className="space-y-5">
         <div className="overflow-visible rounded-2xl border border-slate-200 bg-white">
-          <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 sm:px-5">
-            <Eye size={14} />
-            Navbar preview
+          <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 sm:px-5">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <Eye size={14} />
+              Navbar preview
+            </div>
+            <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+              <button
+                type="button"
+                onClick={() => setPreviewDevice('desktop')}
+                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition ${
+                  previewDevice === 'desktop'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Monitor size={13} />
+                Desktop
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewDevice('mobile')}
+                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition ${
+                  previewDevice === 'mobile'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Smartphone size={13} />
+                Mobile
+              </button>
+            </div>
           </div>
           <div className="overflow-visible p-4 sm:p-5">
             <NavbarPreview
@@ -1836,11 +2116,15 @@ export default function MenuManagementPage() {
               searchPlaceholder={navbarLayout.searchPlaceholder || 'Coffee Maker'}
               extraButtons={navbarLayout.extraButtons}
               searchMaxWidth={navbarLayout.searchMaxWidth}
+              searchStyle={navbarLayout.searchStyle}
               navbarMaxWidth={navbarLayout.navbarMaxWidth}
               showCategoriesButton={navbarLayout.showCategoriesButton}
               categoriesButtonLabel={navbarLayout.categoriesButtonLabel}
               categoriesButtonStyle={navbarLayout.categoriesButtonStyle}
               itemOrder={navbarLayout.itemOrder}
+              itemGap={navbarLayout.itemGap}
+              mobileItemGap={navbarLayout.mobileItemGap}
+              device={previewDevice}
             />
           </div>
         </div>

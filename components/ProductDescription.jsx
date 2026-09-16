@@ -4,14 +4,11 @@ import Image from "next/image"
 import Link from "next/link"
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import axios from "axios"
-import toast from "react-hot-toast"
 import ProductCard from "./ProductCard"
 import { useSelector } from "react-redux"
 import { PRODUCT_RICH_CONTENT_CLASS, sanitizeProductRichHtml } from "@/lib/productRichContent"
 import { pickAPlusModules } from "@/lib/aPlusContent"
 import { useStorefrontI18n } from "@/lib/useStorefrontI18n"
-import { useProductWishlist } from "@/lib/useProductWishlist"
 import { getProductAbsoluteUrl } from "@/lib/productUrl"
 import { toPublicCategoryPath } from "@/lib/categorySlug"
 
@@ -53,30 +50,15 @@ const ProductDescription = ({
     showMainDescription = true,
     showOverviewSections = true,
     compactMobile = false,
+    compactOverview = false,
     aPlusViewport = 'auto',
 }) => {
 
     const router = useRouter()
     const { t, isArabic } = useStorefrontI18n()
-    const { isInWishlist, loading: wishlistLoading, toggleWishlist } = useProductWishlist(product)
     const [showReportModal, setShowReportModal] = useState(false)
     const [reportReason, setReportReason] = useState('incorrect-information')
     const [reportDetails, setReportDetails] = useState('')
-
-    const handleSave = async () => {
-        if (wishlistLoading) return;
-
-        const result = await toggleWishlist();
-        if (result === 'added') {
-            toast.success('Saved to your wishlist');
-        } else if (result === 'removed') {
-            toast.success('Removed from your wishlist');
-        } else if (result === 'error') {
-            toast.error('Could not update wishlist. Please try again.');
-        } else {
-            toast.error('Unable to save this product right now.');
-        }
-    }
 
     const handleSubmitReport = (event) => {
         event.preventDefault()
@@ -117,6 +99,7 @@ const ProductDescription = ({
     const [showAllReviewsModal, setShowAllReviewsModal] = useState(false)
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
     const [isAboutExpanded, setIsAboutExpanded] = useState(false)
+    const [infoTab, setInfoTab] = useState('details')
     const rawDescription = (isArabic && product?.descriptionAr) ? product.descriptionAr : (product?.description || '')
     const normalizedDescription = useMemo(
         () => sanitizeProductRichHtml(rawDescription),
@@ -343,127 +326,171 @@ const ProductDescription = ({
 
     // Remove fetchReviews and handleReviewAdded, use parent handler
 
+    const specTableTitle = (
+        isArabic
+            ? (product?.attributes?.specTableTitleAr || product?.specTableTitleAr)
+            : (product?.attributes?.specTableTitle || product?.specTableTitle)
+    ) || t('product.productSpecifications')
+    const aboutThisItemTitle = (
+        isArabic
+            ? (product?.attributes?.aboutThisItemTitleAr || product?.aboutThisItemTitleAr)
+            : (product?.attributes?.aboutThisItemTitle || product?.aboutThisItemTitle)
+    ) || t('product.aboutThisItem')
+    const canShowSpecTab = Boolean(showOverviewSections && showSpecTable)
+    const canShowDetailsTab = Boolean(showMainDescription)
+    const useInfoTabs = canShowDetailsTab && canShowSpecTab
+    const activeInfoTab = useInfoTabs ? infoTab : (canShowSpecTab && !canShowDetailsTab ? 'specs' : 'details')
+
+    const specTableBlock = canShowSpecTab ? (
+        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+            <table className="w-full border-collapse table-fixed">
+                <tbody>
+                    {specTableRows.map((row, rowIdx) => (
+                        <tr key={`spec-row-${rowIdx}`} className={`${rowIdx !== specTableRows.length - 1 ? 'border-b border-gray-200' : ''}`}>
+                            {specTableColumns.map((_, colIdx) => (
+                                colIdx === 0 ? (
+                                    <th
+                                        key={`spec-cell-${rowIdx}-${colIdx}`}
+                                        scope="row"
+                                        className="w-[42%] bg-gray-50 px-4 py-3 text-left text-[14px] font-semibold text-gray-900 align-top"
+                                    >
+                                        {row[colIdx] || '-'}
+                                    </th>
+                                ) : (
+                                    <td
+                                        key={`spec-cell-${rowIdx}-${colIdx}`}
+                                        className="px-4 py-3 text-[14px] text-gray-700 leading-6 align-top break-words border-l border-gray-100"
+                                    >
+                                        {row[colIdx] || '-'}
+                                    </td>
+                                )
+                            ))}
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    ) : null
+
     return (
         <div className={compactMobile ? 'flex flex-col' : 'mt-3 flex flex-col gap-2 sm:gap-3'} dir={isArabic ? 'rtl' : 'ltr'}>
 
-            {showOverviewSections && hasShortDescription2 && !compactMobile && (
-                <div className="order-1 bg-white border-t border-gray-200 pt-4 sm:pt-5">
-                    <h2 className="text-[30px] leading-none font-semibold text-gray-900 mb-3">{t('product.aboutThisItem')}</h2>
-                    <div className="relative">
-                        <div
-                        className={`${PRODUCT_RICH_CONTENT_CLASS} text-[16px] leading-7
-                        ${shouldCollapseAbout && !isAboutExpanded ? 'overflow-hidden [display:-webkit-box] [-webkit-line-clamp:4] [-webkit-box-orient:vertical]' : ''}`}
-                        dir={isArabic ? 'rtl' : 'ltr'}
-                        dangerouslySetInnerHTML={{ __html: normalizedShortDescription2 }}
-                        />
-
-                        {shouldCollapseAbout && !isAboutExpanded && (
-                            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-white to-transparent" />
+            {(canShowDetailsTab || canShowSpecTab) ? (
+                <div className={`${compactMobile ? 'order-1' : 'order-3'} bg-white ${compactMobile ? 'px-4 py-2.5' : 'pt-4'}`} dir={isArabic ? 'rtl' : 'ltr'}>
+                    <div className={`${compactMobile ? 'mb-2' : 'mb-3'} flex flex-wrap items-center justify-between gap-3`}>
+                        {useInfoTabs ? (
+                            <div className="flex min-w-0 items-center gap-1 border-b border-gray-200">
+                                <button
+                                    type="button"
+                                    onClick={() => setInfoTab('details')}
+                                    className={`-mb-px border-b-2 px-3 py-2 text-[15px] font-semibold transition ${
+                                        activeInfoTab === 'details'
+                                            ? 'border-slate-900 text-slate-900'
+                                            : 'border-transparent text-gray-500 hover:text-gray-800'
+                                    }`}
+                                >
+                                    {t('product.productDetails')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setInfoTab('specs')}
+                                    className={`-mb-px border-b-2 px-3 py-2 text-[15px] font-semibold transition ${
+                                        activeInfoTab === 'specs'
+                                            ? 'border-slate-900 text-slate-900'
+                                            : 'border-transparent text-gray-500 hover:text-gray-800'
+                                    }`}
+                                >
+                                    {t('product.productSpecifications')}
+                                </button>
+                            </div>
+                        ) : (
+                            <h2 className={`${compactMobile ? 'text-[15px] font-bold' : 'text-[18px] font-semibold'} leading-none text-gray-900`}>
+                                {canShowSpecTab && !canShowDetailsTab ? specTableTitle : t('product.productDetails')}
+                            </h2>
                         )}
+                        {canShowDetailsTab ? (
+                            <div className="flex shrink-0 items-center gap-2 text-[13px] text-gray-800">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowReportModal(true)}
+                                    className="hover:underline"
+                                >
+                                    {t('product.reportItem')}
+                                </button>
+                            </div>
+                        ) : null}
                     </div>
 
-                    {shouldCollapseAbout && (
-                        <div className="mt-2">
-                            <button
-                                onClick={() => setIsAboutExpanded((prev) => !prev)}
-                                className="text-[12px] text-gray-600 hover:text-gray-900 hover:underline"
-                            >
-                                {isAboutExpanded ? t('product.viewLess') : t('common.viewMore')}
-                            </button>
+                    {activeInfoTab === 'details' && canShowDetailsTab ? (
+                        <div>
+                            {hasShortDescription2 && !compactMobile ? (
+                                <div className="mb-4">
+                                    <h3 className="mb-2 text-base font-semibold text-gray-900">{aboutThisItemTitle}</h3>
+                                    <div className="relative">
+                                        <div
+                                            className={`${PRODUCT_RICH_CONTENT_CLASS} text-[16px] leading-7 ${
+                                                shouldCollapseAbout && !isAboutExpanded ? 'overflow-hidden [display:-webkit-box] [-webkit-line-clamp:4] [-webkit-box-orient:vertical]' : ''
+                                            }`}
+                                            dir={isArabic ? 'rtl' : 'ltr'}
+                                            dangerouslySetInnerHTML={{ __html: normalizedShortDescription2 }}
+                                        />
+                                        {shouldCollapseAbout && !isAboutExpanded ? (
+                                            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-white to-transparent" />
+                                        ) : null}
+                                    </div>
+                                    {shouldCollapseAbout ? (
+                                        <div className="mt-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsAboutExpanded((prev) => !prev)}
+                                                className="text-[12px] text-gray-600 hover:text-gray-900 hover:underline"
+                                            >
+                                                {isAboutExpanded ? t('product.viewLess') : t('common.viewMore')}
+                                            </button>
+                                        </div>
+                                    ) : null}
+                                </div>
+                            ) : null}
+
+                            <div className="relative">
+                                <div
+                                    className={`${PRODUCT_RICH_CONTENT_CLASS} ${shouldCollapseDescription && !isDescriptionExpanded ? 'overflow-hidden [display:-webkit-box] [-webkit-line-clamp:8] [-webkit-box-orient:vertical]' : ''}`}
+                                    dir={isArabic ? 'rtl' : 'ltr'}
+                                    dangerouslySetInnerHTML={{ __html: descriptionForDisplay }}
+                                />
+
+                                {shouldCollapseDescription && !isDescriptionExpanded ? (
+                                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent" />
+                                ) : null}
+                            </div>
+
+                            {shouldCollapseDescription ? (
+                                <div className={`${compactMobile ? 'mt-2' : 'mt-3'} text-center`}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsDescriptionExpanded((prev) => !prev)}
+                                        className="inline-flex items-center gap-1 text-[13px] text-gray-800 hover:text-gray-900"
+                                    >
+                                        {isDescriptionExpanded ? t('product.seeLess') : t('product.seeMore')}
+                                        {isDescriptionExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                                    </button>
+                                </div>
+                            ) : null}
                         </div>
-                    )}
-                </div>
-            )}
+                    ) : null}
 
-            {showOverviewSections && showSpecTable && (
-                <div className={`order-2 bg-white ${compactMobile ? 'border-t border-gray-100 px-4 py-2.5' : 'border-t border-gray-300 pt-4 sm:pt-5'}`}>
-                    <h3 className={`${compactMobile ? 'text-[15px] font-bold mb-2' : 'text-[28px] leading-none font-semibold mb-3'} text-gray-900`}>
-                        {(
-                            isArabic
-                                ? (product?.attributes?.specTableTitleAr || product?.specTableTitleAr)
-                                : (product?.attributes?.specTableTitle || product?.specTableTitle)
-                        ) || t('product.productInformation')}
-                    </h3>
-                    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-                        <table className="w-full border-collapse table-fixed">
-                            <tbody>
-                                {specTableRows.map((row, rowIdx) => (
-                                    <tr key={`spec-row-${rowIdx}`} className={`${rowIdx !== specTableRows.length - 1 ? 'border-b border-gray-200' : ''}`}>
-                                        {specTableColumns.map((_, colIdx) => (
-                                            colIdx === 0 ? (
-                                                <th
-                                                    key={`spec-cell-${rowIdx}-${colIdx}`}
-                                                    scope="row"
-                                                    className="w-[42%] bg-gray-50 px-4 py-3 text-left text-[14px] font-semibold text-gray-900 align-top"
-                                                >
-                                                    {row[colIdx] || '-'}
-                                                </th>
-                                            ) : (
-                                                <td
-                                                    key={`spec-cell-${rowIdx}-${colIdx}`}
-                                                    className="px-4 py-3 text-[14px] text-gray-700 leading-6 align-top break-words border-l border-gray-100"
-                                                >
-                                                    {row[colIdx] || '-'}
-                                                </td>
-                                            )
-                                        ))}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
-
-            {showMainDescription && (
-                <div className={`${compactMobile ? 'order-1' : 'order-3'} bg-white ${compactMobile ? 'px-4 py-2.5' : 'border-t border-gray-200 pt-4'}`} dir={isArabic ? 'rtl' : 'ltr'}>
-                    <div className={`${compactMobile ? 'mb-2' : 'mb-3'} flex items-center justify-between gap-3`}>
-                        <h2 className={`${compactMobile ? 'text-[15px] font-bold' : 'text-[18px] font-semibold'} leading-none text-gray-900`}>{t('product.productDetails')}</h2>
-                        <div className="flex shrink-0 items-center gap-2 text-[13px] text-gray-800">
-                            <button
-                                type="button"
-                                onClick={handleSave}
-                                disabled={wishlistLoading}
-                                className={`hover:underline disabled:opacity-60 ${isInWishlist ? 'text-red-600 font-medium' : ''}`}
-                            >
-                                {isInWishlist ? t('common.saved') : t('common.save')}
-                            </button>
-                            <span className="text-gray-400">|</span>
-                            <button
-                                type="button"
-                                onClick={() => setShowReportModal(true)}
-                                className="hover:underline"
-                            >
-                                {t('product.reportItem')}
-                            </button>
+                    {activeInfoTab === 'specs' && specTableBlock ? (
+                        <div>
+                            {useInfoTabs ? null : (
+                                <h3 className={`${compactMobile ? 'text-[15px] font-semibold mb-2' : 'text-[18px] font-semibold mb-3'} text-gray-900`}>
+                                    {specTableTitle}
+                                </h3>
+                            )}
+                            {specTableBlock}
                         </div>
-                    </div>
-
-                    <div className="relative">
-                        <div
-                            className={`${PRODUCT_RICH_CONTENT_CLASS} ${shouldCollapseDescription && !isDescriptionExpanded ? 'overflow-hidden [display:-webkit-box] [-webkit-line-clamp:8] [-webkit-box-orient:vertical]' : ''}`}
-                            dir={isArabic ? 'rtl' : 'ltr'}
-                            dangerouslySetInnerHTML={{ __html: descriptionForDisplay }}
-                        />
-
-                        {shouldCollapseDescription && !isDescriptionExpanded && (
-                            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent" />
-                        )}
-                    </div>
-
-                    {shouldCollapseDescription && (
-                        <div className={`${compactMobile ? 'mt-2' : 'mt-3'} text-center`}>
-                            <button
-                                onClick={() => setIsDescriptionExpanded((prev) => !prev)}
-                                className="inline-flex items-center gap-1 text-[13px] text-gray-800 hover:text-gray-900"
-                            >
-                                {isDescriptionExpanded ? t('product.seeLess') : t('product.seeMore')}
-                                {isDescriptionExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                            </button>
-                        </div>
-                    )}
+                    ) : null}
                 </div>
-            )}
+            ) : null}
 
             {showMainDescription && hasAPlusContent ? (
                 <div

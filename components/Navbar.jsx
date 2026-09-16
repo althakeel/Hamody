@@ -48,7 +48,7 @@ import { getProductPath } from '@/lib/productUrl';
 import NewProductTagBadge from '@/components/NewProductTagBadge';
 import { secureSignOut } from '@/lib/authClient';
 import { showStorefrontActionToast } from '@/lib/storefrontActionToast';
-import { DEFAULT_NAVBAR_LAYOUT, getNavbarCategoriesButtonAppearance, getNavbarCategoriesButtonLabel, isNavbarItemVisible, normalizeNavbarItemOrder, normalizeNavbarLayout, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';
+import { DEFAULT_NAVBAR_LAYOUT, getNavbarCategoriesButtonAppearance, getNavbarCategoriesButtonLabel, getNavbarSearchAppearance, isNavbarItemVisible, normalizeNavbarItemOrder, normalizeNavbarLayout, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';
 
 const NAVBAR_SELECTED_ADDRESS_KEY = 'navbarSelectedAddressId';
 const NAVBAR_APPEARANCE_CACHE_KEY = 'navbarAppearanceCache';
@@ -62,7 +62,10 @@ const EMPTY_NAVBAR_APPEARANCE = {
   backgroundColor: '',
   ...DEFAULT_NAVBAR_LAYOUT,
 };
-const getNavbarContainerStyle = (maxWidth = 1400) => ({ maxWidth: Number(maxWidth) || 1400 });
+const getNavbarContainerStyle = (maxWidth = 1400) => ({
+  width: '100%',
+  maxWidth: Math.min(1400, Number(maxWidth) || 1400),
+});
 const NAVBAR_CONTAINER_CLASS = 'mx-auto w-full px-4 sm:px-6';
 
 const resolveNavbarLogoSrc = (logoUrl) => String(logoUrl || '').trim();
@@ -359,6 +362,8 @@ const Navbar = () => {
   const navbarLogoSrc = resolveNavbarLogoSrc(navbarAppearance.logoUrl);
   const searchAccentColor = resolvedNavbarBg || '#0f172a';
   const categoriesAppearance = getNavbarCategoriesButtonAppearance(navbarAppearance, 'desktop');
+  const desktopSearchAppearance = getNavbarSearchAppearance(navbarAppearance, 'desktop');
+  const mobileSearchAppearance = getNavbarSearchAppearance(navbarAppearance, 'mobile');
   const desktopExtraButtons = visibleNavbarExtraButtons(navbarAppearance.extraButtons, storefrontLanguage);
   const desktopItemOrder = normalizeNavbarItemOrder(navbarAppearance.itemOrder, navbarAppearance.extraButtons)
     .filter((id) => isNavbarItemVisible(id, navbarAppearance, navActionsVisibility));
@@ -1701,12 +1706,13 @@ const Navbar = () => {
             <span>
               {getNavbarCategoriesButtonLabel(navbarAppearance, storefrontLanguage, t('navbar.categories'))}
             </span>
-            <span
-              className="text-[11px]"
-              style={{ color: categoriesAppearance.textColor || undefined, opacity: 0.55 }}
-            >
-              ▾
-            </span>
+            <ChevronDown
+              size={categoriesAppearance.chevronSize || 13}
+              strokeWidth={2.4}
+              className="shrink-0"
+              style={{ color: categoriesAppearance.textColor || 'currentColor' }}
+              aria-hidden="true"
+            />
           </button>
         </div>
       );
@@ -1714,40 +1720,41 @@ const Navbar = () => {
 
     if (itemId === 'search') {
       return (
-        <div
-          className="relative z-[70] min-w-0 w-full"
-          style={{ maxWidth: Number(navbarAppearance.searchMaxWidth) || 600 }}
-        >
-          <form onSubmit={handleSearch} className="w-full">
-            <div
-              className="flex h-[44px] w-full min-w-0 items-center overflow-hidden rounded-2xl border px-2 shadow-sm xl:px-3"
-              style={{
-                borderColor: 'rgba(255,255,255,0.92)',
-                backgroundColor: '#ffffff',
-              }}
-            >
-              <input
-                type="text"
-                placeholder={customSearchPlaceholder || searchPlaceholder || t('navbar.searchFragrances')}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
-                className="min-w-0 flex-1 bg-transparent text-[14px] leading-none text-slate-800 outline-none placeholder:text-slate-400"
-              />
-              <button
-                type="submit"
-                className="ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition hover:bg-slate-100"
-                style={{ color: searchAccentColor }}
-                aria-label="Search"
+        <div className="relative z-[70] min-w-0 w-full">
+          <div
+            className="relative w-full"
+            style={{ maxWidth: Number(navbarAppearance.searchMaxWidth) || 600 }}
+          >
+            <form onSubmit={handleSearch} className="w-full">
+              <div
+                className="flex h-[44px] w-full min-w-0 items-center overflow-hidden px-2 shadow-sm xl:px-3"
+                data-font={desktopSearchAppearance.fontId || 'inherit'}
+                style={desktopSearchAppearance.boxStyle}
               >
-                <Search size={15} />
-              </button>
-            </div>
-          </form>
-          {renderSearchSuggestionsDropdown(
-            'absolute left-0 right-0 top-full z-[80] mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl',
-          )}
+                <input
+                  type="text"
+                  placeholder={customSearchPlaceholder || searchPlaceholder || t('navbar.searchFragrances')}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+                  className="min-w-0 flex-1 bg-transparent leading-none outline-none placeholder:opacity-50"
+                  style={desktopSearchAppearance.inputStyle}
+                />
+                <button
+                  type="submit"
+                  className="ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition hover:bg-black/5"
+                  style={{ color: desktopSearchAppearance.textColor || searchAccentColor }}
+                  aria-label="Search"
+                >
+                  <Search size={15} />
+                </button>
+              </div>
+            </form>
+            {renderSearchSuggestionsDropdown(
+              'absolute left-0 right-0 top-full z-[80] mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl',
+            )}
+          </div>
         </div>
       );
     }
@@ -1866,7 +1873,10 @@ const Navbar = () => {
           borderColor: 'rgba(15, 23, 42, 0.12)',
         }}
       >
-        <div className="flex min-w-0 items-center gap-1 overflow-visible px-2 py-2 sm:gap-1.5 sm:px-3 sm:py-2.5">
+        <div
+          className="flex min-w-0 items-center overflow-visible px-2 py-2 sm:px-3 sm:py-2.5"
+          style={{ gap: `${Number(navbarAppearance.mobileItemGap) || 0}px` }}
+        >
           <button
             type="button"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
@@ -1892,11 +1902,9 @@ const Navbar = () => {
 
           <form onSubmit={handleSearch} className="relative z-[70] min-w-0 flex-1">
             <div
-              className={`relative flex h-9 min-w-0 items-center rounded-full pl-2.5 pr-1 sm:pl-3 ${
-                mobileNavbarUsesBrandColor
-                  ? 'bg-white shadow-[0_2px_10px_rgba(15,23,42,0.12)]'
-                  : 'border border-gray-200 bg-gray-50'
-              }`}
+              className="relative flex h-9 min-w-0 items-center overflow-hidden pl-2.5 pr-1 shadow-[0_2px_10px_rgba(15,23,42,0.12)] sm:pl-3"
+              data-font={mobileSearchAppearance.fontId || 'inherit'}
+              style={mobileSearchAppearance.boxStyle}
             >
               <input
                 ref={mobileSearchInputRef}
@@ -1907,7 +1915,8 @@ const Navbar = () => {
                 onChange={(e) => setSearch(e.target.value)}
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
-                className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
+                className="min-w-0 flex-1 bg-transparent outline-none placeholder:opacity-50"
+                style={mobileSearchAppearance.inputStyle}
               />
               {search.trim() ? (
                 <button
@@ -1993,14 +2002,17 @@ const Navbar = () => {
         }}
       >
       <div className={NAVBAR_CONTAINER_CLASS} style={getNavbarContainerStyle(navbarAppearance.navbarMaxWidth)}>
-        <div className="flex min-w-0 items-center gap-2 py-2.5 lg:gap-3">
+        <div
+          className="flex min-w-0 items-center py-2.5"
+          style={{ gap: `${Number(navbarAppearance.itemGap) || 0}px` }}
+        >
           {desktopItemOrder.map((itemId) => {
             const node = renderDesktopNavbarItem(itemId);
             if (!node) return null;
             return (
               <div
                 key={itemId}
-                className={itemId === 'search' ? 'relative z-[70] min-w-0 flex-1' : 'shrink-0'}
+                className={itemId === 'search' ? 'relative z-[70] min-w-0 flex-1 basis-0' : 'shrink-0'}
               >
                 {node}
               </div>

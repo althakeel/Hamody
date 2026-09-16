@@ -5,9 +5,8 @@ import axios from 'axios'
 import ProductCard from '@/components/ProductCard'
 import ProductFilterSidebar from '@/components/ProductFilterSidebar'
 import { PRODUCT_CARD_GRID_CLASS_5 } from '@/lib/storefrontCarousel'
-import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
 
-const NEW_ARRIVALS_LIMIT = 500
+const NEW_ARRIVALS_LIMIT = 50
 const PAGE_SIZE = 25
 
 const DEFAULT_FILTERS = {
@@ -32,7 +31,6 @@ function NewArrivalsGridSkeleton({ count = PAGE_SIZE }) {
 }
 
 export default function NewProductsPage() {
-  const { t } = useStorefrontI18n()
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -192,9 +190,6 @@ export default function NewProductsPage() {
           <h1 className="mb-2 text-3xl font-bold text-gray-900">New Arrivals</h1>
           <p className="text-gray-600">
             Check out our latest products just added to the store
-            {!loading && totalProducts > 0
-              ? ` · Up to ${NEW_ARRIVALS_LIMIT} newest uploads`
-              : ''}
           </p>
         </div>
 
@@ -237,15 +232,6 @@ export default function NewProductsPage() {
               </div>
             ) : (
               <>
-                <p className="mb-4 text-sm text-gray-600">
-                  {t('shop.showingRange', {
-                    from: totalProducts ? 1 : 0,
-                    to: safeVisibleCount,
-                    total: totalProducts,
-                    label: totalProducts === 1 ? t('common.product') : t('common.products'),
-                  })}
-                </p>
-
                 <div className={PRODUCT_CARD_GRID_CLASS_5}>
                   {visibleProducts.map((product, idx) => (
                     <ProductCard

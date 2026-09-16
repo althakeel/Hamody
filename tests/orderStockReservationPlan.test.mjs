@@ -64,6 +64,27 @@ test('rejects aggregate selected-variant over-allocation', () => {
   );
 });
 
+test('bundle of 2 stored as 1 pack removes 2 inventory units', () => {
+  const plan = buildOrderStockReservationPlan({
+    orderItems: [
+      { productId: PRODUCT_ID, quantity: 1, variantOptions: { bundleQty: 2 } },
+    ],
+  }, [product({
+    variants: [
+      { options: { bundleQty: 2 }, stock: 8 },
+    ],
+  })]);
+
+  assert.deepEqual(plan, [{
+    productId: PRODUCT_ID,
+    totalQuantity: 2,
+    stockQuantity: 6,
+    variants: [
+      { index: 0, quantity: 2, stock: 8 },
+    ],
+  }]);
+});
+
 test('rejects a selected variant that no longer exists', () => {
   assert.throws(
     () => buildOrderStockReservationPlan({

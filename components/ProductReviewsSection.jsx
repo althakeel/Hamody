@@ -10,6 +10,7 @@ import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 import { useAuth } from '@/lib/useAuth';
 import { getProductPath } from '@/lib/productUrl';
 import ReviewForm from '@/components/ReviewForm';
+import { useNavbarColor } from '@/lib/useNavbarColor';
 
 const REVIEWS_PREVIEW_COUNT = 3;
 
@@ -433,6 +434,7 @@ export default function ProductReviewsSection({
   sectionId = 'product-reviews',
 }) {
   const { t, isArabic } = useStorefrontI18n();
+  const navbarColor = useNavbarColor();
   const [starFilter, setStarFilter] = useState('all');
   const [sortBy, setSortBy] = useState('top');
   const [showAllReviews, setShowAllReviews] = useState(false);
@@ -720,7 +722,8 @@ export default function ProductReviewsSection({
                 <button
                   type="button"
                   onClick={() => setShowAllReviews((prev) => !prev)}
-                  className="inline-flex min-w-[240px] items-center justify-center rounded-full border-2 border-blue-600 px-8 py-3 text-[15px] font-semibold text-blue-600 hover:bg-blue-50"
+                  className="inline-flex min-w-[240px] items-center justify-center rounded-full border-2 bg-white px-8 py-3 text-[15px] font-semibold transition hover:bg-black/[0.03]"
+                  style={{ borderColor: navbarColor, color: navbarColor }}
                 >
                   {showAllReviews ? t('reviews.showLess') : t('reviews.showMore')}
                 </button>

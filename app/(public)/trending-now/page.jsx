@@ -8,7 +8,10 @@ import ProductFilterSidebar from "@/components/ProductFilterSidebar";
 const matchesHotDealBadge = (product) => {
   const badges = product?.attributes?.badges || product?.badges || [];
   if (!Array.isArray(badges) || badges.length === 0) return false;
-  return badges.includes('Hot Deal');
+  return badges.some((badge) => {
+    const label = typeof badge === 'string' ? badge : badge?.label;
+    return String(label || '').trim() === 'Hot Deal';
+  });
 };
 
 export default function TrendingNowPage() {

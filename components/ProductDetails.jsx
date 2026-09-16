@@ -5,7 +5,7 @@ import Image from "@/components/SafeNextImage";
 import Link from "next/link";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 
 import { useRouter } from "next/navigation";
 import axios from "axios";
@@ -53,6 +53,8 @@ import {
 import { useHorizontalCarouselDrag } from '@/lib/useHorizontalCarouselDrag';
 import { resolveCategoryHref } from '@/lib/categoryTreeUtils';
 import { getProductPageHeading, resolveProductCategoryChainFromMap } from '@/lib/productSeo';
+import { PRODUCT_RICH_CONTENT_CLASS, sanitizeProductRichHtml } from '@/lib/productRichContent';
+import { useNavbarColor } from '@/lib/useNavbarColor';
 import { getAdjustedDeliveryDate } from '@/lib/deliveryEstimate';
 import { fetchShippingSettings } from '@/lib/shipping';
 import { getDefaultShippingOption } from '@/lib/shippingOptions';
@@ -83,6 +85,47 @@ import {
 const PLACEHOLDER_IMAGE = 'https://store1920-images.s3.ap-south-1.amazonaws.com/uploads/placeholder.png';
 const GALLERY_CROSSFADE = { duration: 0.55, ease: [0.22, 1, 0.36, 1] };
 
+function GalleryMediaLayer({
+  item,
+  alt,
+  sizes,
+  imageClassName,
+  priority = false,
+  onReady,
+}) {
+  if (item.type === 'video') {
+    return (
+      <video
+        src={item.src}
+        poster={item.poster || PLACEHOLDER_IMAGE}
+        controls
+        playsInline
+        preload="metadata"
+        className="h-full w-full object-contain bg-white"
+        onLoadedData={onReady}
+      />
+    );
+  }
+
+  return (
+    <Image
+      src={item.src}
+      alt={alt}
+      fill
+      unoptimized
+      sizes={sizes}
+      quality={90}
+      className={imageClassName}
+      priority={priority}
+      onLoad={onReady}
+      onError={(e) => {
+        e.currentTarget.src = PLACEHOLDER_IMAGE;
+        onReady?.();
+      }}
+    />
+  );
+}
+
 function CrossfadeProductMedia({
   mediaKey,
   type = 'image',
@@ -93,42 +136,59 @@ function CrossfadeProductMedia({
   imageClassName = 'object-contain bg-white pointer-events-none',
   priority = false,
 }) {
-  const displaySrc = src || poster || PLACEHOLDER_IMAGE;
+  const nextItem = useMemo(() => ({
+    mediaKey,
+    type,
+    src: src || poster || PLACEHOLDER_IMAGE,
+    poster: poster || PLACEHOLDER_IMAGE,
+  }), [mediaKey, type, src, poster]);
+
+  const [front, setFront] = useState(nextItem);
+  const [back, setBack] = useState(null);
+  const [frontVisible, setFrontVisible] = useState(true);
+  const frontRef = useRef(front);
+  const visibleRef = useRef(frontVisible);
+  frontRef.current = front;
+  visibleRef.current = frontVisible;
+
+  useEffect(() => {
+    if (nextItem.mediaKey === frontRef.current.mediaKey) return;
+    setBack((prevBack) => (visibleRef.current ? frontRef.current : (prevBack || frontRef.current)));
+    setFront(nextItem);
+    setFrontVisible(nextItem.type === 'video');
+  }, [nextItem]);
 
   return (
-    <AnimatePresence initial={false}>
+    <>
+      {back ? (
+        <div className="absolute inset-0">
+          <GalleryMediaLayer
+            item={back}
+            alt={alt}
+            sizes={sizes}
+            imageClassName={imageClassName}
+          />
+        </div>
+      ) : null}
       <motion.div
-        key={mediaKey}
         className="absolute inset-0"
         initial={false}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        animate={{ opacity: frontVisible ? 1 : 0 }}
         transition={GALLERY_CROSSFADE}
+        onAnimationComplete={() => {
+          if (frontVisible) setBack(null);
+        }}
       >
-        {type === 'video' ? (
-          <video
-            src={src}
-            poster={poster || PLACEHOLDER_IMAGE}
-            controls
-            playsInline
-            preload="metadata"
-            className="h-full w-full object-contain bg-white"
-          />
-        ) : (
-          <Image
-            src={displaySrc}
-            alt={alt}
-            fill
-            unoptimized
-            sizes={sizes}
-            quality={90}
-            className={imageClassName}
-            priority={priority}
-            onError={(e) => { e.currentTarget.src = PLACEHOLDER_IMAGE; }}
-          />
-        )}
+        <GalleryMediaLayer
+          item={front}
+          alt={alt}
+          sizes={sizes}
+          imageClassName={imageClassName}
+          priority={priority || front.mediaKey === mediaKey}
+          onReady={() => setFrontVisible(true)}
+        />
       </motion.div>
-    </AnimatePresence>
+    </>
   );
 }
 
@@ -366,6 +426,7 @@ function ProductQuantitySelector({
 const ProductDetails = ({ product, reviews = [], loadingReviews = false, onReviewAdded, hideTitle = false, offerData = null, recommendedProducts = [], initialFbt = null, reviewsPreloaded = false, fbtPreloaded = false }) => {
   const { market, convertPrice, formatMoney: formatMarketMoney, formatNumber, formatDisplay, formatSplitPrice } = useStorefrontMarket();
   const { t, isArabic, language } = useStorefrontI18n();
+  const navbarColor = useNavbarColor();
   const currency = market.currency;
   const formatMoney = (amount, alreadyConverted = false) => formatMarketMoney(amount, { language, alreadyConverted });
   const formatCount = (value, options) => formatNumber(value, language, options);
@@ -430,9 +491,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
   const mainImage = activeMedia?.type === 'image' ? activeMedia.src : (activeMedia?.poster || null);
   const mobileCarouselRef = useRef(null);
   const mobileThumbnailsRef = useRef(null);
-  const desktopMainImageRef = useRef(null);
   const desktopThumbnailsRef = useRef(null);
-  const [desktopGalleryHeight, setDesktopGalleryHeight] = useState(null);
   const mobileCarouselScrollRaf = useRef(null);
   const [quantity, setQuantity] = useState(1);
   const prevSelectedOptionsKeyRef = useRef(null);
@@ -1522,13 +1581,29 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
       ? product.shortDescriptionAr
       : (product?.shortDescription || product?.attributes?.shortDescription || '')
   );
-  const localizedShortDescription2 = sanitizeDisplayText(
-    (isArabic
+  const shortDescription2Html = sanitizeProductRichHtml(
+    isArabic
       ? (product?.attributes?.shortDescription2Ar || product?.shortDescription2Ar || product?.shortDescription2 || product?.attributes?.shortDescription2 || '')
       : (product?.shortDescription2 || product?.attributes?.shortDescription2 || '')
-    ).replace(/<[^>]*>/g, ' ')
   );
+  const localizedShortDescription2 = sanitizeDisplayText(shortDescription2Html.replace(/<[^>]*>/g, ' '));
   const mobileShortDescription = localizedShortDescription || localizedShortDescription2;
+  const aboutThisItemTitle = sanitizeDisplayText(
+    (isArabic
+      ? (product?.attributes?.aboutThisItemTitleAr || product?.aboutThisItemTitleAr)
+      : (product?.attributes?.aboutThisItemTitle || product?.aboutThisItemTitle)
+    ) || t('product.aboutThisItem')
+  );
+  const aboutThisItemBlock = shortDescription2Html ? (
+    <div className="space-y-1.5">
+      <h3 className="text-sm font-semibold text-gray-900">{aboutThisItemTitle}</h3>
+      <div
+        className={`${PRODUCT_RICH_CONTENT_CLASS} text-sm leading-relaxed text-gray-700`}
+        dir={isArabic ? 'rtl' : 'ltr'}
+        dangerouslySetInnerHTML={{ __html: shortDescription2Html }}
+      />
+    </div>
+  ) : null;
 
   const openBuyboxInfo = () => setDeliveryInfoOpen(true);
 
@@ -2238,6 +2313,36 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
     setActiveMediaIndex(safeIndex);
   }, [mediaGallery.length]);
 
+  const goToPreviousDesktopImage = useCallback(() => {
+    if (mediaGallery.length <= 1) return;
+    selectGalleryIndex((activeMediaIndex - 1 + mediaGallery.length) % mediaGallery.length);
+  }, [activeMediaIndex, mediaGallery.length, selectGalleryIndex]);
+
+  const goToNextDesktopImage = useCallback(() => {
+    if (mediaGallery.length <= 1) return;
+    selectGalleryIndex((activeMediaIndex + 1) % mediaGallery.length);
+  }, [activeMediaIndex, mediaGallery.length, selectGalleryIndex]);
+
+  useEffect(() => {
+    if (showFullViewGallery || mediaGallery.length <= 1) return undefined;
+
+    const onKeyDown = (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      const target = event.target;
+      if (target instanceof HTMLElement) {
+        const tag = target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable) return;
+      }
+      if (typeof window !== 'undefined' && !window.matchMedia('(min-width: 1024px)').matches) return;
+      event.preventDefault();
+      if (event.key === 'ArrowLeft') goToPreviousDesktopImage();
+      if (event.key === 'ArrowRight') goToNextDesktopImage();
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [showFullViewGallery, mediaGallery.length, goToPreviousDesktopImage, goToNextDesktopImage]);
+
   useEffect(() => {
     const container = mobileThumbnailsRef.current;
     if (!container) return;
@@ -2248,33 +2353,13 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
   }, [activeImageIndex]);
 
   useEffect(() => {
-    const mainImageEl = desktopMainImageRef.current;
-    if (!mainImageEl || typeof ResizeObserver === 'undefined') return undefined;
-
-    const syncGalleryHeight = () => {
-      const nextHeight = Math.round(mainImageEl.getBoundingClientRect().height);
-      if (nextHeight > 0) setDesktopGalleryHeight(nextHeight);
-    };
-
-    syncGalleryHeight();
-    const observer = new ResizeObserver(syncGalleryHeight);
-    observer.observe(mainImageEl);
-    window.addEventListener('resize', syncGalleryHeight);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('resize', syncGalleryHeight);
-    };
-  }, [product?._id, aspectRatioClass, mediaGallery.length]);
-
-  useEffect(() => {
     const container = desktopThumbnailsRef.current;
     if (!container) return;
     const thumb = container.children[activeMediaIndex];
     if (thumb) {
-      thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      thumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
-  }, [activeMediaIndex, desktopGalleryHeight]);
+  }, [activeMediaIndex]);
 
   useEffect(() => () => {
     if (mobileCarouselScrollRaf.current) {
@@ -2978,42 +3063,9 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
 
           {/* LEFT: Media gallery */}
           <div className="w-full min-w-0 space-y-3 lg:space-y-4 lg:min-w-0 lg:sticky lg:top-24 lg:self-start relative z-20">
-            <div className="hidden lg:flex gap-2.5 items-start">
-              <div
-                ref={desktopThumbnailsRef}
-                className="flex w-[48px] flex-shrink-0 flex-col gap-1 overflow-y-auto overscroll-contain scrollbar-hide xl:w-[52px]"
-                style={desktopGalleryHeight ? { maxHeight: `${desktopGalleryHeight}px` } : undefined}
-              >
-                {mediaGallery.map((item, index) => (
-                  <button
-                    key={`${item.src}-${index}`}
-                    onClick={() => selectGalleryIndex(index)}
-                    className={`relative w-[44px] h-[44px] xl:w-[48px] xl:h-[48px] border-2 rounded overflow-hidden transition-all duration-300 ease-out bg-white flex-shrink-0 cursor-pointer ${
-                      activeMediaIndex === index ? 'border-orange-500' : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <Image
-                      src={item.poster || PLACEHOLDER_IMAGE}
-                      alt={`${safeProductName} ${index + 1}`}
-                      fill
-                      unoptimized
-                      sizes="48px"
-                      className="object-cover"
-                      onError={(e) => { e.currentTarget.src = PLACEHOLDER_IMAGE; }}
-                    />
-                    {item.type === 'video' && (
-                      <span className="absolute inset-0 flex items-center justify-center bg-black/25">
-                        <svg className="w-5 h-5 text-white drop-shadow" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z" />
-                        </svg>
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div ref={desktopMainImageRef} className={`relative bg-white rounded overflow-visible w-full ${aspectRatioClass}`}>
+            <div className="hidden lg:flex flex-col gap-2.5">
+              <div className="min-w-0">
+                <div className={`relative bg-white rounded overflow-visible w-full ${aspectRatioClass}`}>
                 <NewProductTagBadge product={product} size="page" />
                 {product.attributes?.condition === 'used' && (
                   <div className="absolute top-4 left-16 z-10">
@@ -3070,7 +3122,69 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                 </div>
 
                 {renderZoomPanel()}
+
+                {mediaGallery.length > 1 ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        goToPreviousDesktopImage();
+                      }}
+                      onMouseEnter={() => setShowZoom(false)}
+                      className="absolute left-2 top-1/2 z-30 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white/95 text-gray-700 shadow-sm transition hover:bg-white hover:text-gray-900"
+                      aria-label="Previous image"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        goToNextDesktopImage();
+                      }}
+                      onMouseEnter={() => setShowZoom(false)}
+                      className="absolute right-2 top-1/2 z-30 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white/95 text-gray-700 shadow-sm transition hover:bg-white hover:text-gray-900"
+                      aria-label="Next image"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </>
+                ) : null}
               </div>
+              </div>
+
+              <div
+                ref={desktopThumbnailsRef}
+                className="flex w-full gap-1.5 overflow-x-auto overflow-y-hidden overscroll-contain scrollbar-hide"
+              >
+                {mediaGallery.map((item, index) => (
+                  <button
+                    key={`${item.src}-${index}`}
+                    onClick={() => selectGalleryIndex(index)}
+                    className={`relative w-[44px] h-[44px] xl:w-[48px] xl:h-[48px] border-2 rounded overflow-hidden transition-all duration-300 ease-out bg-white flex-shrink-0 cursor-pointer ${
+                      activeMediaIndex === index ? '' : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    style={activeMediaIndex === index ? { borderColor: navbarColor } : undefined}
+                  >
+                    <Image
+                      src={item.poster || PLACEHOLDER_IMAGE}
+                      alt={`${safeProductName} ${index + 1}`}
+                      fill
+                      unoptimized
+                      sizes="48px"
+                      className="object-cover"
+                      onError={(e) => { e.currentTarget.src = PLACEHOLDER_IMAGE; }}
+                    />
+                    {item.type === 'video' && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/25">
+                        <svg className="w-5 h-5 text-white drop-shadow" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </span>
+                    )}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -3172,9 +3286,10 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                   onClick={() => goToMobileImage(index)}
                   className={`relative flex-shrink-0 w-14 h-14 border-2 rounded overflow-hidden transition-all duration-300 ease-out bg-white cursor-pointer ${
                     activeImageIndex === index
-                      ? 'border-[#E52721] ring-1 ring-red-200'
+                      ? ''
                       : 'border-gray-200 opacity-80 hover:opacity-100'
                   }`}
+                  style={activeImageIndex === index ? { borderColor: navbarColor } : undefined}
                 >
                   <Image
                     src={item.poster || PLACEHOLDER_IMAGE}
@@ -3249,6 +3364,8 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                   </p>
                 ) : null}
               </div>
+
+              {aboutThisItemBlock}
 
               {showVariantPicker ? (
                 <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -3381,6 +3498,11 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                     <span className="font-medium text-gray-800">{mobileProductBrand}</span>
                   </p>
                 ) : null}
+                {localizedShortDescription ? (
+                  <p className="mt-2 text-sm leading-relaxed text-gray-600">
+                    {localizedShortDescription}
+                  </p>
+                ) : null}
               </div>
 
               {reviewCount > 0 ? (
@@ -3482,18 +3604,23 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
               {product.attributes?.badges && product.attributes.badges.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {product.attributes.badges.map((badge, index) => {
-                    const badgeStyle = badgeStyleMap[String(badge || '').trim().toLowerCase()] || {
-                      backgroundColor: '#565959',
-                      color: '#ffffff',
-                      borderRadius: '0px'
+                    const badgeLabel = typeof badge === 'string'
+                      ? badge.trim()
+                      : String(badge?.label || '').trim();
+                    if (!badgeLabel) return null;
+                    const mappedStyle = badgeStyleMap[badgeLabel.toLowerCase()] || {};
+                    const badgeStyle = {
+                      backgroundColor: badge?.backgroundColor || mappedStyle.backgroundColor || '#565959',
+                      color: badge?.textColor || mappedStyle.color || '#ffffff',
+                      borderRadius: mappedStyle.borderRadius || '0px'
                     };
                     return (
                       <span
-                        key={index}
+                        key={`${badgeLabel}-${index}`}
                         className="inline-flex items-center px-2.5 py-[3px] text-[12px] font-bold tracking-normal"
                         style={badgeStyle}
                       >
-                        {badge}
+                        {badgeLabel}
                       </span>
                     );
                   })}
@@ -3524,6 +3651,8 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                   </span>
                 )}
               </div>
+
+              {aboutThisItemBlock}
 
               {showVariantPicker ? (
                 <div className="mt-4">
@@ -3847,7 +3976,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                 }`}
               >
                 <HeartIcon size={16} fill={isInWishlist ? 'currentColor' : 'none'} />
-                {isInWishlist ? t('common.saved') : t('common.save')}
+                {isInWishlist ? t('product.inWishlist') : t('product.wishlist')}
               </button>
 
             </div>
@@ -3867,7 +3996,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
               onReviewAdded={onReviewAdded}
               showSuggestedProducts={false}
               showMainDescription={true}
-              showOverviewSections={false}
+              showOverviewSections={true}
               aPlusViewport="desktop"
             />
           </div>

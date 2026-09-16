@@ -6,7 +6,8 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import Loading from '@/components/Loading';
-import { CalendarClock, RefreshCw, AlertTriangle, Package } from 'lucide-react';
+import { CalendarClock, RefreshCw, AlertTriangle, Package, Download } from 'lucide-react';
+import { downloadPickupManifestExcel } from '@/lib/storePickupExcel';
 import { getStoreOrderStatusMeta } from '@/components/store/OrderStatusPicker';
 
 const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || 'AED';
@@ -19,6 +20,7 @@ export default function TodaysPickupPage() {
   const [overdueCount, setOverdueCount] = useState(0);
   const [todayCount, setTodayCount] = useState(0);
   const [filter, setFilter] = useState('all'); // 'all' | 'under24' | 'overdue'
+  const [downloadingExcel, setDownloadingExcel] = useState(false);
   const requestIdRef = useRef(0);
 
   const fetchLists = useCallback(async () => {
@@ -77,6 +79,23 @@ export default function TodaysPickupPage() {
     });
   }, [orders, filter]);
 
+  const handleDownloadPickupExcel = async () => {
+    if (!visibleOrders.length) {
+      toast.error('No pickup orders to export');
+      return;
+    }
+    try {
+      setDownloadingExcel(true);
+      const count = await downloadPickupManifestExcel(visibleOrders);
+      toast.success(`Downloaded Excel for ${count} pickup order(s)`);
+    } catch (error) {
+      console.error('[todays-pickup excel]', error);
+      toast.error(error?.message || 'Failed to download pickup Excel');
+    } finally {
+      setDownloadingExcel(false);
+    }
+  };
+
   if (loading) return <Loading />;
 
   return (
@@ -128,6 +147,17 @@ export default function TodaysPickupPage() {
               24+ ({overdueCount})
             </button>
           </div>
+          {visibleOrders.length > 0 ? (
+            <button
+              type="button"
+              onClick={handleDownloadPickupExcel}
+              disabled={downloadingExcel}
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+            >
+              <Download size={16} className={downloadingExcel ? 'animate-pulse' : ''} />
+              {downloadingExcel ? 'Preparing Excel…' : 'Download Excel'}
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => fetchLists()}

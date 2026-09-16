@@ -117,9 +117,21 @@ const NavbarMenuSettingsSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    searchStyle: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
     navbarMaxWidth: {
       type: Number,
       default: 1400,
+    },
+    itemGap: {
+      type: Number,
+      default: 12,
+    },
+    mobileItemGap: {
+      type: Number,
+      default: 4,
     },
     stickyHeader: {
       type: Boolean,
@@ -276,7 +288,10 @@ if (!NavbarMenuSettingsModel.schema.path('navExtraButtons')) {
     searchMaxWidth: { type: Number, default: 600 },
     searchPlaceholder: { type: String, default: '', trim: true },
     searchPlaceholderAr: { type: String, default: '', trim: true },
+    searchStyle: { type: mongoose.Schema.Types.Mixed, default: {} },
     navbarMaxWidth: { type: Number, default: 1400 },
+    itemGap: { type: Number, default: 12 },
+    mobileItemGap: { type: Number, default: 4 },
     stickyHeader: { type: Boolean, default: false },
   });
 }
@@ -309,9 +324,27 @@ if (!NavbarMenuSettingsModel.schema.path('categoriesButtonStyle')) {
   });
 }
 
+if (!NavbarMenuSettingsModel.schema.path('searchStyle')) {
+  NavbarMenuSettingsModel.schema.add({
+    searchStyle: { type: mongoose.Schema.Types.Mixed, default: {} },
+  });
+}
+
 if (!NavbarMenuSettingsModel.schema.path('navbarItemOrder')) {
   NavbarMenuSettingsModel.schema.add({
     navbarItemOrder: { type: [String], default: [] },
+  });
+}
+
+if (!NavbarMenuSettingsModel.schema.path('itemGap')) {
+  NavbarMenuSettingsModel.schema.add({
+    itemGap: { type: Number, default: 12 },
+  });
+}
+
+if (!NavbarMenuSettingsModel.schema.path('mobileItemGap')) {
+  NavbarMenuSettingsModel.schema.add({
+    mobileItemGap: { type: Number, default: 4 },
   });
 }
 

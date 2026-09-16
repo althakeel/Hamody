@@ -168,6 +168,7 @@ import {
 } from '@/lib/waslahTracking';
 import { isWaslahLabelReadyOrder, isWaslahLabelNotPrinted, isWaslahLabelPrinted, getLabelDownloadCount, preserveWaslahLabelDownloadState, mergeOrdersPreservingLabelDownloads } from '@/lib/waslahReceipts';
 import { downloadTodayOrdersProductPdf } from '@/lib/storeTodayOrdersPdf';
+import { downloadPickupManifestExcel, canExportPickupExcel, orderHasPickupRequested, isPackedPickupOrPickedUpOrder, isSentToEmxInRange, isSentToEmxOrder } from '@/lib/storePickupExcel';
 import { getOrderFulfillmentBadge, getOriginalReturnRequestTag, isReturnFollowUpOrder, excludeReturnPickupCloneOrders } from '@/lib/storeReturnLabels';
 import TrackingTimeline from '@/components/TrackingTimeline';
 
@@ -776,6 +777,7 @@ export default function StoreOrders() {
     const [waslahLinkHelpOpen, setWaslahLinkHelpOpen] = useState(false);
     const [waslahSuccessNotice, setWaslahSuccessNotice] = useState(null);
     const [downloadingWaslahReceipts, setDownloadingWaslahReceipts] = useState(false);
+    const [downloadingPickupExcel, setDownloadingPickupExcel] = useState(false);
     const [centerConfirm, setCenterConfirm] = useState(null);
     const centerConfirmResolverRef = useRef(null);
     const [centerNotice, setCenterNotice] = useState(null);
@@ -1180,6 +1182,20 @@ export default function StoreOrders() {
         .filter((orderId) => selectedOrderIds.includes(orderId));
     const allVisibleSelected = paginatedOrders.length > 0 && selectedVisibleOrderIds.length === paginatedOrders.length;
     const hasSelectedOrders = selectedOrderIds.length > 0;
+    const todayEmxSentOrders = useMemo(() => {
+        const cutover = DEFAULT_ORDER_FILTER_TIME;
+        const bounds = getOrdersByProductBusinessDayBounds(cutover);
+        const startDate = bounds.startDate || getDubaiDateParts().date;
+        const start = buildFilterDateTime(startDate, cutover);
+        const end = buildFilterDateTime(addDaysToDateOnly(startDate, 1), cutover);
+        return orders.filter((order) => isSentToEmxInRange(order, start, end));
+    }, [orders]);
+    const selectedTodayEmxSentOrders = useMemo(() => {
+        if (!selectedOrderIds.length) return [];
+        const selectedSet = new Set(selectedOrderIds.map(String));
+        return todayEmxSentOrders.filter((order) => selectedSet.has(String(order._id)));
+    }, [selectedOrderIds, todayEmxSentOrders]);
+    const pickupExcelOrders = hasSelectedOrders ? selectedTodayEmxSentOrders : todayEmxSentOrders;
     const bulkStatusUndoMsLeft = Math.max(0, Number(bulkStatusUndo?.expiresAt || 0) - bulkStatusUndoNow);
     const bulkStatusUndoActive = Boolean(
         bulkStatusUndo?.updates?.length && bulkStatusUndoMsLeft > 0,
@@ -2353,13 +2369,50 @@ export default function StoreOrders() {
         }
     };
 
+    const getTodayPickupEligibleOrders = () => {
+        const cutover = DEFAULT_ORDER_FILTER_TIME;
+        const bounds = getOrdersByProductBusinessDayBounds(cutover);
+        const startDate = bounds.startDate || getDubaiDateParts().date;
+        return {
+            startDate,
+            orders: todayEmxSentOrders,
+        };
+    };
+
+    const downloadPickupExcelForOrders = async (ordersToExport = []) => {
+        const pickupOrders = (ordersToExport || []).filter((order) => (
+            isSentToEmxOrder(order) || canExportPickupExcel(order)
+        ));
+        if (!pickupOrders.length) {
+            toast.error(ordersToExport.length
+                ? 'None of these orders were sent to EMX'
+                : 'No orders sent to EMX today');
+            return;
+        }
+        try {
+            setDownloadingPickupExcel(true);
+            const count = await downloadPickupManifestExcel(pickupOrders);
+            toast.success(`Downloaded pickup Excel for ${count} order(s) sent to EMX`);
+        } catch (error) {
+            console.error('Pickup Excel export failed:', error);
+            toast.error(error?.message || 'Failed to download pickup Excel');
+        } finally {
+            setDownloadingPickupExcel(false);
+        }
+    };
+
     const exportOrdersToCsv = async () => {
-        const exportOrders = getExportFilteredOrders();
+        let exportOrders = getExportFilteredOrders();
+        if (datePreset === 'TODAY') {
+            exportOrders = exportOrders.filter(isPackedPickupOrPickedUpOrder);
+        }
 
         if (!exportOrders.length) {
             toast.error(selectedOrderIds.length > 0
                 ? 'No selected orders match the export filters'
-                : 'No orders available to export');
+                : datePreset === 'TODAY'
+                    ? 'No packed, pickup requested, or picked up orders for today'
+                    : 'No orders available to export');
             return;
         }
 
@@ -2378,11 +2431,22 @@ export default function StoreOrders() {
             URL.revokeObjectURL(url);
 
             const scopeLabel = selectedOrderIds.length > 0 ? 'selected ' : '';
-            toast.success(`Exported ${rowCount} row(s) from ${exportOrders.length} ${scopeLabel}order(s) to CSV`);
+            const statusLabel = datePreset === 'TODAY' ? ' packed / pickup requested / picked up ' : ' ';
+            toast.success(`Exported ${rowCount} row(s) from ${exportOrders.length}${statusLabel}${scopeLabel}order(s) to CSV`);
         } catch (error) {
             console.error('CSV export failed:', error);
             toast.error('Failed to export CSV file');
         }
+    };
+
+    const exportTodayPickupExcel = async () => {
+        const { orders: todayOrders } = getTodayPickupEligibleOrders();
+        let exportOrders = todayOrders;
+        if (selectedOrderIds.length > 0) {
+            const selectedSet = new Set(selectedOrderIds.map(String));
+            exportOrders = exportOrders.filter((order) => selectedSet.has(String(order._id)));
+        }
+        await downloadPickupExcelForOrders(exportOrders);
     };
 
     const revealHiddenProductExport = () => {
@@ -4384,6 +4448,19 @@ export default function StoreOrders() {
                         <FileText size={16} />
                         Export today orders (PDF)
                     </button>
+                    <button
+                        type="button"
+                        onClick={exportTodayPickupExcel}
+                        disabled={downloadingPickupExcel}
+                        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 disabled:opacity-60"
+                    >
+                        <FileText size={16} />
+                        {downloadingPickupExcel
+                            ? 'Preparing Excel…'
+                            : hasSelectedOrders
+                                ? `Export selected pickup Excel (${pickupExcelOrders.length})`
+                                : `Export today pickup Excel (${todayEmxSentOrders.length})`}
+                    </button>
                 </div>
 
                 <div className="flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4">
@@ -4758,6 +4835,17 @@ export default function StoreOrders() {
                                     >
                                         <CalendarClock size={14} />
                                         {showBulkPickupPanel ? 'Hide Pickup Options' : 'Schedule Pickup (Selected)'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={exportTodayPickupExcel}
+                                        disabled={downloadingPickupExcel}
+                                        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 transition hover:bg-slate-50 disabled:opacity-60"
+                                    >
+                                        <FileText size={14} />
+                                        {downloadingPickupExcel
+                                            ? 'Preparing Excel…'
+                                            : `Export selected pickup Excel (${pickupExcelOrders.length})`}
                                     </button>
                                     <button
                                         type="button"
@@ -5410,6 +5498,18 @@ export default function StoreOrders() {
                                         <Pencil size={18} />
                                         <span className="text-sm">{showOrderEditPanel ? 'Hide edit' : 'Edit'}</span>
                                     </button>
+                                    {orderHasPickupRequested(selectedOrder) ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => downloadPickupExcelForOrders([selectedOrder])}
+                                            disabled={downloadingPickupExcel}
+                                            className="flex items-center gap-2 rounded-lg bg-white/20 px-3 py-2 backdrop-blur-sm transition-colors hover:bg-white/30 sm:px-4"
+                                            title="Download pickup Excel"
+                                        >
+                                            <FileText size={18} />
+                                            <span className="text-sm">{downloadingPickupExcel ? 'Excel…' : 'Pickup Excel'}</span>
+                                        </button>
+                                    ) : null}
                                     <button
                                         onClick={() => downloadInvoice(selectedOrder)}
                                         className="flex items-center gap-2 rounded-lg bg-white/20 px-3 py-2 backdrop-blur-sm transition-colors hover:bg-white/30 sm:px-4"

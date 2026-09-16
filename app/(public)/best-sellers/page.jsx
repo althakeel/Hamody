@@ -19,7 +19,10 @@ export default function BestSellersPage() {
   const bestSellerProducts = useMemo(() => {
     return (products || []).filter((product) => {
       const badges = product?.attributes?.badges || product?.badges || [];
-      return Array.isArray(badges) && badges.includes('Best Seller');
+      return Array.isArray(badges) && badges.some((badge) => {
+        const label = typeof badge === 'string' ? badge : badge?.label;
+        return String(label || '').trim() === 'Best Seller';
+      });
     });
   }, [products]);
 
