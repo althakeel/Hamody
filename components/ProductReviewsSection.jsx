@@ -435,7 +435,6 @@ export default function ProductReviewsSection({
 }) {
   const { t, isArabic } = useStorefrontI18n();
   const navbarColor = useNavbarColor();
-  const [starFilter, setStarFilter] = useState('all');
   const [sortBy, setSortBy] = useState('top');
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(null);
@@ -493,7 +492,7 @@ export default function ProductReviewsSection({
 
   useEffect(() => {
     setShowAllReviews(false);
-  }, [starFilter, sortBy]);
+  }, [sortBy]);
 
   const dateLocale = isArabic ? 'ar-AE' : 'en-US';
   const guestLabel = t('reviews.guestUser');
@@ -522,11 +521,6 @@ export default function ProductReviewsSection({
   const filteredReviews = useMemo(() => {
     let next = [...reviewItems];
 
-    if (starFilter !== 'all') {
-      const target = Number(starFilter);
-      next = next.filter((review) => Math.round(Number(review.rating) || 0) === target);
-    }
-
     if (sortBy === 'recent') {
       next.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
     } else if (sortBy === 'lowest') {
@@ -540,7 +534,7 @@ export default function ProductReviewsSection({
     }
 
     return next;
-  }, [reviewItems, sortBy, starFilter]);
+  }, [reviewItems, sortBy]);
 
   const visibleReviews = showAllReviews ? filteredReviews : filteredReviews.slice(0, initialVisibleCount);
 
@@ -548,12 +542,6 @@ export default function ProductReviewsSection({
     if (!photoScrollRef) return;
     const scrollAmount = direction * 220;
     photoScrollRef.scrollBy({ left: isArabic ? -scrollAmount : scrollAmount, behavior: 'smooth' });
-  };
-
-  const starOptionLabel = (value) => {
-    if (value === 'all') return t('reviews.allStars');
-    if (value === 1) return t('reviews.oneStar');
-    return t('reviews.starsCount', { count: value });
   };
 
   const productId = String(product?._id || product?.id || '').trim();
@@ -621,34 +609,18 @@ export default function ProductReviewsSection({
               <>
             <div className="mb-5 flex flex-col gap-3 border-b border-gray-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="text-[18px] font-semibold text-gray-900">{t('reviews.heading')}</h3>
-              <div className="flex flex-wrap items-center gap-4 text-[12px] text-gray-700">
-                <label className="inline-flex items-center gap-2">
-                  <span className="font-bold uppercase tracking-wide text-gray-800">{t('reviews.filterBy')}</span>
-                  <select
-                    value={starFilter}
-                    onChange={(event) => setStarFilter(event.target.value)}
-                    className="rounded border border-gray-300 bg-white px-2 py-1.5 text-[13px] text-gray-800"
-                  >
-                    {['all', '5', '4', '3', '2', '1'].map((value) => (
-                      <option key={value} value={value}>
-                        {starOptionLabel(value === 'all' ? 'all' : Number(value))}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="inline-flex items-center gap-2">
-                  <span className="font-bold uppercase tracking-wide text-gray-800">{t('reviews.sortBy')}</span>
-                  <select
-                    value={sortBy}
-                    onChange={(event) => setSortBy(event.target.value)}
-                    className="rounded border border-gray-300 bg-white px-2 py-1.5 text-[13px] text-gray-800"
-                  >
-                    <option value="top">{t('reviews.topReviews')}</option>
-                    <option value="recent">{t('reviews.mostRecent')}</option>
-                    <option value="lowest">{t('reviews.lowestRating')}</option>
-                  </select>
-                </label>
-              </div>
+              <label className="inline-flex items-center gap-2 text-[12px] text-gray-700">
+                <span className="font-bold uppercase tracking-wide text-gray-800">{t('reviews.sortBy')}</span>
+                <select
+                  value={sortBy}
+                  onChange={(event) => setSortBy(event.target.value)}
+                  className="rounded border border-gray-300 bg-white px-2 py-1.5 text-[13px] text-gray-800"
+                >
+                  <option value="top">{t('reviews.topReviews')}</option>
+                  <option value="recent">{t('reviews.mostRecent')}</option>
+                  <option value="lowest">{t('reviews.lowestRating')}</option>
+                </select>
+              </label>
             </div>
 
             {customerPhotos.length > 0 ? (

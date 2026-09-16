@@ -204,10 +204,7 @@ export default function NewProductsPage() {
 
           <div className="flex-1">
             {loading ? (
-              <>
-                <div className="mb-4 h-5 w-48 animate-pulse rounded bg-gray-200" />
-                <NewArrivalsGridSkeleton />
-              </>
+              <NewArrivalsGridSkeleton />
             ) : loadError ? (
               <div className="rounded-lg border border-red-200 bg-white py-16 text-center">
                 <p className="text-lg text-red-600">{loadError}</p>

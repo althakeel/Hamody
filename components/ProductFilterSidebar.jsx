@@ -18,7 +18,6 @@ export default function ProductFilterSidebar({
   const { t, language } = useStorefrontI18n();
   const isArabic = language === 'ar';
 
-  const [mounted, setMounted] = useState(false);
   const [filters, setFilters] = useState({
     categories: [],
     priceRange: { min: 0, max: 100000 },
@@ -30,7 +29,6 @@ export default function ProductFilterSidebar({
   const [expandedSections, setExpandedSections] = useState({
     category: true,
     price: true,
-    rating: true,
     availability: true,
   });
 
@@ -48,10 +46,6 @@ export default function ProductFilterSidebar({
   const localizeCategoryLabel = (name) => decodeHtmlEntities(
     getLocalizedCategoryName({ name }, language),
   );
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!sortOpen) return undefined;
@@ -186,13 +180,6 @@ export default function ProductFilterSidebar({
     });
   };
 
-  const handleRatingChange = (rating) => {
-    setFilters((prev) => ({
-      ...prev,
-      rating: prev.rating === rating ? 0 : rating,
-    }));
-  };
-
   const clearAllFilters = () => {
     setFilters({
       categories: [],
@@ -204,7 +191,6 @@ export default function ProductFilterSidebar({
   };
 
   const hasActiveFilters = () => filters.categories.length > 0
-    || filters.rating > 0
     || filters.inStock
     || sortBy !== 'popularity';
 
@@ -225,7 +211,6 @@ export default function ProductFilterSidebar({
     { value: 'price-low-high', label: t('category.sort.priceLowHigh') },
     { value: 'price-high-low', label: t('category.sort.priceHighLow') },
     { value: 'newest', label: t('category.sort.newest') },
-    { value: 'rating', label: t('category.sort.rating') },
     { value: 'discount', label: t('category.sort.discount') },
   ];
 
@@ -235,7 +220,7 @@ export default function ProductFilterSidebar({
   return (
     <div
       dir={isArabic ? 'rtl' : 'ltr'}
-      className={`sticky top-20 flex h-fit w-full max-h-[calc(100vh-100px)] flex-col overflow-visible rounded-lg border border-gray-200 bg-white lg:w-64 ${className}`.trim()}
+      className={`sticky top-20 flex h-fit w-full max-h-[calc(100vh-100px)] flex-col overflow-visible rounded-xl border border-gray-200 bg-white lg:w-72 ${className}`.trim()}
     >
       <div className="shrink-0 border-b border-gray-100 p-4 pb-3">
         {subcategoryLinks.length > 0 ? (
@@ -258,7 +243,7 @@ export default function ProductFilterSidebar({
         ) : null}
 
         <div className="relative z-30" ref={sortRef}>
-          <label className={`mb-2.5 block text-sm font-semibold text-gray-800 ${isArabic ? 'text-right' : ''}`}>
+          <label className={`mb-2.5 block text-sm font-semibold tracking-normal text-gray-800 ${isArabic ? 'text-right' : ''}`}>
             {t('category.sortBy')}
           </label>
           <button
@@ -319,26 +304,19 @@ export default function ProductFilterSidebar({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4 pt-3">
-      <div className={`flex items-center justify-between mb-4 pb-3 border-b border-gray-200 ${isArabic ? 'flex-row-reverse' : ''}`}>
-        <h3 className="text-lg font-bold text-gray-900">{t('category.filters')}</h3>
-        {hasActiveFilters() ? (
+      {hasActiveFilters() ? (
+        <div className={`mb-4 flex justify-end ${isArabic ? 'flex-row-reverse' : ''}`}>
           <button
             type="button"
             onClick={clearAllFilters}
-            className="text-xs text-orange-600 hover:text-orange-700 font-semibold"
+            className="text-xs font-semibold text-orange-600 hover:text-orange-700"
           >
             {t('category.clearAll')}
           </button>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
-      <div className={`text-sm text-gray-600 mb-4 ${isArabic ? 'text-right' : ''}`} suppressHydrationWarning>
-        {mounted
-          ? t('category.productsCount', { count: products?.length || 0 })
-          : t('category.filters')}
-      </div>
-
-      <div className="space-y-4">
+      <div className="space-y-5">
         {showCategoryFilter && availableFilters.categories.length > 0 ? (
           <div className="border-b border-gray-200 pb-4">
             <button
@@ -423,7 +401,7 @@ export default function ProductFilterSidebar({
           <button
             type="button"
             onClick={() => toggleSection('price')}
-            className={`flex items-center justify-between w-full font-semibold text-gray-900 mb-3 ${isArabic ? 'flex-row-reverse text-right' : 'text-left'}`}
+            className={`mb-3 flex w-full items-center justify-between font-semibold tracking-normal text-gray-900 ${isArabic ? 'flex-row-reverse text-right' : 'text-left'}`}
           >
             {t('category.priceRange')}
             {expandedSections.price ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
@@ -468,39 +446,6 @@ export default function ProductFilterSidebar({
                   <span>AED {availableFilters.maxPrice}</span>
                 </div>
               </div>
-            </div>
-          ) : null}
-        </div>
-
-        <div className="border-b border-gray-200 pb-4">
-          <button
-            type="button"
-            onClick={() => toggleSection('rating')}
-            className={`flex items-center justify-between w-full font-semibold text-gray-900 mb-3 ${isArabic ? 'flex-row-reverse text-right' : 'text-left'}`}
-          >
-            {t('category.customerRating')}
-            {expandedSections.rating ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-          </button>
-
-          {expandedSections.rating ? (
-            <div className="space-y-2">
-              {[4, 3, 2, 1].map((rating) => (
-                <label
-                  key={rating}
-                  className={`flex items-center cursor-pointer hover:bg-orange-50 p-1.5 rounded ${isArabic ? 'flex-row-reverse gap-2' : 'space-x-2'}`}
-                >
-                  <input
-                    type="radio"
-                    name="rating"
-                    checked={filters.rating === rating}
-                    onChange={() => handleRatingChange(rating)}
-                    className="w-4 h-4 text-orange-600 border-gray-300 focus:ring-orange-500"
-                  />
-                  <span className={`text-sm text-gray-700 flex items-center ${isArabic ? 'flex-row-reverse' : ''}`}>
-                    {t('category.ratingAndAbove', { rating })}
-                  </span>
-                </label>
-              ))}
             </div>
           ) : null}
         </div>
