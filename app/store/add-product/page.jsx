@@ -784,7 +784,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
         const [draggingMediaKey, setDraggingMediaKey] = useState(null);
         const [dragOverMediaKey, setDragOverMediaKey] = useState(null);
         const [productInfo, setProductInfo] = useState({
-            name: '', nameAr: '', slug: '', brand: '', brandAr: '', shortDescription: '', shortDescriptionAr: '', shortDescription2: '', shortDescription2Ar: '', aboutThisItemTitle: 'About this item', aboutThisItemTitleAr: 'عن هذا المنتج', specTableEnabled: true, specTableTitle: 'Product information', specTableTitleAr: 'مواصفات المنتج', specTableColumns: ['Property', 'Value'], specTableColumnsAr: ['الخاصية', 'القيمة'], specTableRows: [['', '']], specTableRowsAr: [['', '']], description: '', descriptionAr: '', aPlusDesktop: '', aPlusMobile: '', aPlusDesktopAr: '', aPlusMobileAr: '', aPlusDesktopImages: [], aPlusMobileImages: [], AED: '', price: '', priceAr: '', AEDAr: '', category: '', sku: '', stockQuantity: 50, soldCount: 0, colors: [], sizes: [], fastDelivery: false, freeShippingEligible: false, useProductsPath: false, allowReturn: true, allowReplacement: true, reviews: [], badges: [], imageAspectRatio: '1:1', cardVideoPreviewEnabled: true, cardVideoPreviewDelaySec: 24, tags: [], seoTitle: '', seoH1: '', seoH1Ar: '', seoDescription: '', seoKeywords: [], deliveredBy: '', soldBy: '', paymentInfo: '', hsCode: '', originCountry: '', shippingWeightKg: ''
+            name: '', nameAr: '', slug: '', brand: '', brandAr: '', shortDescription: '', shortDescriptionAr: '', shortDescription2: '', shortDescription2Ar: '', aboutThisItemTitle: 'About this item', aboutThisItemTitleAr: 'عن هذا المنتج', descriptionTabTitle: 'Description', descriptionTabTitleAr: 'الوصف', specificationTabTitle: 'Specification', specificationTabTitleAr: 'المواصفات', specTableEnabled: true, specTableTitle: 'Product information', specTableTitleAr: 'مواصفات المنتج', specTableColumns: ['Property', 'Value'], specTableColumnsAr: ['الخاصية', 'القيمة'], specTableRows: [['', '']], specTableRowsAr: [['', '']], description: '', descriptionAr: '', aPlusDesktop: '', aPlusMobile: '', aPlusDesktopAr: '', aPlusMobileAr: '', aPlusDesktopImages: [], aPlusMobileImages: [], AED: '', price: '', priceAr: '', AEDAr: '', category: '', sku: '', stockQuantity: 50, soldCount: 0, colors: [], sizes: [], fastDelivery: false, freeShippingEligible: false, useProductsPath: false, allowReturn: true, allowReplacement: true, reviews: [], badges: [], imageAspectRatio: '1:1', cardVideoPreviewEnabled: true, cardVideoPreviewDelaySec: 24, tags: [], seoTitle: '', seoH1: '', seoH1Ar: '', seoDescription: '', seoKeywords: [], deliveredBy: '', soldBy: '', paymentInfo: '', hsCode: '', originCountry: '', shippingWeightKg: ''
         });
         const [tagInput, setTagInput] = useState('');
         const [seoKeywordInput, setSeoKeywordInput] = useState('');
@@ -1080,6 +1080,10 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                 shortDescription2Ar: product.attributes?.shortDescription2Ar || "",
                 aboutThisItemTitle: product.attributes?.aboutThisItemTitle || product.aboutThisItemTitle || 'About this item',
                 aboutThisItemTitleAr: product.attributes?.aboutThisItemTitleAr || product.aboutThisItemTitleAr || 'عن هذا المنتج',
+                descriptionTabTitle: product.attributes?.descriptionTabTitle || 'Description',
+                descriptionTabTitleAr: product.attributes?.descriptionTabTitleAr || 'الوصف',
+                specificationTabTitle: product.attributes?.specificationTabTitle || 'Specification',
+                specificationTabTitleAr: product.attributes?.specificationTabTitleAr || 'المواصفات',
                 specTableEnabled: true,
                 specTableTitle: product.attributes?.specTableTitle || product.specTableTitle || 'Product information',
                 specTableTitleAr: product.attributes?.specTableTitleAr || 'مواصفات المنتج',
@@ -2286,6 +2290,10 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                 shortDescription2Ar: productInfo.shortDescription2Ar || '',
                 aboutThisItemTitle: productInfo.aboutThisItemTitle || 'About this item',
                 aboutThisItemTitleAr: productInfo.aboutThisItemTitleAr || 'عن هذا المنتج',
+                descriptionTabTitle: productInfo.descriptionTabTitle || 'Description',
+                descriptionTabTitleAr: productInfo.descriptionTabTitleAr || 'الوصف',
+                specificationTabTitle: productInfo.specificationTabTitle || 'Specification',
+                specificationTabTitleAr: productInfo.specificationTabTitleAr || 'المواصفات',
                 priceAr: productInfo.priceAr || '',
                 AEDAr: productInfo.AEDAr || '',
                 specTableEnabled: Boolean(productInfo.specTableEnabled),
@@ -2796,6 +2804,30 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                         <label className="block text-xs font-semibold mb-1 text-amber-800 text-right">الوصف التفصيلي</label>
                         <RichTextDescriptionEditor label="" value={productInfo.descriptionAr || ''} onChange={(nextValue) => setProductInfo(prev => ({ ...prev, descriptionAr: nextValue }))} placeholder="اكتب وصفًا تفصيليًا للمنتج بالعربية..." getAuthTokenOrThrow={getAuthTokenOrThrow} dir="rtl" />
                       </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="block text-xs font-semibold text-amber-800">
+                          Description tab
+                          <input
+                            type="text"
+                            value={productInfo.descriptionTabTitleAr || ''}
+                            onChange={(e) => setProductInfo((p) => ({ ...p, descriptionTabTitleAr: e.target.value }))}
+                            dir="rtl"
+                            className="mt-1 w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-normal outline-none focus:ring-2 focus:ring-amber-200 text-right"
+                            placeholder="الوصف"
+                          />
+                        </label>
+                        <label className="block text-xs font-semibold text-amber-800">
+                          Specification tab
+                          <input
+                            type="text"
+                            value={productInfo.specificationTabTitleAr || ''}
+                            onChange={(e) => setProductInfo((p) => ({ ...p, specificationTabTitleAr: e.target.value }))}
+                            dir="rtl"
+                            className="mt-1 w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-normal outline-none focus:ring-2 focus:ring-amber-200 text-right"
+                            placeholder="المواصفات"
+                          />
+                        </label>
+                      </div>
                       <div>
                         <label className="block text-xs font-semibold mb-1 text-amber-800">Section title</label>
                         <input
@@ -2969,6 +3001,33 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                       ) : null}
                     </div>
                   )}
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+                  <p className="text-sm font-semibold text-slate-800">Product page tab titles</p>
+                  <p className="text-xs text-slate-500">These names appear as the Description / Specification tabs. Leave the defaults or change them per product.</p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      Description tab
+                      <input
+                        type="text"
+                        value={productInfo.descriptionTabTitle || ''}
+                        onChange={(e) => setProductInfo((p) => ({ ...p, descriptionTabTitle: e.target.value }))}
+                        className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-normal text-slate-800 outline-none focus:ring-2 focus:ring-sky-200"
+                        placeholder="Description"
+                      />
+                    </label>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      Specification tab
+                      <input
+                        type="text"
+                        value={productInfo.specificationTabTitle || ''}
+                        onChange={(e) => setProductInfo((p) => ({ ...p, specificationTabTitle: e.target.value }))}
+                        className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-normal text-slate-800 outline-none focus:ring-2 focus:ring-sky-200"
+                        placeholder="Specification"
+                      />
+                    </label>
+                  </div>
                 </div>
 
                 {/* Spec Table */}

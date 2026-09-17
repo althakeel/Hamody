@@ -336,6 +336,16 @@ const ProductDescription = ({
             ? (product?.attributes?.aboutThisItemTitleAr || product?.aboutThisItemTitleAr)
             : (product?.attributes?.aboutThisItemTitle || product?.aboutThisItemTitle)
     ) || t('product.aboutThisItem')
+    const detailsTabTitle = (
+        isArabic
+            ? (product?.attributes?.descriptionTabTitleAr || product?.descriptionTabTitleAr)
+            : (product?.attributes?.descriptionTabTitle || product?.descriptionTabTitle)
+    ) || t('product.productDetails')
+    const specsTabTitle = (
+        isArabic
+            ? (product?.attributes?.specificationTabTitleAr || product?.specificationTabTitleAr)
+            : (product?.attributes?.specificationTabTitle || product?.specificationTabTitle)
+    ) || t('product.productSpecifications')
     const canShowSpecTab = Boolean(showOverviewSections && showSpecTable)
     const canShowDetailsTab = Boolean(showMainDescription)
     const useInfoTabs = canShowDetailsTab && canShowSpecTab
@@ -389,7 +399,7 @@ const ProductDescription = ({
                                             : 'border-transparent text-gray-500 hover:text-gray-800'
                                     }`}
                                 >
-                                    {t('product.productDetails')}
+                                    {detailsTabTitle}
                                 </button>
                                 <button
                                     type="button"
@@ -400,12 +410,12 @@ const ProductDescription = ({
                                             : 'border-transparent text-gray-500 hover:text-gray-800'
                                     }`}
                                 >
-                                    {t('product.productSpecifications')}
+                                    {specsTabTitle}
                                 </button>
                             </div>
                         ) : (
                             <h2 className={`${compactMobile ? 'text-[15px] font-bold' : 'text-[18px] font-semibold'} leading-none text-gray-900`}>
-                                {canShowSpecTab && !canShowDetailsTab ? specTableTitle : t('product.productDetails')}
+                                {canShowSpecTab && !canShowDetailsTab ? specsTabTitle : detailsTabTitle}
                             </h2>
                         )}
                         {canShowDetailsTab ? (
