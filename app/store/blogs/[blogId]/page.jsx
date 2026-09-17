@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Loader2, Save, Upload } from 'lucide-react'
+import { ArrowLeft, Languages, Loader2, Save, Upload } from 'lucide-react'
 import { useAuth } from '@/lib/useAuth'
 import BlogRichTextEditor from '@/components/store/BlogRichTextEditor'
 import { compressImageForUpload } from '@/lib/compressImageForUpload'
@@ -57,6 +57,7 @@ export default function StoreBlogEditorPage() {
   const [uploadingBanner, setUploadingBanner] = useState(false)
   const [slugManual, setSlugManual] = useState(false)
   const [langTab, setLangTab] = useState('en')
+  const [translatingArabic, setTranslatingArabic] = useState(false)
 
   const load = useCallback(async () => {
     if (!blogId) return
@@ -124,6 +125,56 @@ export default function StoreBlogEditorPage() {
       toast.error(error?.message || (isBanner ? 'Banner upload failed' : 'Cover upload failed'))
     } finally {
       setUploading(false)
+    }
+  }
+
+  const hasEnglishCopy = Boolean(
+    String(form.title || '').trim()
+    || String(form.excerpt || '').trim()
+    || String(form.contentHtml || '').replace(/<[^>]+>/g, '').trim(),
+  )
+
+  const translateFromEnglish = async () => {
+    if (!hasEnglishCopy) {
+      toast.error('Write the English title, excerpt, or description first')
+      return
+    }
+    try {
+      setTranslatingArabic(true)
+      setLangTab('ar')
+      const token = await getToken()
+      if (!token) {
+        toast.error('Please sign in again')
+        return
+      }
+      const { data } = await axios.post('/api/store/blogs/translate-arabic', {
+        title: form.title,
+        excerpt: form.excerpt,
+        contentHtml: form.contentHtml,
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      const titleAr = String(data?.titleAr || '').trim()
+      const excerptAr = String(data?.excerptAr || '').trim()
+      const contentHtmlAr = String(data?.contentHtmlAr || '').trim()
+      if (!titleAr && !excerptAr && !contentHtmlAr) {
+        toast.error('Could not translate to Arabic')
+        return
+      }
+
+      setForm((prev) => ({
+        ...prev,
+        ...(titleAr ? { titleAr } : {}),
+        ...(excerptAr ? { excerptAr } : {}),
+        ...(contentHtmlAr ? { contentHtmlAr } : {}),
+      }))
+      toast.success('Arabic fields filled from English')
+    } catch (error) {
+      console.error(error)
+      toast.error(error?.response?.data?.error || 'Failed to translate to Arabic')
+    } finally {
+      setTranslatingArabic(false)
     }
   }
 
@@ -271,8 +322,9 @@ export default function StoreBlogEditorPage() {
               // eslint-disable-next-line @next/next/no-img-element
               <img src={form.coverImage} alt="Cover" className="aspect-[16/10] w-full object-cover" />
             ) : (
-              <div className="flex aspect-[16/10] items-center justify-center text-xs text-slate-400">
-                Cover image
+              <div className="flex aspect-[16/10] flex-col items-center justify-center gap-0.5 px-2 text-center text-xs text-slate-400">
+                <span>Cover image</span>
+                <span className="text-[11px]">16:10 · 1200 × 750 px</span>
               </div>
             )}
             <label className="flex cursor-pointer items-center justify-center gap-2 border-t border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-50">
@@ -290,6 +342,9 @@ export default function StoreBlogEditorPage() {
                 }}
               />
             </label>
+            <p className="border-t border-slate-100 bg-white px-3 py-1.5 text-center text-[11px] text-slate-400">
+              16:10 · 1200 × 750 px
+            </p>
           </div>
           <label className="block text-xs font-medium text-slate-600">
             Cover image URL
@@ -298,10 +353,10 @@ export default function StoreBlogEditorPage() {
               value={form.coverImage}
               onChange={(e) => patch('coverImage', e.target.value)}
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
-              placeholder="https://..."
+              placeholder="https://…  ·  16:10 · 1200 × 750 px"
             />
             <span className="mt-1 block text-[11px] font-normal text-slate-400">
-              Used on the blog list card. Square or 1:1 is fine here.
+              Blog list card. Ratio 16:10 · width 1200 px · height 750 px.
             </span>
           </label>
         </div>
@@ -312,8 +367,9 @@ export default function StoreBlogEditorPage() {
               // eslint-disable-next-line @next/next/no-img-element
               <img src={form.bannerImage} alt="Banner" className="aspect-[21/9] w-full object-cover" />
             ) : (
-              <div className="flex aspect-[21/9] items-center justify-center text-xs text-slate-400">
-                Banner image (wide)
+              <div className="flex aspect-[21/9] flex-col items-center justify-center gap-0.5 px-2 text-center text-xs text-slate-400">
+                <span>Banner image (wide)</span>
+                <span className="text-[11px]">21:9 · 1920 × 823 px</span>
               </div>
             )}
             <label className="flex cursor-pointer items-center justify-center gap-2 border-t border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-50">
@@ -331,6 +387,9 @@ export default function StoreBlogEditorPage() {
                 }}
               />
             </label>
+            <p className="border-t border-slate-100 bg-white px-3 py-1.5 text-center text-[11px] text-slate-400">
+              21:9 · 1920 × 823 px
+            </p>
           </div>
           <label className="block text-xs font-medium text-slate-600">
             Banner image URL
@@ -339,35 +398,48 @@ export default function StoreBlogEditorPage() {
               value={form.bannerImage}
               onChange={(e) => patch('bannerImage', e.target.value)}
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
-              placeholder="https://..."
+              placeholder="https://…  ·  21:9 · 1920 × 823 px"
             />
             <span className="mt-1 block text-[11px] font-normal text-slate-400">
-              Wide image for the article page. Not 1:1 — use 16:9 or 21:9.
+              Article page hero. Ratio 21:9 · width 1920 px · height 823 px. 16:9 (1920 × 1080) also works.
             </span>
           </label>
         </div>
       </section>
 
       <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setLangTab('en')}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${
-              langTab === 'en' ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-600'
-            }`}
-          >
-            English content
-          </button>
-          <button
-            type="button"
-            onClick={() => setLangTab('ar')}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${
-              langTab === 'ar' ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-600'
-            }`}
-          >
-            Arabic content
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setLangTab('en')}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${
+                langTab === 'en' ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              English content
+            </button>
+            <button
+              type="button"
+              onClick={() => setLangTab('ar')}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${
+                langTab === 'ar' ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              Arabic content
+            </button>
+          </div>
+          {langTab === 'ar' ? (
+            <button
+              type="button"
+              onClick={translateFromEnglish}
+              disabled={translatingArabic || !hasEnglishCopy}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-800 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {translatingArabic ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Languages className="h-3.5 w-3.5" />}
+              {translatingArabic ? 'Translating…' : 'Translate from English'}
+            </button>
+          ) : null}
         </div>
 
         {langTab === 'en' ? (

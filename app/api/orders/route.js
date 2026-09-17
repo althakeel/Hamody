@@ -60,6 +60,7 @@ import {
 import { evaluateCheckoutFraud } from '@/lib/paymentFraud';
 import { logPaymentEvent } from '@/lib/paymentTransactionLog';
 import { reserveOrderStockAtomically } from '@/lib/orderStockReservation';
+import { resolveOrderInventoryUnits } from '@/lib/orderStockReservationPlan';
 import { getVerifiedRazorpayOrder } from '@/lib/razorpayVerifiedOrderContext';
 import { getTrustedManualStoreOrder } from '@/lib/manualStoreOrderContext';
 import {
@@ -439,8 +440,10 @@ export async function POST(request) {
             }
             const isBundleOrder = isBulkBundleProduct(product) && Number(item.variantOptions?.bundleQty) > 0;
             const orderQty = isBundleOrder ? 1 : requestedQty;
-            const bundleUnits = isBundleOrder ? Math.max(1, Number(item.variantOptions?.bundleQty) || 1) : 1;
-            const inventoryQty = bundleUnits * orderQty;
+            const inventoryQty = resolveOrderInventoryUnits({
+              quantity: orderQty,
+              variantOptions: item.variantOptions,
+            }, product);
             if (availableQty < inventoryQty) {
                 return NextResponse.json({ error: 'Insufficient stock', id: item.id, availableQty, requestedQty: inventoryQty }, { status: 400 });
             }

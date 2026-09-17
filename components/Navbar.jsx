@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, ShoppingCart, Menu, X, HeartIcon, StarIcon, ArrowLeft, LogOut, User, MapPin, Package, ChevronDown, Grid3x3, Heart, Shield, History, Flame, Sparkles } from "lucide-react";
+import { Search, ShoppingCart, Menu, X, HeartIcon, StarIcon, ArrowLeft, LogOut, User, MapPin, Package, ChevronDown, Grid3x3, Heart, Shield, History, Flame, Sparkles, Camera } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
@@ -16,6 +16,7 @@ import WalletIcon from '@/assets/icons/wallet.png';
 import { isStorefrontWalletEnabled } from '@/lib/storefrontWallet';
 import SignInModal from './SignInModal';
 import AddressModal from './AddressModal';
+import ImageSearchModal from './ImageSearchModal';
 import { clearCart, fetchCart, uploadCart } from '@/lib/features/cart/cartSlice';
 import { fetchAddress, clearAddresses } from '@/lib/features/address/addressSlice';
 import {
@@ -25,6 +26,7 @@ import {
   readPersistedStorefrontLanguage,
 } from '@/lib/storefrontLanguage';
 import { translateStaticText } from '@/lib/useStorefrontI18n';
+import { recordStorefrontSearch } from '@/lib/recordStorefrontSearch';
 import {
   DEFAULT_OFFERS_NAV_LABEL,
   DEFAULT_OFFERS_NAV_LABEL_AR,
@@ -136,6 +138,7 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileExpandedCategoryId, setMobileExpandedCategoryId] = useState(null);
   const [showSearchModal, setShowSearchModal] = useState(false);
+  const [imageSearchFile, setImageSearchFile] = useState(null);
   const [wishlistCount, setWishlistCount] = useState(0);
   const addressList = useSelector((state) => state.address?.list || []);
   const cartItems = useSelector((state) => state.cart.cartItems || {});
@@ -1241,7 +1244,23 @@ const Navbar = () => {
     const query = search.trim();
     if (!query) return;
     setSearchFocused(false);
+    void recordStorefrontSearch(query, {
+      source: 'navbar',
+      userId: firebaseUser?.uid || '',
+    });
     router.push(`/shop?search=${encodeURIComponent(query)}`);
+  };
+
+  const openImageSearch = (file = null) => {
+    setImageSearchFile(file || null);
+    setShowSearchModal(true);
+  };
+
+  const handleSearchImagePaste = (event) => {
+    const file = [...(event.clipboardData?.files || [])].find((item) => item?.type?.startsWith('image/'));
+    if (!file) return;
+    event.preventDefault();
+    openImageSearch(file);
   };
 
   const clearSearchState = useCallback(() => {
@@ -1755,14 +1774,24 @@ const Navbar = () => {
                   placeholder={customSearchPlaceholder || searchPlaceholder || t('navbar.searchFragrances')}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  onPaste={handleSearchImagePaste}
                   onFocus={() => setSearchFocused(true)}
                   onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
                   className="min-w-0 flex-1 bg-transparent leading-none outline-none placeholder:opacity-50"
                   style={desktopSearchAppearance.inputStyle}
                 />
                 <button
+                  type="button"
+                  onClick={() => openImageSearch()}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition hover:bg-black/5"
+                  style={{ color: desktopSearchAppearance.textColor || searchAccentColor }}
+                  aria-label={t('navbar.imageSearch')}
+                >
+                  <Camera size={16} />
+                </button>
+                <button
                   type="submit"
-                  className="ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition hover:bg-black/5"
+                  className="ml-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition hover:bg-black/5"
                   style={{ color: desktopSearchAppearance.textColor || searchAccentColor }}
                   aria-label="Search"
                 >
@@ -1889,6 +1918,7 @@ const Navbar = () => {
         <>
       {/* Mobile Header */}
       <nav
+        data-storefront-navbar
         className="lg:hidden sticky top-0 z-50 border-b shadow-[0_1px_3px_rgba(15,23,42,0.06)]"
         style={{
           backgroundColor: mobileNavbarBackgroundColor,
@@ -1935,6 +1965,7 @@ const Navbar = () => {
                 placeholder={customSearchPlaceholder || searchPlaceholder || t('navbar.searchFragrances')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onPaste={handleSearchImagePaste}
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
                 className="min-w-0 flex-1 bg-transparent outline-none placeholder:opacity-50"
@@ -1950,6 +1981,14 @@ const Navbar = () => {
                   <X size={13} />
                 </button>
               ) : null}
+              <button
+                type="button"
+                onClick={() => openImageSearch()}
+                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-black/5"
+                aria-label={t('navbar.imageSearch')}
+              >
+                <Camera size={15} />
+              </button>
               <button
                 type="submit"
                 aria-label="Search"
@@ -2012,6 +2051,7 @@ const Navbar = () => {
 
       {/* Original Full Navbar (Desktop only) */}
       <div
+        data-storefront-navbar
         className={`${navbarAppearance.stickyHeader ? 'sticky top-0 z-[60]' : 'relative z-50'} hidden overflow-visible lg:block`}
         onMouseLeave={categoriesDropdownOpen ? closeCategoriesDropdown : undefined}
       >
@@ -2375,6 +2415,15 @@ const Navbar = () => {
             </div>
           )}
 
+
+      <ImageSearchModal
+        open={showSearchModal}
+        initialFile={imageSearchFile}
+        onClose={() => {
+          setShowSearchModal(false);
+          setImageSearchFile(null);
+        }}
+      />
 
       {/* Sign In Modal (always at Navbar root) */}
       {!firebaseUser && (

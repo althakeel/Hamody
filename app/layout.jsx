@@ -54,6 +54,9 @@ export async function generateMetadata() {
     title: "store1920 - Shop smarter",
     description:
       "Discover trending gadgets, fashion, home essentials & more at the best price. Fast delivery, secure checkout, and deals you don't want to miss.",
+    verification: {
+      google: "6_NMAlJb-plXJUzALtGyiXfM4NGylL8AZWUKwguRxzM",
+    },
     robots: staging
       ? {
           index: false,

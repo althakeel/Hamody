@@ -168,7 +168,7 @@ import {
 } from '@/lib/waslahTracking';
 import { isWaslahLabelReadyOrder, isWaslahLabelNotPrinted, isWaslahLabelPrinted, getLabelDownloadCount, preserveWaslahLabelDownloadState, mergeOrdersPreservingLabelDownloads } from '@/lib/waslahReceipts';
 import { downloadTodayOrdersProductPdf } from '@/lib/storeTodayOrdersPdf';
-import { downloadPickupManifestExcel, canExportPickupExcel, orderHasPickupRequested, isPackedPickupOrPickedUpOrder, isSentToEmxInRange, isSentToEmxOrder } from '@/lib/storePickupExcel';
+import { downloadPickupManifestExcel, canExportPickupExcel, orderHasPickupRequested, isPackedPickupOrPickedUpOrder, isSentToEmxInRange, isSentToEmxOrder, refreshPickupOrdersForExcel } from '@/lib/storePickupExcel';
 import { getOrderFulfillmentBadge, getOriginalReturnRequestTag, isReturnFollowUpOrder, excludeReturnPickupCloneOrders } from '@/lib/storeReturnLabels';
 import TrackingTimeline from '@/components/TrackingTimeline';
 
@@ -2391,7 +2391,15 @@ export default function StoreOrders() {
         }
         try {
             setDownloadingPickupExcel(true);
-            const count = await downloadPickupManifestExcel(pickupOrders);
+            const token = await getToken();
+            const refreshedOrders = await refreshPickupOrdersForExcel(pickupOrders, { token });
+            const refreshedById = new Map(
+                refreshedOrders.map((order) => [String(order._id), order]),
+            );
+            setOrders((current) => current.map((order) => (
+                refreshedById.get(String(order._id)) || order
+            )));
+            const count = await downloadPickupManifestExcel(refreshedOrders);
             toast.success(`Downloaded pickup Excel for ${count} order(s) sent to EMX`);
         } catch (error) {
             console.error('Pickup Excel export failed:', error);

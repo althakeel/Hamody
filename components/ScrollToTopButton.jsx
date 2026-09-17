@@ -1,10 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowUp } from 'lucide-react';
 import { useNavbarColor } from '@/lib/useNavbarColor';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
-import { DEFAULT_SCROLL_TO_TOP, normalizeScrollToTop } from '@/lib/scrollToTopSettings';
+import {
+  DEFAULT_SCROLL_TO_TOP,
+  getScrollToTopPositionClass,
+  normalizeScrollToTop,
+} from '@/lib/scrollToTopSettings';
 
 const SHOW_AFTER_PX = 280;
 const SIZE = 48;
@@ -35,6 +40,11 @@ export default function ScrollToTopButton() {
   const [progress, setProgress] = useState(0);
   const [overFooter, setOverFooter] = useState(false);
   const [settings, setSettings] = useState(DEFAULT_SCROLL_TO_TOP);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -69,27 +79,25 @@ export default function ScrollToTopButton() {
     };
   }, [settings.enabled]);
 
-  if (!settings.enabled) return null;
+  if (!settings.enabled || !mounted) return null;
 
-  const isLeft = settings.position === 'left';
   const dashOffset = CIRCUMFERENCE * (1 - progress);
   const fillColor = overFooter ? '#ffffff' : navbarColor;
   const arrowColor = overFooter ? '#111111' : '#ffffff';
   const ringColor = overFooter ? '#111111' : '#ffffff';
 
-  return (
+  const button = (
     <button
       type="button"
+      dir="ltr"
       aria-label={t('common.backToTop')}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(progress * 100)}
       onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-      className={`fixed z-[90] inline-flex items-center justify-center rounded-full shadow-lg transition-all duration-200 hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${
-        isLeft
-          ? 'bottom-[5.75rem] start-4 lg:bottom-8 lg:start-8'
-          : 'bottom-[10.5rem] end-4 lg:bottom-[6.75rem] lg:end-8'
-      } ${visible ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-3 opacity-0'}`}
+      className={`fixed z-[2147483000] inline-flex items-center justify-center rounded-full shadow-lg transition-all duration-200 hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${getScrollToTopPositionClass(settings.position)} ${
+        visible ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-3 opacity-0'
+      }`}
       style={{
         width: SIZE,
         height: SIZE,
@@ -124,4 +132,6 @@ export default function ScrollToTopButton() {
       />
     </button>
   );
+
+  return createPortal(button, document.body);
 }

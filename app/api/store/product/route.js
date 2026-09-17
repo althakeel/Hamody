@@ -420,6 +420,9 @@ export async function POST(request) {
             $addToSet: { featuredProductIds: String(product._id) },
         });
         invalidateStorefrontProductCaches();
+        const { scheduleProductVisualIndex } = await import('@/lib/productVisualIndex');
+        const { default: ProductVisualIndex } = await import('@/models/ProductVisualIndex');
+        scheduleProductVisualIndex(product, ProductVisualIndex);
 
         return NextResponse.json({ message: "Product added successfully", product });
     } catch (error) {
@@ -996,6 +999,9 @@ export async function PUT(request) {
         console.log('VERIFY PUT from DB - categories length:', verifyUpdatedProduct.categories?.length);
 
         invalidateStorefrontProductCaches();
+        const { scheduleProductVisualIndex } = await import('@/lib/productVisualIndex');
+        const { default: ProductVisualIndex } = await import('@/models/ProductVisualIndex');
+        scheduleProductVisualIndex(product, ProductVisualIndex);
 
         return NextResponse.json({ message: "Product updated successfully", product });
     } catch (error) {
@@ -1040,6 +1046,9 @@ export async function DELETE(request) {
         await Store.findByIdAndUpdate(storeId, {
             $pull: { featuredProductIds: productId },
         });
+        const { removeProductVisualIndex } = await import('@/lib/productVisualIndex');
+        const { default: ProductVisualIndex } = await import('@/models/ProductVisualIndex');
+        await removeProductVisualIndex(productId, ProductVisualIndex);
         invalidateStorefrontProductCaches();
 
         return NextResponse.json({ message: "Product deleted successfully" });

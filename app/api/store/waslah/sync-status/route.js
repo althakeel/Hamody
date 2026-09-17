@@ -80,6 +80,7 @@ export async function POST(request) {
         max: MAX_BATCH_ORDERS,
         persist: true,
         concurrency: 2,
+        force,
       });
 
       return NextResponse.json({

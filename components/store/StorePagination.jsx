@@ -13,6 +13,7 @@ export default function StorePagination({
   itemLabel = 'items',
   disabled = false,
   className = '',
+  alwaysShowButtons = false,
 }) {
   const page = pagination?.page || 1;
   const limit = pagination?.limit || 25;
@@ -24,7 +25,7 @@ export default function StorePagination({
   const rangeStart = total ? (page - 1) * limit + 1 : 0;
   const rangeEnd = Math.min(page * limit, total);
   const visiblePageNumbers = buildVisiblePages(page, totalPages);
-  const showPageButtons = totalPages > 1;
+  const showPageButtons = alwaysShowButtons || totalPages > 1;
 
   return (
     <div className={`flex flex-col gap-3 rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between ${className}`}>

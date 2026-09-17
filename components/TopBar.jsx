@@ -217,7 +217,7 @@ export default function TopBar({ initialLanguage = 'en' }) {
       };
 
   return (
-    <div className="relative z-[1000] w-full border-b border-[#e7e7e7] bg-white text-xs">
+    <div data-storefront-topbar className="relative z-[1000] w-full border-b border-[#e7e7e7] bg-white text-xs">
       <div className="mx-auto grid max-w-[1400px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1.5 px-2 py-1.5 sm:gap-3 sm:px-5 sm:py-1">
         <a
           href={STORE1920_CUSTOMER_SUPPORT_TEL}

@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import Link from 'next/link';
 import Loading from '@/components/Loading';
 import { CalendarClock, RefreshCw, AlertTriangle, Package, Download } from 'lucide-react';
-import { downloadPickupManifestExcel } from '@/lib/storePickupExcel';
+import { downloadPickupManifestExcel, refreshPickupOrdersForExcel } from '@/lib/storePickupExcel';
 import { getStoreOrderStatusMeta } from '@/components/store/OrderStatusPicker';
 
 const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || 'AED';
@@ -86,7 +86,15 @@ export default function TodaysPickupPage() {
     }
     try {
       setDownloadingExcel(true);
-      const count = await downloadPickupManifestExcel(visibleOrders);
+      const token = await getToken();
+      const refreshedOrders = await refreshPickupOrdersForExcel(visibleOrders, { token });
+      const refreshedById = new Map(
+        refreshedOrders.map((order) => [String(order._id), order]),
+      );
+      setOrders((current) => current.map((order) => (
+        refreshedById.get(String(order._id)) || order
+      )));
+      const count = await downloadPickupManifestExcel(refreshedOrders);
       toast.success(`Downloaded Excel for ${count} pickup order(s)`);
     } catch (error) {
       console.error('[todays-pickup excel]', error);

@@ -24,6 +24,7 @@ description: Maintains Store1920 blogs — public /blogs pages, seller dashboard
 | Seller API | `GET/POST /api/store/blogs`, `GET/PUT/DELETE /api/store/blogs/[blogId]` |
 | Public API | `GET /api/public/blogs`, `GET /api/public/blogs/[slug]` |
 | Image upload | `POST /api/store/upload-image` with `type=blog` → S3 folder `blogs` |
+| Translate EN→AR | `POST /api/store/blogs/translate-arabic` (title, excerpt, HTML body; UAE/GCC Arabic) |
 
 ## Content rules
 

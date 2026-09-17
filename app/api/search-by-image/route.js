@@ -1,163 +1,221 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
-import { STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility';
+import Category from '@/models/Category';
+import ProductVisualIndex from '@/models/ProductVisualIndex';
+import { isGeminiConfigured } from '@/configs/gemini';
+import { parseAutofillJson } from '@/lib/productAiAutofill';
+import {
+  extractFilenameKeywords,
+  findCategoryProductsForImage,
+  findProductsForImageKeywords,
+  imageQueryFamilyTerm,
+  judgeImageSearchCandidates,
+  pickBestAndRecommended,
+  uniqueSearchTerms,
+} from '@/lib/imageSearch';
+import {
+  embedImageBuffer,
+  findProductsByVisualEmbedding,
+  mergeVisualAndKeywordProducts,
+} from '@/lib/productVisualIndex';
+
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
+
+const GEMINI_MODELS = [
+  process.env.GEMINI_PRODUCT_VISION_MODEL,
+  process.env.GEMINI_PRODUCT_AUTOFILL_MODEL,
+  'gemini-2.5-flash',
+  'gemini-flash-latest',
+].filter(Boolean).filter((model, index, list) => list.indexOf(model) === index);
+
+function extractGeminiText(payload) {
+  const parts = payload?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return '';
+  return parts.map((part) => String(part?.text || '')).join('\n').trim();
+}
+
+async function describeProductImage(buffer, mimeType) {
+  const apiKey = String(process.env.GEMINI_API_KEY || '').trim();
+  if (!apiKey) return null;
+
+  let lastError = null;
+  for (const model of GEMINI_MODELS) {
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                {
+                  text: `Identify the EXACT product in this shopper photo for a UAE ecommerce store.
+Return raw JSON only:
+{"name":"","type":"","category":"","keywords":[],"exclude":[]}
+Rules:
+- name is a specific 4-8 word catalog label (shape + use).
+- type is one of: kick scooter, electric scooter, desk stand, car mount, air pump, oud burner, humidifier, coffee grinder, lint remover, shower pump, bowl, luggage tag, watch, bag, light, speaker, earbuds, charger, other.
+- A bowl, plate, or dish is type bowl. A square/round tracker with a loop is a luggage tag. Never mix those two.
+- A black cylinder with a metal/gold lid or top nozzle for incense or steam is an oud burner or humidifier, NEVER an air pump.
+- An air pump has a pistol/gun head, hose, or inflation nozzle. Do not guess air pump for every black cylinder.
+- A hopper on top is a coffee grinder. A round fabric shaver is a lint remover.
+- If it is a foot-powered kick scooter, type must be kick scooter.
+- If it is an electric scooter, type must be electric scooter.
+- keywords are extra specific terms. exclude is lookalike products that are NOT this item.
+- category is one catalog word.`,
+                },
+                {
+                  inline_data: {
+                    mime_type: mimeType || 'image/jpeg',
+                    data: buffer.toString('base64'),
+                  },
+                },
+              ],
+            }],
+            generationConfig: { temperature: 0.1 },
+          }),
+          signal: AbortSignal.timeout(25000),
+        },
+      );
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.error?.message || `Gemini failed (${response.status})`);
+      }
+      const parsed = parseAutofillJson(extractGeminiText(payload));
+      const keywords = uniqueSearchTerms([
+        parsed?.name,
+        parsed?.category,
+        ...(Array.isArray(parsed?.keywords) ? parsed.keywords : []),
+      ]);
+      if (!keywords.length) throw new Error('Gemini returned no keywords');
+      return {
+        keywords,
+        category: String(parsed?.category || '').trim(),
+        name: String(parsed?.name || '').trim(),
+        type: String(parsed?.type || '').trim(),
+        exclude: uniqueSearchTerms(parsed?.exclude || []),
+      };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (lastError) console.warn('[search-by-image] vision fallback:', lastError.message);
+  return null;
+}
 
 export async function POST(request) {
   try {
     const formData = await request.formData();
     const image = formData.get('image');
-    if (!image) {
+    if (!image || typeof image.arrayBuffer !== 'function') {
       return NextResponse.json({ error: 'No image uploaded' }, { status: 400 });
     }
 
-    // Extract keywords from filename (reliable method)
-    const filename = image.name.toLowerCase();
-    const nameWithoutExt = filename.replace(/\.[^/.]+$/, "");
-    
-    const isLikelyHash = /^[a-f0-9]{12,}$/i.test(nameWithoutExt);
-    if (isLikelyHash) {
-      return NextResponse.json({
-        error: 'Image filename is not descriptive. Rename the file (e.g., yoga-mat.jpg) and try again.',
-        keyword: '',
-        keywords: [],
-        resultCount: 0
-      }, { status: 400 });
+    const buffer = Buffer.from(await image.arrayBuffer());
+    if (!buffer.length) {
+      return NextResponse.json({ error: 'Image is empty' }, { status: 400 });
     }
 
-    // Split filename by common delimiters to extract keywords
-    const rawKeywords = nameWithoutExt
-      .split(/[-_\s\.]+/)
-      .filter(word => word.length > 2 && !/^\d+$/.test(word))
-      .map(word => word.trim());
-
-    if (rawKeywords.length === 0) {
-      return NextResponse.json({ 
-        error: 'Please use a descriptive filename like "shoes.jpg", "headphones-wireless.jpg", or "coffee-maker.jpg"',
-        keyword: '',
-        keywords: [],
-        resultCount: 0
-      }, { status: 400 });
-    }
-
-    // Connect to database
     await dbConnect();
-    
-    const synonymMap = {
-      mat: ['rug', 'carpet', 'doormat', 'yoga'],
-      rug: ['mat', 'carpet', 'doormat'],
-      shoe: ['shoes', 'sneakers', 'footwear'],
-      shoes: ['shoe', 'sneakers', 'footwear'],
-      sneaker: ['sneakers', 'shoes', 'footwear'],
-      bag: ['handbag', 'purse', 'backpack', 'satchel'],
-      watch: ['smartwatch', 'wristwatch'],
-      phone: ['mobile', 'smartphone'],
-      mobile: ['phone', 'smartphone'],
-      headphone: ['headphones', 'earphone', 'earphones'],
-      headphones: ['headphone', 'earphone', 'earphones'],
-      bottle: ['flask', 'water'],
-      mug: ['cup', 'coffee'],
-      sofa: ['couch'],
-      laptop: ['notebook', 'computer']
-    };
 
-    const expandedKeywords = Array.from(new Set(
-      rawKeywords.flatMap((word) => [word, ...(synonymMap[word] || [])])
-    ));
+    const [vision, queryEmbedding] = await Promise.all([
+      isGeminiConfigured() ? describeProductImage(buffer, image.type || 'image/jpeg') : null,
+      embedImageBuffer(buffer, image.type || 'image/jpeg'),
+    ]);
 
-    console.log(`Image search keywords extracted: ${rawKeywords.join(', ')}`);
-    console.log(`Image search expanded keywords: ${expandedKeywords.join(', ')}`);
-    
-    // Strategy 1: Try exact phrase match (best match)
-    const exactPhrase = rawKeywords.join(' ');
-    let products = await Product.find({
-      $or: [
-        { name: { $regex: exactPhrase, $options: 'i' } },
+    const filenameKeywords = extractFilenameKeywords(image.name);
+    const keywords = uniqueSearchTerms([
+      vision?.name,
+      vision?.category,
+      ...(vision?.keywords || []),
+      ...filenameKeywords,
+    ]);
+
+    const [visual, keywordResult, categoryProducts] = await Promise.all([
+      queryEmbedding.length
+        ? findProductsByVisualEmbedding(Product, ProductVisualIndex, queryEmbedding, {
+          limit: 24,
+          visionText: `${vision?.type || ''} ${vision?.name || ''}`,
+        })
+        : { products: [], relatedProducts: [], candidates: [], scores: [] },
+      keywords.length
+        ? findProductsForImageKeywords(Product, {
+          keywords,
+          name: vision?.name || '',
+          type: vision?.type || '',
+          category: vision?.category || '',
+          exclude: vision?.exclude || [],
+          limit: 12,
+        })
+        : { products: [], relatedProducts: [], keyword: '', keywords: [] },
+      findCategoryProductsForImage(Product, Category, {
+        name: vision?.name || '',
+        type: vision?.type || '',
+        category: vision?.category || '',
+        keywords,
+      }, { limit: 20 }),
+    ]);
+
+    const candidates = mergeVisualAndKeywordProducts(
+      categoryProducts,
+      [
+        ...(visual.candidates || []),
+        ...(visual.products || []),
+        ...keywordResult.products,
+        ...keywordResult.relatedProducts,
       ],
-      inStock: true,
-      ...STOREFRONT_PUBLISHED_FILTER,
-    })
-    .select('_id name slug images price mrp AED category tags inStock')
-    .limit(12)
-    .lean();
+      20,
+    );
 
-    // Strategy 2: If no exact match, search by first keyword (main term)
-    if (products.length === 0) {
-      const mainKeyword = rawKeywords[0];
-      const mainKeywordRegex = new RegExp(`\\b${mainKeyword}\\b`, 'i'); // Word boundary match
-      products = await Product.find({
-        $or: [
-          { name: mainKeywordRegex },
-          { category: mainKeywordRegex },
-          { tags: mainKeywordRegex },
-        ],
-        inStock: true,
-        ...STOREFRONT_PUBLISHED_FILTER,
-      })
-      .select('_id name slug images price mrp AED category tags inStock')
-      .limit(12)
-      .lean();
+    let verdict = null;
+    if (isGeminiConfigured() && candidates.length) {
+      verdict = await judgeImageSearchCandidates({
+        buffer,
+        mimeType: image.type || 'image/jpeg',
+        vision,
+        candidates,
+      });
     }
 
-    // Strategy 3: Partial match with all keywords
-    if (products.length === 0) {
-      const keywordRegex = new RegExp(expandedKeywords.join('|'), 'i');
-      products = await Product.find({
-        $or: [
-          { name: keywordRegex },
-          { category: keywordRegex },
-          { tags: keywordRegex },
-        ],
-        inStock: true,
-        ...STOREFRONT_PUBLISHED_FILTER,
-      })
-      .select('_id name slug images price mrp AED category tags inStock')
-      .limit(12)
-      .lean();
-    }
+    const picked = pickBestAndRecommended(candidates, verdict, {
+      allowFallback: Boolean(imageQueryFamilyTerm({
+        name: vision?.name || '',
+        type: vision?.type || '',
+        category: vision?.category || '',
+        keywords,
+      })),
+    });
+    const products = picked.products;
+    const relatedProducts = picked.relatedProducts;
 
-    let recommendedProducts = [];
-    if (products.length === 0) {
-      recommendedProducts = await Product.find({
-        inStock: true,
-        ...STOREFRONT_PUBLISHED_FILTER,
-      })
-        .select('_id name slug images price mrp AED category tags inStock')
-        .sort({ createdAt: -1 })
-        .limit(12)
-        .lean();
-    }
+    console.info('[search-by-image]', {
+      vision: vision?.name || '',
+      type: vision?.type || '',
+      exact: products.map((product) => product.name),
+      related: relatedProducts.map((product) => product.name).slice(0, 8),
+      scores: (visual.scores || []).slice(0, 8),
+    });
 
-    console.log(`Image search: Found ${products.length} products using strategies`);
-    
     return NextResponse.json({
-      keyword: rawKeywords[0] || expandedKeywords[0] || '',
-      keywords: expandedKeywords,
-      products: products.map(p => ({
-        _id: p._id,
-        slug: p.slug,
-        name: p.name,
-        image: p.images?.[0] || '',
-        price: p.price,
-        AED: p.AED,
-        category: p.category
-      })),
-      recommendedProducts: recommendedProducts.map(p => ({
-        _id: p._id,
-        slug: p.slug,
-        name: p.name,
-        image: p.images?.[0] || '',
-        price: p.price,
-        AED: p.AED,
-        category: p.category
-      })),
+      keyword: vision?.name || keywordResult.keyword || keywords[0] || '',
+      keywords: keywordResult.keywords || keywords,
+      products,
+      relatedProducts,
+      recommendedProducts: relatedProducts,
       resultCount: products.length,
-      searchMethod: 'filename-based',
-      searchKeywords: expandedKeywords,
-      message: products.length === 0 ? 'No products found' : `Found ${products.length} product${products.length !== 1 ? 's' : ''}`
+      searchMethod: products.length ? 'visual+gemini' : (relatedProducts.length ? 'gemini-related' : 'none'),
+      message: products.length
+        ? `Found ${products.length} product${products.length === 1 ? '' : 's'}`
+        : (relatedProducts.length
+          ? 'No exact match. Showing related products.'
+          : 'No related products for this photo.'),
     });
   } catch (error) {
-    console.error('Image search error:', error);
+    console.error('[search-by-image POST]', error);
     return NextResponse.json({ error: error.message || 'Image search failed' }, { status: 500 });
   }
 }

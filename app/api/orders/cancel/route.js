@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { getAuth } from '@/lib/firebase-admin';
 import connectDB from '@/lib/mongodb';
 import Order from '@/models/Order';
-import Product from '@/models/Product';
 import { sendOrderStatusEmail } from '@/lib/email';
+import { restockOrderInventory } from '@/lib/orderStockRestock';
 
 const CANCELLABLE_STATUSES = new Set([
   'ORDER_PLACED',
@@ -57,25 +57,10 @@ export async function POST(req) {
     }
     await order.save();
 
-    // Restock product quantities for cancelled order
-    for (const item of order.orderItems || []) {
-      const productId = item?.productId;
-      const qty = Number(item?.quantity) || 0;
-      if (!productId || qty <= 0) continue;
-
+    if (order.fulfillmentStockReservedAt) {
       try {
-        const updated = await Product.findByIdAndUpdate(
-          productId,
-          { $inc: { stockQuantity: qty } },
-          { new: true }
-        );
-
-        if (updated) {
-          const hasStock = (typeof updated.stockQuantity === 'number' ? updated.stockQuantity : 0) > 0;
-          if (updated.inStock !== hasStock) {
-            await Product.findByIdAndUpdate(productId, { $set: { inStock: hasStock } });
-          }
-        }
+        await restockOrderInventory(order);
+        await Order.findByIdAndUpdate(order._id, { $unset: { fulfillmentStockReservedAt: 1 } });
       } catch (stockErr) {
         console.error('Cancel restock error:', stockErr);
       }
