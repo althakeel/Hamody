@@ -81,6 +81,7 @@ import {
   matchMatrixVariant,
   normalizeSellerVariantOptions,
 } from '@/lib/productVariantOptions';
+import { getAvailableBundlePacks } from '@/lib/bundleSharedStock';
 
 const PLACEHOLDER_IMAGE = 'https://store1920-images.s3.ap-south-1.amazonaws.com/uploads/placeholder.png';
 const GALLERY_CROSSFADE = { duration: 0.55, ease: [0.22, 1, 0.36, 1] };
@@ -1034,7 +1035,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
       .map((v) => Number(v.options?.bundleQty) || 1)
       .sort((a, b) => a - b);
     const inStock = bulkVariants
-      .filter((v) => Number(v.stock) > 0)
+      .filter((v) => getAvailableBundlePacks(product, v.options, v.options?.bundleQty) > 0)
       .map((v) => Number(v.options?.bundleQty) || 1)
       .sort((a, b) => a - b);
     return inStock.length ? inStock : [...new Set(all)];
@@ -1197,14 +1198,17 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
     if (isMatrixProduct) {
       const match = matchMatrixVariant(variants, selectedOptions, activeBundleTier)
         || findVariantBySelectedOptions(variants, selectedOptions, { isBulkBundleVariant });
-      if (match) {
-        const rowStock = getVariantStock(match);
-        if (Number.isFinite(rowStock) && rowStock > 0) return rowStock;
-        // Legacy matrix rows: stock often sits on product Stock Qty only.
-        if (!anyVariantHasStock && productStockFallback > 0) return productStockFallback;
-        return Math.max(0, rowStock || 0);
+      const tier = Number(activeBundleTier || match?.options?.bundleQty) || 1;
+      const packs = getAvailableBundlePacks(
+        product,
+        match?.options || { ...selectedOptions, bundleQty: tier },
+        tier,
+      );
+      if (packs > 0) return packs;
+      if (!anyVariantHasStock && productStockFallback > 0) {
+        return Math.floor(productStockFallback / Math.max(1, tier));
       }
-      return productStockFallback;
+      return Math.max(0, packs);
     }
 
     if (isBulkBundleProduct) {
@@ -1213,10 +1217,11 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
       const bundleVariant = bulkVariants.find(
         (v) => Number(v.options?.bundleQty) === Number(stockTier),
       ) || findBulkBundleVariant(product, stockTier);
-      if (typeof bundleVariant?.stock === 'number') {
-        return Math.max(0, bundleVariant.stock);
-      }
-      return 0;
+      return getAvailableBundlePacks(
+        product,
+        bundleVariant?.options || { bundleQty: stockTier },
+        stockTier,
+      );
     }
 
     if (!isBulkBundleProduct && variants.length > 0) {
@@ -1243,6 +1248,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
     bulkVariants,
     variants,
     selectedOptions,
+    product,
     product.stockQuantity,
     product.inStock,
   ]);
@@ -1259,10 +1265,16 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
         || findVariantBySelectedOptions(variants, selectedOptions, { isBulkBundleVariant });
       const anyVariantHasStock = variants.some((v) => getVariantStock(v) > 0);
       const productStockFallback = Number(product.stockQuantity) || 0;
-      const rowStock = getVariantStock(variant);
+      const rowStock = getAvailableBundlePacks(
+        product,
+        variant?.options || { ...selectedOptions, bundleQty: tier },
+        tier,
+      );
       const safeMax = rowStock > 0
         ? rowStock
-        : (!anyVariantHasStock && productStockFallback > 0 ? productStockFallback : 0);
+        : (!anyVariantHasStock && productStockFallback > 0
+          ? Math.floor(productStockFallback / Math.max(1, tier))
+          : 0);
       if (!variant || safeMax <= 0) return 0;
 
       const offerFields = product.specialOffer?.offerToken
@@ -1297,7 +1309,11 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
       );
       const variant = bulkVariants.find((v) => Number(v.options?.bundleQty) === bundleTier)
         || findBulkBundleVariant(product, bundleTier);
-      const safeMax = Math.max(0, Number(variant?.stock) || 0);
+      const safeMax = getAvailableBundlePacks(
+        product,
+        variant?.options || { bundleQty: bundleTier },
+        bundleTier,
+      );
       if (!variant || safeMax <= 0) return 0;
 
       const offerFields = product.specialOffer?.offerToken
@@ -1721,6 +1737,11 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
     }
     if (!selectedVariant) {
       return !hasAnyVariantStock && hasProductStockQty;
+    }
+    if (isBulkBundleProduct || isMatrixProduct) {
+      const tier = Number(activeBundleTier || selectedVariant?.options?.bundleQty) || 1;
+      return getAvailableBundlePacks(product, selectedVariant.options, tier) > 0
+        || (!hasAnyVariantStock && hasProductStockQty);
     }
     const variantStock = getVariantStock(selectedVariant);
     if (variantStock > 0) return true;
@@ -3731,26 +3752,13 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
 
             {/* Short Description hidden to match reference layout */}
 
-            {/* Stock Availability */}
-              {(typeof product.stockQuantity === 'number' || product.inStock === false) && (
-                <div className="flex items-center gap-2">
-                  {isGloballyOutOfStock ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 text-sm font-medium rounded-lg border border-red-200">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                      </svg>
-                      {t('common.outOfStock')}
-                    </span>
-                  ) : product.stockQuantity < 20 ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 text-sm font-medium rounded-lg border border-orange-200">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      {t('product.limitedStockAvailable', { count: product.stockQuantity })}
-                    </span>
-                  ) : null}
-                </div>
-              )}
+            {isGloballyOutOfStock ? (
+              <div className="mb-2">
+                <span className="inline-flex items-center px-2 py-0.5 bg-red-50 text-red-700 text-[12px] font-medium rounded-sm border border-red-200">
+                  {t('common.outOfStock')}
+                </span>
+              </div>
+            ) : null}
 
             {renderSoldCountLine('mb-2')}
 
@@ -3788,7 +3796,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
 
                 {Number(availableStock) > 0 && Number(availableStock) <= 20 && (
                   <span className="inline-flex items-center border border-orange-400 bg-orange-50 text-orange-500 text-[12px] font-medium px-2 py-0.5 rounded-sm leading-none whitespace-nowrap">
-                    {t('product.almostSoldOut')}
+                    {t('product.limitedStockAvailable', { count: availableStock })}
                   </span>
                 )}
               </div>

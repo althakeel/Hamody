@@ -100,7 +100,7 @@ export default function BlogPostPage() {
             ) : null}
 
             <div
-              className="blog-content prose prose-slate max-w-none prose-headings:font-bold prose-a:text-sky-700 prose-img:rounded-xl"
+              className="blog-content"
               dangerouslySetInnerHTML={{ __html: blog.contentHtml || '' }}
             />
 
@@ -143,6 +143,104 @@ export default function BlogPostPage() {
       )}
 
       <style jsx global>{`
+        .blog-content {
+          color: #111827;
+          font-size: 16px;
+          line-height: 1.6;
+          overflow-wrap: anywhere;
+        }
+        .blog-content > * + * {
+          margin-top: 0.75em;
+        }
+        .blog-content h1 {
+          font-size: 2em;
+          font-weight: bold;
+          line-height: 1.2;
+          margin: 0.6em 0 0.35em;
+        }
+        .blog-content h2 {
+          font-size: 1.5em;
+          font-weight: bold;
+          line-height: 1.3;
+          margin: 0.7em 0 0.35em;
+        }
+        .blog-content h3,
+        .blog-content h4 {
+          font-size: 1.25em;
+          font-weight: bold;
+          line-height: 1.4;
+          margin: 0.7em 0 0.3em;
+        }
+        .blog-content p {
+          margin: 0.5em 0;
+        }
+        .blog-content ul,
+        .blog-content ol {
+          padding-left: 1.5em;
+          margin: 0.5em 0;
+        }
+        .blog-content ul {
+          list-style-type: disc;
+        }
+        .blog-content ol {
+          list-style-type: decimal;
+        }
+        .blog-content li {
+          margin: 0.25em 0;
+        }
+        .blog-content a {
+          color: #2563eb;
+          text-decoration: underline;
+        }
+        .blog-content a:hover {
+          color: #1d4ed8;
+        }
+        .blog-content blockquote {
+          margin: 0.75em 0;
+          padding-left: 1em;
+          border-left: 3px solid #cbd5e1;
+          color: #334155;
+        }
+        .blog-content code {
+          background-color: #f3f4f6;
+          padding: 0.125em 0.25em;
+          border-radius: 0.25rem;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+          font-size: 0.875em;
+        }
+        .blog-content pre {
+          overflow-x: auto;
+          margin: 0.75em 0;
+          padding: 0.75em 1em;
+          border-radius: 0.5rem;
+          background: #f8fafc;
+        }
+        .blog-content pre code {
+          background: transparent;
+          padding: 0;
+        }
+        .blog-content table {
+          border-collapse: collapse;
+          width: 100%;
+          margin: 1em 0;
+        }
+        .blog-content td,
+        .blog-content th {
+          border: 2px solid #cbd5e1;
+          padding: 0.5em 0.75em;
+          vertical-align: top;
+        }
+        .blog-content th {
+          font-weight: bold;
+          text-align: left;
+          background-color: #f1f5f9;
+        }
+        .blog-content img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 0.5rem;
+          margin: 1em 0;
+        }
         .blog-content img.blog-img-full,
         .blog-content img[data-width='full'] {
           max-width: 100% !important;

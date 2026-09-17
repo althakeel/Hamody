@@ -1993,14 +1993,14 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
     const buildBulkRow = (qty, title = '', usePackLabel = false) => {
         const basePrice = Number(productInfo.price) || 0
         const baseAED = Number(productInfo.AED) || basePrice
-        const stock = Number(productInfo.stockQuantity) || 0
         const bundleMultiplier = Math.max(1, Number(qty) || 1)
         return {
                     title: title || (bundleMultiplier === 1 ? 'Buy 1' : `Buy ${bundleMultiplier}`),
             qty: bundleMultiplier,
             price: basePrice ? Number((basePrice * bundleMultiplier * (bundleMultiplier > 1 ? 0.9 : 1)).toFixed(2)) : '',
             AED: baseAED ? Number((baseAED * bundleMultiplier).toFixed(2)) : '',
-            stock: bundleMultiplier === 1 ? stock : (stock ? Math.max(1, Math.floor(stock / bundleMultiplier)) : 0),
+            // Qty is units per pack. Do not invent a second stock from Qty.
+            stock: '',
             tag: bundleMultiplier === 2 ? 'MOST_POPULAR' : '',
             sku: '',
             image: '',
@@ -2083,9 +2083,8 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                 if (validRows.length === 0) {
                     return toast.error('Bundle rows need a Qty and Sale (AED) greater than 0. Rows with 0.00 are not saved.')
                 }
-                const inStockRows = validRows.filter((b) => Number(b.stock) > 0)
-                if (inStockRows.length === 0) {
-                    return toast.error('Set Stock greater than 0 on at least one bundle row so customers can buy it.')
+                if (!(Number(productInfo.stockQuantity) > 0)) {
+                    return toast.error('Set Stock Qty greater than 0. All pack sizes share that stock.')
                 }
             } else if (variantBundleMode === 'matrix') {
                 // Matrix mode stock is validated after expanding rows below.
@@ -2161,6 +2160,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
             const packRows = uniqueBulkRowsByQty(bulkOptions)
             const isMatrixMode = pricingMode === 'matrix' && baseVariantRows.length > 0
 
+            const sharedAdminStock = Math.max(0, Number(productInfo.stockQuantity) || 0)
             const mapPackRowsToVariants = (rows) => rows
                 .filter((b) => Number(b.qty) > 0 && Number(b.price) > 0)
                 .map((b) => ({
@@ -2175,7 +2175,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                     }),
                     price: Number(b.price),
                     AED: Number(b.AED || b.price),
-                    stock: Number(b.stock || 0),
+                    stock: sharedAdminStock,
                 }))
 
             if (pricingMode === 'matrix' && baseVariantRows.length === 0) {
@@ -2184,9 +2184,9 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                     setLoading(false)
                     return toast.error('Add a color/size variant, or enter Sale (AED) on each pack row so prices can save.')
                 }
-                if (!packVariants.some((row) => Number(row.stock) > 0)) {
+                if (!(sharedAdminStock > 0)) {
                     setLoading(false)
-                    return toast.error('Set Stock greater than 0 on at least one pack row so customers can buy it.')
+                    return toast.error('Set Stock Qty greater than 0. All pack sizes share that stock.')
                 }
                 variantsToSend = packVariants
                 hasVariantsFlag = true
@@ -2210,7 +2210,8 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                         const price = pickMatrixNumber(cell.price, b.price, v.price)
                         if (!(price > 0)) return
                         const aed = pickMatrixNumber(cell.AED, b.AED, v.AED, price) || price
-                        const stock = pickMatrixNumber(cell.stock, v.stock, b.stock, productStockFallback, 0)
+                        // Keep the seller's variant stock. Qty is units per pack, not a second stock.
+                        const stock = Math.max(0, Number(v.stock) || productStockFallback || 0)
                         expanded.push({
                             sku: resolveComboSku(cell.sku, b.sku, v.sku, productInfo.sku, qty),
                             options: resolveVariantImageOptions({
@@ -2231,7 +2232,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                 }
                 if (!expanded.some((row) => Number(row.stock) > 0)) {
                     setLoading(false)
-                    return toast.error('Set Stock greater than 0 on at least one matrix cell (or Stock Qty) so customers can buy it.')
+                    return toast.error('Set Stock greater than 0 on the variant (or Stock Qty). All pack sizes share that stock.')
                 }
                 variantsToSend = expanded
                 hasVariantsFlag = expanded.length > 0
@@ -2686,6 +2687,9 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                     <div>
                         <label className="block text-xs font-semibold mb-1 text-gray-500 uppercase tracking-wide">Stock Qty</label>
                         <input type="number" name="stockQuantity" value={productInfo.stockQuantity ?? ''} onChange={onChangeHandler} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200" placeholder="e.g. 100" min="0" />
+                        {bulkEnabled ? (
+                          <p className="mt-1 text-[11px] text-slate-500">Units on the shelf. Buy 1 uses 1 unit, Bundle of 3 uses 3 units from this same stock.</p>
+                        ) : null}
                     </div>
                     <div>
                         <label className="block text-xs font-semibold mb-1 text-gray-500 uppercase tracking-wide">Units Sold (display)</label>
@@ -3588,7 +3592,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                       <div className="rounded-lg border border-violet-200 bg-violet-50/50 px-4 py-2.5 text-xs text-violet-900">
                         {variants.some((v) => VARIANT_MATRIX_SELECTION_FIELDS.some((f) => String(v?.options?.[f] || '').trim())) ? (
                           <>
-                            <strong>Variants + packs.</strong> Pack rows above only define pack sizes. Set the real Sale / Regular / Stock for each color/size × pack in the matrix at the bottom.
+                            <strong>Variants + packs.</strong> Pack rows define pack size and prices. Stock stays on the variant — it is not changed per pack.
                           </>
                         ) : (
                           <>
@@ -3604,19 +3608,18 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                           <h4 className="text-sm font-semibold text-slate-800">Bundle pricing rows</h4>
                           <p className="text-xs text-slate-500 mt-0.5">
                             {hasVariants && variants.some((v) => VARIANT_MATRIX_SELECTION_FIELDS.some((f) => String(v?.options?.[f] || '').trim()))
-                              ? 'One row per pack (Qty 1, 2, 3…). The Label is what customers see (Buy 1, Buy 2, …). Type it yourself — it will not be renamed to Pack of 1.'
-                              : 'Customer-facing names (Buy 1, Buy 2, …). Sale (AED) must be greater than 0. Do not duplicate the same Qty.'}
+                              ? 'Qty is units in that pack (Bundle of 3 = 3 units). Prices stay as you type them. Stock is the variant stock — all packs share it.'
+                              : 'Qty is units in that pack. Sale (AED) stays as you type it. Stock Qty above is shared by every pack — do not set a second stock per row.'}
                           </p>
                         </div>
                         <div className="p-4 space-y-3 overflow-x-auto">
-                          <div className="min-w-[980px] grid grid-cols-[88px_minmax(120px,1fr)_64px_110px_90px_90px_72px_110px_64px] gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 px-1">
+                          <div className="min-w-[900px] grid grid-cols-[88px_minmax(120px,1fr)_64px_110px_90px_90px_110px_64px] gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 px-1">
                             <div>Image</div>
                             <div>Label</div>
                             <div>Qty</div>
                             <div>SKU</div>
                             <div>Sale (AED)</div>
                             <div>Regular (AED)</div>
-                            <div>Stock</div>
                             <div>Tag</div>
                             <div></div>
                           </div>
@@ -3626,7 +3629,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                                 || variantImageOptions.find((opt) => opt.slot === b.imageSlot)?.preview
                                 || ''
                               return (
-                              <div key={idx} className="min-w-[980px] grid grid-cols-[88px_minmax(120px,1fr)_64px_110px_90px_90px_72px_110px_64px] gap-2 items-center">
+                              <div key={idx} className="min-w-[900px] grid grid-cols-[88px_minmax(120px,1fr)_64px_110px_90px_90px_110px_64px] gap-2 items-center">
                                 <div className="flex flex-col items-center gap-1">
                                   <div className="h-12 w-12 rounded-lg border border-slate-200 bg-white overflow-hidden flex items-center justify-center">
                                     {bulkImagePreview ? (
@@ -3692,8 +3695,6 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                                 <input className="border border-slate-200 rounded-lg px-2.5 py-2 text-sm bg-white disabled:bg-gray-100 disabled:cursor-not-allowed" type="number" step="0.01" placeholder="0.00" value={b.AED}
                                   disabled={!canEditPricing}
                                   onChange={(e) => { markDirty(); const v = [...bulkOptions]; v[idx] = { ...b, AED: parseOptionalPriceInput(e.target.value) }; setBulkOptions(v) }} />
-                                <input className="border border-slate-200 rounded-lg px-2.5 py-2 text-sm bg-white" type="number" placeholder="0" value={b.stock}
-                                  onChange={(e) => { const v = [...bulkOptions]; v[idx] = { ...b, stock: Number(e.target.value) }; setBulkOptions(v) }} />
                                 <select className="border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" value={b.tag}
                                   onChange={(e) => { const v = [...bulkOptions]; v[idx] = { ...b, tag: e.target.value }; setBulkOptions(v) }}>
                                   <option value="">None</option>
@@ -3720,7 +3721,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                       <div className="space-y-4">
                         {bulkEnabled && variants.some((v) => VARIANT_MATRIX_SELECTION_FIELDS.some((f) => String(v?.options?.[f] || '').trim())) && (
                           <div className="rounded-lg border border-violet-200 bg-violet-50/50 px-4 py-2.5 text-xs text-violet-800">
-                            Pack sizes are set above. Use the matrix at the bottom for Sale / Regular / Stock of each option × pack. Blank matrix cells inherit the pack-row price.
+                            Pack sizes are set above. Use the matrix for Sale / Regular of each option × pack. Stock stays on the variant — Bundle of 3 uses 3 units from that same stock.
                           </div>
                         )}
                         {variants.length === 0 ? (
@@ -3770,6 +3771,9 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                                     <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200" placeholder="0" type="number"
                                       value={v.stock ?? 0}
                                       onChange={(e) => { const nv = [...variants]; nv[idx] = { ...v, stock: Number(e.target.value) }; setVariants(nv) }} />
+                                    {bulkEnabled ? (
+                                      <p className="mt-1 text-[11px] text-slate-500">Units on the shelf. Every pack size shares this number.</p>
+                                    ) : null}
                                   </div>
                                 </div>
 
@@ -3893,7 +3897,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                         <div className="rounded-xl border border-violet-200 bg-violet-50/30 overflow-hidden">
                           <div className="px-4 py-3 border-b border-violet-100 bg-white/80">
                             <h4 className="text-sm font-semibold text-slate-800">Bundle pricing per variant</h4>
-                            <p className="text-xs text-slate-500 mt-0.5">Each block is a product option (e.g. Buy 1, Buy 2). Inside it, set prices for <strong>Pack of 1</strong>, <strong>Pack of 2</strong>, etc. — how many units the customer gets per pack.</p>
+                            <p className="text-xs text-slate-500 mt-0.5">Set Sale / Regular only. Stock is the variant stock above — it is not changed here.</p>
                           </div>
                           <div className="p-4 space-y-3">
                             {baseRows.map((v, vi) => (
@@ -3902,20 +3906,18 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                                   Option: {getVariantCardLabel(v, vi)}
                                 </div>
                                 <div className="p-3 space-y-2">
-                                  <div className="grid grid-cols-[minmax(90px,1fr)_110px_90px_90px_72px] gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                                  <div className="grid grid-cols-[minmax(90px,1fr)_110px_90px_90px] gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                                     <div>Pack size</div>
                                     <div>SKU</div>
                                     <div>Sale (AED)</div>
                                     <div>Regular (AED)</div>
-                                    <div>Stock</div>
                                   </div>
                                   {tiers.map((b, bi) => {
                                     const cell = matrixCells[buildMatrixCellKey(v.options, b.qty)] || {}
                                     const fallbackPrice = pickMatrixNumber(v.price, b.price)
                                     const fallbackAED = pickMatrixNumber(v.AED, b.AED, fallbackPrice)
-                                    const fallbackStock = pickMatrixNumber(v.stock, b.stock, Number(productInfo.stockQuantity) || 0)
                                     return (
-                                      <div key={bi} className="grid grid-cols-[minmax(90px,1fr)_110px_90px_90px_72px] gap-2 items-center">
+                                      <div key={bi} className="grid grid-cols-[minmax(90px,1fr)_110px_90px_90px] gap-2 items-center">
                                         <div className="text-xs font-medium text-slate-600 truncate">
                                           {b.title || (Number(b.qty) === 1 ? 'Buy 1' : `Buy ${b.qty}`)}
                                           <span className="text-slate-400"> ({b.qty} unit{b.qty > 1 ? 's' : ''} each)</span>
@@ -3923,7 +3925,6 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                                         <input type="text" placeholder={v.sku || 'SKU'} className="border border-slate-200 rounded-md px-2 py-1.5 text-sm bg-white" value={cell.sku ?? ''} onChange={(e) => { setIsSkuManuallyEdited(true); setCell(v.options, b.qty, 'sku', e.target.value) }} />
                                         <input type="number" step="0.01" placeholder="Sale" title={fallbackPrice > 0 ? `Inherits ${fallbackPrice} if blank` : undefined} className="border border-slate-200 rounded-md px-2 py-1.5 text-sm bg-white" value={cell.price ?? ''} onChange={(e) => setCell(v.options, b.qty, 'price', parseOptionalPriceInput(e.target.value))} />
                                         <input type="number" step="0.01" placeholder="Regular" title={fallbackAED > 0 ? `Inherits ${fallbackAED} if blank` : undefined} className="border border-slate-200 rounded-md px-2 py-1.5 text-sm bg-white" value={cell.AED ?? ''} onChange={(e) => setCell(v.options, b.qty, 'AED', parseOptionalPriceInput(e.target.value))} />
-                                        <input type="number" placeholder={fallbackStock > 0 ? String(fallbackStock) : 'Stock'} className="border border-slate-200 rounded-md px-2 py-1.5 text-sm bg-white" value={cell.stock ?? ''} onChange={(e) => setCell(v.options, b.qty, 'stock', e.target.value === '' ? '' : Number(e.target.value))} />
                                       </div>
                                     )
                                   })}

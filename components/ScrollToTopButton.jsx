@@ -87,8 +87,8 @@ export default function ScrollToTopButton() {
       onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
       className={`fixed z-[90] inline-flex items-center justify-center rounded-full shadow-lg transition-all duration-200 hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${
         isLeft
-          ? 'bottom-6 start-4 lg:bottom-8 lg:start-8'
-          : 'bottom-[6.5rem] end-4 lg:bottom-[6.75rem] lg:end-8'
+          ? 'bottom-[5.75rem] start-4 lg:bottom-8 lg:start-8'
+          : 'bottom-[10.5rem] end-4 lg:bottom-[6.75rem] lg:end-8'
       } ${visible ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-3 opacity-0'}`}
       style={{
         width: SIZE,

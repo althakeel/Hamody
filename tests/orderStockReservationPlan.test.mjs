@@ -85,6 +85,51 @@ test('bundle of 2 stored as 1 pack removes 2 inventory units', () => {
   }]);
 });
 
+test('bundle packs share one unit pool so Buy 1 and Bundle of 3 cannot oversell', () => {
+  const plan = buildOrderStockReservationPlan({
+    orderItems: [
+      { productId: PRODUCT_ID, quantity: 1, variantOptions: { bundleQty: 3 } },
+      { productId: PRODUCT_ID, quantity: 2, variantOptions: { bundleQty: 1 } },
+    ],
+  }, [product({
+    stockQuantity: 8,
+    variants: [
+      { options: { bundleQty: 1 }, stock: 8 },
+      { options: { bundleQty: 3 }, stock: 8 },
+    ],
+  })]);
+
+  assert.deepEqual(plan, [{
+    productId: PRODUCT_ID,
+    totalQuantity: 5,
+    stockQuantity: 8,
+    variants: [
+      { index: 0, quantity: 5, stock: 8 },
+      { index: 1, quantity: 5, stock: 8 },
+    ],
+  }]);
+});
+
+test('rejects bundle sales that exceed the shared admin unit stock', () => {
+  assert.throws(
+    () => buildOrderStockReservationPlan({
+      orderItems: [
+        { productId: PRODUCT_ID, quantity: 2, variantOptions: { bundleQty: 3 } },
+        { productId: PRODUCT_ID, quantity: 3, variantOptions: { bundleQty: 1 } },
+      ],
+    }, [product({
+      stockQuantity: 8,
+      variants: [
+        { options: { bundleQty: 1 }, stock: 8 },
+        { options: { bundleQty: 3 }, stock: 8 },
+      ],
+    })]),
+    (error) => error instanceof StockReservationPlanError
+      && (error.code === 'INSUFFICIENT_VARIANT_STOCK'
+        || error.code === 'INSUFFICIENT_PRODUCT_STOCK'),
+  );
+});
+
 test('rejects a selected variant that no longer exists', () => {
   assert.throws(
     () => buildOrderStockReservationPlan({

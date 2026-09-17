@@ -18,6 +18,7 @@ import {
 const HIDDEN_PREFIXES = ['/store', '/admin', '/dashboard'];
 const HIDDEN_EXACT = ['/checkout'];
 const GREETING_STYLE_ID = 'tawk-hide-greeting-style';
+const MOBILE_LIFT = 'calc(5.75rem + env(safe-area-inset-bottom, 0px))';
 
 function shouldShowTawk(pathname = '') {
   if (!pathname) return false;
@@ -26,9 +27,12 @@ function shouldShowTawk(pathname = '') {
 }
 
 function injectGreetingHideStyles() {
-  if (document.getElementById(GREETING_STYLE_ID)) return;
-  const style = document.createElement('style');
-  style.id = GREETING_STYLE_ID;
+  let style = document.getElementById(GREETING_STYLE_ID);
+  if (!style) {
+    style = document.createElement('style');
+    style.id = GREETING_STYLE_ID;
+    document.head.appendChild(style);
+  }
   // Keep the green chat button on the storefront; hide "We Are Here!".
   // On /store (and other hidden routes) hide the whole widget without removing it.
   style.textContent = `
@@ -49,8 +53,37 @@ function injectGreetingHideStyles() {
       opacity: 0 !important;
       pointer-events: none !important;
     }
+    @media (max-width: 1023px) {
+      iframe[src*="tawk.to"],
+      iframe[title*="chat"],
+      iframe[title*="Chat"] {
+        bottom: ${MOBILE_LIFT} !important;
+      }
+    }
   `;
-  document.head.appendChild(style);
+}
+
+function isTawkLauncher(node) {
+  if (!(node instanceof HTMLElement)) return false;
+  const style = window.getComputedStyle(node);
+  if (style.display === 'none' || style.visibility === 'hidden') return false;
+  if (style.position !== 'fixed' && style.position !== 'absolute') return false;
+  const rect = node.getBoundingClientRect();
+  if (rect.width < 20 || rect.height < 20) return false;
+  if (rect.width > 140 || rect.height > 140) return false;
+  return true;
+}
+
+function liftTawkAboveMobileNav() {
+  if (typeof window === 'undefined' || window.innerWidth >= 1024) return;
+  const nodes = document.querySelectorAll(
+    'iframe[src*="tawk.to"], iframe[title*="chat"], iframe[title*="Chat"], [id*="tawk"], [class*="tawk"]',
+  );
+  nodes.forEach((node) => {
+    if (!isTawkLauncher(node)) return;
+    node.style.setProperty('bottom', MOBILE_LIFT, 'important');
+    node.style.setProperty('top', 'auto', 'important');
+  });
 }
 
 function hideIfGreetingNode(node) {
@@ -90,6 +123,13 @@ export default function TawkToWidget() {
     injectGreetingHideStyles();
 
     window.Tawk_API = window.Tawk_API || {};
+    window.Tawk_API.customStyle = {
+      ...(window.Tawk_API.customStyle || {}),
+      visibility: {
+        desktop: { position: 'br', xOffset: '20px', yOffset: '20px' },
+        mobile: { position: 'br', xOffset: 16, yOffset: 100 },
+      },
+    };
     window.Tawk_LoadStart = window.Tawk_LoadStart || new Date();
 
     const previousOnLoad = window.Tawk_API.onLoad;
@@ -97,8 +137,10 @@ export default function TawkToWidget() {
       try {
         applyTawkVisibility();
         hideGreetingDomNodes();
+        liftTawkAboveMobileNav();
         window.setTimeout(() => hideGreetingDomNodes(), 600);
-        window.setTimeout(() => hideGreetingDomNodes(), 2000);
+        window.setTimeout(() => liftTawkAboveMobileNav(), 600);
+        window.setTimeout(() => liftTawkAboveMobileNav(), 2000);
       } catch {
         // ignore
       }
@@ -118,21 +160,26 @@ export default function TawkToWidget() {
       try {
         applyTawkVisibility();
         hideGreetingDomNodes();
+        liftTawkAboveMobileNav();
       } catch {
         // ignore
       }
     }
 
+    window.addEventListener('resize', liftTawkAboveMobileNav);
     // Do not observe document.body. Tawk + React both mutate the tree during
     // /store navigation and that observer caused removeChild.
-    return undefined;
+    return () => window.removeEventListener('resize', liftTawkAboveMobileNav);
   }, [enabled]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     injectGreetingHideStyles();
     setTawkHiddenBy('route', !enabled);
-    if (!isTawkForcedHidden()) hideGreetingDomNodes();
+    if (!isTawkForcedHidden()) {
+      hideGreetingDomNodes();
+      liftTawkAboveMobileNav();
+    }
   }, [enabled]);
 
   return null;
