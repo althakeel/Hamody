@@ -1597,6 +1597,9 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
       ? product.shortDescriptionAr
       : (product?.shortDescription || product?.attributes?.shortDescription || '')
   );
+  const displaySku = sanitizeDisplayText(
+    String(selectedVariant?.sku || product?.sku || '').trim(),
+  );
   const shortDescription2Html = sanitizeProductRichHtml(
     isArabic
       ? (product?.attributes?.shortDescription2Ar || product?.shortDescription2Ar || product?.shortDescription2 || product?.attributes?.shortDescription2 || '')
@@ -3339,15 +3342,21 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                 <p dir={isArabic ? 'rtl' : 'ltr'} className="w-full min-w-0 text-[18px] font-semibold leading-snug text-gray-900 break-words whitespace-normal [overflow-wrap:anywhere] lg:hidden">
                   {productHeading}
                 </p>
+                {mobileShortDescription ? (
+                  <p className="w-full min-w-0 text-[13px] leading-relaxed text-gray-600">
+                    {mobileShortDescription}
+                  </p>
+                ) : null}
                 {mobileProductBrand ? (
                   <p className="text-[13px] leading-snug text-gray-600">
                     <span className="text-gray-500">{t('product.brandLabel')}: </span>
                     <span className="font-medium text-gray-800">{mobileProductBrand}</span>
                   </p>
                 ) : null}
-                {mobileShortDescription ? (
-                  <p className="w-full min-w-0 text-[13px] leading-relaxed text-gray-600">
-                    {mobileShortDescription}
+                {displaySku ? (
+                  <p className="text-[13px] leading-snug text-gray-600">
+                    <span className="text-gray-500">{t('product.skuLabel')}: </span>
+                    <span className="font-medium text-gray-800" dir="ltr">{displaySku}</span>
                   </p>
                 ) : null}
               </div>
@@ -3513,17 +3522,47 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
             <div className="hidden lg:block bg-white space-y-4" dir={isArabic ? 'rtl' : 'ltr'}>
               <div>
                 <h1 dir={isArabic ? 'rtl' : 'ltr'} className="min-w-0 text-2xl font-medium leading-snug text-gray-900">{productHeading}</h1>
-                {mobileProductBrand ? (
-                  <p className="mt-1 text-sm leading-snug text-gray-600">
-                    <span className="text-gray-500">{t('product.brandLabel')}: </span>
-                    <span className="font-medium text-gray-800">{mobileProductBrand}</span>
-                  </p>
-                ) : null}
                 {localizedShortDescription ? (
                   <p className="mt-2 text-sm leading-relaxed text-gray-600">
                     {localizedShortDescription}
                   </p>
                 ) : null}
+                {mobileProductBrand ? (
+                  <p className="mt-2 text-sm leading-snug text-gray-600">
+                    <span className="text-gray-500">{t('product.brandLabel')}: </span>
+                    <span className="font-medium text-gray-800">{mobileProductBrand}</span>
+                  </p>
+                ) : null}
+                {displaySku ? (
+                  <p className={`${mobileProductBrand ? 'mt-1' : 'mt-2'} text-sm leading-snug text-gray-600`}>
+                    <span className="text-gray-500">{t('product.skuLabel')}: </span>
+                    <span className="font-medium text-gray-800" dir="ltr">{displaySku}</span>
+                  </p>
+                ) : null}
+                <div className="mt-3 flex flex-wrap items-end gap-3">
+                  <div className="text-slate-900">
+                    {renderSplitPrice(convertedEffPrice, {
+                      currencyClass: 'text-[13px] font-medium text-slate-900',
+                      mainClass: 'text-[30px] font-semibold text-slate-900',
+                      decimalClass: 'text-[13px] font-semibold text-slate-900',
+                      wrapperClass: 'inline-flex items-start leading-none'
+                    })}
+                  </div>
+                  {discountPercent > 0 && (
+                    <StruckPrice className="text-sm text-gray-500 whitespace-nowrap">
+                      <AedText>{formatMoney(convertedEffAED, true)}</AedText>
+                    </StruckPrice>
+                  )}
+                  {discountPercent > 0 && (
+                    <span className="text-sm text-green-600 font-semibold whitespace-nowrap">
+                      {language === 'ar' ? (
+                        <>خصم <bdi dir="ltr">{discountPercent}%</bdi></>
+                      ) : (
+                        t('common.offPercent', { discount: discountPercent })
+                      )}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {reviewCount > 0 ? (
@@ -3647,31 +3686,6 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                   })}
                 </div>
               )}
-
-              <div className="mt-2 flex flex-wrap items-end gap-3">
-                <div className="text-slate-900">
-                  {renderSplitPrice(convertedEffPrice, {
-                    currencyClass: 'text-[13px] font-medium text-slate-900',
-                    mainClass: 'text-[30px] font-semibold text-slate-900',
-                    decimalClass: 'text-[13px] font-semibold text-slate-900',
-                    wrapperClass: 'inline-flex items-start leading-none'
-                  })}
-                </div>
-                {discountPercent > 0 && (
-                  <StruckPrice className="text-sm text-gray-500 whitespace-nowrap">
-                    <AedText>{formatMoney(convertedEffAED, true)}</AedText>
-                  </StruckPrice>
-                )}
-                {discountPercent > 0 && (
-                  <span className="text-sm text-green-600 font-semibold whitespace-nowrap">
-                    {language === 'ar' ? (
-                      <>خصم <bdi dir="ltr">{discountPercent}%</bdi></>
-                    ) : (
-                      t('common.offPercent', { discount: discountPercent })
-                    )}
-                  </span>
-                )}
-              </div>
 
               {aboutThisItemBlock}
 

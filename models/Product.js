@@ -19,7 +19,7 @@ const ProductSchema = new mongoose.Schema({
   aPlusMobileAr: { type: String, default: '' },
   aPlusDesktopImages: { type: [String], default: [] },
   aPlusMobileImages: { type: [String], default: [] },
-  specTableEnabled: { type: Boolean, default: false },
+  specTableEnabled: { type: Boolean, default: true },
   specTableColumns: { type: [String], default: ['Property', 'Value'] },
   specTableRows: { type: Array, default: [] },
   AED: Number,
