@@ -42,6 +42,7 @@ import { recordEmailMarketingOrderConversion } from '@/lib/emailMarketingConvers
 import { sendMetaPurchaseFromOrder } from '@/lib/metaConversionsApi';
 import {
   findBulkBundleVariant,
+  inferOrderLineBundleQty,
   isBulkBundleProduct,
 } from '@/lib/bulkBundleCart';
 import { applyFbtBundlePricingToOrderItems } from '@/lib/fbtCart';
@@ -438,11 +439,19 @@ export async function POST(request) {
                 variantMatch = match;
                 availableQty = typeof match.stock === 'number' ? match.stock : availableQty;
             }
-            const isBundleOrder = isBulkBundleProduct(product) && Number(item.variantOptions?.bundleQty) > 0;
+            const requestedBundleQty = Number(item.variantOptions?.bundleQty)
+              || inferOrderLineBundleQty(item, product)
+              || 0;
+            const isBundleOrder = isBulkBundleProduct(product) && requestedBundleQty > 0;
+            const bundleUnits = isBundleOrder ? Math.max(1, requestedBundleQty) : 0;
             const orderQty = isBundleOrder ? 1 : requestedQty;
             const inventoryQty = resolveOrderInventoryUnits({
               quantity: orderQty,
-              variantOptions: item.variantOptions,
+              bundleUnits,
+              variantOptions: {
+                ...(item.variantOptions || {}),
+                ...(bundleUnits > 0 ? { bundleQty: bundleUnits } : {}),
+              },
             }, product);
             if (availableQty < inventoryQty) {
                 return NextResponse.json({ error: 'Insufficient stock', id: item.id, availableQty, requestedQty: inventoryQty }, { status: 400 });
@@ -531,6 +540,13 @@ export async function POST(request) {
                 name: item.name || item.productName || item.title || product.name || '',
                 quantity: orderQty, 
                 price: finalPrice,
+                bundleUnits: bundleUnits > 1 ? bundleUnits : undefined,
+                variantOptions: item.variantOptions || bundleUnits > 0
+                  ? {
+                    ...(item.variantOptions || {}),
+                    ...(bundleUnits > 0 ? { bundleQty: bundleUnits } : {}),
+                  }
+                  : null,
                 appliedOffer: appliedOffer 
             });
             grandSubtotal += Number(finalPrice) * Number(orderQty);
@@ -724,6 +740,7 @@ export async function POST(request) {
                     name: item.name || item.productName || item.title || productById.get(String(item.id))?.name || '',
                     quantity: item.quantity,
                     price: item.price,
+                    bundleUnits: Number(item.bundleUnits) > 1 ? Number(item.bundleUnits) : undefined,
                     variantOptions: item.variantOptions || null,
                 }))
             };
