@@ -4,6 +4,7 @@ import Link from 'next/link'
 import ExploreInterestsCustomizeCard from '@/components/store/ExploreInterestsCustomizeCard'
 import {
   ArrowRight,
+  ArrowUp,
   LayoutTemplate,
   Palette,
   PanelsTopLeft,
@@ -87,6 +88,12 @@ const designPages = [
     description: 'Set the WhatsApp number and choose which product pages show a chat button.',
     href: '/store/customize/whatsapp-widget',
     icon: MessageCircle,
+  },
+  {
+    title: 'Scroll to Top',
+    description: 'Show a back-to-top button on the right above Tawk, or on the left bottom.',
+    href: '/store/customize/scroll-to-top',
+    icon: ArrowUp,
   },
 ]
 

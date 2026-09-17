@@ -10,6 +10,7 @@ import {
   DEFAULT_WHATSAPP_PRODUCT_WIDGET,
   normalizeWhatsAppProductWidget,
 } from '@/lib/whatsappProductWidget'
+import { DEFAULT_SCROLL_TO_TOP, normalizeScrollToTop } from '@/lib/scrollToTopSettings'
 
 const DEFAULT_APPEARANCE = {
   categorySliders: { enabled: true, title: 'Featured Collections', description: 'Browse our curated collections' },
@@ -22,6 +23,7 @@ const DEFAULT_APPEARANCE = {
   fastDeliveryPage: DEFAULT_FAST_DELIVERY_PAGE,
   offersPage: DEFAULT_OFFERS_PAGE,
   whatsappProductWidget: DEFAULT_WHATSAPP_PRODUCT_WIDGET,
+  scrollToTop: DEFAULT_SCROLL_TO_TOP,
   productPageInfo: {
     returnsText: 'Easy Returns',
     vatText: 'All prices include VAT.',
@@ -219,6 +221,7 @@ function normalizeAppearance(data = {}) {
     whatsappProductWidget: normalizeWhatsAppProductWidget(
       data.whatsappProductWidget || DEFAULT_APPEARANCE.whatsappProductWidget,
     ),
+    scrollToTop: normalizeScrollToTop(data.scrollToTop || DEFAULT_APPEARANCE.scrollToTop),
     productPageInfo: {
       returnsText: (productPageInfo.returnsText || DEFAULT_APPEARANCE.productPageInfo.returnsText).toString().trim(),
       vatText: (productPageInfo.vatText || DEFAULT_APPEARANCE.productPageInfo.vatText).toString().trim(),
@@ -300,6 +303,7 @@ export async function POST(request) {
     deleteCacheKey('public:appearance-sections:v5')
     deleteCacheKey('public:appearance-sections:v6')
     deleteCacheKey('public:appearance-sections:v7')
+    deleteCacheKey('public:appearance-sections:v8')
     invalidateCachePattern('public:appearance-sections')
     invalidateCachePattern('public:offers')
 

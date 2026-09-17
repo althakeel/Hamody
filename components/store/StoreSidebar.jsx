@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation"
 
-import { HomeIcon, LayoutListIcon, SquarePenIcon, SquarePlusIcon, StarIcon, FolderIcon, TicketIcon, TruckIcon, RefreshCw, Users as UsersIcon, MessageSquare, Sparkles, BellIcon, MailIcon, Image as ImageIcon, ShoppingCart, Wallet, BarChart3, Target, Gift, Palette, CircleDashed, PackagePlus, Package, Activity, Layers, LineChart, Warehouse, MousePointerClick, ShieldAlert, Zap, Trash2, Smartphone, FileText, CalendarClock, MessageCircle, AlertTriangle, Download, Tag as TagIcon } from "lucide-react"
+import { HomeIcon, LayoutListIcon, SquarePenIcon, SquarePlusIcon, StarIcon, FolderIcon, TicketIcon, TruckIcon, RefreshCw, Users as UsersIcon, MessageSquare, Sparkles, BellIcon, MailIcon, Image as ImageIcon, ShoppingCart, Wallet, BarChart3, Target, Gift, Palette, CircleDashed, PackagePlus, Package, Activity, Layers, LineChart, Warehouse, MousePointerClick, ShieldAlert, Zap, Trash2, Smartphone, FileText, CalendarClock, MessageCircle, AlertTriangle, Download, Tag as TagIcon, ArrowUp } from "lucide-react"
 
 import StoreNavLink from "@/components/store/StoreNavLink"
 
@@ -47,6 +47,7 @@ const StoreSidebar = ({ storeInfo, isOwner = false, permissions = {}, canViewAct
         { name: 'Customize', href: '/store/customize', icon: Palette },
 
         { name: 'WhatsApp Widget', href: '/store/customize/whatsapp-widget', icon: MessageCircle },
+        { name: 'Scroll to Top', href: '/store/customize/scroll-to-top', icon: ArrowUp },
 
         { name: 'Mobile Features', href: '/store/mobile-features', icon: Smartphone },
 
@@ -157,6 +158,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, permissions = {}, canViewAct
                 '/store/customize',
 
                 '/store/customize/whatsapp-widget',
+
+                '/store/customize/scroll-to-top',
 
                 '/store/mobile-features',
 

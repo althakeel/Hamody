@@ -918,6 +918,19 @@ export default function MenuManagementPage() {
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('navMenuUpdated'));
+      if (payload?.navActionsVisibility) {
+        try {
+          window.sessionStorage.setItem(
+            'nav:actions:visibility:v1',
+            JSON.stringify(payload.navActionsVisibility),
+          );
+        } catch {
+          // Ignore storage failures.
+        }
+        window.dispatchEvent(new CustomEvent('navActionsVisibilityUpdated', {
+          detail: payload.navActionsVisibility,
+        }));
+      }
     }
     if (successMessage) {
       toast.success(successMessage);
@@ -1552,15 +1565,21 @@ export default function MenuManagementPage() {
                     <button
                       key={key}
                       type="button"
-                      onClick={() =>
+                      onClick={async () => {
+                        const nextVisibility = {
+                          ...form.navActionsVisibility,
+                          [key]: !checked,
+                        };
                         setForm((prev) => ({
                           ...prev,
-                          navActionsVisibility: {
-                            ...prev.navActionsVisibility,
-                            [key]: !checked,
-                          },
-                        }))
-                      }
+                          navActionsVisibility: nextVisibility,
+                        }));
+                        try {
+                          await saveSettings({ navActionsVisibility: nextVisibility }, null);
+                        } catch (error) {
+                          toast.error(error?.message || 'Failed to update navbar action');
+                        }
+                      }}
                       className={`rounded-xl border p-3 text-left transition ${
                         checked
                           ? 'border-indigo-300 bg-indigo-50 ring-2 ring-indigo-200'

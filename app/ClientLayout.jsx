@@ -18,6 +18,7 @@ import { installDomReconcileGuard } from "@/lib/domReconcileError";
 const SpinWheelWidget = dynamic(() => import("@/components/SpinWheelWidget"), { ssr: false });
 const GiveawayCartManager = dynamic(() => import("@/components/GiveawayCartManager"), { ssr: false });
 const TawkToWidget = dynamic(() => import("@/components/TawkToWidget"), { ssr: false });
+const ScrollToTopButton = dynamic(() => import("@/components/ScrollToTopButton"), { ssr: false });
 const AuthSessionGuard = dynamic(() => import("@/components/AuthSessionGuard"), { ssr: false });
 const GoogleOneTap = dynamic(() => import("@/components/GoogleOneTap"), { ssr: false });
 
@@ -125,6 +126,7 @@ export default function ClientLayout({ children, initialStorefrontLanguage = 'en
         ) : null}
         {children}
         <DeferredWidgets />
+        {!hideStorefrontChrome ? <ScrollToTopButton /> : null}
         {!hideStorefrontChrome ? <Footer /> : null}
       </SilentDomErrorBoundary>
     </ReduxProvider>

@@ -271,14 +271,14 @@ const Navbar = () => {
 
     const bottomLine = storefrontWalletEnabled && signedIn && walletCoins > 0
       ? renderWalletAmount({ size: 16, amountClassName: 'text-[11px] font-normal leading-none', tone: isLightTone ? 'light' : 'dark' })
-      : t('navbar.ordersAndAccount');
+      : (navActionsVisibility.orders ? t('navbar.ordersAndAccount') : t('navbar.account'));
 
     return (
       <button
         type="button"
         onClick={onClick}
         className={`group inline-flex max-w-[148px] items-center gap-2 rounded-md px-1 py-1 text-left transition xl:max-w-[168px] xl:gap-2.5 ${shellClass} ${className}`.trim()}
-        aria-label={signedIn ? (storefrontWalletEnabled && walletCoins > 0 ? `Wallet balance ${formatWalletAmount(walletCoins)}` : t('navbar.ordersAndAccount')) : t('navbar.signInRegister')}
+        aria-label={signedIn ? (storefrontWalletEnabled && walletCoins > 0 ? `Wallet balance ${formatWalletAmount(walletCoins)}` : (navActionsVisibility.orders ? t('navbar.ordersAndAccount') : t('navbar.account'))) : t('navbar.signInRegister')}
         aria-haspopup="true"
       >
         <span className="flex h-7 w-7 shrink-0 items-center justify-center">
@@ -497,35 +497,54 @@ const Navbar = () => {
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') return undefined;
+
+    const applyVisibility = (raw = {}) => {
+      const next = {
+        store: raw.store !== false,
+        orders: raw.orders !== false,
+        wishlist: raw.wishlist !== false,
+        cart: raw.cart !== false,
+      };
+      setNavActionsVisibility(next);
+      try {
+        window.sessionStorage.setItem('nav:actions:visibility:v1', JSON.stringify(next));
+      } catch {
+        // Ignore storage failures.
+      }
+    };
 
     try {
       const raw = window.sessionStorage.getItem('nav:actions:visibility:v1');
       const parsed = raw ? JSON.parse(raw) : null;
-      if (parsed && typeof parsed === 'object') {
-        setNavActionsVisibility({
-          store: parsed.store !== false,
-          orders: parsed.orders !== false,
-          wishlist: parsed.wishlist !== false,
-          cart: parsed.cart !== false,
-        });
-      }
+      if (parsed && typeof parsed === 'object') applyVisibility(parsed);
     } catch {
       // Ignore cache parse failures.
     }
 
+    const loadVisibility = async () => {
+      try {
+        const response = await fetch('/api/store/settings', { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data?.navActionsVisibility) applyVisibility(data.navActionsVisibility);
+      } catch {
+        // Keep cached values if the request fails.
+      }
+    };
+
+    void loadVisibility();
+
     const handleVisibilityUpdate = (event) => {
-      const detail = event?.detail || {};
-      setNavActionsVisibility({
-        store: detail.store !== false,
-        orders: detail.orders !== false,
-        wishlist: detail.wishlist !== false,
-        cart: detail.cart !== false,
-      });
+      applyVisibility(event?.detail || {});
     };
 
     window.addEventListener('navActionsVisibilityUpdated', handleVisibilityUpdate);
-    return () => window.removeEventListener('navActionsVisibilityUpdated', handleVisibilityUpdate);
+    window.addEventListener('navMenuUpdated', loadVisibility);
+    return () => {
+      window.removeEventListener('navActionsVisibilityUpdated', handleVisibilityUpdate);
+      window.removeEventListener('navMenuUpdated', loadVisibility);
+    };
   }, []);
 
   useEffect(() => {
@@ -1814,6 +1833,7 @@ const Navbar = () => {
     }
 
     if (itemId === 'orders') {
+      if (!navActionsVisibility.orders) return null;
       return renderLabeledNavAction({
         href: '/dashboard/orders',
         onClick: handleOrdersClick,
@@ -1825,6 +1845,7 @@ const Navbar = () => {
     }
 
     if (itemId === 'wishlist') {
+      if (!navActionsVisibility.wishlist) return null;
       return renderLabeledNavAction({
         href: firebaseUser ? '/dashboard/wishlist' : '/wishlist',
         icon: HeartIcon,
@@ -1836,6 +1857,7 @@ const Navbar = () => {
     }
 
     if (itemId === 'cart') {
+      if (!navActionsVisibility.cart) return null;
       return renderLabeledNavAction({
         onClick: handleCartClick,
         icon: ShoppingCart,
@@ -2226,6 +2248,7 @@ const Navbar = () => {
                       <StarIcon size={17} className="text-amber-500" fill="currentColor" />
                       <span>{t('navbar.fiveStarRated')}</span>
                     </Link>
+                    {navActionsVisibility.wishlist ? (
                     <Link
                       href={firebaseUser ? '/dashboard/wishlist' : '/wishlist'}
                       onClick={() => setMobileMenuOpen(false)}
@@ -2239,6 +2262,8 @@ const Navbar = () => {
                         <span className="rounded-full bg-rose-500 px-2 py-0.5 text-[11px] font-bold text-white">{wishlistCount}</span>
                       ) : null}
                     </Link>
+                    ) : null}
+                    {navActionsVisibility.cart ? (
                     <Link
                       href="/cart"
                       onClick={() => setMobileMenuOpen(false)}
@@ -2252,6 +2277,7 @@ const Navbar = () => {
                         <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[11px] font-bold text-white">{cartCount}</span>
                       ) : null}
                     </Link>
+                    ) : null}
                     {isSeller && navActionsVisibility.store ? (
                       <Link href="/store" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50">
                         <span className="rounded-full bg-orange-500 px-2 py-0.5 text-[10px] font-bold uppercase text-white">Seller</span>
