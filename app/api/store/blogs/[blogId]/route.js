@@ -118,6 +118,7 @@ export async function PUT(request, { params }) {
     existing.contentHtml = sanitizeBlogHtml(body?.contentHtml || '');
     existing.contentHtmlAr = sanitizeBlogHtml(body?.contentHtmlAr || '');
     existing.coverImage = String(body?.coverImage || '').trim();
+    existing.bannerImage = String(body?.bannerImage || '').trim();
     existing.status = status;
     existing.publishedAt = publishedAt;
     existing.seoTitle = String(body?.seoTitle || '').trim();

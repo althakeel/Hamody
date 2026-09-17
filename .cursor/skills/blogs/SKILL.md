@@ -27,7 +27,7 @@ description: Maintains Store1920 blogs — public /blogs pages, seller dashboard
 
 ## Content rules
 
-1. Cover + inline description images upload to **S3** (`type=blog`).
+1. Cover (list card) + banner (article hero, wide 16:9 / 21:9 — not 1:1) + inline description images upload to **S3** (`type=blog`).
 2. TipTap description: H1–H3, fonts, color, lists, links; images support **Full / ½ / ⅓** width and drag reorder (`data-width`).
 3. Store dashboard English LTR; Arabic fields use local `dir="rtl"`.
 4. Public list/detail: sidebar with recent posts; detail has **Previous / Next**; list has **search + sort** (`newest` default by `publishedAt`).

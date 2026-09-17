@@ -113,6 +113,7 @@ export async function POST(request) {
       contentHtml: sanitizeBlogHtml(body?.contentHtml || ''),
       contentHtmlAr: sanitizeBlogHtml(body?.contentHtmlAr || ''),
       coverImage: String(body?.coverImage || '').trim(),
+      bannerImage: String(body?.bannerImage || '').trim(),
       status,
       publishedAt,
       seoTitle: String(body?.seoTitle || '').trim(),

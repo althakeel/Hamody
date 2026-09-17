@@ -541,6 +541,7 @@ export async function GET(request) {
             const sku = String(searchParams.get('sku') || '').trim();
             const brand = String(searchParams.get('brand') || '').trim();
             const inStock = String(searchParams.get('inStock') || '').trim();
+            const skuStatus = String(searchParams.get('skuStatus') || '').trim();
             const pickerResult = await fetchPickerPage(Product, {
                 storeId: String(storeId || '').trim(),
                 page,
@@ -556,6 +557,7 @@ export async function GET(request) {
                 sku,
                 brand,
                 inStock,
+                skuStatus,
             });
 
             if (manage) {

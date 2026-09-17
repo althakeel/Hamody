@@ -86,10 +86,10 @@ export default function BlogPostPage() {
               ) : null}
             </div>
 
-            {blog.coverImage ? (
+            {blog.bannerImage ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={blog.coverImage}
+                src={blog.bannerImage}
                 alt={blog.title}
                 className="mb-8 aspect-[21/9] w-full rounded-xl object-cover"
               />

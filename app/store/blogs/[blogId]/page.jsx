@@ -20,6 +20,7 @@ const emptyForm = {
   contentHtml: '',
   contentHtmlAr: '',
   coverImage: '',
+  bannerImage: '',
   status: 'draft',
   publishedAt: '',
   seoTitle: '',
@@ -53,6 +54,7 @@ export default function StoreBlogEditorPage() {
   const [loading, setLoading] = useState(!isNew)
   const [saving, setSaving] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
+  const [uploadingBanner, setUploadingBanner] = useState(false)
   const [slugManual, setSlugManual] = useState(false)
   const [langTab, setLangTab] = useState('en')
 
@@ -94,10 +96,12 @@ export default function StoreBlogEditorPage() {
     })
   }
 
-  const uploadCover = async (file) => {
+  const uploadBlogImage = async (file, field) => {
     if (!file) return
+    const isBanner = field === 'bannerImage'
+    const setUploading = isBanner ? setUploadingBanner : setUploadingCover
     try {
-      setUploadingCover(true)
+      setUploading(true)
       const token = await getToken()
       const compressed = await compressImageForUpload(file, {
         maxBytes: 4 * 1024 * 1024,
@@ -113,13 +117,13 @@ export default function StoreBlogEditorPage() {
       })
       const data = await response.json().catch(() => ({}))
       if (!response.ok || !data?.url) throw new Error(data?.error || 'Upload failed')
-      patch('coverImage', data.url)
-      toast.success('Cover uploaded to S3')
+      patch(field, data.url)
+      toast.success(isBanner ? 'Banner uploaded to S3' : 'Cover uploaded to S3')
     } catch (error) {
       console.error(error)
-      toast.error(error?.message || 'Cover upload failed')
+      toast.error(error?.message || (isBanner ? 'Banner upload failed' : 'Cover upload failed'))
     } finally {
-      setUploadingCover(false)
+      setUploading(false)
     }
   }
 
@@ -282,7 +286,7 @@ export default function StoreBlogEditorPage() {
                 onChange={(e) => {
                   const file = e.target.files?.[0]
                   e.target.value = ''
-                  if (file) uploadCover(file)
+                  if (file) uploadBlogImage(file, 'coverImage')
                 }}
               />
             </label>
@@ -296,6 +300,50 @@ export default function StoreBlogEditorPage() {
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
               placeholder="https://..."
             />
+            <span className="mt-1 block text-[11px] font-normal text-slate-400">
+              Used on the blog list card. Square or 1:1 is fine here.
+            </span>
+          </label>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_220px]">
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+            {form.bannerImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={form.bannerImage} alt="Banner" className="aspect-[21/9] w-full object-cover" />
+            ) : (
+              <div className="flex aspect-[21/9] items-center justify-center text-xs text-slate-400">
+                Banner image (wide)
+              </div>
+            )}
+            <label className="flex cursor-pointer items-center justify-center gap-2 border-t border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-50">
+              {uploadingBanner ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload size={14} />}
+              Upload banner (S3)
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={uploadingBanner}
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  e.target.value = ''
+                  if (file) uploadBlogImage(file, 'bannerImage')
+                }}
+              />
+            </label>
+          </div>
+          <label className="block text-xs font-medium text-slate-600">
+            Banner image URL
+            <input
+              type="url"
+              value={form.bannerImage}
+              onChange={(e) => patch('bannerImage', e.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
+              placeholder="https://..."
+            />
+            <span className="mt-1 block text-[11px] font-normal text-slate-400">
+              Wide image for the article page. Not 1:1 — use 16:9 or 21:9.
+            </span>
           </label>
         </div>
       </section>

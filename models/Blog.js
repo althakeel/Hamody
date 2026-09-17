@@ -16,6 +16,7 @@ const BlogSchema = new mongoose.Schema(
     contentHtml: { type: String, default: '' },
     contentHtmlAr: { type: String, default: '' },
     coverImage: { type: String, trim: true, default: '' },
+    bannerImage: { type: String, trim: true, default: '' },
     status: {
       type: String,
       enum: ['draft', 'published'],

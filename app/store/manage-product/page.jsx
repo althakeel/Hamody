@@ -51,6 +51,12 @@ const STOCK_FILTER_OPTIONS = [
     { value: 'out', label: 'Out of stock' },
 ]
 
+const SKU_FILTER_OPTIONS = [
+    { value: 'all', label: 'All SKUs' },
+    { value: 'missing', label: 'No SKU' },
+    { value: 'has', label: 'Has SKU' },
+]
+
 const MANAGE_PRODUCT_SELECT_CLASS =
     'h-10 w-full appearance-none rounded-lg border border-gray-300 bg-white pl-3 pr-9 text-sm leading-none text-slate-700 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500'
 
@@ -266,6 +272,7 @@ export default function StoreManageProducts() {
     const [debouncedMinPrice, setDebouncedMinPrice] = useState('')
     const [debouncedMaxPrice, setDebouncedMaxPrice] = useState('')
     const [stockFilter, setStockFilter] = useState('all')
+    const [skuFilter, setSkuFilter] = useState('all')
     const [sortBy, setSortBy] = useState('newest')
     const [detailsProgressFilter, setDetailsProgressFilter] = useState('all')
     const [currentPage, setCurrentPage] = useState(1)
@@ -343,6 +350,7 @@ export default function StoreManageProducts() {
         min = debouncedMinPrice,
         max = debouncedMaxPrice,
         stock = stockFilter,
+        skuStatus = skuFilter,
         sort = sortBy,
         silent = false,
         detailsFilter = detailsProgressFilter,
@@ -363,6 +371,7 @@ export default function StoreManageProducts() {
                     minPrice: String(min || '').trim() !== '' ? String(min).trim() : undefined,
                     maxPrice: String(max || '').trim() !== '' ? String(max).trim() : undefined,
                     inStock: stock && stock !== 'all' ? stock : undefined,
+                    skuStatus: skuStatus && skuStatus !== 'all' ? skuStatus : undefined,
                     manage: 'true',
                     sort: hasSearch && sort === 'newest' ? 'relevance' : (sort || 'newest'),
                     detailsProgress: detailsFilter && detailsFilter !== 'all' ? detailsFilter : undefined,
@@ -389,6 +398,7 @@ export default function StoreManageProducts() {
         debouncedMinPrice,
         debouncedMaxPrice,
         stockFilter,
+        skuFilter,
         sortBy,
         pageSize,
         detailsProgressFilter,
@@ -955,6 +965,7 @@ export default function StoreManageProducts() {
             min: debouncedMinPrice,
             max: debouncedMaxPrice,
             stock: stockFilter,
+            skuStatus: skuFilter,
             sort: sortBy,
             detailsFilter: detailsProgressFilter,
             silent: hasLoadedOnceRef.current,
@@ -969,6 +980,7 @@ export default function StoreManageProducts() {
         debouncedMinPrice,
         debouncedMaxPrice,
         stockFilter,
+        skuFilter,
         sortBy,
         pageSize,
         detailsProgressFilter,
@@ -1640,7 +1652,23 @@ export default function StoreManageProducts() {
                         ))}
                     </ManageProductSelect>
                 </label>
-                {(selectedBrand || minPrice || maxPrice || stockFilter !== 'all' || sortBy !== 'newest') ? (
+                <label className="space-y-1">
+                    <span className="block text-[11px] font-semibold uppercase tracking-wide text-slate-500">SKU</span>
+                    <ManageProductSelect
+                        wrapperClassName="min-w-[9rem]"
+                        value={skuFilter}
+                        onChange={(e) => {
+                            setSkuFilter(e.target.value)
+                            setCurrentPage(1)
+                        }}
+                        aria-label="Filter by SKU"
+                    >
+                        {SKU_FILTER_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                    </ManageProductSelect>
+                </label>
+                {(selectedBrand || minPrice || maxPrice || stockFilter !== 'all' || skuFilter !== 'all' || sortBy !== 'newest') ? (
                     <button
                         type="button"
                         onClick={() => {
@@ -1648,7 +1676,9 @@ export default function StoreManageProducts() {
                             setMinPrice('')
                             setMaxPrice('')
                             setStockFilter('all')
+                            setSkuFilter('all')
                             setSortBy('newest')
+                            setCurrentPage(1)
                         }}
                         className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
                     >
