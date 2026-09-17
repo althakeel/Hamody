@@ -17,6 +17,8 @@ import {
     getFulfilmentAddressLines,
     STORE1920_SOCIAL_LINKS,
 } from '@/lib/businessIdentity';
+import { useAuth } from '@/lib/useAuth';
+import { auth } from '@/lib/firebase';
 
 const FOOTER_PAYMENT_METHODS = [
     { id: 'visa', label: 'Visa', src: '/payments/visa.png' },
@@ -47,6 +49,8 @@ function resolveFooterLogoFromAppearance(data = {}) {
 
 const Footer = () => {
     const { t, isArabic } = useStorefrontI18n();
+    const { user } = useAuth();
+    const isSignedIn = Boolean(user || auth.currentUser);
 
     const [footerLogo, setFooterLogo] = useState({
         logoUrl: '',
@@ -167,7 +171,7 @@ const Footer = () => {
             title: t('footer.customerCare'),
             links: [
                 { text: t('footer.trackOrder'), path: '/track-order' },
-                { text: t('footer.myOrders'), path: '/orders' },
+                { text: t('footer.myOrders'), path: '/dashboard/orders', requiresAuth: true },
                 { text: t('footer.myWishlist'), path: '/wishlist' },
                 { text: t('footer.faq'), path: '/faq' },
                 { text: t('footer.support'), path: '/support' },
@@ -368,6 +372,13 @@ const Footer = () => {
                                         <Link
                                             href={link.path}
                                             className="text-sm text-slate-400 hover:text-white transition inline-block"
+                                            onClick={(event) => {
+                                                if (!link.requiresAuth || isSignedIn) return;
+                                                event.preventDefault();
+                                                window.dispatchEvent(new CustomEvent('openSignInModal', {
+                                                    detail: { mode: 'login' },
+                                                }));
+                                            }}
                                         >
                                             {link.text}
                                         </Link>

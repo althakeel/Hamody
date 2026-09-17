@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, SlidersHorizontal } from 'lucide-react';
+import { ChevronLeft, SlidersHorizontal, X } from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
 import ProductFilterSidebar from '@/components/ProductFilterSidebar';
 import { OFFERS_PAGE_SIZE } from '@/lib/offersPageSettings';
@@ -244,22 +244,12 @@ export default function OffersPageClient({ initialData = null }) {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[256px_1fr]">
-              <aside className={`${showMobileFilters ? 'block' : 'hidden'} lg:sticky lg:top-24 lg:block`}>
-                <div className="mb-2 flex justify-end lg:hidden">
-                  <button
-                    type="button"
-                    onClick={() => setShowMobileFilters(false)}
-                    className="text-sm font-semibold text-gray-600"
-                    aria-label={t('category.closeFilters')}
-                  >
-                    {t('category.closeFilters')}
-                  </button>
-                </div>
+            <div className="flex gap-6">
+              <aside className="hidden w-72 shrink-0 lg:block">
                 {filterSidebar}
               </aside>
 
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 {filteredProducts.length > 0 ? (
                   <div className="flex min-h-0 flex-1 flex-col">
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -304,6 +294,47 @@ export default function OffersPageClient({ initialData = null }) {
                 )}
               </div>
             </div>
+
+            {showMobileFilters ? (
+              <div className="fixed inset-0 z-50 lg:hidden">
+                <button
+                  type="button"
+                  className="absolute inset-0 bg-black/40"
+                  aria-label={t('category.closeFilters')}
+                  onClick={() => setShowMobileFilters(false)}
+                />
+                <div className="absolute top-0 right-0 flex h-full w-[min(100%,340px)] flex-col bg-white shadow-xl">
+                  <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                    <h2 className="text-lg font-semibold text-gray-900">{t('category.filtersAndSort')}</h2>
+                    <button
+                      type="button"
+                      onClick={() => setShowMobileFilters(false)}
+                      className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"
+                      aria-label={t('category.closeFilters')}
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+                  <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                    <ProductFilterSidebar
+                      products={products}
+                      onFilterChange={handleFilterChange}
+                      initialFilters={activeFilters}
+                      className="!static !max-h-none !w-full border-0 shadow-none"
+                    />
+                  </div>
+                  <div className="border-t border-gray-200 p-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowMobileFilters(false)}
+                      className="w-full rounded-lg bg-orange-500 py-3 text-sm font-semibold text-white hover:bg-orange-600"
+                    >
+                      {t('category.showProducts', { count: filteredProducts.length })}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </>
         ) : (
           <div className="rounded-lg border border-gray-200 bg-white py-16 text-center">
