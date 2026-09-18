@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
+import Category from '@/models/Category';
 import {
+  buildCategoryNameSearch,
+  buildProductBrowseSearchFilter,
   buildProductPhraseSearchFilter,
   buildProductSearchFilter,
+  isBrowseStyleSearch,
   isMultiWordSearch,
   mapSearchProduct,
   normalizeSearchKeyword,
@@ -76,12 +80,23 @@ export async function GET(request) {
       }, { status: 400 });
     }
 
-    // Sentence searches match the full title phrase first. Only if that is empty
-    // do we split words / use text search (which otherwise returns mixed products).
-    const phraseFilter = isMultiWordSearch(keyword)
+    // "car accessories" / "computer" — name, each word, tags, and categories.
+    // Long product titles still match the full sentence first.
+    let categoryIds = [];
+    if (isBrowseStyleSearch(keyword)) {
+      const categoryQuery = buildCategoryNameSearch(keyword);
+      if (categoryQuery) {
+        const categories = await Category.find(categoryQuery).select('_id').limit(40).lean();
+        categoryIds = categories.map((category) => String(category._id));
+      }
+    }
+
+    const phraseFilter = !isBrowseStyleSearch(keyword) && isMultiWordSearch(keyword)
       ? buildProductPhraseSearchFilter(keyword, { includeOutOfStock })
       : null;
-    let searchFilter = phraseFilter || buildProductSearchFilter(keyword, { includeOutOfStock });
+    let searchFilter = isBrowseStyleSearch(keyword)
+      ? buildProductBrowseSearchFilter(keyword, { includeOutOfStock, categoryIds })
+      : (phraseFilter || buildProductSearchFilter(keyword, { includeOutOfStock }));
     let total = await countProductsDedupedBySku(Product, searchFilter);
     let usedPhraseOnly = Boolean(phraseFilter && total > 0);
 

@@ -1,9 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  buildCategoryNameSearch,
   buildOrderedPhraseRegex,
+  buildProductBrowseSearchFilter,
   buildProductPhraseSearchFilter,
   buildProductSearchFilter,
+  isBrowseStyleSearch,
   isMultiWordSearch,
   productTitleMatchesKeyword,
   rankProductsByTitleMatch,
@@ -63,6 +66,32 @@ test('word fallback stays in the product title when there is no phrase hit', () 
   assert.ok(JSON.stringify(filter).includes('"$and"'));
   assert.equal(
     productTitleMatchesKeyword({ name: 'Pink Chunky Sole Fashion Sneakers' }, 'chunky sole sneakers'),
+    true,
+  );
+});
+
+test('short category searches match name, word, tags, and categories', () => {
+  assert.equal(isBrowseStyleSearch('car accessories'), true);
+  assert.equal(isBrowseStyleSearch('computer accessories'), true);
+  assert.equal(isBrowseStyleSearch(PHRASE), false);
+
+  const filter = JSON.stringify(buildProductBrowseSearchFilter('car accessories', {
+    categoryIds: ['cat-car'],
+  }));
+  assert.match(filter, /"tags"/);
+  assert.match(filter, /"category"/);
+  assert.match(filter, /cat-car/);
+
+  const categoryQuery = buildCategoryNameSearch('computer accessories');
+  assert.ok(categoryQuery.$or.some((clause) => clause.name?.test?.('Computer Accessories')));
+  assert.ok(categoryQuery.$or.some((clause) => clause.name?.test?.('Laptops & Computers')));
+
+  assert.equal(
+    productTitleMatchesKeyword({ name: 'Magnetic Phone Holder', tags: ['car accessories'] }, 'car accessories'),
+    true,
+  );
+  assert.equal(
+    productTitleMatchesKeyword({ name: 'USB Hub', category: 'Computer Accessories' }, 'computer accessories'),
     true,
   );
 });
