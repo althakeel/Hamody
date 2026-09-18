@@ -735,14 +735,20 @@ export async function POST(request) {
                     autoShipEnrolled: isWaslahAutoShipEnabled(),
                     autoShipEnrolledAt: isWaslahAutoShipEnabled() ? new Date() : null,
                 },
-                orderItems: sellerItems.map(item => ({
-                    productId: item.id,
-                    name: item.name || item.productName || item.title || productById.get(String(item.id))?.name || '',
-                    quantity: item.quantity,
-                    price: item.price,
-                    bundleUnits: Number(item.bundleUnits) > 1 ? Number(item.bundleUnits) : undefined,
-                    variantOptions: item.variantOptions || null,
-                }))
+                orderItems: sellerItems.map(item => {
+                    const product = productById.get(String(item.id));
+                    const matchedVariant = matchVariantByOptions(product?.variants || [], item.variantOptions || {});
+                    const sku = String(matchedVariant?.sku || item.sku || product?.sku || '').trim();
+                    return {
+                      productId: item.id,
+                      name: item.name || item.productName || item.title || product?.name || '',
+                      sku: sku || undefined,
+                      quantity: item.quantity,
+                      price: item.price,
+                      bundleUnits: Number(item.bundleUnits) > 1 ? Number(item.bundleUnits) : undefined,
+                      variantOptions: item.variantOptions || null,
+                    };
+                })
             };
 
             const normalizedPaymentMethod = String(paymentMethod || '').toUpperCase();

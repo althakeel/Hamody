@@ -8,6 +8,7 @@ import {
   pickBestAndRecommended,
   productIsRelatedToImageQuery,
   productMatchesImageQuery,
+  shouldSkipImageSearchJudge,
 } from '../lib/imageSearch.js';
 
 test('rejects generic image terms used alone', () => {
@@ -103,4 +104,10 @@ test('car cup holders do not count as a match for a desk magnetic stand', () => 
   assert.equal(productMatchesImageQuery({ name: 'Adjustable Car Cup Holder Phone Mount' }, query), false);
   assert.equal(productMatchesImageQuery({ name: 'Magnetic Wireless Phone Stand' }, query), true);
   assert.equal(productMatchesImageQuery({ name: 'Porodo Lifestyle Hydrate Bottle' }, query), false);
+});
+
+test('skips the second Gemini pass only for a near-duplicate visual hit', () => {
+  assert.equal(shouldSkipImageSearchJudge([{ score: 0.94 }]), true);
+  assert.equal(shouldSkipImageSearchJudge([{ score: 0.81 }]), false);
+  assert.equal(shouldSkipImageSearchJudge([]), false);
 });

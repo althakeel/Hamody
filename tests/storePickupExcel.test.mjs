@@ -6,6 +6,7 @@ import {
   ordersMissingEmxAwb,
   resolvePickupTracking,
 } from '../lib/storePickupExcelTracking.js';
+import { resolveLineSku } from '../lib/storePickupExcelSku.js';
 
 const EMX_AWB = '1000046773599';
 const WASLAH_PLATFORM = '62007200719360';
@@ -67,4 +68,22 @@ test('live Waslah patch fills Courier Reference after EMX assigns the AWB', () =
 
   assert.equal(getPickupOrderId(updated), '40066');
   assert.equal(resolvePickupTracking(updated), EMX_AWB);
+});
+
+test('pickup Excel SKU comes from the product or selected variant, not a Mongo id', () => {
+  assert.equal(resolveLineSku({
+    name: 'Chunky Sole Sneakers',
+    productId: { _id: '64f1a2b3c4d5e6f7a8b9c0d1', name: 'Chunky Sole Sneakers', sku: 'WN-SNEAK-01' },
+  }), 'WN-SNEAK-01');
+
+  assert.equal(resolveLineSku({
+    name: 'Chunky Sole Sneakers',
+    sku: '64f1a2b3c4d5e6f7a8b9c0d1',
+    productId: '64f1a2b3c4d5e6f7a8b9c0d1',
+  }), '');
+
+  assert.equal(resolveLineSku({
+    name: 'Chunky Sole Sneakers',
+    sku: 'WN-SNEAK-01',
+  }), 'WN-SNEAK-01');
 });

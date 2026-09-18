@@ -59,16 +59,12 @@ export default function ImageSearchModal({ open, onClose, initialFile = null }) 
       setBusy(true);
       setError('');
       const compressed = await compressImageForUpload(file, {
-        maxBytes: 2 * 1024 * 1024,
-        maxWidth: 1280,
-        maxHeight: 1280,
+        maxBytes: 700 * 1024,
+        maxWidth: 960,
+        maxHeight: 960,
+        quality: 0.72,
       });
-      const previewFile = await compressImageForUpload(compressed, {
-        maxBytes: 180 * 1024,
-        maxWidth: 640,
-        maxHeight: 640,
-      });
-      const previewUrl = await fileToDataUrl(previewFile);
+      const previewUrl = await fileToDataUrl(compressed);
       setPreview(previewUrl);
 
       const body = new FormData();

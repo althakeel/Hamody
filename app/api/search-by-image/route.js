@@ -5,6 +5,7 @@ import Category from '@/models/Category';
 import ProductVisualIndex from '@/models/ProductVisualIndex';
 import { isGeminiConfigured } from '@/configs/gemini';
 import { parseAutofillJson } from '@/lib/productAiAutofill';
+import { shrinkImageForVision } from '@/lib/normalizeImageForAi';
 import {
   extractFilenameKeywords,
   findCategoryProductsForImage,
@@ -12,6 +13,7 @@ import {
   imageQueryFamilyTerm,
   judgeImageSearchCandidates,
   pickBestAndRecommended,
+  shouldSkipImageSearchJudge,
   uniqueSearchTerms,
 } from '@/lib/imageSearch';
 import {
@@ -28,7 +30,9 @@ const GEMINI_MODELS = [
   process.env.GEMINI_PRODUCT_AUTOFILL_MODEL,
   'gemini-2.5-flash',
   'gemini-flash-latest',
-].filter(Boolean).filter((model, index, list) => list.indexOf(model) === index);
+].filter(Boolean).filter((model, index, list) => list.indexOf(model) === index).slice(0, 2);
+
+const GEMINI_TIMEOUT_MS = 12000;
 
 function extractGeminiText(payload) {
   const parts = payload?.candidates?.[0]?.content?.parts;
@@ -77,7 +81,7 @@ Rules:
             }],
             generationConfig: { temperature: 0.1 },
           }),
-          signal: AbortSignal.timeout(25000),
+          signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
         },
       );
       const payload = await response.json().catch(() => ({}));
@@ -115,17 +119,23 @@ export async function POST(request) {
       return NextResponse.json({ error: 'No image uploaded' }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await image.arrayBuffer());
-    if (!buffer.length) {
+    const rawBuffer = Buffer.from(await image.arrayBuffer());
+    if (!rawBuffer.length) {
       return NextResponse.json({ error: 'Image is empty' }, { status: 400 });
     }
+
+    const startedAt = Date.now();
+    const shrunk = await shrinkImageForVision(rawBuffer, image.type || 'image/jpeg');
+    const buffer = shrunk.buffer;
+    const mimeType = shrunk.mimeType;
 
     await dbConnect();
 
     const [vision, queryEmbedding] = await Promise.all([
-      isGeminiConfigured() ? describeProductImage(buffer, image.type || 'image/jpeg') : null,
-      embedImageBuffer(buffer, image.type || 'image/jpeg'),
+      isGeminiConfigured() ? describeProductImage(buffer, mimeType) : null,
+      embedImageBuffer(buffer, mimeType),
     ]);
+    const identifyMs = Date.now() - startedAt;
 
     const filenameKeywords = extractFilenameKeywords(image.name);
     const keywords = uniqueSearchTerms([
@@ -171,11 +181,12 @@ export async function POST(request) {
       20,
     );
 
+    const catalogMs = Date.now() - startedAt;
     let verdict = null;
-    if (isGeminiConfigured() && candidates.length) {
+    if (isGeminiConfigured() && candidates.length && !shouldSkipImageSearchJudge(visual.scores)) {
       verdict = await judgeImageSearchCandidates({
         buffer,
-        mimeType: image.type || 'image/jpeg',
+        mimeType,
         vision,
         candidates,
       });
@@ -198,6 +209,13 @@ export async function POST(request) {
       exact: products.map((product) => product.name),
       related: relatedProducts.map((product) => product.name).slice(0, 8),
       scores: (visual.scores || []).slice(0, 8),
+      ms: {
+        identify: identifyMs,
+        catalog: catalogMs - identifyMs,
+        judge: Date.now() - startedAt - catalogMs,
+        total: Date.now() - startedAt,
+      },
+      judged: Boolean(verdict),
     });
 
     return NextResponse.json({

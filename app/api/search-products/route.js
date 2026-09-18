@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
 import {
+  buildProductPhraseSearchFilter,
   buildProductSearchFilter,
+  isMultiWordSearch,
   mapSearchProduct,
   normalizeSearchKeyword,
   productTitleMatchesKeyword,
@@ -74,21 +76,28 @@ export async function GET(request) {
       }, { status: 400 });
     }
 
-    // Title / brand / SKU only — do not OR in whole categories (that returned
-    // unrelated products whose titles did not match the typed keyword).
-    const searchFilter = buildProductSearchFilter(keyword, { includeOutOfStock });
-    const total = await countProductsDedupedBySku(Product, searchFilter);
+    // Sentence searches match the full title phrase first. Only if that is empty
+    // do we split words / use text search (which otherwise returns mixed products).
+    const phraseFilter = isMultiWordSearch(keyword)
+      ? buildProductPhraseSearchFilter(keyword, { includeOutOfStock })
+      : null;
+    let searchFilter = phraseFilter || buildProductSearchFilter(keyword, { includeOutOfStock });
+    let total = await countProductsDedupedBySku(Product, searchFilter);
+    let usedPhraseOnly = Boolean(phraseFilter && total > 0);
+
+    if (phraseFilter && total === 0) {
+      searchFilter = buildProductSearchFilter(keyword, { includeOutOfStock });
+      total = await countProductsDedupedBySku(Product, searchFilter);
+      usedPhraseOnly = false;
+    }
 
     let products = await fetchProductsDedupedBySku(Product, searchFilter, {
       sort: { createdAt: -1 },
       skip: offset,
       limit,
     });
-
-    // Supplement with MongoDB text search for multi-word queries when regex returns few hits.
-    // Keep only title / brand / SKU hits — text index also covers shortDescription.
     const resultCap = limit ?? total;
-    if (products.length < resultCap && page === 1) {
+    if (!usedPhraseOnly && products.length < resultCap && page === 1) {
       const existingIds = new Set(products.map((product) => String(product._id)));
       const textFilter = {
         $text: { $search: keyword },
