@@ -12,6 +12,7 @@ import {
 } from '@/lib/emailCampaignPresets';
 import { promotionalTemplates } from '@/lib/promotionalEmailTemplates';
 import { renderEmailFromBlocks } from '@/lib/emailCampaignBuilder';
+import { compileEmailBlocksMjml } from '@/lib/emailMjml';
 import { EMAIL_STOCK_IMAGES } from '@/lib/emailTemplateStockImages';
 
 async function getStoreId(request) {
@@ -146,7 +147,7 @@ export async function POST(request) {
 
     await connectDB();
 
-    const html = renderEmailFromBlocks(blocks, {
+    const html = renderEmailFromBlocks((await compileEmailBlocksMjml(blocks)).blocks, {
       products: [],
       recipientEmail: '',
       preheader: String(body.preheader || '').trim(),
@@ -204,7 +205,7 @@ export async function PUT(request) {
     if (body.category != null) template.category = String(body.category).trim() || 'Custom';
     if (Array.isArray(body.blocks)) {
       template.blocks = body.blocks;
-      template.template = renderEmailFromBlocks(body.blocks, {
+      template.template = renderEmailFromBlocks((await compileEmailBlocksMjml(body.blocks)).blocks, {
         products: [],
         recipientEmail: '',
         preheader: template.preheader || '',

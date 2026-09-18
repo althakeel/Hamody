@@ -2,9 +2,10 @@
 
 import { useAuth } from '@/lib/useAuth';
 import Loading from '@/components/Loading';
+import { applyPreviewNewStock, applyPreviewVariantStock } from '@/lib/applyMainStock';
 import axios from 'axios';
 import Image from 'next/image';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import {
   ArrowRight,
@@ -66,6 +67,27 @@ function parsePositiveAddAmount(value) {
   const amount = Number(value);
   if (!Number.isFinite(amount) || amount <= 0) return 0;
   return Math.floor(amount);
+}
+
+function parsePreviewStock(value) {
+  if (value === '' || value == null) return null;
+  const qty = Number(value);
+  if (!Number.isFinite(qty) || qty < 0 || !Number.isInteger(qty)) return null;
+  return qty;
+}
+
+function StockNewInput({ value, disabled, onChange }) {
+  return (
+    <input
+      type="number"
+      min="0"
+      step="1"
+      value={value}
+      disabled={disabled}
+      onChange={(event) => onChange(event.target.value)}
+      className="w-20 rounded-md border border-slate-200 bg-white px-2 py-1 text-right text-sm font-semibold text-slate-900 outline-none focus:border-emerald-400 disabled:opacity-40"
+    />
+  );
 }
 
 function groupHistoryByDate(items = []) {
@@ -237,6 +259,12 @@ export default function StoreInventoryPage() {
   const [suggestions, setSuggestions] = useState([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [showSuggestDropdown, setShowSuggestDropdown] = useState(false);
+  const [bulkSkuText, setBulkSkuText] = useState('');
+  const [bulkSkuStock, setBulkSkuStock] = useState('');
+  const [bulkSkuSaving, setBulkSkuSaving] = useState(false);
+  const [bulkSkuPreviewing, setBulkSkuPreviewing] = useState(false);
+  const [bulkSkuPreview, setBulkSkuPreview] = useState(null);
+  const [bulkSkuResult, setBulkSkuResult] = useState(null);
   const searchBoxRef = useRef(null);
   const suggestTimerRef = useRef(null);
 
@@ -381,6 +409,142 @@ export default function StoreInventoryPage() {
     }
     return parsePositiveAddAmount(draft.stockToAdd) > 0;
   }, [drafts]);
+
+  const validateBulkSkuForm = () => {
+    const stockQuantity = Number(bulkSkuStock);
+    if (!String(bulkSkuText || '').trim()) {
+      toast.error('Paste one or more SKUs');
+      return null;
+    }
+    if (!Number.isFinite(stockQuantity) || stockQuantity < 0 || !Number.isInteger(stockQuantity)) {
+      toast.error('Enter a whole-number main stock (0 or more)');
+      return null;
+    }
+    return { skus: bulkSkuText, stockQuantity };
+  };
+
+  const handleBulkSkuPreview = async () => {
+    const payload = validateBulkSkuForm();
+    if (!payload) return;
+    try {
+      setBulkSkuPreviewing(true);
+      setBulkSkuResult(null);
+      const token = await getToken();
+      const { data } = await axios.post('/api/store/inventory/bulk-sku', payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setBulkSkuPreview(data);
+      if (!data.matches?.length) {
+        toast.error(data.message || 'No matching products found');
+      }
+    } catch (error) {
+      setBulkSkuPreview(null);
+      toast.error(error?.response?.data?.error || error.message || 'Failed to preview SKUs');
+    } finally {
+      setBulkSkuPreviewing(false);
+    }
+  };
+
+  const updateBulkSkuPreviewRow = (productId, updater) => {
+    setBulkSkuPreview((prev) => {
+      if (!prev?.matches) return prev;
+      return {
+        ...prev,
+        matches: prev.matches.map((row) => (
+          row.productId === productId ? updater(row) : row
+        )),
+      };
+    });
+  };
+
+  const handlePreviewMainStockChange = (productId, value) => {
+    updateBulkSkuPreviewRow(productId, (row) => {
+      if (value === '') return { ...row, newStock: '' };
+      const qty = parsePreviewStock(value);
+      if (qty == null) return row;
+      return applyPreviewNewStock(row, qty);
+    });
+  };
+
+  const handlePreviewVariantStockChange = (productId, variantIndex, value) => {
+    updateBulkSkuPreviewRow(productId, (row) => {
+      if (value === '') {
+        return {
+          ...row,
+          variants: (row.variants || []).map((variant) => {
+            const matches = variant.index === variantIndex
+              || (Array.isArray(variant.indexes) && variant.indexes.includes(variantIndex));
+            if (!matches) return variant;
+            if (variant.isBundle && !variant.isFamilyRow) {
+              return { ...variant, newPacks: '' };
+            }
+            return { ...variant, newStock: '' };
+          }),
+        };
+      }
+      const qty = parsePreviewStock(value);
+      if (qty == null) return row;
+      return applyPreviewVariantStock(row, variantIndex, qty);
+    });
+  };
+
+  const handleBulkSkuConfirm = async () => {
+    const payload = validateBulkSkuForm();
+    if (!payload) return;
+    if (!bulkSkuPreview?.matches?.length) {
+      toast.error('Preview the SKUs first');
+      return;
+    }
+    const updates = [];
+    for (const row of bulkSkuPreview.matches) {
+      const stockQuantity = parsePreviewStock(row.newStock);
+      if (stockQuantity == null) {
+        toast.error('Enter a whole-number stock (0 or more) in the New column');
+        return;
+      }
+      const variants = [];
+      for (const variant of row.variants || []) {
+        const displayed = variant.isBundle && !variant.isFamilyRow
+          ? variant.newPacks
+          : variant.newStock;
+        if (parsePreviewStock(displayed) == null) {
+          toast.error(`Enter a whole-number stock for ${variant.label || 'each variant'}`);
+          return;
+        }
+        const stock = parsePreviewStock(variant.newStock);
+        if (stock == null) {
+          toast.error(`Enter a whole-number stock for ${variant.label || 'each variant'}`);
+          return;
+        }
+        const indexes = Array.isArray(variant.indexes) && variant.indexes.length
+          ? variant.indexes
+          : [variant.index];
+        indexes.forEach((index) => {
+          variants.push({ index, stock });
+        });
+      }
+      updates.push({ productId: row.productId, stockQuantity, variants });
+    }
+    try {
+      setBulkSkuSaving(true);
+      const token = await getToken();
+      const { data } = await axios.post('/api/store/inventory/bulk-sku', {
+        ...payload,
+        updates,
+        confirm: true,
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setBulkSkuResult(data);
+      setBulkSkuPreview(null);
+      await fetchHistory(1);
+      toast.success(data.message || 'Stock updated');
+    } catch (error) {
+      toast.error(error?.response?.data?.error || error.message || 'Failed to update stock by SKU');
+    } finally {
+      setBulkSkuSaving(false);
+    }
+  };
 
   const handleSave = async (item) => {
     try {
@@ -584,6 +748,154 @@ export default function StoreInventoryPage() {
         onClear={clearSelectedProduct}
         loading={loadingProduct}
       />
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm" lang="en" dir="ltr">
+        <div className="mb-3">
+          <h2 className="text-sm font-semibold text-slate-900">Set main stock by SKU</h2>
+          <p className="mt-0.5 text-xs text-slate-500">
+            Paste SKUs, enter the new stock, then Preview. Variant products show each option only — bundle packs share that stock. Bundle-only products split main stock by pack size. Stock changes only after you confirm.
+          </p>
+        </div>
+        <textarea
+          value={bulkSkuText}
+          onChange={(e) => {
+            setBulkSkuText(e.target.value);
+            setBulkSkuPreview(null);
+            setBulkSkuResult(null);
+          }}
+          rows={3}
+          placeholder="ST4006, ST4007, ST4008"
+          className="w-full rounded-lg border border-slate-200 px-3 py-2 font-mono text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+        />
+        <div className="mt-3 flex flex-wrap items-end gap-3">
+          <label className="min-w-[140px]">
+            <span className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-500">Main stock</span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={bulkSkuStock}
+              onChange={(e) => {
+                setBulkSkuStock(e.target.value);
+                setBulkSkuPreview(null);
+                setBulkSkuResult(null);
+              }}
+              placeholder="e.g. 20"
+              className="w-32 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={handleBulkSkuPreview}
+            disabled={bulkSkuPreviewing || bulkSkuSaving}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+          >
+            {bulkSkuPreviewing ? 'Loading preview…' : 'Preview'}
+          </button>
+        </div>
+
+        {bulkSkuPreview ? (
+          <div className="mt-4 overflow-hidden rounded-lg border border-slate-200">
+            <div className="bg-slate-50 px-3 py-2 text-sm text-slate-700">{bulkSkuPreview.message}</div>
+            {bulkSkuPreview.matches?.length ? (
+              <div className="max-h-96 overflow-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-white text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    <tr>
+                      <th className="px-3 py-2">SKU</th>
+                      <th className="px-3 py-2">Product</th>
+                      <th className="px-3 py-2 text-right">Current</th>
+                      <th className="px-3 py-2 text-right">New</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bulkSkuPreview.matches.map((row) => (
+                      <Fragment key={row.productId}>
+                        <tr className="border-t border-slate-100">
+                          <td className="px-3 py-2 font-mono text-xs text-slate-600">{row.sku}</td>
+                          <td className="px-3 py-2 text-slate-800">{row.name}</td>
+                          <td className="px-3 py-2 text-right text-slate-500">{row.currentStock}</td>
+                          <td className="px-3 py-2 text-right">
+                            <StockNewInput
+                              value={row.newStock}
+                              disabled={bulkSkuSaving}
+                              onChange={(value) => handlePreviewMainStockChange(row.productId, value)}
+                            />
+                          </td>
+                        </tr>
+                        {(row.variants || []).map((variant) => (
+                          <tr key={`${row.productId}-${variant.index}`} className="border-t border-slate-50 bg-slate-50/70">
+                            <td className="px-3 py-1.5 ps-6 font-mono text-[11px] text-slate-400">
+                              {variant.sku || '—'}
+                            </td>
+                            <td className="px-3 py-1.5 text-[11px] text-slate-600">
+                              <span className="font-medium text-slate-700">{variant.label}</span>
+                              {variant.isBundle && !variant.isFamilyRow ? (
+                                <span className="ms-2 text-slate-400">
+                                  {variant.bundleQty > 1 ? `${variant.bundleQty} units / pack` : 'packs'}
+                                </span>
+                              ) : null}
+                            </td>
+                            <td className="px-3 py-1.5 text-right text-[11px] text-slate-400">
+                              {variant.isBundle && !variant.isFamilyRow
+                                ? variant.currentPacks
+                                : variant.currentStock}
+                            </td>
+                            <td className="px-3 py-1.5 text-right">
+                              <StockNewInput
+                                value={variant.isBundle && !variant.isFamilyRow
+                                  ? variant.newPacks
+                                  : variant.newStock}
+                                disabled={bulkSkuSaving}
+                                onChange={(value) => handlePreviewVariantStockChange(row.productId, variant.index, value)}
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                      </Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+            {Array.isArray(bulkSkuPreview.missing) && bulkSkuPreview.missing.length ? (
+              <p className="border-t border-amber-100 bg-amber-50 px-3 py-2 font-mono text-xs text-amber-800">
+                Not found: {bulkSkuPreview.missing.join(', ')}
+              </p>
+            ) : null}
+            <div className="flex flex-wrap gap-2 border-t border-slate-100 bg-white px-3 py-3">
+              <button
+                type="button"
+                onClick={handleBulkSkuConfirm}
+                disabled={bulkSkuSaving || !bulkSkuPreview.matches?.length}
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-40"
+              >
+                <Save size={16} />
+                {bulkSkuSaving ? 'Updating…' : `Confirm and set stock (${bulkSkuPreview.matches?.length || 0})`}
+              </button>
+              <button
+                type="button"
+                onClick={() => setBulkSkuPreview(null)}
+                disabled={bulkSkuSaving}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {bulkSkuResult ? (
+          <p className="mt-3 text-sm text-slate-600">
+            {bulkSkuResult.message}
+            {Array.isArray(bulkSkuResult.missing) && bulkSkuResult.missing.length ? (
+              <span className="mt-1 block font-mono text-xs text-amber-700">
+                Not found: {bulkSkuResult.missing.join(', ')}
+              </span>
+            ) : null}
+          </p>
+        ) : null}
+      </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">

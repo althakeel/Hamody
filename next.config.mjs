@@ -86,7 +86,7 @@ const nextConfig = {
             'react-redux',
         ],
     },
-    serverExternalPackages: ['mongoose', 'firebase-admin', 'sharp'],
+    serverExternalPackages: ['mongoose', 'firebase-admin', 'sharp', 'mjml', 'html-minifier'],
     turbopack: {},
 
     async rewrites() {

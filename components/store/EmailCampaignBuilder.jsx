@@ -34,6 +34,7 @@ import {
   resolveEmailProductImage,
   isFullEmailDocument,
 } from '@/lib/emailCampaignBuilder';
+import { getMjmlStarter, isMjmlMarkup } from '@/lib/emailMjmlDetect';
 
 const UPLOADED_IMAGES_KEY = 'store1920-email-uploaded-images';
 
@@ -432,7 +433,7 @@ const BLOCK_LABELS = {
   hero: 'Hero banner',
   badge: 'Offer badge',
   text: 'Text',
-  html: 'Custom HTML',
+  html: 'Custom HTML / MJML',
   two_column: '2-column',
   button: 'Button',
   form: 'Signup form',
@@ -1258,7 +1259,7 @@ function ProductBlockFields({ block, onChange, previewProducts = [], categories 
   );
 }
 
-function BlockEditor({ block, onChange, previewProducts, heroImages, categories, getToken, onUploaded }) {
+function BlockEditor({ block, onChange, previewProducts, heroImages, categories, getToken, onUploaded, mjmlErrors = [] }) {
   const set = (key, value) => onChange({ ...block, [key]: value });
 
   if (['products', 'product_carousel', 'product_latest', 'product_related'].includes(block.type)) {
@@ -2107,13 +2108,28 @@ function BlockEditor({ block, onChange, previewProducts, heroImages, categories,
       return (
         <div className="space-y-3">
           <div className="rounded-lg border border-violet-100 bg-violet-50 px-3 py-2 text-[11px] leading-relaxed text-violet-900">
-            Supports HTML, tables, images, and CSS classes. Gmail ignores stylesheet classes, so we convert them to inline styles when sending.
+            Supports HTML, CSS, and MJML. Paste <code className="font-mono">&lt;mjml&gt;</code> and we compile it to inbox-ready HTML on preview and send.
+            Gmail ignores stylesheet classes, so HTML CSS is inlined when sending.
             If you paste a complete email (`&lt;!doctype&gt;`, `&lt;html&gt;`, or `&lt;body&gt;`), we send that design as-is — not inside the 620px builder frame.
             Hover effects and JavaScript do not work in inboxes. Replace every REPLACE_WITH_ image URL before send or that image will be blank.
           </div>
-          {isFullEmailDocument(block.html) ? (
+          {isMjmlMarkup(block.html) ? (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] leading-relaxed text-emerald-900">
+              MJML detected. This compiles to a complete email. Other builder blocks (header, footer, product rows) are skipped so they do not nest inside your layout.
+            </div>
+          ) : isFullEmailDocument(block.html) ? (
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] leading-relaxed text-emerald-900">
               Complete email detected. This HTML will be sent exactly as designed. Other builder blocks (header, footer, product rows) are skipped so they do not nest inside your layout.
+            </div>
+          ) : null}
+          {mjmlErrors.length ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-950">
+              {mjmlErrors.map((error, index) => (
+                <p key={`${error.line || 0}-${index}`}>
+                  {error.line ? `Line ${error.line}: ` : ''}
+                  {error.message}
+                </p>
+              ))}
             </div>
           ) : null}
 
@@ -2130,15 +2146,24 @@ function BlockEditor({ block, onChange, previewProducts, heroImages, categories,
             }}
           />
 
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => set('html', getMjmlStarter())}
+              className="text-[11px] font-semibold text-violet-700 hover:underline"
+            >
+              Insert MJML starter
+            </button>
+          </div>
           <label className="block text-xs text-gray-600">
-            HTML
+            HTML or MJML
             <textarea
               rows={12}
               value={block.html || ''}
               onChange={(e) => set('html', e.target.value)}
               spellCheck={false}
               className="mt-1 w-full rounded border border-gray-300 px-2 py-1.5 font-mono text-[12px] leading-5 text-slate-800"
-              placeholder={'<a href="https://…">Link</a>\n<img src="https://…" alt="" />\n<table>…</table>'}
+              placeholder={'<mjml>\n  <mj-body>\n    <mj-section>\n      <mj-column>\n        <mj-text>Hello</mj-text>\n      </mj-column>\n    </mj-section>\n  </mj-body>\n</mjml>'}
             />
           </label>
           <label className="block text-xs text-gray-600">
@@ -2802,6 +2827,9 @@ export default function EmailCampaignBuilder({
   const [paletteDragType, setPaletteDragType] = useState(null);
   const [uploadedImages, setUploadedImages] = useState(() => loadUploadedImages());
   const [expandedBlockId, setExpandedBlockId] = useState(null);
+  const [mjmlCompiledBlocks, setMjmlCompiledBlocks] = useState(null);
+  const [mjmlErrors, setMjmlErrors] = useState([]);
+  const [mjmlCompiling, setMjmlCompiling] = useState(false);
   const userChoseBlockRef = useRef(false);
   const blockEditorRefs = useRef({});
   const previewFrameRef = useRef(null);
@@ -2917,9 +2945,64 @@ export default function EmailCampaignBuilder({
     return Array.from(byId.values());
   }, [blocks, previewProducts]);
 
+  const hasMjmlBlocks = useMemo(
+    () => (Array.isArray(blocks) ? blocks : []).some((block) => (
+      block?.type === 'html' && isMjmlMarkup(block.html)
+    )),
+    [blocks],
+  );
+
+  useEffect(() => {
+    if (!hasMjmlBlocks) {
+      setMjmlCompiledBlocks(null);
+      setMjmlErrors([]);
+      setMjmlCompiling(false);
+      return undefined;
+    }
+    if (!getToken) return undefined;
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      try {
+        setMjmlCompiling(true);
+        const token = await getToken();
+        const response = await fetch('/api/store/email-marketing/mjml', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ blocks }),
+        });
+        const data = await response.json();
+        if (cancelled) return;
+        if (!response.ok) {
+          setMjmlErrors([{ message: data?.error || 'Failed to compile MJML' }]);
+          return;
+        }
+        setMjmlCompiledBlocks(Array.isArray(data.blocks) ? data.blocks : null);
+        setMjmlErrors(Array.isArray(data.errors) ? data.errors : []);
+      } catch (error) {
+        if (!cancelled) {
+          setMjmlErrors([{ message: error?.message || 'Failed to compile MJML' }]);
+        }
+      } finally {
+        if (!cancelled) setMjmlCompiling(false);
+      }
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [blocks, getToken, hasMjmlBlocks]);
+
   const previewHtml = useMemo(
     () => {
-      const html = renderEmailFromBlocks(blocks, {
+      if (hasMjmlBlocks && (mjmlCompiling || !mjmlCompiledBlocks)) {
+        return '<div style="padding:48px 24px;text-align:center;font-family:Arial,sans-serif;color:#64748b;">Compiling MJML…</div>';
+      }
+      const html = renderEmailFromBlocks(mjmlCompiledBlocks || blocks, {
         products: productsForPreview,
         recipientEmail: 'preview@example.com',
         preheader,
@@ -2929,7 +3012,7 @@ export default function EmailCampaignBuilder({
       if (typeof window === 'undefined') return html;
       return rewriteEmailPreviewMediaUrls(html, window.location.origin);
     },
-    [blocks, preheader, productsForPreview, fontFamily],
+    [blocks, hasMjmlBlocks, mjmlCompiledBlocks, mjmlCompiling, preheader, productsForPreview, fontFamily],
   );
 
   const selectBlockFromPreview = (blockId) => {
@@ -3189,6 +3272,9 @@ export default function EmailCampaignBuilder({
                       categories={categories}
                       getToken={getToken}
                       onUploaded={rememberUploadedImage}
+                      mjmlErrors={mjmlErrors.filter((error) => (
+                        !error.blockId || error.blockId === block.id
+                      ))}
                     />
                   </div>
                 ) : null}

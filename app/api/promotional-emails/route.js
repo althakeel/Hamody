@@ -8,6 +8,7 @@ import EmailTemplate from '@/models/EmailTemplate';
 import { sendMail } from '@/lib/email';
 import { getRandomTemplate, getTemplateById, getAllTemplateIds } from '@/lib/promotionalEmailTemplates';
 import { mapProductsForEmail, renderEmailFromBlocks, absolutizeEmailHtmlImages } from '@/lib/emailCampaignBuilder';
+import { compileEmailBlocksMjml } from '@/lib/emailMjml';
 import { inlineEmailCss, wrapMarketingEmailDocument } from '@/lib/inlineEmailCss';
 import { getCustomerSiteUrl } from '@/lib/appUrl';
 import {
@@ -106,11 +107,12 @@ async function resolveCampaignContent(body, products) {
 
   if (Array.isArray(blocks) && blocks.length > 0) {
     const font = fontFamily || 'helvetica';
+    const compiledBlocks = (await compileEmailBlocksMjml(blocks)).blocks;
     return {
       id: customTemplateId || templateId || 'custom-blocks',
       subject: customSubject || 'A message from Store1920',
       preheader,
-      render: (recipientEmail) => renderEmailFromBlocks(blocks, {
+      render: (recipientEmail) => renderEmailFromBlocks(compiledBlocks, {
         products,
         recipientEmail,
         preheader,
@@ -124,7 +126,9 @@ async function resolveCampaignContent(body, products) {
     if (!saved || saved.templateType !== 'marketing') {
       return null;
     }
-    const savedBlocks = Array.isArray(saved.blocks) ? saved.blocks : [];
+    const savedBlocks = (await compileEmailBlocksMjml(
+      Array.isArray(saved.blocks) ? saved.blocks : [],
+    )).blocks;
     const font = fontFamily || saved.fontFamily || 'helvetica';
     return {
       id: String(saved._id),
