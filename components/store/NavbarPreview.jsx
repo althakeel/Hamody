@@ -212,7 +212,7 @@ export default function NavbarPreview({
             height: 44,
           }}
         >
-          <span>{getNavbarCategoriesButtonLabel({ categoriesButtonLabel }, 'en', 'Categories')}</span>
+          <span style={{ textTransform: 'none' }}>{getNavbarCategoriesButtonLabel({ categoriesButtonLabel }, 'en', 'Categories')}</span>
           <ChevronDown
             size={categoriesAppearance.chevronSize || 13}
             strokeWidth={2.4}

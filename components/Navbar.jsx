@@ -1754,7 +1754,7 @@ const Navbar = () => {
                 : {}),
             }}
           >
-            <span>
+            <span style={{ textTransform: 'none' }}>
               {getNavbarCategoriesButtonLabel(navbarAppearance, storefrontLanguage, t('navbar.categories'))}
             </span>
             <ChevronDown
@@ -2268,7 +2268,7 @@ const Navbar = () => {
                 <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
                   <p className="flex items-center gap-2 border-b border-slate-100 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wide text-slate-400">
                     <Grid3x3 size={13} />
-                    {t('navbar.categories')}
+                    {getNavbarCategoriesButtonLabel(navbarAppearance, storefrontLanguage, t('navbar.categories'))}
                   </p>
                   {mainCategories.length === 0 ? (
                     <p className="px-4 py-4 text-sm text-slate-500">No categories yet</p>

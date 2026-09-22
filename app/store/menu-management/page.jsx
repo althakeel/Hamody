@@ -1866,7 +1866,7 @@ export default function MenuManagementPage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
             <h2 className="text-sm font-semibold text-slate-900">Buttons next to LAST CHANCE</h2>
             <p className="mt-1 text-xs text-slate-500">
-              Add extra text buttons after LAST CHANCE and before search. Up to 3 buttons.
+              Add extra text buttons after LAST CHANCE and before search. Up to 3 buttons. To rename the Categories dropdown, open the Categories tab.
             </p>
             <div className="mt-4 space-y-3">
               {navbarLayout.extraButtons.map((button, index) => (
@@ -2067,7 +2067,7 @@ export default function MenuManagementPage() {
               <div>
                 <h2 className="text-sm font-semibold text-slate-900">Categories button</h2>
                 <p className="mt-1 text-xs text-slate-500">
-                  Show Categories as its own button, separate from the search field.
+                  This is the Categories dropdown next to search. Change the name to any text or capitalization, then Save. Examples: CATEGORIES, Shop, or All Departments.
                 </p>
               </div>
               <label className="relative inline-flex cursor-pointer items-center">
@@ -2089,7 +2089,7 @@ export default function MenuManagementPage() {
             </div>
             <div className={`mt-4 grid gap-4 md:grid-cols-2 ${navbarLayout.showCategoriesButton === false ? 'opacity-50' : ''}`}>
               <label className="block space-y-1">
-                <span className="text-xs font-medium text-slate-600">Button text (English)</span>
+                <span className="text-xs font-medium text-slate-600">Button name (English)</span>
                 <input
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                   value={navbarLayout.categoriesButtonLabel}
@@ -2097,6 +2097,9 @@ export default function MenuManagementPage() {
                   placeholder="Categories"
                   disabled={navbarLayout.showCategoriesButton === false}
                 />
+                <span className="block text-[11px] text-slate-500">
+                  Type exactly how it should appear, including capital letters. This name shows on desktop and mobile.
+                </span>
               </label>
               <label className="block space-y-1">
                 <span className="flex items-center justify-between gap-2 text-xs font-medium text-slate-600">

@@ -112,11 +112,12 @@ export async function POST(request) {
       ? null
       : (matchHelpHowTo(question) || (isHelpHowToQuestion(question) ? helpHowToFallback() : null));
     if (howTo) {
+      const canExport = shouldOfferHelpExport({}, question);
       const response = NextResponse.json({
-        answer: `${howTo.answer} Use Excel or PDF below to download these details.`,
+        answer: howTo.answer,
         links: [{ label: howTo.label, href: howTo.href }],
         readOnly: true,
-        canExport: true,
+        canExport,
         question,
       });
       return applyHelpAdminUnlockCookie(response, gated.unlockToken);

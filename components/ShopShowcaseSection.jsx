@@ -508,6 +508,15 @@ export default function ShopShowcaseSection({
       applyMenuStyle(initialStoreSettings || {});
       setLoading(false);
 
+      const refreshShowcase = () => {
+        axios.get('/api/public/shop-showcase', { headers: { 'Cache-Control': 'no-store' } })
+          .then((res) => {
+            const showcaseData = res.data || { config: null, sectionProducts: [], products: [], categories: [] };
+            setData(showcaseData);
+          })
+          .catch(() => {});
+      };
+
       const hasInitialNavigation = Boolean(
         initialStoreSettings?.resolvedNavMenuItems?.length
         || initialStoreSettings?.navMenuItems?.length,
@@ -517,9 +526,11 @@ export default function ShopShowcaseSection({
         loadNavigation()
           .catch(() => {})
           .finally(() => setLoading(false));
+        refreshShowcase();
       } else {
         const scheduleNavigationRefresh = () => {
           loadNavigation().catch(() => {});
+          refreshShowcase();
         };
 
         if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {

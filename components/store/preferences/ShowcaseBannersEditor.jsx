@@ -167,6 +167,58 @@ function formatImageRatio(width, height) {
   return `${(width / height).toFixed(2)}:1`
 }
 
+function DesignerSizeGuide({ sizes }) {
+  const desktop = sizes?.image || {}
+  const tablet = sizes?.tabletImage || {}
+  const mobile = sizes?.mobileImage || {}
+  const rows = [
+    { label: 'Desktop / big screen', size: desktop },
+    { label: 'Tablet', size: tablet },
+    { label: 'Mobile', size: mobile },
+  ]
+
+  return (
+    <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+      <p className="text-sm font-semibold text-slate-900">Sizes for designer</p>
+      <p className="mt-1 text-xs text-slate-500">
+        Send 3 English files, plus the same 3 in Arabic if you use Arabic. Do not use 1400 — that is only the inner page width. This banner is full screen on all devices, including large monitors.
+      </p>
+      <div className="mt-3 overflow-hidden rounded-lg border border-slate-200 bg-white">
+        <table className="w-full text-left text-xs text-slate-700">
+          <thead className="bg-slate-100 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <tr>
+              <th className="px-3 py-2">Screen</th>
+              <th className="px-3 py-2">Size</th>
+              <th className="px-3 py-2">Ratio</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.label} className="border-t border-slate-100">
+                <td className="px-3 py-2 font-medium">{row.label}</td>
+                <td className="px-3 py-2">
+                  {row.size.width} × {row.size.height} px
+                </td>
+                <td className="px-3 py-2">
+                  {row.size.width && row.size.height
+                    ? formatImageRatio(row.size.width, row.size.height)
+                    : '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <ul className="mt-3 list-disc space-y-1 ps-4 text-xs text-slate-500">
+        <li>Big screens (2K / ultrawide): still use the desktop {desktop.width} × {desktop.height} file. The site stretches it to fill the monitor.</li>
+        <li>Keep the offer, person, and text in the center. Left and right edges get cropped on very wide screens.</li>
+        <li>Optional sharper 4K file: 2560 × {desktop.height} px. Not required.</li>
+        <li>Export JPG or PNG, landscape, no extra padding. Safe zone: keep important text inside the middle about 1600 px.</li>
+      </ul>
+    </div>
+  )
+}
+
 function ShowcaseImageSlot({ label, size, value, onUpload, onClear }) {
   const width = Number(size?.width) || 0
   const height = Number(size?.height) || 0
@@ -983,6 +1035,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
     setForm((prev) => {
       const next = { ...prev, [key]: enabled }
       if (enabled && key === 'fullWidthBannerEnabled') {
+        next.mainBannerEnabled = false
         next.topBannerEnabled = false
         next.bottomBannerEnabled = false
         setOpenLayoutGuide(true)
@@ -990,7 +1043,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
       if (enabled && key === 'lowerFullWidthBannerEnabled') {
         setOpenLayoutGuide(true)
       }
-      if (enabled && (key === 'topBannerEnabled' || key === 'bottomBannerEnabled')) {
+      if (enabled && (key === 'topBannerEnabled' || key === 'bottomBannerEnabled' || key === 'mainBannerEnabled')) {
         next.fullWidthBannerEnabled = false
       }
       return next
@@ -1394,6 +1447,9 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
     )
   }
 
+  const fullWidthSizes = getFullWidthBannerSizes(form.fullWidthBannerDesktopHeight)
+  const lowerFullWidthSizes = getLowerFullWidthBannerSizes(form.lowerFullWidthBannerDesktopHeight)
+
   return (
     <div className={embedded ? 'space-y-6' : 'mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8'}>
       <div className={embedded ? '' : 'mb-6'}>
@@ -1575,7 +1631,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
               <input
                 type="checkbox"
                 checked={!!form.mainBannerEnabled}
-                onChange={(event) => setForm((prev) => ({ ...prev, mainBannerEnabled: event.target.checked }))}
+                onChange={(event) => setBannerEnabled('mainBannerEnabled', event.target.checked)}
                 className="sr-only peer"
               />
               <span className="h-6 w-11 rounded-full bg-slate-300 relative transition peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-5" />
@@ -1586,7 +1642,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
           </div>
           {form.mainBannerEnabled ? (
             <p className="mt-3 text-xs text-slate-500">
-              Top Large Banner and Bottom Large Banner stay hidden on the storefront while this is enabled.
+              Top Large Banner, Bottom Large Banner, and Full Width Banner stay hidden on the storefront while this is enabled.
             </p>
           ) : null}
         </div>
@@ -1596,7 +1652,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
             <div>
               <h2 className="text-sm font-semibold text-slate-900">Full Width Banner</h2>
               <p className="text-xs text-slate-500">
-                Full width up to 1400 px. Enabling this turns off Top and Bottom Large Banners.
+                Spans the full screen on all devices, including large monitors. Enabling this turns off the Main Banner and Top and Bottom Large Banners.
               </p>
             </div>
             <VisibilitySwitch
@@ -1609,6 +1665,8 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
           <p className="mb-3 text-xs font-medium text-slate-500">
             Desktop full width · height {FULL_WIDTH_BANNER_HEIGHT_MIN}–{FULL_WIDTH_BANNER_HEIGHT_MAX} px · upload multiple images for a slider
           </p>
+
+          <DesignerSizeGuide sizes={fullWidthSizes} />
 
           <label className="mb-4 block max-w-md">
             <span className="mb-1 block text-sm font-medium text-slate-700">
@@ -1662,7 +1720,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
                   slide={slide}
                   index={index}
                   total={form.fullWidthBannerSliderItems.length}
-                  recommendedSizes={getFullWidthBannerSizes(form.fullWidthBannerDesktopHeight)}
+                  recommendedSizes={fullWidthSizes}
                   open={openFullWidthSlideId === slideId}
                   onToggle={() => setOpenFullWidthSlideId((current) => (current === slideId ? null : slideId))}
                   onMove={(direction) => moveLargeBannerSlide('fullWidthBannerSliderItems', index, direction)}
@@ -1686,7 +1744,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
             Add full-width banner slide
           </button>
           <p className="mt-2 text-xs text-slate-500">
-            Desktop: full width · recommended 1920 × {normalizeFullWidthBannerHeight(form.fullWidthBannerDesktopHeight)} px. Tablet and mobile sizes are shown on each upload.
+            Use the Sizes for designer table above. Desktop {fullWidthSizes.image.width} × {fullWidthSizes.image.height} px, tablet {fullWidthSizes.tabletImage.width} × {fullWidthSizes.tabletImage.height} px, mobile {fullWidthSizes.mobileImage.width} × {fullWidthSizes.mobileImage.height} px.
           </p>
 
           <AccordionRow
@@ -1799,6 +1857,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
           </div>
           {form.lowerFullWidthBannerEnabled ? (
           <div className="mt-4">
+            <DesignerSizeGuide sizes={lowerFullWidthSizes} />
             <label className="mb-4 block max-w-md">
               <span className="mb-1 block text-sm font-medium text-slate-700">
                 Gap below Full Width Banner ({normalizeFullWidthBannerGap(form.fullWidthBannerGap)} px)
@@ -1880,7 +1939,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
                     slide={slide}
                     index={index}
                     total={form.lowerFullWidthBannerSliderItems.length}
-                    recommendedSizes={getLowerFullWidthBannerSizes(form.lowerFullWidthBannerDesktopHeight)}
+                    recommendedSizes={lowerFullWidthSizes}
                     open={openLowerFullWidthSlideId === slideId}
                     onToggle={() => setOpenLowerFullWidthSlideId((current) => (current === slideId ? null : slideId))}
                     onMove={(direction) => moveLargeBannerSlide('lowerFullWidthBannerSliderItems', index, direction)}
@@ -1904,7 +1963,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
               Add lower full-width banner slide
             </button>
             <p className="mt-2 text-xs text-slate-500">
-              Desktop: full width · recommended 1920 × {normalizeLowerFullWidthBannerHeight(form.lowerFullWidthBannerDesktopHeight)} px. Max height 300 px.
+              Use the Sizes for designer table above. Desktop {lowerFullWidthSizes.image.width} × {lowerFullWidthSizes.image.height} px. Max height 300 px.
             </p>
 
             <AccordionRow

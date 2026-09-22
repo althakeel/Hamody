@@ -28,6 +28,10 @@ export default function HeroBannerSlider({ showcaseConfig: showcaseConfigProp = 
       return [];
     }
 
+    if (showcaseConfig?.fullWidthBannerEnabled === true) {
+      return [];
+    }
+
     if (showcaseConfig?.mainBannerEnabled) {
       const dynamicSlide = {
         type: 'config',
@@ -83,22 +87,25 @@ export default function HeroBannerSlider({ showcaseConfig: showcaseConfigProp = 
     if (showcaseConfigProp || showcaseReady) {
       setShowcaseConfig(showcaseConfigProp);
       setShowcaseLoaded(true);
-      return undefined;
     }
 
+    let cancelled = false;
     const fetchShowcase = async () => {
       try {
-        const res = await fetch('/api/public/shop-showcase');
-        if (!res.ok) return;
+        const res = await fetch('/api/public/shop-showcase', { cache: 'no-store' });
+        if (!res.ok || cancelled) return;
         const data = await res.json();
-        setShowcaseConfig(data?.config || null);
+        if (!cancelled) setShowcaseConfig(data?.config || null);
       } catch {
-        setShowcaseConfig(null);
+        if (!showcaseConfigProp && !cancelled) setShowcaseConfig(null);
       } finally {
-        setShowcaseLoaded(true);
+        if (!cancelled) setShowcaseLoaded(true);
       }
     };
     fetchShowcase();
+    return () => {
+      cancelled = true;
+    };
   }, [showcaseConfigProp, showcaseReady]);
 
   useEffect(() => {
