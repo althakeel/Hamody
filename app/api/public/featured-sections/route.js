@@ -45,7 +45,7 @@ export async function GET() {
 
     const sections = sortCategorySliders(
       await CategorySlider.find({})
-        .select('title titleAr subtitle subtitleAr sideImage sideImagePosition cardsPerRow backgroundColor autoSlide autoSlideIntervalMs productIds storeId sortOrder createdAt updatedAt')
+        .select('title titleAr subtitle subtitleAr sideImage sideImageAr sideImagePosition cardsPerRow backgroundColor autoSlide autoSlideIntervalMs productIds storeId sortOrder createdAt updatedAt')
         .lean()
     );
 
@@ -73,6 +73,7 @@ export async function GET() {
           ...section,
           titleAr: section.titleAr || '',
           subtitleAr: section.subtitleAr || '',
+          sideImageAr: section.sideImageAr || '',
           cardsPerRow: section.cardsPerRow === 5 ? 5 : 6,
           sideImagePosition: normalizeCategorySliderSideImagePosition(section.sideImagePosition),
           sortOrder: Number.isFinite(Number(section.sortOrder)) ? Number(section.sortOrder) : 0,

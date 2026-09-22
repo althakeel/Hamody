@@ -40,6 +40,11 @@ const CategorySliderSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    sideImageAr: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     sideImagePosition: {
       type: String,
       default: 'left',

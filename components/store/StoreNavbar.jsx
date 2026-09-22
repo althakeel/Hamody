@@ -5,6 +5,7 @@ import StoreNavLink from '@/components/store/StoreNavLink';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { Bell, LogOut } from 'lucide-react';
+import StoreHelpAgent from './StoreHelpAgent';
 import Logo from '@/assets/logo/Store1920.png';
 import { useAuth } from '@/lib/useAuth';
 import { signOut } from 'firebase/auth';
@@ -137,6 +138,7 @@ const StoreNavbar = ({ storeInfo }) => {
                 )}
             </Link>
             <div className="flex items-center gap-2 text-sm text-slate-700">
+                <StoreHelpAgent />
                 {canViewOrders ? (
                     <div className="relative" ref={notificationRef}>
                         <button

@@ -33,6 +33,9 @@ const DEFAULT_SHOWCASE = {
   featuredSectionTitle: 'Craziest sale of the year!',
   featuredSectionDescription: "Grab the best deals before they're gone!",
   mainBannerEnabled: true,
+  topBannerEnabled: true,
+  bottomBannerEnabled: true,
+  fullWidthBannerEnabled: false,
   mainBannerImage: '',
   mainBannerTitle: 'Power up instantly no battery needed',
   mainBannerTitleEnabled: true,
@@ -83,6 +86,36 @@ const DEFAULT_SHOWCASE = {
   bottomBannerSliderEnabled: true,
   bottomBannerSliderInterval: 4000,
   bottomBannerSliderItems: [],
+  fullWidthBannerImage: '',
+  fullWidthBannerTitle: '',
+  fullWidthBannerTitleEnabled: false,
+  fullWidthBannerSubtitle: '',
+  fullWidthBannerSubtitleEnabled: false,
+  fullWidthBannerCtaText: '',
+  fullWidthBannerCtaEnabled: false,
+  fullWidthBannerCtaBgColor: '#ef2d2d',
+  fullWidthBannerCtaTextColor: '#ffffff',
+  fullWidthBannerLink: '/shop',
+  fullWidthBannerSliderEnabled: true,
+  fullWidthBannerSliderInterval: 4000,
+  fullWidthBannerDesktopHeight: 400,
+  fullWidthBannerSliderItems: [],
+  lowerFullWidthBannerEnabled: false,
+  lowerFullWidthBannerImage: '',
+  lowerFullWidthBannerTitle: '',
+  lowerFullWidthBannerTitleEnabled: false,
+  lowerFullWidthBannerSubtitle: '',
+  lowerFullWidthBannerSubtitleEnabled: false,
+  lowerFullWidthBannerCtaText: '',
+  lowerFullWidthBannerCtaEnabled: false,
+  lowerFullWidthBannerCtaBgColor: '#ef2d2d',
+  lowerFullWidthBannerCtaTextColor: '#ffffff',
+  lowerFullWidthBannerLink: '/shop',
+  lowerFullWidthBannerSliderEnabled: true,
+  lowerFullWidthBannerSliderInterval: 4000,
+  lowerFullWidthBannerDesktopHeight: 200,
+  fullWidthBannerGap: 12,
+  lowerFullWidthBannerSliderItems: [],
   productBanners: [
     { image: '', title: 'Product Title', subtitle: 'Order now', buttonText: 'Order now', link: '/shop' },
     { image: '', title: 'Product Title', subtitle: 'Order now', buttonText: 'Order now', link: '/shop' },
@@ -214,6 +247,20 @@ function normalizeShopShowcase(data = {}) {
     featuredSectionTitle: normalizeString(data.featuredSectionTitle, DEFAULT_SHOWCASE.featuredSectionTitle),
     featuredSectionDescription: normalizeString(data.featuredSectionDescription, DEFAULT_SHOWCASE.featuredSectionDescription),
     mainBannerEnabled: typeof data.mainBannerEnabled === 'boolean' ? data.mainBannerEnabled : DEFAULT_SHOWCASE.mainBannerEnabled,
+    topBannerEnabled: typeof data.topBannerEnabled === 'boolean' ? data.topBannerEnabled : DEFAULT_SHOWCASE.topBannerEnabled,
+    bottomBannerEnabled: typeof data.bottomBannerEnabled === 'boolean' ? data.bottomBannerEnabled : DEFAULT_SHOWCASE.bottomBannerEnabled,
+    fullWidthBannerEnabled: data.fullWidthBannerEnabled === true,
+    lowerFullWidthBannerEnabled: data.lowerFullWidthBannerEnabled === true,
+    lowerFullWidthBannerImage: normalizeString(data.lowerFullWidthBannerImage, ''),
+    lowerFullWidthBannerTitle: normalizeString(data.lowerFullWidthBannerTitle, DEFAULT_SHOWCASE.lowerFullWidthBannerTitle),
+    lowerFullWidthBannerTitleEnabled: data.lowerFullWidthBannerTitleEnabled === true,
+    lowerFullWidthBannerSubtitle: normalizeString(data.lowerFullWidthBannerSubtitle, DEFAULT_SHOWCASE.lowerFullWidthBannerSubtitle),
+    lowerFullWidthBannerSubtitleEnabled: data.lowerFullWidthBannerSubtitleEnabled === true,
+    lowerFullWidthBannerCtaText: normalizeString(data.lowerFullWidthBannerCtaText, DEFAULT_SHOWCASE.lowerFullWidthBannerCtaText),
+    lowerFullWidthBannerCtaEnabled: data.lowerFullWidthBannerCtaEnabled === true,
+    lowerFullWidthBannerCtaBgColor: normalizeString(data.lowerFullWidthBannerCtaBgColor, DEFAULT_SHOWCASE.lowerFullWidthBannerCtaBgColor),
+    lowerFullWidthBannerCtaTextColor: normalizeString(data.lowerFullWidthBannerCtaTextColor, DEFAULT_SHOWCASE.lowerFullWidthBannerCtaTextColor),
+    lowerFullWidthBannerLink: normalizeString(data.lowerFullWidthBannerLink, DEFAULT_SHOWCASE.lowerFullWidthBannerLink),
     mainBannerImage: normalizeString(data.mainBannerImage, DEFAULT_SHOWCASE.mainBannerImage),
     mainBannerTitle: normalizeString(data.mainBannerTitle, DEFAULT_SHOWCASE.mainBannerTitle),
     mainBannerTitleEnabled: typeof data.mainBannerTitleEnabled === 'boolean' ? data.mainBannerTitleEnabled : DEFAULT_SHOWCASE.mainBannerTitleEnabled,
@@ -258,6 +305,16 @@ function normalizeShopShowcase(data = {}) {
     bottomBannerCtaEnabled: typeof data.bottomBannerCtaEnabled === 'boolean' ? data.bottomBannerCtaEnabled : DEFAULT_SHOWCASE.bottomBannerCtaEnabled,
     bottomBannerCtaBgColor: normalizeString(data.bottomBannerCtaBgColor, DEFAULT_SHOWCASE.bottomBannerCtaBgColor),
     bottomBannerCtaTextColor: normalizeString(data.bottomBannerCtaTextColor, DEFAULT_SHOWCASE.bottomBannerCtaTextColor),
+    fullWidthBannerImage: normalizeString(data.fullWidthBannerImage, ''),
+    fullWidthBannerTitle: normalizeString(data.fullWidthBannerTitle, DEFAULT_SHOWCASE.fullWidthBannerTitle),
+    fullWidthBannerSubtitle: normalizeString(data.fullWidthBannerSubtitle, DEFAULT_SHOWCASE.fullWidthBannerSubtitle),
+    fullWidthBannerCtaText: normalizeString(data.fullWidthBannerCtaText, DEFAULT_SHOWCASE.fullWidthBannerCtaText),
+    fullWidthBannerLink: normalizeString(data.fullWidthBannerLink, DEFAULT_SHOWCASE.fullWidthBannerLink),
+    fullWidthBannerTitleEnabled: typeof data.fullWidthBannerTitleEnabled === 'boolean' ? data.fullWidthBannerTitleEnabled : DEFAULT_SHOWCASE.fullWidthBannerTitleEnabled,
+    fullWidthBannerSubtitleEnabled: typeof data.fullWidthBannerSubtitleEnabled === 'boolean' ? data.fullWidthBannerSubtitleEnabled : DEFAULT_SHOWCASE.fullWidthBannerSubtitleEnabled,
+    fullWidthBannerCtaEnabled: typeof data.fullWidthBannerCtaEnabled === 'boolean' ? data.fullWidthBannerCtaEnabled : DEFAULT_SHOWCASE.fullWidthBannerCtaEnabled,
+    fullWidthBannerCtaBgColor: normalizeString(data.fullWidthBannerCtaBgColor, DEFAULT_SHOWCASE.fullWidthBannerCtaBgColor),
+    fullWidthBannerCtaTextColor: normalizeString(data.fullWidthBannerCtaTextColor, DEFAULT_SHOWCASE.fullWidthBannerCtaTextColor),
     ...applyLargeBannerSliderDefaults(data),
     productBanners: normalizeProductBanners(data.productBanners),
     bannerSliderEnabled: typeof data.bannerSliderEnabled === 'boolean' ? data.bannerSliderEnabled : DEFAULT_SHOWCASE.bannerSliderEnabled,
@@ -343,6 +400,28 @@ export async function PUT(request) {
       )
       shopShowcase.bottomBannerImage = shopShowcase.bottomBannerSliderItems[0]?.image
         || shopShowcase.bottomBannerImage
+        || ''
+    }
+
+    if (Array.isArray(body?.fullWidthBannerSliderItems)) {
+      shopShowcase.fullWidthBannerSliderItems = serializeLargeBannerSliderItems(
+        body.fullWidthBannerSliderItems,
+        body.fullWidthBannerLink || merged.fullWidthBannerLink || '/shop',
+        'full-width-large-banner',
+      )
+      shopShowcase.fullWidthBannerImage = shopShowcase.fullWidthBannerSliderItems[0]?.image
+        || shopShowcase.fullWidthBannerImage
+        || ''
+    }
+
+    if (Array.isArray(body?.lowerFullWidthBannerSliderItems)) {
+      shopShowcase.lowerFullWidthBannerSliderItems = serializeLargeBannerSliderItems(
+        body.lowerFullWidthBannerSliderItems,
+        body.lowerFullWidthBannerLink || merged.lowerFullWidthBannerLink || '/shop',
+        'lower-full-width-large-banner',
+      )
+      shopShowcase.lowerFullWidthBannerImage = shopShowcase.lowerFullWidthBannerSliderItems[0]?.image
+        || shopShowcase.lowerFullWidthBannerImage
         || ''
     }
 

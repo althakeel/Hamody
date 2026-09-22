@@ -129,13 +129,18 @@ export default function SalesReport() {
                 responseType: 'blob'
             });
             
-            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const disposition = response.headers?.['content-disposition'] || '';
+            const fileMatch = disposition.match(/filename="([^"]+)"/);
+            const url = window.URL.createObjectURL(new Blob([response.data], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            }));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `sales-report-${Date.now()}.csv`);
+            link.setAttribute('download', fileMatch?.[1] || `sales-report-${Date.now()}.xlsx`);
             document.body.appendChild(link);
             link.click();
             link.remove();
+            window.URL.revokeObjectURL(url);
             
             toast.dismiss();
             toast.success('Report exported successfully');
@@ -187,7 +192,7 @@ export default function SalesReport() {
                             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all flex items-center gap-2 font-medium"
                         >
                             <Download size={18} />
-                            Export CSV
+                            Export Excel
                         </button>
                     </div>
                 </div>
@@ -493,32 +498,37 @@ export default function SalesReport() {
                     </div>
                 </div>
                 
-                {/* Monthly Breakdown */}
-                {reportData?.monthlyData && reportData.monthlyData.length > 0 && (
-                    <div className="bg-white rounded-xl shadow-md p-6 border border-slate-200">
-                        <h3 className="text-xl font-bold text-slate-800 mb-4">Monthly Breakdown</h3>
-                        <div className="space-y-3">
-                            {reportData.monthlyData.map((month) => {
-                                const monthProfit = month.profit || 0;
-                                const isMonthProfitable = monthProfit >= 0;
-                                
-                                return (
-                                    <div key={month.month} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-32 font-medium text-slate-700">{month.month}</div>
-                                            <div className="text-sm text-slate-600">
-                                                {month.orders} orders • {currency}{formatAmount(month.revenue)} revenue
+                {[
+                    { title: 'Monthly breakdown', rows: reportData?.monthlyData || [] },
+                    { title: 'Weekly breakdown', rows: reportData?.weeklyData || [] },
+                    { title: 'Daily breakdown', rows: reportData?.dailyData || [] },
+                ].map((section) => (
+                    section.rows.length > 0 ? (
+                        <div key={section.title} className="bg-white rounded-xl shadow-md p-6 border border-slate-200">
+                            <h3 className="text-xl font-bold text-slate-800 mb-4">{section.title}</h3>
+                            <div className="space-y-3">
+                                {section.rows.map((row) => {
+                                    const rowProfit = row.profit || 0;
+                                    const isRowProfitable = rowProfit >= 0;
+                                    return (
+                                        <div key={row.key || row.label || row.month} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
+                                                <div className="w-52 font-medium text-slate-700">{row.label || row.month}</div>
+                                                <div className="text-sm text-slate-600">
+                                                    {row.orders} orders • {currency}{formatAmount(row.revenue)} revenue
+                                                    {row.failedOrders ? ` • ${row.failedOrders} failed excluded` : ''}
+                                                </div>
+                                            </div>
+                                            <div className={`text-lg font-bold ${isRowProfitable ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                {isRowProfitable ? '+' : ''}{currency}{formatAmount(rowProfit)}
                                             </div>
                                         </div>
-                                        <div className={`text-lg font-bold ${isMonthProfitable ? 'text-emerald-600' : 'text-red-600'}`}>
-                                            {isMonthProfitable ? '+' : ''}{currency}{formatAmount(monthProfit)}
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    ) : null
+                ))}
                 
             </div>
         </div>

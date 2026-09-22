@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/lib/useAuth';
 import { useEffect, useState, useRef, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import Loading from "@/components/Loading";
 import PageSkeleton from "@/components/PageSkeleton";
@@ -812,6 +812,8 @@ export default function StoreOrders() {
     const waslahStatusRefreshInFlightRef = useRef(new Set());
     const selectedOrderIdRef = useRef('');
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const openedFromQueryRef = useRef('');
 
     selectedOrderIdRef.current = String(selectedOrder?._id || '');
 
@@ -1754,6 +1756,51 @@ export default function StoreOrders() {
         });
         setIsModalOpen(true);
     };
+
+    useEffect(() => {
+        const q = String(
+            searchParams.get('q')
+            || searchParams.get('order')
+            || searchParams.get('orderNo')
+            || '',
+        ).trim();
+        if (!q || openedFromQueryRef.current === q) return;
+
+        setOrderSearchQuery((prev) => prev || q);
+
+        const match = orders.find((order) => orderMatchesSearch(order, q));
+        if (match) {
+            openedFromQueryRef.current = q;
+            openModal(match);
+            return;
+        }
+
+        let cancelled = false;
+        (async () => {
+            try {
+                const token = await getToken();
+                if (!token || cancelled) return;
+                const { data } = await axios.get('/api/store/orders/lookup', {
+                    params: { q },
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (cancelled || !data?.order) return;
+                openedFromQueryRef.current = q;
+                setOrders((prev) => (
+                    prev.some((order) => String(order._id) === String(data.order._id))
+                        ? prev
+                        : [data.order, ...prev]
+                ));
+                openModal(data.order);
+            } catch {
+                // Leave the search box filled so the seller can still find it.
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [orders, searchParams, getToken]);
 
     // Check Razorpay payment settlement status
     const checkRazorpaySettlement = async (order) => {

@@ -100,6 +100,24 @@ export async function PUT(req, { params }) {
           ? cleanDisplayText(body.descriptionAr || '')
           : (existingCategory.descriptionAr || ''),
         image: body?.image !== undefined ? (body.image || null) : (existingCategory.image || null),
+        bannerEn: body?.bannerEn !== undefined
+          ? String(body.bannerEn || '').trim()
+          : (existingCategory.bannerEn || ''),
+        bannerAr: body?.bannerAr !== undefined
+          ? String(body.bannerAr || '').trim()
+          : (existingCategory.bannerAr || ''),
+        bannerTabletEn: body?.bannerTabletEn !== undefined
+          ? String(body.bannerTabletEn || '').trim()
+          : (existingCategory.bannerTabletEn || ''),
+        bannerTabletAr: body?.bannerTabletAr !== undefined
+          ? String(body.bannerTabletAr || '').trim()
+          : (existingCategory.bannerTabletAr || ''),
+        bannerMobileEn: body?.bannerMobileEn !== undefined
+          ? String(body.bannerMobileEn || '').trim()
+          : (existingCategory.bannerMobileEn || ''),
+        bannerMobileAr: body?.bannerMobileAr !== undefined
+          ? String(body.bannerMobileAr || '').trim()
+          : (existingCategory.bannerMobileAr || ''),
         parentId: nextParentId,
         metaTitle: body?.metaTitle !== undefined
           ? cleanDisplayText(body.metaTitle || '').slice(0, 120)

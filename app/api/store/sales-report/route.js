@@ -20,6 +20,10 @@ import {
 } from '@/lib/returnSalesAdjustments';
 import { normalizeStoreOrderPaymentMethod } from '@/lib/storeOrderInsights';
 import { ACTIVE_RECORD_FILTER } from '@/lib/storeTrash';
+import {
+    buildSalesReportPeriodGroups,
+    getSalesReportPeriodParts,
+} from '@/lib/storeSalesReportExport';
 
 export async function GET(req) {
     try {
@@ -128,31 +132,29 @@ export async function GET(req) {
             ? totalProfit / paymentSummaryNet.totalOrders
             : 0;
 
-        const monthsMap = new Map();
+        const periodRows = ordersWithProfit.map((order) => ({
+            paymentBucket: order.paymentBucket,
+            countsTowardRevenue: order.countsTowardRevenue,
+            period: getSalesReportPeriodParts(order.createdAt),
+            grossRevenue: order.grossTotal,
+            refunded: order.refundedAmount,
+            netRevenue: order.total,
+            productCost: order.productCost,
+            deliveryCost: order.shippingFee,
+            profit: order.profit,
+        }));
+        const { monthly, weekly, daily } = buildSalesReportPeriodGroups(periodRows);
 
-        ordersWithProfit.forEach((order) => {
-            if (!order.countsTowardRevenue) return;
-
-            const monthYear = new Date(order.createdAt).toLocaleDateString('en-US', {
-                month: 'long',
-                year: 'numeric',
-            });
-
-            if (!monthsMap.has(monthYear)) {
-                monthsMap.set(monthYear, {
-                    month: monthYear,
-                    orders: 0,
-                    revenue: 0,
-                    costs: 0,
-                    profit: 0,
-                });
-            }
-
-            const monthData = monthsMap.get(monthYear);
-            monthData.orders += 1;
-            monthData.revenue += order.total;
-            monthData.costs += order.productCost + order.shippingFee;
-            monthData.profit += order.profit;
+        const toBreakdown = (group) => ({
+            key: group.key,
+            label: group.label,
+            from: group.from,
+            to: group.to,
+            orders: group.includedOrders,
+            failedOrders: group.failedOrders,
+            revenue: group.netRevenue,
+            costs: group.productCost + group.deliveryCost,
+            profit: group.profit,
         });
 
         const report = {
@@ -169,7 +171,12 @@ export async function GET(req) {
             totalOrdersInRange: orders.length,
             avgOrderValue,
             avgProfit,
-            monthlyData: Array.from(monthsMap.values()),
+            monthlyData: monthly.map((group) => ({
+                ...toBreakdown(group),
+                month: group.label,
+            })),
+            weeklyData: weekly.map(toBreakdown),
+            dailyData: daily.map(toBreakdown),
             paymentSummary: paymentSummaryNet,
         };
 

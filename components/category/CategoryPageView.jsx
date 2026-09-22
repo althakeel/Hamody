@@ -7,6 +7,8 @@ import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 import { resolveCategoryHref } from '@/lib/categoryTreeUtils';
 import CategoryProductsPanel from '@/components/category/CategoryProductsPanel';
 import CategoryHeroCard from '@/components/category/CategoryHeroCard';
+import CategoryBanner from '@/components/category/CategoryBanner';
+import { getCategoryBannerUrls } from '@/lib/categoryBanners';
 import { CreditCard, ShieldCheck, Truck, Wallet } from 'lucide-react';
 
 function localizeCategoryRecord(category, language) {
@@ -43,6 +45,7 @@ export default function CategoryPageView({
     href: resolveCategoryHref(chain, child),
     slug: child.slug,
   }));
+  const banners = getCategoryBannerUrls(category, { isArabic });
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-8" dir={isArabic ? 'rtl' : 'ltr'}>
@@ -64,6 +67,15 @@ export default function CategoryPageView({
         ))}
       </nav>
 
+      {banners.hasBanner ? (
+        <CategoryBanner
+          desktopSrc={banners.desktop}
+          tabletSrc={banners.tablet}
+          mobileSrc={banners.mobile}
+          alt={categoryName}
+        />
+      ) : null}
+
       <CategoryHeroCard
         name={categoryName}
         image={category.image}
@@ -77,6 +89,7 @@ export default function CategoryPageView({
         }}
         t={t}
         isArabic={isArabic}
+        hideImage={banners.hasBanner}
       />
 
       {showSubcategories && !isL2WithL3Children ? (

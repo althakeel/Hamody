@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   filterParentCategories,
   getCategoryDisplayName,
@@ -16,6 +17,7 @@ import {
 } from '@/lib/storefrontLanguage';
 import { translateStaticText } from '@/lib/useStorefrontI18n';
 import { normalizeStorefrontCategoryHref } from '@/lib/categorySlug';
+import { getNavbarBottomBorderStyle } from '@/lib/navbarLayoutSettings';
 
 const MENU_CACHE_KEY = 'nav:menu:v1';
 const CATEGORIES_CACHE_KEY = 'nav:categories:v2';
@@ -34,14 +36,30 @@ const defaultActionsVisibility = {
 
 const NAVBAR_CONTAINER_CLASS = 'mx-auto w-full px-4 sm:px-6';
 
+const DEFAULT_CATEGORY_BAR_BG = '#000000';
+const SLIDER_DRAG_THRESHOLD = 6;
+const SLIDER_CLICK_SUPPRESS_MS = 120;
+
 const defaultMenuStyle = {
-  barBackgroundColor: '',
+  barBackgroundColor: DEFAULT_CATEGORY_BAR_BG,
+  categoryBarBackgroundColor: DEFAULT_CATEGORY_BAR_BG,
   barTextColor: '#ffffff',
   barHoverBackgroundColor: 'rgba(0,0,0,0.15)',
   dropdownBackgroundColor: '#ffffff',
   dropdownTextColor: '#334155',
   dropdownMutedTextColor: '#64748b',
   dropdownBorderColor: '#e2e8f0',
+  showBottomBorder: false,
+  bottomBorderWidth: 2,
+  bottomBorderColor: '#e2e8f0',
+};
+
+const resolveCategoryBarBackground = (...colors) => {
+  for (const color of colors) {
+    const value = String(color || '').trim();
+    if (value) return value;
+  }
+  return DEFAULT_CATEGORY_BAR_BG;
 };
 
 const safeJsonParse = (value, fallback) => {
@@ -52,14 +70,6 @@ const safeJsonParse = (value, fallback) => {
   } catch {
     return fallback;
   }
-};
-
-const readCachedNavbarBg = () => {
-  if (typeof window === 'undefined') return '';
-
-  const cachedAppearance = safeJsonParse(window.localStorage.getItem(NAVBAR_APPEARANCE_CACHE_KEY), null);
-  const cachedBg = typeof cachedAppearance?.backgroundColor === 'string' ? cachedAppearance.backgroundColor.trim() : '';
-  return cachedBg;
 };
 
 const getContrastColor = (hexColor) => {
@@ -234,7 +244,7 @@ function MegaDropdown({ item, dropdownLinks, featuredImages, onClose, timerRef, 
   );
 }
 
-export default function NavbarMenuBar() {
+export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
   const [navMenuItems, setNavMenuItems] = useState([]);
   const [navMenuUseParentCategories, setNavMenuUseParentCategories] = useState(false);
   const [navMenuEnabled, setNavMenuEnabled] = useState(false);
@@ -249,6 +259,35 @@ export default function NavbarMenuBar() {
 
   const megaTimer = useRef(null);
   const categoryTimer = useRef(null);
+  const sliderRef = useRef(null);
+  const sliderTargetRef = useRef(0);
+  const sliderRafRef = useRef(null);
+  const suppressClickRef = useRef(false);
+  const dragStateRef = useRef({
+    active: false,
+    moved: false,
+    startX: 0,
+    startScrollLeft: 0,
+  });
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [isSliderDragging, setIsSliderDragging] = useState(false);
+
+  const updateSliderState = useCallback(() => {
+    const container = sliderRef.current;
+    if (!container) return;
+    setCanScrollLeft(container.scrollLeft > 2);
+    setCanScrollRight(container.scrollLeft < container.scrollWidth - container.clientWidth - 2);
+  }, []);
+
+  const scrollCategoryBar = useCallback((direction) => {
+    const container = sliderRef.current;
+    if (!container) return;
+    const distance = Math.max(280, Math.round(container.clientWidth * 0.7));
+    const max = Math.max(0, container.scrollWidth - container.clientWidth);
+    sliderTargetRef.current = Math.min(max, Math.max(0, container.scrollLeft + direction * distance));
+    container.scrollTo({ left: sliderTargetRef.current, behavior: 'smooth' });
+  }, []);
 
   const topLevelCategories = useMemo(
     () => filterParentCategories(categories),
@@ -293,7 +332,6 @@ export default function NavbarMenuBar() {
     const cachedEnabled = safeJsonParse(window.sessionStorage.getItem(MENU_ENABLED_CACHE_KEY), false);
     const cachedActions = safeJsonParse(window.sessionStorage.getItem(ACTIONS_VISIBILITY_CACHE_KEY), defaultActionsVisibility);
     const cachedStyle = safeJsonParse(window.sessionStorage.getItem(MENU_STYLE_CACHE_KEY), defaultMenuStyle);
-    const cachedNavbarBg = readCachedNavbarBg();
     const cachedMaxWidth = Number(safeJsonParse(window.localStorage.getItem(NAVBAR_APPEARANCE_CACHE_KEY), null)?.navbarMaxWidth);
     if (Number.isFinite(cachedMaxWidth) && cachedMaxWidth >= 1000) {
       setNavbarMaxWidth(cachedMaxWidth);
@@ -302,7 +340,20 @@ export default function NavbarMenuBar() {
     if (Array.isArray(cachedCategories)) setCategories(cachedCategories);
     if (Array.isArray(cachedMenu)) setNavMenuItems(sanitizeMenuItems(cachedMenu));
     setNavMenuEnabled(Boolean(cachedEnabled));
-    setMenuStyle({ ...defaultMenuStyle, ...(cachedStyle || {}), barBackgroundColor: cachedNavbarBg });
+    setMenuStyle({
+      ...defaultMenuStyle,
+      ...(cachedStyle || {}),
+      barBackgroundColor: resolveCategoryBarBackground(
+        cachedStyle?.categoryBarBackgroundColor,
+        cachedStyle?.barBackgroundColor,
+        DEFAULT_CATEGORY_BAR_BG,
+      ),
+      categoryBarBackgroundColor: resolveCategoryBarBackground(
+        cachedStyle?.categoryBarBackgroundColor,
+        cachedStyle?.barBackgroundColor,
+        DEFAULT_CATEGORY_BAR_BG,
+      ),
+    });
     window.dispatchEvent(new CustomEvent('navActionsVisibilityUpdated', { detail: cachedActions }));
 
     let active = true;
@@ -327,12 +378,15 @@ export default function NavbarMenuBar() {
           ...defaultActionsVisibility,
           ...(nextSettings?.navActionsVisibility || {}),
         };
-        const navbarBg = readCachedNavbarBg();
         const parsedStyle = {
           ...defaultMenuStyle,
           ...(nextSettings?.navMenuStyle || {}),
-          barBackgroundColor: navbarBg,
         };
+        parsedStyle.categoryBarBackgroundColor = resolveCategoryBarBackground(
+          parsedStyle.categoryBarBackgroundColor,
+          parsedStyle.barBackgroundColor,
+        );
+        parsedStyle.barBackgroundColor = parsedStyle.categoryBarBackgroundColor;
 
         setCategories(parsedCategories);
         setNavMenuItems(parsedItems);
@@ -357,15 +411,9 @@ export default function NavbarMenuBar() {
     const intervalId = setInterval(revalidate, REFRESH_MS);
     const handleMenuUpdated = () => revalidate();
     const handleNavbarAppearance = (e) => {
-      const bg = e?.detail?.backgroundColor;
       const nextMaxWidth = Number(e?.detail?.navbarMaxWidth);
       if (Number.isFinite(nextMaxWidth) && nextMaxWidth >= 1000) {
         setNavbarMaxWidth(nextMaxWidth);
-      }
-      if (bg) {
-        setMenuStyle((prev) => ({ ...prev, barBackgroundColor: bg }));
-      } else {
-        setMenuStyle((prev) => ({ ...prev, barBackgroundColor: readCachedNavbarBg() }));
       }
     };
     window.addEventListener('navMenuUpdated', handleMenuUpdated);
@@ -381,10 +429,118 @@ export default function NavbarMenuBar() {
     };
   }, []);
 
+  useEffect(() => {
+    const container = sliderRef.current;
+    if (!container) return undefined;
+
+    sliderTargetRef.current = container.scrollLeft;
+    updateSliderState();
+
+    const clampScroll = (value) => {
+      const max = Math.max(0, container.scrollWidth - container.clientWidth);
+      return Math.min(max, Math.max(0, value));
+    };
+
+    const animateScroll = () => {
+      const current = container.scrollLeft;
+      const target = sliderTargetRef.current;
+      const next = current + (target - current) * 0.22;
+      if (Math.abs(target - next) < 0.6) {
+        container.scrollLeft = target;
+        sliderRafRef.current = null;
+        updateSliderState();
+        return;
+      }
+      container.scrollLeft = next;
+      sliderRafRef.current = window.requestAnimationFrame(animateScroll);
+    };
+
+    const onScroll = () => {
+      if (!dragStateRef.current.active) {
+        sliderTargetRef.current = container.scrollLeft;
+      }
+      updateSliderState();
+    };
+
+    const onWheel = (event) => {
+      if (container.scrollWidth <= container.clientWidth) return;
+      const delta = Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+      if (!delta) return;
+      event.preventDefault();
+      sliderTargetRef.current = clampScroll(sliderTargetRef.current + delta);
+      if (!sliderRafRef.current) {
+        sliderRafRef.current = window.requestAnimationFrame(animateScroll);
+      }
+    };
+
+    const onMouseMove = (event) => {
+      if (!dragStateRef.current.active) return;
+      const walk = event.pageX - dragStateRef.current.startX;
+      if (!dragStateRef.current.moved && Math.abs(walk) > SLIDER_DRAG_THRESHOLD) {
+        dragStateRef.current.moved = true;
+        setIsSliderDragging(true);
+      }
+      if (!dragStateRef.current.moved) return;
+      event.preventDefault();
+      const next = clampScroll(dragStateRef.current.startScrollLeft - walk);
+      sliderTargetRef.current = next;
+      container.scrollLeft = next;
+      updateSliderState();
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      if (dragStateRef.current.moved) {
+        suppressClickRef.current = true;
+        window.setTimeout(() => {
+          suppressClickRef.current = false;
+        }, SLIDER_CLICK_SUPPRESS_MS);
+      }
+      dragStateRef.current.active = false;
+      dragStateRef.current.moved = false;
+      setIsSliderDragging(false);
+    };
+
+    const onMouseDown = (event) => {
+      if (event.button !== 0) return;
+      if (event.target.closest('button')) return;
+      dragStateRef.current.active = true;
+      dragStateRef.current.moved = false;
+      dragStateRef.current.startX = event.pageX;
+      dragStateRef.current.startScrollLeft = container.scrollLeft;
+      sliderTargetRef.current = container.scrollLeft;
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    };
+
+    container.addEventListener('scroll', onScroll, { passive: true });
+    container.addEventListener('wheel', onWheel, { passive: false });
+    container.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('resize', updateSliderState);
+
+    return () => {
+      container.removeEventListener('scroll', onScroll);
+      container.removeEventListener('wheel', onWheel);
+      container.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('resize', updateSliderState);
+      if (sliderRafRef.current) {
+        window.cancelAnimationFrame(sliderRafRef.current);
+        sliderRafRef.current = null;
+      }
+    };
+  }, [effectiveMenuItems, updateSliderState]);
+
   if (loadedOnce && (!navMenuEnabled || effectiveMenuItems.length === 0)) return null;
   if (!loadedOnce && effectiveMenuItems.length === 0) return null;
 
-  const resolvedBarBg = String(menuStyle.barBackgroundColor || '').trim();
+  const resolvedBarBg = resolveCategoryBarBackground(
+    barBackgroundColor,
+    menuStyle.categoryBarBackgroundColor,
+    menuStyle.barBackgroundColor,
+  );
   if (!resolvedBarBg) {
     return (
       <div className="relative hidden w-full overflow-hidden border-b border-slate-200 bg-slate-200 lg:block">
@@ -420,10 +576,45 @@ export default function NavbarMenuBar() {
         ...cssVars,
         backgroundColor: 'var(--menu-bar-bg)',
         boxShadow: 'inset 0 1px 0 var(--menu-bar-border)',
+        ...getNavbarBottomBorderStyle(menuStyle),
       }}
     >
-      <div className={`${NAVBAR_CONTAINER_CLASS} overflow-x-auto scrollbar-hide`} style={{ maxWidth: Math.min(1400, Number(navbarMaxWidth) || 1400) }}>
-        <div className="relative flex items-center py-2 whitespace-nowrap">
+      {canScrollLeft ? (
+        <button
+          type="button"
+          aria-label="Scroll categories left"
+          onClick={() => scrollCategoryBar(-1)}
+          className="absolute left-1 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border shadow-sm lg:inline-flex"
+          style={{
+            backgroundColor: 'var(--menu-bar-bg)',
+            color: 'var(--menu-bar-text)',
+            borderColor: 'var(--menu-bar-border)',
+          }}
+        >
+          <ChevronLeft size={16} />
+        </button>
+      ) : null}
+      {canScrollRight ? (
+        <button
+          type="button"
+          aria-label="Scroll categories right"
+          onClick={() => scrollCategoryBar(1)}
+          className="absolute right-1 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border shadow-sm lg:inline-flex"
+          style={{
+            backgroundColor: 'var(--menu-bar-bg)',
+            color: 'var(--menu-bar-text)',
+            borderColor: 'var(--menu-bar-border)',
+          }}
+        >
+          <ChevronRight size={16} />
+        </button>
+      ) : null}
+      <div
+        ref={sliderRef}
+        className={`${NAVBAR_CONTAINER_CLASS} overflow-x-auto scrollbar-hide select-none ${isSliderDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        style={{ maxWidth: Math.min(1400, Number(navbarMaxWidth) || 1400) }}
+      >
+        <div className="relative flex w-max items-center py-2 whitespace-nowrap">
           {effectiveMenuItems.map((item, index) => {
             const dropdownLinks = Array.isArray(item?.megaMenu?.links) ? item.megaMenu.links : [];
             const featuredImages = Array.isArray(item?.megaMenu?.images) ? item.megaMenu.images.filter((img) => img?.url) : [];
@@ -471,6 +662,12 @@ export default function NavbarMenuBar() {
                 )}
                 <Link
                   href={itemHref}
+                  draggable={false}
+                  onClick={(event) => {
+                    if (suppressClickRef.current || dragStateRef.current.moved) {
+                      event.preventDefault();
+                    }
+                  }}
                   className="inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-semibold uppercase tracking-wide transition-opacity hover:opacity-70"
                   style={{ color: 'var(--menu-bar-text)' }}
                 >

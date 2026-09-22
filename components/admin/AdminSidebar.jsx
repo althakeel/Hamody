@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from "next/navigation"
-import { HomeIcon, ShieldCheckIcon, StoreIcon, TicketPercentIcon, TagsIcon, ImageIcon, LogInIcon, HistoryIcon } from "lucide-react"
+import { HomeIcon, ShieldCheckIcon, StoreIcon, TicketPercentIcon, TagsIcon, ImageIcon, LogInIcon, HistoryIcon, RefreshCcw } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { assets } from "@/assets/assets"
@@ -22,6 +22,7 @@ const AdminSidebar = () => {
         { name: 'Grid Products', href: '/admin/grid-products', icon: TagsIcon },
         { name: 'Category Sections', href: '/admin/section4', icon: TagsIcon },
         { name: 'Sign-In Modal', href: '/admin/sign-in-modal', icon: LogInIcon },
+        { name: 'Website Cache', href: '/admin/cache', icon: RefreshCcw },
     ]
 
     return (

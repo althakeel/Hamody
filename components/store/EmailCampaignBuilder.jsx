@@ -2977,6 +2977,7 @@ export default function EmailCampaignBuilder({
         const data = await response.json();
         if (cancelled) return;
         if (!response.ok) {
+          setMjmlCompiledBlocks(null);
           setMjmlErrors([{ message: data?.error || 'Failed to compile MJML' }]);
           return;
         }

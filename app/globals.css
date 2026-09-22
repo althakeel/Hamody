@@ -513,6 +513,14 @@
         aspect-ratio: 3054 / 370;
     }
 
+    .shop-showcase-banner-row--full {
+        width: 100%;
+        max-width: none;
+        border-radius: 0;
+        height: var(--full-banner-height, 400px);
+        max-height: 500px;
+    }
+
     @media (max-width: 1023px) {
         .shop-showcase-banner-grid {
             grid-template-rows: auto;
@@ -527,6 +535,11 @@
         .shop-showcase-banner-row--secondary,
         .shop-showcase-banner-grid > .shop-showcase-banner-row:nth-child(2) {
             aspect-ratio: 6 / 1;
+        }
+
+        .shop-showcase-banner-row--full {
+            height: min(var(--full-banner-height, 400px), 260px);
+            max-height: 260px;
         }
 
         .shop-showcase-banner-grid .shop-showcase-banner-row:nth-child(2) {

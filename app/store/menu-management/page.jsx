@@ -13,9 +13,13 @@ import {
   DEFAULT_CATEGORIES_BUTTON_STYLE,
   DEFAULT_NAVBAR_LAYOUT,
   DEFAULT_SEARCH_STYLE,
+  SEARCH_ALIGN_OPTIONS,
   createNavbarExtraButton,
+  defaultNavbarItemAlign,
+  defaultNavbarItemOrder,
   getNavbarCategoriesButtonAppearance,
   getNavbarSearchAppearance,
+  normalizeNavbarBottomBorder,
   normalizeNavbarItemOrder,
   normalizeNavbarLayout,
 } from '@/lib/navbarLayoutSettings';
@@ -27,8 +31,10 @@ import {
   getOffersNavButtonAppearance,
 } from '@/lib/offersPageSettings';
 import {
+  buildParentCategoryNavMenuItems,
   filterParentCategories,
   getCategoryDisplayName,
+  getCategoryRecordId,
   resolveStoreNavMenuItems,
 } from '@/lib/categoryNavigation';
 import { toPublicCategoryPath } from '@/lib/categorySlug';
@@ -138,8 +144,9 @@ function ExtraButtonStyleEditor({
   hideAnimation = false,
   hideWidth = false,
   previewKind = 'button',
+  lockTypography = false,
 }) {
-  const [open, setOpen] = useState(previewKind === 'search' || previewKind === 'categories');
+  const [open, setOpen] = useState(false);
   const navStyle = style || fallbackStyle;
   const preview = getOffersNavButtonAppearance(navStyle, 'desktop');
   const categoriesPreview = getNavbarCategoriesButtonAppearance({ categoriesButtonStyle: navStyle }, 'desktop');
@@ -164,7 +171,7 @@ function ExtraButtonStyleEditor({
               ? (isSearchPreview
                 ? 'Font, size, color, border, radius, and background.'
                 : 'Font, weight, animation, size, color, border, radius, and background.')
-              : 'Closed. Click to edit style.'}
+              : 'Closed. Open only if you need fonts, borders, or colors.'}
           </span>
         </span>
         <ChevronDown
@@ -176,11 +183,14 @@ function ExtraButtonStyleEditor({
       {open ? (
       <div className="mt-3 space-y-3">
         <label className="block">
-          <span className="mb-1.5 block text-xs font-medium text-slate-500">Font</span>
+          <span className="mb-1.5 block text-xs font-medium text-slate-500">
+            Font
+            {lockTypography ? ' (locked by Same font)' : ''}
+          </span>
           <select
             value={navStyle.fontFamily || 'inherit'}
             onChange={(event) => onChange({ fontFamily: event.target.value })}
-            disabled={disabled}
+            disabled={disabled || lockTypography}
             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
           >
             {OFFERS_NAV_FONT_OPTIONS.map((font) => (
@@ -274,7 +284,7 @@ function ExtraButtonStyleEditor({
             max={22}
             value={navStyle.fontSize}
             onChange={(event) => onChange({ fontSize: Number(event.target.value) })}
-            disabled={disabled}
+            disabled={disabled || lockTypography}
             className="w-full accent-indigo-600"
           />
         </label>
@@ -461,10 +471,14 @@ function ExtraButtonStyleEditor({
               type="text"
               value={navStyle.backgroundTransparent ? 'transparent' : navStyle.backgroundColor}
               disabled={disabled || navStyle.backgroundTransparent}
-              onChange={(event) => onChange({
-                backgroundColor: event.target.value,
-                backgroundTransparent: false,
-              })}
+              onChange={(event) => {
+                const next = String(event.target.value || '').trim();
+                const isTransparent = next.toLowerCase() === 'transparent';
+                onChange({
+                  backgroundColor: isTransparent ? navStyle.backgroundColor : next,
+                  backgroundTransparent: isTransparent,
+                });
+              }}
               className="w-full border-0 bg-transparent text-sm text-slate-700 outline-none disabled:cursor-not-allowed"
             />
           </div>
@@ -497,7 +511,8 @@ const defaultSettings = {
     cart: true,
   },
   navMenuStyle: {
-    barBackgroundColor: '#ffffff',
+    barBackgroundColor: '#000000',
+    categoryBarBackgroundColor: '#000000',
     barTextColor: '#334155',
     barHoverBackgroundColor: '#f1f5f9',
     dropdownBackgroundColor: '#ffffff',
@@ -509,6 +524,9 @@ const defaultSettings = {
     showcaseFlyoutLinkColor: '#1f2937',
     showcaseFlyoutHoverColor: '#f8fafc',
     showcaseFlyoutBorderColor: '#dbe3ee',
+    showBottomBorder: false,
+    bottomBorderWidth: 2,
+    bottomBorderColor: '#e2e8f0',
   },
   navMenuItems: [],
   navMenuUseParentCategories: false,
@@ -521,56 +539,7 @@ const defaultNavbarBranding = {
   backgroundColor: '#8f3404',
 };
 
-const defaultMenuItems = [
-  {
-    name: 'About Jomla',
-    link: '/about-us',
-    icon: '',
-    hasDropdown: false,
-    categoryId: '',
-    megaMenu: {
-      linkColumns: 1,
-      links: [],
-      images: [],
-    },
-  },
-  {
-    name: 'Track Order',
-    link: '/track-order',
-    icon: '',
-    hasDropdown: false,
-    categoryId: '',
-    megaMenu: {
-      linkColumns: 1,
-      links: [],
-      images: [],
-    },
-  },
-  {
-    name: 'Download Jomla App',
-    link: '/support',
-    icon: '',
-    hasDropdown: false,
-    categoryId: '',
-    megaMenu: {
-      linkColumns: 1,
-      links: [],
-      images: [],
-    },
-  },
-  {
-    name: 'Advanced Search',
-    link: '/search-results',
-    icon: '',
-    hasDropdown: false,
-    categoryId: '',
-    megaMenu: {
-      linkColumns: 1,
-      links: [],
-      images: [],
-    },
-  },
-];
+const SHOW_MANUAL_NAV_EDITOR = false;
 
 const EXISTING_PAGES = [
   '/',
@@ -679,6 +648,7 @@ export default function MenuManagementPage() {
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [productOptions, setProductOptions] = useState([]);
   const [activePanel, setActivePanel] = useState('settings');
+  const [settingsSection, setSettingsSection] = useState('layout');
   const [uploadingMegaImageKey, setUploadingMegaImageKey] = useState('');
   const [uploadingNavbarLogo, setUploadingNavbarLogo] = useState(false);
   const [pendingClearLogo, setPendingClearLogo] = useState(false);
@@ -822,11 +792,14 @@ export default function MenuManagementPage() {
         navMenuStyle: {
           ...defaultSettings.navMenuStyle,
           ...(data?.navMenuStyle || {}),
+          categoryBarBackgroundColor: data?.navMenuStyle?.categoryBarBackgroundColor
+            || (data?.navMenuStyle?.barBackgroundColor
+              && String(data.navMenuStyle.barBackgroundColor).toLowerCase() !== '#ffffff'
+              ? data.navMenuStyle.barBackgroundColor
+              : '#000000'),
+          ...normalizeNavbarBottomBorder(data?.navMenuStyle, defaultSettings.navMenuStyle),
         },
-        // Respect an empty saved menu — never auto-restore hard-coded defaults after the user deleted items.
-        navMenuItems: Array.isArray(data?.navMenuItems)
-          ? data.navMenuItems
-          : defaultMenuItems,
+        navMenuItems: Array.isArray(data?.navMenuItems) ? data.navMenuItems : [],
         navMenuUseParentCategories: Boolean(data?.navMenuUseParentCategories),
       });
 
@@ -900,6 +873,93 @@ export default function MenuManagementPage() {
     );
   }, [form.navMenuUseParentCategories, form.navMenuItems, categoryOptions]);
 
+  const parentCategoryItems = useMemo(
+    () => buildParentCategoryNavMenuItems(categoryOptions),
+    [categoryOptions],
+  );
+
+  const isParentCategorySelected = (category) => {
+    const categoryId = getCategoryRecordId(category);
+    const slug = String(category?.slug || '').trim().toLowerCase();
+    const name = getCategoryDisplayName(category).toLowerCase();
+    return form.navMenuItems.some((item) => {
+      const itemId = String(item?.categoryId || '').trim();
+      const itemSlug = String(item?.slug || '').trim().toLowerCase();
+      const itemName = String(item?.name || '').trim().toLowerCase();
+      return (categoryId && itemId === categoryId)
+        || (slug && itemSlug === slug)
+        || (name && itemName === name);
+    });
+  };
+
+  const toggleParentCategoryChip = (category) => {
+    const match = parentCategoryItems.find((item) => {
+      const categoryId = getCategoryRecordId(category);
+      const slug = String(category?.slug || '').trim().toLowerCase();
+      return (categoryId && String(item?.categoryId || '') === categoryId)
+        || (slug && String(item?.slug || '').trim().toLowerCase() === slug);
+    });
+    if (!match) return;
+
+    setForm((prev) => {
+      const selected = prev.navMenuItems.some((item) => {
+        const itemId = String(item?.categoryId || '').trim();
+        const itemSlug = String(item?.slug || '').trim().toLowerCase();
+        const itemName = String(item?.name || '').trim().toLowerCase();
+        return (match.categoryId && itemId === match.categoryId)
+          || (match.slug && itemSlug === String(match.slug).toLowerCase())
+          || (match.name && itemName === String(match.name).toLowerCase());
+      });
+
+      if (selected) {
+        return {
+          ...prev,
+          navMenuItems: prev.navMenuItems.filter((item) => {
+            const itemId = String(item?.categoryId || '').trim();
+            const itemSlug = String(item?.slug || '').trim().toLowerCase();
+            const itemName = String(item?.name || '').trim().toLowerCase();
+            return !((match.categoryId && itemId === match.categoryId)
+              || (match.slug && itemSlug === String(match.slug).toLowerCase())
+              || (match.name && itemName === String(match.name).toLowerCase()));
+          }),
+        };
+      }
+
+      const next = [...prev.navMenuItems, match];
+      const order = new Map(parentCategoryItems.map((item, index) => [String(item.categoryId || item.slug || item.name), index]));
+      next.sort((left, right) => {
+        const leftKey = String(left.categoryId || left.slug || left.name);
+        const rightKey = String(right.categoryId || right.slug || right.name);
+        return (order.get(leftKey) ?? 999) - (order.get(rightKey) ?? 999);
+      });
+      return { ...prev, navMenuItems: next };
+    });
+  };
+
+  const updateCategoryBarColor = (nextColor) => {
+    setForm((prev) => ({
+      ...prev,
+      navMenuStyle: {
+        ...prev.navMenuStyle,
+        categoryBarBackgroundColor: nextColor,
+        barBackgroundColor: nextColor,
+      },
+    }));
+  };
+
+  const updateBottomBorder = (patch) => {
+    setForm((prev) => ({
+      ...prev,
+      navMenuStyle: {
+        ...prev.navMenuStyle,
+        ...normalizeNavbarBottomBorder({
+          ...prev.navMenuStyle,
+          ...patch,
+        }, defaultSettings.navMenuStyle),
+      },
+    }));
+  };
+
   const saveSettings = async (payload, successMessage = 'Navigation menu saved') => {
     const token = await getToken();
     const response = await fetch('/api/store/settings', {
@@ -949,11 +1009,13 @@ export default function MenuManagementPage() {
       clearLogo: pendingClearLogo,
       extraButtons: navbarLayout.extraButtons,
       searchMaxWidth: navbarLayout.searchMaxWidth,
+      searchAlign: navbarLayout.searchAlign,
       searchPlaceholder: navbarLayout.searchPlaceholder,
       searchPlaceholderAr: navbarLayout.searchPlaceholderAr,
       searchStyle: navbarLayout.searchStyle,
       navbarMaxWidth: navbarLayout.navbarMaxWidth,
       itemGap: navbarLayout.itemGap,
+      logoGap: navbarLayout.logoGap,
       mobileItemGap: navbarLayout.mobileItemGap,
       stickyHeader: navbarLayout.stickyHeader,
       showCategoriesButton: navbarLayout.showCategoriesButton,
@@ -961,6 +1023,10 @@ export default function MenuManagementPage() {
       categoriesButtonLabelAr: navbarLayout.categoriesButtonLabelAr,
       categoriesButtonStyle: navbarLayout.categoriesButtonStyle,
       itemOrder: navbarLayout.itemOrder,
+      itemAlign: navbarLayout.itemAlign,
+      unifyNavbarText: navbarLayout.unifyNavbarText,
+      unifiedTextFontFamily: navbarLayout.unifiedTextFontFamily,
+      unifiedTextFontSize: navbarLayout.unifiedTextFontSize,
     };
 
     const response = await fetch('/api/store/navbar-menu', {
@@ -1282,6 +1348,7 @@ export default function MenuManagementPage() {
         await saveSettings({
           navMenuEnabled: form.navMenuEnabled,
           navActionsVisibility: form.navActionsVisibility,
+          navMenuStyle: form.navMenuStyle,
         }, null);
       } catch (error) {
         saveErrors.push(error?.message || 'Failed to save settings');
@@ -1313,6 +1380,7 @@ export default function MenuManagementPage() {
             await saveSettings({
               navMenuItems: form.navMenuItems,
               navMenuUseParentCategories: form.navMenuUseParentCategories,
+              navMenuStyle: form.navMenuStyle,
             }, 'Menu saved');
           } catch (error) {
             toast.error(error?.message || 'Failed to save menu');
@@ -1329,6 +1397,7 @@ export default function MenuManagementPage() {
       await saveSettings({
         navMenuItems: form.navMenuItems,
         navMenuUseParentCategories: form.navMenuUseParentCategories,
+        navMenuStyle: form.navMenuStyle,
       }, 'Menu saved');
     } catch (error) {
       toast.error(error?.message || 'Failed to save menu');
@@ -1365,20 +1434,14 @@ export default function MenuManagementPage() {
               Navigation
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-              Menu Management
+              Navbar
             </h1>
             <p className="mt-1 text-sm text-slate-500">
-              Configure desktop navbar links, mega menus, logo, and icon visibility.
+              Pick a section below, change it, then click Save.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href="/store/storefront/navbar-menu"
-              className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Navbar layout
-            </Link>
             <button
               type="button"
               disabled={saving}
@@ -1386,15 +1449,15 @@ export default function MenuManagementPage() {
               className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50"
             >
               {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-              {activePanel === 'settings' ? 'Save settings' : 'Save menu'}
+              Save
             </button>
           </div>
         </div>
 
         <div className="flex gap-2 border-t border-slate-100 px-4 pb-0 pt-3 sm:px-6 lg:px-8">
           {[
-            { id: 'settings', label: 'Settings', icon: Settings2 },
-            { id: 'menu', label: 'Menu items', icon: Menu },
+            { id: 'settings', label: 'Look', icon: Settings2 },
+            { id: 'menu', label: 'Menu links', icon: Menu },
           ].map((tab) => {
             const Icon = tab.icon;
             const active = activePanel === tab.id;
@@ -1473,20 +1536,103 @@ export default function MenuManagementPage() {
                 searchPlaceholder={navbarLayout.searchPlaceholder || 'Wireless Headphones'}
                 extraButtons={navbarLayout.extraButtons}
                 searchMaxWidth={navbarLayout.searchMaxWidth}
+                searchAlign={navbarLayout.searchAlign}
                 searchStyle={navbarLayout.searchStyle}
                 navbarMaxWidth={navbarLayout.navbarMaxWidth}
                 showCategoriesButton={navbarLayout.showCategoriesButton}
                 categoriesButtonLabel={navbarLayout.categoriesButtonLabel}
                 categoriesButtonStyle={navbarLayout.categoriesButtonStyle}
                 itemOrder={navbarLayout.itemOrder}
+                itemAlign={navbarLayout.itemAlign}
                 itemGap={navbarLayout.itemGap}
+                logoGap={navbarLayout.logoGap}
                 mobileItemGap={navbarLayout.mobileItemGap}
                 device={previewDevice}
                 showMenuBar={false}
+                unifyNavbarText={navbarLayout.unifyNavbarText}
+                unifiedTextFontFamily={navbarLayout.unifiedTextFontFamily}
+                unifiedTextFontSize={navbarLayout.unifiedTextFontSize}
               />
             </div>
           </div>
 
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Same font for all navbar text</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Override existing per-item fonts so UNDER 99, extra buttons, Categories, search, and account use one family and size.
+                </p>
+              </div>
+              <label className="relative inline-flex cursor-pointer items-center">
+                <input
+                  type="checkbox"
+                  checked={navbarLayout.unifyNavbarText === true}
+                  onChange={(event) => setNavbarLayout((prev) => ({ ...prev, unifyNavbarText: event.target.checked }))}
+                  className="peer sr-only"
+                />
+                <span className="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-indigo-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-5" />
+              </label>
+            </div>
+            {navbarLayout.unifyNavbarText ? (
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <label className="block space-y-1">
+                  <span className="text-xs font-medium text-slate-600">Font family</span>
+                  <select
+                    value={navbarLayout.unifiedTextFontFamily || 'inherit'}
+                    onChange={(event) => setNavbarLayout((prev) => ({ ...prev, unifiedTextFontFamily: event.target.value }))}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                  >
+                    {OFFERS_NAV_FONT_OPTIONS.map((font) => (
+                      <option key={font.id} value={font.id}>
+                        {font.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block space-y-1">
+                  <span className="mb-1 flex items-center justify-between text-xs font-medium text-slate-600">
+                    Font size
+                    <span className="tabular-nums text-slate-700">{navbarLayout.unifiedTextFontSize || 13}px</span>
+                  </span>
+                  <input
+                    type="range"
+                    min={8}
+                    max={22}
+                    value={navbarLayout.unifiedTextFontSize || 13}
+                    onChange={(event) => setNavbarLayout((prev) => ({ ...prev, unifiedTextFontSize: Number(event.target.value) }))}
+                    className="w-full accent-indigo-600"
+                  />
+                </label>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: 'layout', label: 'Layout' },
+              { id: 'logo', label: 'Logo & color' },
+              { id: 'search', label: 'Search' },
+              { id: 'categories', label: 'Categories' },
+              { id: 'buttons', label: 'Extra buttons' },
+            ].map((section) => (
+              <button
+                key={section.id}
+                type="button"
+                onClick={() => setSettingsSection(section.id)}
+                className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
+                  settingsSection === section.id
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {section.label}
+              </button>
+            ))}
+          </div>
+
+          {settingsSection === 'layout' ? (
+          <div className="space-y-5">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <label className="block min-w-0 flex-1 space-y-1">
@@ -1535,6 +1681,15 @@ export default function MenuManagementPage() {
             layout={navbarLayout}
             visibility={form.navActionsVisibility}
             onChange={(itemOrder) => setNavbarLayout((prev) => ({ ...prev, itemOrder }))}
+            onAlignChange={(itemId, align) => setNavbarLayout((prev) => ({
+              ...prev,
+              itemAlign: { ...(prev.itemAlign || {}), [itemId]: align },
+            }))}
+            onReset={() => setNavbarLayout((prev) => ({
+              ...prev,
+              itemOrder: defaultNavbarItemOrder(prev.extraButtons),
+              itemAlign: defaultNavbarItemAlign(prev.extraButtons),
+            }))}
           />
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
@@ -1555,9 +1710,8 @@ export default function MenuManagementPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
-              <h2 className="mb-4 text-sm font-semibold text-slate-900">Navbar actions</h2>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+              <h2 className="mb-4 text-sm font-semibold text-slate-900">Show or hide icons</h2>
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 {actionToggles.map(({ key, label, icon: Icon }) => {
                   const checked = form.navActionsVisibility[key];
@@ -1593,11 +1747,14 @@ export default function MenuManagementPage() {
                 })}
               </div>
             </div>
+          </div>
+          ) : null}
 
+          {settingsSection === 'logo' ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
               <div className="mb-4 flex items-center gap-2">
                 <Palette size={16} className="text-indigo-600" />
-                <h2 className="text-sm font-semibold text-slate-900">Navbar branding</h2>
+                <h2 className="text-sm font-semibold text-slate-900">Logo and navbar color</h2>
               </div>
               <p className="mb-4 text-xs text-slate-500">
                 Upload a PNG or WebP with a transparent background. Transparent areas show the navbar color
@@ -1703,8 +1860,9 @@ export default function MenuManagementPage() {
                 </div>
               </div>
             </div>
-          </div>
+          ) : null}
 
+          {settingsSection === 'buttons' ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
             <h2 className="text-sm font-semibold text-slate-900">Buttons next to LAST CHANCE</h2>
             <p className="mt-1 text-xs text-slate-500">
@@ -1849,6 +2007,7 @@ export default function MenuManagementPage() {
                     style={button.style}
                     fallbackStyle={DEFAULT_OFFERS_NAV_STYLE}
                     previewLabel={button.label || 'Button preview'}
+                    lockTypography={navbarLayout.unifyNavbarText === true}
                     onChange={(patch) => setNavbarLayout((prev) => ({
                       ...prev,
                       extraButtons: prev.extraButtons.map((item, itemIndex) => (
@@ -1878,7 +2037,9 @@ export default function MenuManagementPage() {
               Add button
             </button>
           </div>
+          ) : null}
 
+          {settingsSection === 'layout' ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -1898,7 +2059,9 @@ export default function MenuManagementPage() {
               </label>
             </div>
           </div>
+          ) : null}
 
+          {settingsSection === 'categories' ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -1963,6 +2126,7 @@ export default function MenuManagementPage() {
               previewLabel={navbarLayout.categoriesButtonLabel || 'Categories'}
               previewKind="categories"
               disabled={navbarLayout.showCategoriesButton === false}
+              lockTypography={navbarLayout.unifyNavbarText === true}
               onChange={(patch) => setNavbarLayout((prev) => ({
                 ...prev,
                 categoriesButtonStyle: {
@@ -1972,11 +2136,13 @@ export default function MenuManagementPage() {
               }))}
             />
           </div>
+          ) : null}
 
+          {settingsSection === 'search' ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
-            <h2 className="text-sm font-semibold text-slate-900">Search and width</h2>
+            <h2 className="text-sm font-semibold text-slate-900">Search</h2>
             <p className="mt-1 text-xs text-slate-500">
-              Control the customer search field design, placeholder, and how wide the navbar is on the website.
+              Align, width, placeholder, and space after the logo.
             </p>
             <div className="sticky top-3 z-20 mt-4 rounded-xl bg-white/95 pb-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] backdrop-blur-sm">
               <SearchFieldPreview
@@ -2025,6 +2191,7 @@ export default function MenuManagementPage() {
               hideAnimation
               hideWidth
               previewKind="search"
+              lockTypography={navbarLayout.unifyNavbarText === true}
               onChange={(patch) => setNavbarLayout((prev) => ({
                 ...prev,
                 searchStyle: {
@@ -2033,6 +2200,30 @@ export default function MenuManagementPage() {
                 },
               }))}
             />
+            <div className="mt-4 space-y-3">
+              <div>
+                <span className="text-xs font-medium text-slate-600">Search align</span>
+                <p className="mt-0.5 text-[11px] text-slate-500">
+                  Right moves the search next to account and cart and removes the empty gap.
+                </p>
+                <div className="mt-2 inline-flex flex-wrap rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                  {SEARCH_ALIGN_OPTIONS.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setNavbarLayout((prev) => ({ ...prev, searchAlign: option.id }))}
+                      className={`rounded-md px-2.5 py-1.5 text-xs font-semibold transition ${
+                        navbarLayout.searchAlign === option.id
+                          ? 'bg-white text-slate-900 shadow-sm'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <label className="block space-y-1">
                 <span className="text-xs font-medium text-slate-600">Search max width ({navbarLayout.searchMaxWidth}px)</span>
@@ -2080,8 +2271,22 @@ export default function MenuManagementPage() {
                   Reset gap
                 </button>
               </div>
+              <label className="block space-y-1 md:col-span-2">
+                <span className="text-xs font-medium text-slate-600">Space after logo ({navbarLayout.logoGap}px)</span>
+                <p className="text-[11px] text-slate-500">Adds extra space after the logo, before Under 99 and the other items.</p>
+                <input
+                  type="range"
+                  min="0"
+                  max="80"
+                  step="1"
+                  className="w-full accent-indigo-600"
+                  value={navbarLayout.logoGap}
+                  onChange={(event) => setNavbarLayout((prev) => ({ ...prev, logoGap: Number(event.target.value) }))}
+                />
+              </label>
             </div>
           </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -2135,16 +2340,99 @@ export default function MenuManagementPage() {
               searchPlaceholder={navbarLayout.searchPlaceholder || 'Coffee Maker'}
               extraButtons={navbarLayout.extraButtons}
               searchMaxWidth={navbarLayout.searchMaxWidth}
+              searchAlign={navbarLayout.searchAlign}
               searchStyle={navbarLayout.searchStyle}
               navbarMaxWidth={navbarLayout.navbarMaxWidth}
               showCategoriesButton={navbarLayout.showCategoriesButton}
               categoriesButtonLabel={navbarLayout.categoriesButtonLabel}
               categoriesButtonStyle={navbarLayout.categoriesButtonStyle}
               itemOrder={navbarLayout.itemOrder}
+              itemAlign={navbarLayout.itemAlign}
               itemGap={navbarLayout.itemGap}
+              logoGap={navbarLayout.logoGap}
               mobileItemGap={navbarLayout.mobileItemGap}
               device={previewDevice}
+              menuBarBackgroundColor={form.navMenuStyle?.categoryBarBackgroundColor || '#000000'}
+              showBottomBorder={Boolean(form.navMenuStyle?.showBottomBorder)}
+              bottomBorderWidth={form.navMenuStyle?.bottomBorderWidth || 2}
+              bottomBorderColor={form.navMenuStyle?.bottomBorderColor || '#e2e8f0'}
+              unifyNavbarText={navbarLayout.unifyNavbarText}
+              unifiedTextFontFamily={navbarLayout.unifiedTextFontFamily}
+              unifiedTextFontSize={navbarLayout.unifiedTextFontSize}
             />
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Category bar background</p>
+              <p className="text-xs text-slate-500">Preview updates as you pick. Click Save to apply on the live site.</p>
+            </div>
+            <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-2 py-1.5">
+              <input
+                type="color"
+                value={form.navMenuStyle?.categoryBarBackgroundColor || '#000000'}
+                onChange={(e) => updateCategoryBarColor(e.target.value)}
+                className="h-8 w-10 cursor-pointer rounded border-0 bg-transparent p-0"
+              />
+              <input
+                type="text"
+                value={form.navMenuStyle?.categoryBarBackgroundColor || '#000000'}
+                onChange={(e) => updateCategoryBarColor(e.target.value)}
+                className="w-28 border-0 bg-transparent text-sm text-slate-700 outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Bottom border</p>
+                <p className="text-xs text-slate-500">Add a line under the category bar. Preview updates as you pick. Click Save to apply on the live site.</p>
+              </div>
+              <label className="relative inline-flex cursor-pointer items-center">
+                <input
+                  type="checkbox"
+                  checked={Boolean(form.navMenuStyle?.showBottomBorder)}
+                  onChange={(event) => updateBottomBorder({ showBottomBorder: event.target.checked })}
+                  className="sr-only peer"
+                />
+                <div className="relative h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-slate-900 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-full" />
+              </label>
+            </div>
+            {form.navMenuStyle?.showBottomBorder ? (
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <label className="flex items-center gap-3 text-sm text-slate-700">
+                  <span className="w-24 shrink-0">Thickness</span>
+                  <input
+                    type="range"
+                    min="1"
+                    max="12"
+                    value={Number(form.navMenuStyle?.bottomBorderWidth) || 2}
+                    onChange={(event) => updateBottomBorder({ bottomBorderWidth: Number(event.target.value) })}
+                    className="h-1.5 w-36 accent-slate-900"
+                  />
+                  <span className="w-10 text-xs text-slate-500">{Number(form.navMenuStyle?.bottomBorderWidth) || 2}px</span>
+                </label>
+                <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-2 py-1.5">
+                  <input
+                    type="color"
+                    value={form.navMenuStyle?.bottomBorderColor || '#e2e8f0'}
+                    onChange={(event) => updateBottomBorder({ bottomBorderColor: event.target.value })}
+                    className="h-8 w-10 cursor-pointer rounded border-0 bg-transparent p-0"
+                  />
+                  <input
+                    type="text"
+                    value={form.navMenuStyle?.bottomBorderColor || '#e2e8f0'}
+                    onChange={(event) => updateBottomBorder({ bottomBorderColor: event.target.value })}
+                    className="w-28 border-0 bg-transparent text-sm text-slate-700 outline-none"
+                  />
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -2153,52 +2441,88 @@ export default function MenuManagementPage() {
             <div>
               <p className="text-sm font-semibold text-slate-900">Use parent categories</p>
               <p className="text-xs text-slate-500">
-                Automatically build the navbar from top-level store categories. Manual navigation items are hidden.
+                {form.navMenuUseParentCategories
+                  ? 'Automatically build the navbar from top-level store categories. Manual navigation items are hidden.'
+                  : 'Choose which parent categories appear. The live bar keeps the same uppercase, pipe-separated design.'}
               </p>
             </div>
             <label className="relative inline-flex cursor-pointer items-center">
               <input
                 type="checkbox"
                 checked={form.navMenuUseParentCategories}
-                onChange={(e) => setForm((prev) => ({
-                  ...prev,
-                  navMenuUseParentCategories: e.target.checked,
-                }))}
+                onChange={async (e) => {
+                  const enabled = e.target.checked;
+                  const nextItems = enabled
+                    ? form.navMenuItems
+                    : buildParentCategoryNavMenuItems(categoryOptions);
+                  setForm((prev) => ({
+                    ...prev,
+                    navMenuUseParentCategories: enabled,
+                    navMenuItems: nextItems,
+                  }));
+                  try {
+                    await saveSettings({
+                      navMenuUseParentCategories: enabled,
+                      navMenuItems: nextItems,
+                    }, enabled
+                      ? 'Using parent categories'
+                      : 'Navbar kept the same parent-category bar');
+                  } catch (error) {
+                    toast.error(error?.message || 'Failed to update menu');
+                  }
+                }}
                 className="peer sr-only"
               />
               <span className="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-indigo-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-5" />
             </label>
           </div>
 
-          {form.navMenuUseParentCategories ? (
-            <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-indigo-800">
-                {parentCategoryPreview.length} parent categories with subcategories
-              </p>
-              <p className="mt-1 text-xs text-indigo-900/80">
-                Only top-level categories that have child categories are shown in the navbar.
-              </p>
-              {parentCategoryPreview.length > 0 ? (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {parentCategoryPreview.map((category) => (
+          <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-800">
+              {parentCategoryPreview.length} parent categories with subcategories
+            </p>
+            <p className="mt-1 text-xs text-indigo-900/80">
+              {form.navMenuUseParentCategories
+                ? 'Only top-level categories that have child categories are shown in the navbar.'
+                : 'Same navbar bar. Click a category to show or hide it. Save menu to apply.'}
+            </p>
+            {parentCategoryPreview.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {parentCategoryPreview.map((category) => {
+                  const selected = form.navMenuUseParentCategories || isParentCategorySelected(category);
+                  const label = getCategoryDisplayName(category);
+                  return form.navMenuUseParentCategories ? (
                     <span
                       key={category._id || category.slug || category.name}
                       className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 ring-1 ring-indigo-100"
                     >
-                      {getCategoryDisplayName(category)}
+                      {label}
                     </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-2 text-sm text-indigo-900">
-                  No parent categories found. Add categories under Store → Categories first.
-                </p>
-              )}
-            </div>
-          ) : null}
+                  ) : (
+                    <button
+                      key={category._id || category.slug || category.name}
+                      type="button"
+                      onClick={() => toggleParentCategoryChip(category)}
+                      className={`rounded-full px-3 py-1 text-xs font-medium ring-1 transition ${
+                        selected
+                          ? 'bg-white text-slate-700 ring-indigo-100'
+                          : 'bg-indigo-100/40 text-slate-400 ring-indigo-100 line-through'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-indigo-900">
+                No parent categories found. Add categories under Store → Categories first.
+              </p>
+            )}
+          </div>
         </div>
 
-      {!form.navMenuUseParentCategories ? (
+      {SHOW_MANUAL_NAV_EDITOR && !form.navMenuUseParentCategories ? (
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
         <div className="flex flex-col gap-3 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <div>
@@ -2354,14 +2678,7 @@ export default function MenuManagementPage() {
                   />
                   Has dropdown
                 </label>
-                <input
-                  type="text"
-                  value={item.categoryId || ''}
-                  onChange={(e) => updateMenuItem(index, (current) => ({ ...current, categoryId: e.target.value }))}
-                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                  placeholder="Optional categoryId"
-                />
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 md:col-span-2">
                   <input
                     type="text"
                     value={item.icon || ''}

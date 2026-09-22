@@ -44,6 +44,7 @@ export async function GET(req) {
       titleAr: slider.titleAr || '',
       subtitleAr: slider.subtitleAr || '',
       sideImage: slider.sideImage || '',
+      sideImageAr: slider.sideImageAr || '',
       sideImagePosition: normalizeCategorySliderSideImagePosition(slider.sideImagePosition),
       cardsPerRow: slider.cardsPerRow === 5 ? 5 : 6,
       backgroundColor: normalizeCategorySliderBackground(slider.backgroundColor),
@@ -78,7 +79,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
     }
 
-    const { title, subtitle, titleAr, subtitleAr, productIds, sideImage, sideImagePosition, cardsPerRow, backgroundColor, autoSlide, autoSlideIntervalMs } = await req.json();
+    const { title, subtitle, titleAr, subtitleAr, productIds, sideImage, sideImageAr, sideImagePosition, cardsPerRow, backgroundColor, autoSlide, autoSlideIntervalMs } = await req.json();
     console.log('=== 💾 POST SLIDER START ===');
     console.log('💾 Raw request body - subtitle:', subtitle);
     console.log('💾 Subtitle is null:', subtitle === null);
@@ -110,6 +111,9 @@ export async function POST(req) {
     const sideImageValue = sideImage !== undefined && sideImage !== null
       ? String(sideImage).trim()
       : '';
+    const sideImageArValue = sideImageAr !== undefined && sideImageAr !== null
+      ? String(sideImageAr).trim()
+      : '';
 
     if (!scope.storeId) {
       return NextResponse.json(
@@ -132,6 +136,7 @@ export async function POST(req) {
       subtitleAr: subtitleAr !== undefined && subtitleAr !== null ? String(subtitleAr).trim() : '',
       productIds,
       sideImage: sideImageValue,
+      sideImageAr: sideImageArValue,
       sideImagePosition: normalizeCategorySliderSideImagePosition(sideImagePosition),
       cardsPerRow: Number(cardsPerRow) === 5 ? 5 : 6,
       backgroundColor: normalizeCategorySliderBackground(backgroundColor),

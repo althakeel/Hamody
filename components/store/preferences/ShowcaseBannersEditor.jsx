@@ -6,7 +6,22 @@ import Image from 'next/image'
 import { Check, ChevronDown, ChevronUp, Loader2, Plus, Save, Search, Trash2, Upload } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/lib/useAuth'
-import { createLargeBannerSlide, normalizeLargeBannerSliderItemsForEditor } from '@/lib/shopShowcaseLargeBanners'
+import {
+  createLargeBannerSlide,
+  normalizeLargeBannerSliderItemsForEditor,
+  normalizeFullWidthBannerHeight,
+  FULL_WIDTH_BANNER_HEIGHT_MIN,
+  FULL_WIDTH_BANNER_HEIGHT_MAX,
+  FULL_WIDTH_BANNER_HEIGHT_DEFAULT,
+  normalizeLowerFullWidthBannerHeight,
+  LOWER_FULL_WIDTH_BANNER_HEIGHT_MIN,
+  LOWER_FULL_WIDTH_BANNER_HEIGHT_MAX,
+  LOWER_FULL_WIDTH_BANNER_HEIGHT_DEFAULT,
+  normalizeFullWidthBannerGap,
+  FULL_WIDTH_BANNER_GAP_MIN,
+  FULL_WIDTH_BANNER_GAP_MAX,
+  FULL_WIDTH_BANNER_GAP_DEFAULT,
+} from '@/lib/shopShowcaseLargeBanners'
 import { hasShowcaseBannerImage, serializeShowcaseImageFields } from '@/lib/showcaseBannerImages'
 import {
   createShowcaseLinkFromChoice,
@@ -99,6 +114,34 @@ const BOTTOM_BANNER_SIZES = {
   imageAr: { width: 3054, height: 370 },
   tabletImageAr: { width: 1536, height: 186 },
   mobileImageAr: { width: 768, height: 200 },
+}
+
+function getFullWidthBannerSizes(height = FULL_WIDTH_BANNER_HEIGHT_DEFAULT) {
+  const desktopHeight = normalizeFullWidthBannerHeight(height)
+  const tabletHeight = Math.round(desktopHeight * 0.6)
+  const mobileHeight = Math.min(260, Math.round(desktopHeight * 0.5))
+  return {
+    image: { width: 1920, height: desktopHeight },
+    tabletImage: { width: 1024, height: tabletHeight },
+    mobileImage: { width: 768, height: mobileHeight },
+    imageAr: { width: 1920, height: desktopHeight },
+    tabletImageAr: { width: 1024, height: tabletHeight },
+    mobileImageAr: { width: 768, height: mobileHeight },
+  }
+}
+
+function getLowerFullWidthBannerSizes(height = LOWER_FULL_WIDTH_BANNER_HEIGHT_DEFAULT) {
+  const desktopHeight = normalizeLowerFullWidthBannerHeight(height)
+  const tabletHeight = Math.round(desktopHeight * 0.7)
+  const mobileHeight = Math.min(180, Math.round(desktopHeight * 0.6))
+  return {
+    image: { width: 1920, height: desktopHeight },
+    tabletImage: { width: 1024, height: tabletHeight },
+    mobileImage: { width: 768, height: mobileHeight },
+    imageAr: { width: 1920, height: desktopHeight },
+    tabletImageAr: { width: 1024, height: tabletHeight },
+    mobileImageAr: { width: 768, height: mobileHeight },
+  }
 }
 
 const PRODUCT_BANNER_SIZES = {
@@ -199,6 +242,21 @@ function SmoothPanel({ open, children }) {
         </div>
       </div>
     </div>
+  )
+}
+
+function VisibilitySwitch({ enabled, onChange }) {
+  return (
+    <label className="inline-flex shrink-0 cursor-pointer items-center gap-2">
+      <input
+        type="checkbox"
+        checked={!!enabled}
+        onChange={(event) => onChange(event.target.checked)}
+        className="peer sr-only"
+      />
+      <span className="relative h-6 w-11 rounded-full bg-slate-300 transition after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-emerald-600 peer-checked:after:translate-x-5" />
+      <span className="text-xs font-medium text-slate-700">{enabled ? 'Enabled' : 'Disabled'}</span>
+    </label>
   )
 }
 
@@ -632,6 +690,10 @@ function LargeBannerSlideCard({
 
 const DEFAULT_FORM = {
   mainBannerEnabled: true,
+  topBannerEnabled: true,
+  bottomBannerEnabled: true,
+  fullWidthBannerEnabled: false,
+  lowerFullWidthBannerEnabled: false,
   topBannerImage: '',
   topBannerTitle: '',
   topBannerSubtitle: '',
@@ -658,6 +720,35 @@ const DEFAULT_FORM = {
   bottomBannerSliderEnabled: true,
   bottomBannerSliderInterval: 4000,
   bottomBannerSliderItems: [createLargeBannerSlide({ alt: 'Bottom banner 1' })],
+  fullWidthBannerImage: '',
+  fullWidthBannerTitle: '',
+  fullWidthBannerSubtitle: '',
+  fullWidthBannerCtaText: '',
+  fullWidthBannerTitleEnabled: false,
+  fullWidthBannerSubtitleEnabled: false,
+  fullWidthBannerCtaEnabled: false,
+  fullWidthBannerCtaBgColor: '#ef2d2d',
+  fullWidthBannerCtaTextColor: '#ffffff',
+  fullWidthBannerLink: '/shop',
+  fullWidthBannerSliderEnabled: true,
+  fullWidthBannerSliderInterval: 4000,
+  fullWidthBannerDesktopHeight: FULL_WIDTH_BANNER_HEIGHT_DEFAULT,
+  fullWidthBannerSliderItems: [createLargeBannerSlide({ alt: 'Full-width banner 1' })],
+  lowerFullWidthBannerImage: '',
+  lowerFullWidthBannerTitle: '',
+  lowerFullWidthBannerSubtitle: '',
+  lowerFullWidthBannerCtaText: '',
+  lowerFullWidthBannerTitleEnabled: false,
+  lowerFullWidthBannerSubtitleEnabled: false,
+  lowerFullWidthBannerCtaEnabled: false,
+  lowerFullWidthBannerCtaBgColor: '#ef2d2d',
+  lowerFullWidthBannerCtaTextColor: '#ffffff',
+  lowerFullWidthBannerLink: '/shop',
+  lowerFullWidthBannerSliderEnabled: true,
+  lowerFullWidthBannerSliderInterval: 4000,
+  lowerFullWidthBannerDesktopHeight: LOWER_FULL_WIDTH_BANNER_HEIGHT_DEFAULT,
+  fullWidthBannerGap: FULL_WIDTH_BANNER_GAP_DEFAULT,
+  lowerFullWidthBannerSliderItems: [createLargeBannerSlide({ alt: 'Lower full-width banner 1' })],
   productBanners: [
     createBanner(),
     createBanner(),
@@ -718,6 +809,10 @@ function buildShowcaseFormState(showcase = {}, previousForm = null) {
     mainBannerEnabled: typeof showcase?.mainBannerEnabled === 'boolean'
       ? showcase.mainBannerEnabled
       : true,
+    topBannerEnabled: showcase?.topBannerEnabled !== false,
+    bottomBannerEnabled: showcase?.bottomBannerEnabled !== false,
+    fullWidthBannerEnabled: showcase?.fullWidthBannerEnabled === true,
+    lowerFullWidthBannerEnabled: showcase?.lowerFullWidthBannerEnabled === true,
     topBannerImage: sanitizeImageUrl(showcase?.topBannerImage || ''),
     topBannerTitle: showcase?.topBannerTitle || '',
     topBannerSubtitle: showcase?.topBannerSubtitle || '',
@@ -767,6 +862,49 @@ function buildShowcaseFormState(showcase = {}, previousForm = null) {
       const baseItems = items.length ? items : [createLargeBannerSlide({ alt: 'Bottom banner 1', file: null })]
       if (previousForm?.bottomBannerSliderItems?.length) {
         return mergeSavedSliderItems(previousForm.bottomBannerSliderItems, baseItems)
+      }
+      return baseItems
+    })(),
+    fullWidthBannerImage: sanitizeImageUrl(showcase?.fullWidthBannerImage || ''),
+    fullWidthBannerTitle: showcase?.fullWidthBannerTitle || '',
+    fullWidthBannerSubtitle: showcase?.fullWidthBannerSubtitle || '',
+    fullWidthBannerCtaText: showcase?.fullWidthBannerCtaText || '',
+    fullWidthBannerTitleEnabled: showcase?.fullWidthBannerTitleEnabled === true,
+    fullWidthBannerSubtitleEnabled: showcase?.fullWidthBannerSubtitleEnabled === true,
+    fullWidthBannerCtaEnabled: showcase?.fullWidthBannerCtaEnabled === true,
+    fullWidthBannerCtaBgColor: showcase?.fullWidthBannerCtaBgColor || '#ef2d2d',
+    fullWidthBannerCtaTextColor: showcase?.fullWidthBannerCtaTextColor || '#ffffff',
+    fullWidthBannerLink: showcase?.fullWidthBannerLink || '/shop',
+    fullWidthBannerSliderEnabled: showcase?.fullWidthBannerSliderEnabled !== false,
+    fullWidthBannerSliderInterval: Number(showcase?.fullWidthBannerSliderInterval) || 4000,
+    fullWidthBannerDesktopHeight: normalizeFullWidthBannerHeight(showcase?.fullWidthBannerDesktopHeight),
+    fullWidthBannerSliderItems: (() => {
+      const items = mapSliderItemsForEditor(showcase, 'fullWidthBannerSliderItems', 'fullWidthBannerImage', 'fullWidthBannerLink', 'full-width-large-banner', 'Full-width banner')
+      const baseItems = items.length ? items : [createLargeBannerSlide({ alt: 'Full-width banner 1', file: null })]
+      if (previousForm?.fullWidthBannerSliderItems?.length) {
+        return mergeSavedSliderItems(previousForm.fullWidthBannerSliderItems, baseItems)
+      }
+      return baseItems
+    })(),
+    lowerFullWidthBannerImage: sanitizeImageUrl(showcase?.lowerFullWidthBannerImage || ''),
+    lowerFullWidthBannerTitle: showcase?.lowerFullWidthBannerTitle || '',
+    lowerFullWidthBannerSubtitle: showcase?.lowerFullWidthBannerSubtitle || '',
+    lowerFullWidthBannerCtaText: showcase?.lowerFullWidthBannerCtaText || '',
+    lowerFullWidthBannerTitleEnabled: showcase?.lowerFullWidthBannerTitleEnabled === true,
+    lowerFullWidthBannerSubtitleEnabled: showcase?.lowerFullWidthBannerSubtitleEnabled === true,
+    lowerFullWidthBannerCtaEnabled: showcase?.lowerFullWidthBannerCtaEnabled === true,
+    lowerFullWidthBannerCtaBgColor: showcase?.lowerFullWidthBannerCtaBgColor || '#ef2d2d',
+    lowerFullWidthBannerCtaTextColor: showcase?.lowerFullWidthBannerCtaTextColor || '#ffffff',
+    lowerFullWidthBannerLink: showcase?.lowerFullWidthBannerLink || '/shop',
+    lowerFullWidthBannerSliderEnabled: showcase?.lowerFullWidthBannerSliderEnabled !== false,
+    lowerFullWidthBannerSliderInterval: Number(showcase?.lowerFullWidthBannerSliderInterval) || 4000,
+    lowerFullWidthBannerDesktopHeight: normalizeLowerFullWidthBannerHeight(showcase?.lowerFullWidthBannerDesktopHeight),
+    fullWidthBannerGap: normalizeFullWidthBannerGap(showcase?.fullWidthBannerGap),
+    lowerFullWidthBannerSliderItems: (() => {
+      const items = mapSliderItemsForEditor(showcase, 'lowerFullWidthBannerSliderItems', 'lowerFullWidthBannerImage', 'lowerFullWidthBannerLink', 'lower-full-width-large-banner', 'Lower full-width banner')
+      const baseItems = items.length ? items : [createLargeBannerSlide({ alt: 'Lower full-width banner 1', file: null })]
+      if (previousForm?.lowerFullWidthBannerSliderItems?.length) {
+        return mergeSavedSliderItems(previousForm.lowerFullWidthBannerSliderItems, baseItems)
       }
       return baseItems
     })(),
@@ -827,15 +965,37 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
   const [productOptions, setProductOptions] = useState([])
   const [openTopSlideId, setOpenTopSlideId] = useState(null)
   const [openBottomSlideId, setOpenBottomSlideId] = useState(null)
+  const [openFullWidthSlideId, setOpenFullWidthSlideId] = useState(null)
+  const [openLowerFullWidthSlideId, setOpenLowerFullWidthSlideId] = useState(null)
   const [openProductIndex, setOpenProductIndex] = useState(null)
   const [openLayoutGuide, setOpenLayoutGuide] = useState(false)
   const [openTopText, setOpenTopText] = useState(false)
   const [openBottomText, setOpenBottomText] = useState(false)
+  const [openFullWidthText, setOpenFullWidthText] = useState(false)
+  const [openLowerFullWidthText, setOpenLowerFullWidthText] = useState(false)
   const [loadedShowcase, setLoadedShowcase] = useState({})
   const formRef = useRef(form)
   const loadedShowcaseRef = useRef(loadedShowcase)
   formRef.current = form
   loadedShowcaseRef.current = loadedShowcase
+
+  const setBannerEnabled = (key, enabled) => {
+    setForm((prev) => {
+      const next = { ...prev, [key]: enabled }
+      if (enabled && key === 'fullWidthBannerEnabled') {
+        next.topBannerEnabled = false
+        next.bottomBannerEnabled = false
+        setOpenLayoutGuide(true)
+      }
+      if (enabled && key === 'lowerFullWidthBannerEnabled') {
+        setOpenLayoutGuide(true)
+      }
+      if (enabled && (key === 'topBannerEnabled' || key === 'bottomBannerEnabled')) {
+        next.fullWidthBannerEnabled = false
+      }
+      return next
+    })
+  }
 
   const loadData = async () => {
     try {
@@ -1117,8 +1277,22 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
         bottomBannerSliderItems.push(await serializeSlideForSave(slide, currentForm.bottomBannerLink))
       }
 
+      const fullWidthBannerSliderItems = []
+      for (const slide of currentForm.fullWidthBannerSliderItems || []) {
+        fullWidthBannerSliderItems.push(await serializeSlideForSave(slide, currentForm.fullWidthBannerLink))
+      }
+
+      const lowerFullWidthBannerSliderItems = []
+      for (const slide of currentForm.lowerFullWidthBannerSliderItems || []) {
+        lowerFullWidthBannerSliderItems.push(await serializeSlideForSave(slide, currentForm.lowerFullWidthBannerLink))
+      }
+
       topBannerImage = topBannerSliderItems.find((slide) => slide.image)?.image || topBannerImage
       bottomBannerImage = bottomBannerSliderItems.find((slide) => slide.image)?.image || bottomBannerImage
+      let fullWidthBannerImage = sanitizeImageUrl(currentForm.fullWidthBannerImage)
+      fullWidthBannerImage = fullWidthBannerSliderItems.find((slide) => slide.image)?.image || fullWidthBannerImage
+      let lowerFullWidthBannerImage = sanitizeImageUrl(currentForm.lowerFullWidthBannerImage)
+      lowerFullWidthBannerImage = lowerFullWidthBannerSliderItems.find((slide) => slide.image)?.image || lowerFullWidthBannerImage
 
       if (currentForm.topBannerFile) {
         topBannerImage = sanitizeImageUrl(await uploadImage(currentForm.topBannerFile, token))
@@ -1136,6 +1310,10 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
       const response = await axios.put('/api/store/preferences/shop-showcase', {
         ...latestShowcase,
         mainBannerEnabled: !!currentForm.mainBannerEnabled,
+        topBannerEnabled: !!currentForm.topBannerEnabled,
+        bottomBannerEnabled: !!currentForm.bottomBannerEnabled,
+        fullWidthBannerEnabled: !!currentForm.fullWidthBannerEnabled,
+        lowerFullWidthBannerEnabled: !!currentForm.lowerFullWidthBannerEnabled,
         productBanners,
         topBannerImage,
         topBannerTitle: String(currentForm.topBannerTitle || '').trim(),
@@ -1163,6 +1341,35 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
         bottomBannerSliderEnabled: !!currentForm.bottomBannerSliderEnabled,
         bottomBannerSliderInterval: Number(currentForm.bottomBannerSliderInterval) || 4000,
         bottomBannerSliderItems,
+        fullWidthBannerImage,
+        fullWidthBannerTitle: String(currentForm.fullWidthBannerTitle || '').trim(),
+        fullWidthBannerTitleEnabled: !!currentForm.fullWidthBannerTitleEnabled,
+        fullWidthBannerSubtitle: String(currentForm.fullWidthBannerSubtitle || '').trim(),
+        fullWidthBannerSubtitleEnabled: !!currentForm.fullWidthBannerSubtitleEnabled,
+        fullWidthBannerCtaText: String(currentForm.fullWidthBannerCtaText || '').trim(),
+        fullWidthBannerCtaEnabled: !!currentForm.fullWidthBannerCtaEnabled,
+        fullWidthBannerCtaBgColor: String(currentForm.fullWidthBannerCtaBgColor || '').trim(),
+        fullWidthBannerCtaTextColor: String(currentForm.fullWidthBannerCtaTextColor || '').trim(),
+        fullWidthBannerLink: String(currentForm.fullWidthBannerLink || '/shop').trim(),
+        fullWidthBannerSliderEnabled: !!currentForm.fullWidthBannerSliderEnabled,
+        fullWidthBannerSliderInterval: Number(currentForm.fullWidthBannerSliderInterval) || 4000,
+        fullWidthBannerDesktopHeight: normalizeFullWidthBannerHeight(currentForm.fullWidthBannerDesktopHeight),
+        fullWidthBannerSliderItems,
+        lowerFullWidthBannerImage,
+        lowerFullWidthBannerTitle: String(currentForm.lowerFullWidthBannerTitle || '').trim(),
+        lowerFullWidthBannerTitleEnabled: !!currentForm.lowerFullWidthBannerTitleEnabled,
+        lowerFullWidthBannerSubtitle: String(currentForm.lowerFullWidthBannerSubtitle || '').trim(),
+        lowerFullWidthBannerSubtitleEnabled: !!currentForm.lowerFullWidthBannerSubtitleEnabled,
+        lowerFullWidthBannerCtaText: String(currentForm.lowerFullWidthBannerCtaText || '').trim(),
+        lowerFullWidthBannerCtaEnabled: !!currentForm.lowerFullWidthBannerCtaEnabled,
+        lowerFullWidthBannerCtaBgColor: String(currentForm.lowerFullWidthBannerCtaBgColor || '').trim(),
+        lowerFullWidthBannerCtaTextColor: String(currentForm.lowerFullWidthBannerCtaTextColor || '').trim(),
+        lowerFullWidthBannerLink: String(currentForm.lowerFullWidthBannerLink || '/shop').trim(),
+        lowerFullWidthBannerSliderEnabled: !!currentForm.lowerFullWidthBannerSliderEnabled,
+        lowerFullWidthBannerSliderInterval: Number(currentForm.lowerFullWidthBannerSliderInterval) || 4000,
+        lowerFullWidthBannerDesktopHeight: normalizeLowerFullWidthBannerHeight(currentForm.lowerFullWidthBannerDesktopHeight),
+        fullWidthBannerGap: normalizeFullWidthBannerGap(currentForm.fullWidthBannerGap),
+        lowerFullWidthBannerSliderItems,
       }, {
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -1170,7 +1377,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
       const savedShowcase = response.data?.shopShowcase || {}
       setLoadedShowcase(savedShowcase)
       setForm(buildShowcaseFormState(savedShowcase, currentForm))
-      toast.success('Showcase banners saved')
+      toast.success('Published to storefront')
     } catch (error) {
       toast.error('Failed to save showcase banners')
       console.error(error)
@@ -1207,8 +1414,71 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
           className="mt-4 shadow-sm"
         >
           <p className="mb-3 text-xs text-slate-500">
-            English and Arabic can use different photos. Each language has separate Desktop, Tablet, and Mobile uploads with width, height, and ratio shown next to the image.
+            English and Arabic can use different photos. This preview updates as you add images. The storefront does not change until you click Publish.
           </p>
+
+          {form.fullWidthBannerEnabled || form.lowerFullWidthBannerEnabled ? (
+            <div className="mb-3 overflow-hidden rounded-xl border border-slate-200 bg-white">
+              {form.fullWidthBannerEnabled ? (
+                <div className="relative w-full overflow-hidden bg-slate-900">
+                  <div
+                    className="relative w-full"
+                    style={{ height: Math.round(normalizeFullWidthBannerHeight(form.fullWidthBannerDesktopHeight) * 0.45) }}
+                  >
+                    {form.fullWidthBannerSliderItems?.[0]?.image || form.fullWidthBannerImage ? (
+                      <Image
+                        src={form.fullWidthBannerSliderItems?.[0]?.image || form.fullWidthBannerImage}
+                        alt="Full width banner preview"
+                        fill
+                        unoptimized
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-xs text-slate-300">
+                        Full Width Banner image
+                      </div>
+                    )}
+                    <span className="absolute left-2 top-2 rounded bg-black/70 px-2 py-1 text-[11px] font-semibold text-white">
+                      Full Width Banner · desktop full width · {normalizeFullWidthBannerHeight(form.fullWidthBannerDesktopHeight)} px height
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+
+              {form.lowerFullWidthBannerEnabled ? (
+                <div
+                  className="relative w-full overflow-hidden bg-slate-900"
+                  style={{
+                    marginTop: form.fullWidthBannerEnabled
+                      ? normalizeFullWidthBannerGap(form.fullWidthBannerGap)
+                      : 0,
+                  }}
+                >
+                  <div
+                    className="relative w-full"
+                    style={{ height: Math.max(70, Math.round(normalizeLowerFullWidthBannerHeight(form.lowerFullWidthBannerDesktopHeight) * 0.45)) }}
+                  >
+                    {form.lowerFullWidthBannerSliderItems?.[0]?.image || form.lowerFullWidthBannerImage ? (
+                      <Image
+                        src={form.lowerFullWidthBannerSliderItems?.[0]?.image || form.lowerFullWidthBannerImage}
+                        alt="Lower full width banner preview"
+                        fill
+                        unoptimized
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-xs text-slate-300">
+                        Lower Full Width Banner image
+                      </div>
+                    )}
+                    <span className="absolute left-2 top-2 rounded bg-black/70 px-2 py-1 text-[11px] font-semibold text-white">
+                      Lower Full Width Banner · desktop full width · {normalizeLowerFullWidthBannerHeight(form.lowerFullWidthBannerDesktopHeight)} px height
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="mt-4 grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -1219,6 +1489,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
             </div>
 
             <div className="grid gap-3">
+              {form.topBannerEnabled && !form.fullWidthBannerEnabled ? (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-2">
                 <div className="relative overflow-hidden rounded-lg border border-slate-200 bg-slate-900">
                   <div className="relative aspect-[3054/1080] w-full">
@@ -1233,7 +1504,9 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
                   </div>
                 </div>
               </div>
+              ) : null}
 
+              {form.bottomBannerEnabled && !form.fullWidthBannerEnabled ? (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-2">
                 <div className="relative overflow-hidden rounded-lg border border-slate-200 bg-slate-900">
                   <div className="relative aspect-[3054/370] w-full">
@@ -1248,6 +1521,13 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
                   </div>
                 </div>
               </div>
+              ) : null}
+
+              {form.fullWidthBannerEnabled ? (
+                <div className="flex min-h-[160px] items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 text-center text-xs text-slate-500">
+                  Top and Bottom Large Banners are off while Full Width Banner is enabled.
+                </div>
+              ) : null}
 
               <div className={`grid gap-2 ${(() => {
                 const count = form.productBanners.filter((banner) => banner.previewUrl || hasShowcaseBannerImage(banner)).length || form.productBanners.length
@@ -1304,23 +1584,438 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
               </span>
             </label>
           </div>
+          {form.mainBannerEnabled ? (
+            <p className="mt-3 text-xs text-slate-500">
+              Top Large Banner and Bottom Large Banner stay hidden on the storefront while this is enabled.
+            </p>
+          ) : null}
+        </div>
+
+        <div className="mt-4 min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900">Full Width Banner</h2>
+              <p className="text-xs text-slate-500">
+                Full width up to 1400 px. Enabling this turns off Top and Bottom Large Banners.
+              </p>
+            </div>
+            <VisibilitySwitch
+              enabled={!!form.fullWidthBannerEnabled}
+              onChange={(enabled) => setBannerEnabled('fullWidthBannerEnabled', enabled)}
+            />
+          </div>
+          {form.fullWidthBannerEnabled ? (
+          <div className="mt-4">
+          <p className="mb-3 text-xs font-medium text-slate-500">
+            Desktop full width · height {FULL_WIDTH_BANNER_HEIGHT_MIN}–{FULL_WIDTH_BANNER_HEIGHT_MAX} px · upload multiple images for a slider
+          </p>
+
+          <label className="mb-4 block max-w-md">
+            <span className="mb-1 block text-sm font-medium text-slate-700">
+              Desktop height ({normalizeFullWidthBannerHeight(form.fullWidthBannerDesktopHeight)} px)
+            </span>
+            <input
+              type="range"
+              min={FULL_WIDTH_BANNER_HEIGHT_MIN}
+              max={FULL_WIDTH_BANNER_HEIGHT_MAX}
+              step="10"
+              className="w-full"
+              value={normalizeFullWidthBannerHeight(form.fullWidthBannerDesktopHeight)}
+              onChange={(event) => setForm((prev) => ({
+                ...prev,
+                fullWidthBannerDesktopHeight: normalizeFullWidthBannerHeight(event.target.value),
+              }))}
+            />
+            <input
+              type="number"
+              min={FULL_WIDTH_BANNER_HEIGHT_MIN}
+              max={FULL_WIDTH_BANNER_HEIGHT_MAX}
+              step="10"
+              className="mt-2 w-28 rounded-lg border border-slate-300 px-3 py-2"
+              value={normalizeFullWidthBannerHeight(form.fullWidthBannerDesktopHeight)}
+              onChange={(event) => setForm((prev) => ({
+                ...prev,
+                fullWidthBannerDesktopHeight: normalizeFullWidthBannerHeight(event.target.value),
+              }))}
+            />
+          </label>
+
+          <label className="mb-4 block max-w-xs">
+            <span className="mb-1 block text-sm font-medium text-slate-700">Slide interval (ms)</span>
+            <input
+              type="number"
+              min="2000"
+              max="15000"
+              step="500"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2"
+              value={form.fullWidthBannerSliderInterval}
+              onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerSliderInterval: Number(event.target.value) || 4000 }))}
+            />
+          </label>
+
+          <div className="space-y-3">
+            {(form.fullWidthBannerSliderItems || []).map((slide, index) => {
+              const slideId = slide.id || `full-width-slide-${index}`
+              return (
+                <LargeBannerSlideCard
+                  key={slideId}
+                  slide={slide}
+                  index={index}
+                  total={form.fullWidthBannerSliderItems.length}
+                  recommendedSizes={getFullWidthBannerSizes(form.fullWidthBannerDesktopHeight)}
+                  open={openFullWidthSlideId === slideId}
+                  onToggle={() => setOpenFullWidthSlideId((current) => (current === slideId ? null : slideId))}
+                  onMove={(direction) => moveLargeBannerSlide('fullWidthBannerSliderItems', index, direction)}
+                  onRemove={() => removeLargeBannerSlide('fullWidthBannerSliderItems', index)}
+                  onUpload={(field, file) => uploadLargeBannerSlideField('fullWidthBannerSliderItems', index, field, file)}
+                  onChange={(field, value) => updateLargeBannerSlide('fullWidthBannerSliderItems', index, field, value)}
+                  categoryOptions={categoryOptions}
+                  productOptions={productOptions}
+                />
+              )
+            })}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => addLargeBannerSlide('fullWidthBannerSliderItems', 'Full-width banner')}
+            disabled={(form.fullWidthBannerSliderItems || []).length >= 8}
+            className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Plus size={16} />
+            Add full-width banner slide
+          </button>
+          <p className="mt-2 text-xs text-slate-500">
+            Desktop: full width · recommended 1920 × {normalizeFullWidthBannerHeight(form.fullWidthBannerDesktopHeight)} px. Tablet and mobile sizes are shown on each upload.
+          </p>
+
+          <AccordionRow
+            title="Full-width banner text"
+            summary={`Optional title, subtitle, and button · click to ${openFullWidthText ? 'hide' : 'edit'}`}
+            open={openFullWidthText}
+            onToggle={() => setOpenFullWidthText((current) => !current)}
+            className="mt-4"
+          >
+          <div className="grid gap-3">
+            <p className="text-xs text-slate-500">
+              Off by default. Enable an option to show it on the banner. If all are off, only the image is shown.
+            </p>
+            <label className="inline-flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+              <span className="text-sm text-slate-700">Enable title</span>
+              <input
+                type="checkbox"
+                checked={!!form.fullWidthBannerTitleEnabled}
+                onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerTitleEnabled: event.target.checked }))}
+              />
+            </label>
+            {form.fullWidthBannerTitleEnabled ? (
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-700">Title</span>
+                <input
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2"
+                  value={form.fullWidthBannerTitle}
+                  onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerTitle: event.target.value }))}
+                />
+              </label>
+            ) : null}
+
+            <label className="inline-flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+              <span className="text-sm text-slate-700">Enable subtitle</span>
+              <input
+                type="checkbox"
+                checked={!!form.fullWidthBannerSubtitleEnabled}
+                onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerSubtitleEnabled: event.target.checked }))}
+              />
+            </label>
+            {form.fullWidthBannerSubtitleEnabled ? (
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-700">Subtitle</span>
+                <input
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2"
+                  value={form.fullWidthBannerSubtitle}
+                  onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerSubtitle: event.target.value }))}
+                />
+              </label>
+            ) : null}
+
+            <label className="inline-flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+              <span className="text-sm text-slate-700">Enable button</span>
+              <input
+                type="checkbox"
+                checked={!!form.fullWidthBannerCtaEnabled}
+                onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerCtaEnabled: event.target.checked }))}
+              />
+            </label>
+            {form.fullWidthBannerCtaEnabled ? (
+              <>
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">Button text</span>
+                  <input
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2"
+                    value={form.fullWidthBannerCtaText}
+                    onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerCtaText: event.target.value }))}
+                  />
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-medium text-slate-700">Button BG</span>
+                    <input
+                      type="color"
+                      className="h-10 w-full rounded-lg border border-slate-300"
+                      value={form.fullWidthBannerCtaBgColor}
+                      onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerCtaBgColor: event.target.value }))}
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-medium text-slate-700">Button Text</span>
+                    <input
+                      type="color"
+                      className="h-10 w-full rounded-lg border border-slate-300"
+                      value={form.fullWidthBannerCtaTextColor}
+                      onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerCtaTextColor: event.target.value }))}
+                    />
+                  </label>
+                </div>
+              </>
+            ) : null}
+          </div>
+          </AccordionRow>
+          </div>
+          ) : null}
+        </div>
+
+        <div className="mt-4 min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900">Lower Full Width Banner</h2>
+              <p className="text-xs text-slate-500">
+                Shows below the Full Width Banner · desktop full width · height up to 300 px
+              </p>
+            </div>
+            <VisibilitySwitch
+              enabled={!!form.lowerFullWidthBannerEnabled}
+              onChange={(enabled) => setBannerEnabled('lowerFullWidthBannerEnabled', enabled)}
+            />
+          </div>
+          {form.lowerFullWidthBannerEnabled ? (
+          <div className="mt-4">
+            <label className="mb-4 block max-w-md">
+              <span className="mb-1 block text-sm font-medium text-slate-700">
+                Gap below Full Width Banner ({normalizeFullWidthBannerGap(form.fullWidthBannerGap)} px)
+              </span>
+              <input
+                type="range"
+                min={FULL_WIDTH_BANNER_GAP_MIN}
+                max={FULL_WIDTH_BANNER_GAP_MAX}
+                step="2"
+                className="w-full"
+                value={normalizeFullWidthBannerGap(form.fullWidthBannerGap)}
+                onChange={(event) => setForm((prev) => ({
+                  ...prev,
+                  fullWidthBannerGap: normalizeFullWidthBannerGap(event.target.value),
+                }))}
+              />
+              <input
+                type="number"
+                min={FULL_WIDTH_BANNER_GAP_MIN}
+                max={FULL_WIDTH_BANNER_GAP_MAX}
+                step="2"
+                className="mt-2 w-28 rounded-lg border border-slate-300 px-3 py-2"
+                value={normalizeFullWidthBannerGap(form.fullWidthBannerGap)}
+                onChange={(event) => setForm((prev) => ({
+                  ...prev,
+                  fullWidthBannerGap: normalizeFullWidthBannerGap(event.target.value),
+                }))}
+              />
+            </label>
+            <label className="mb-4 block max-w-md">
+              <span className="mb-1 block text-sm font-medium text-slate-700">
+                Desktop height ({normalizeLowerFullWidthBannerHeight(form.lowerFullWidthBannerDesktopHeight)} px)
+              </span>
+              <input
+                type="range"
+                min={LOWER_FULL_WIDTH_BANNER_HEIGHT_MIN}
+                max={LOWER_FULL_WIDTH_BANNER_HEIGHT_MAX}
+                step="10"
+                className="w-full"
+                value={normalizeLowerFullWidthBannerHeight(form.lowerFullWidthBannerDesktopHeight)}
+                onChange={(event) => setForm((prev) => ({
+                  ...prev,
+                  lowerFullWidthBannerDesktopHeight: normalizeLowerFullWidthBannerHeight(event.target.value),
+                }))}
+              />
+              <input
+                type="number"
+                min={LOWER_FULL_WIDTH_BANNER_HEIGHT_MIN}
+                max={LOWER_FULL_WIDTH_BANNER_HEIGHT_MAX}
+                step="10"
+                className="mt-2 w-28 rounded-lg border border-slate-300 px-3 py-2"
+                value={normalizeLowerFullWidthBannerHeight(form.lowerFullWidthBannerDesktopHeight)}
+                onChange={(event) => setForm((prev) => ({
+                  ...prev,
+                  lowerFullWidthBannerDesktopHeight: normalizeLowerFullWidthBannerHeight(event.target.value),
+                }))}
+              />
+            </label>
+
+            <label className="mb-4 block max-w-xs">
+              <span className="mb-1 block text-sm font-medium text-slate-700">Slide interval (ms)</span>
+              <input
+                type="number"
+                min="2000"
+                max="15000"
+                step="500"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2"
+                value={form.lowerFullWidthBannerSliderInterval}
+                onChange={(event) => setForm((prev) => ({ ...prev, lowerFullWidthBannerSliderInterval: Number(event.target.value) || 4000 }))}
+              />
+            </label>
+
+            <div className="space-y-3">
+              {(form.lowerFullWidthBannerSliderItems || []).map((slide, index) => {
+                const slideId = slide.id || `lower-full-width-slide-${index}`
+                return (
+                  <LargeBannerSlideCard
+                    key={slideId}
+                    slide={slide}
+                    index={index}
+                    total={form.lowerFullWidthBannerSliderItems.length}
+                    recommendedSizes={getLowerFullWidthBannerSizes(form.lowerFullWidthBannerDesktopHeight)}
+                    open={openLowerFullWidthSlideId === slideId}
+                    onToggle={() => setOpenLowerFullWidthSlideId((current) => (current === slideId ? null : slideId))}
+                    onMove={(direction) => moveLargeBannerSlide('lowerFullWidthBannerSliderItems', index, direction)}
+                    onRemove={() => removeLargeBannerSlide('lowerFullWidthBannerSliderItems', index)}
+                    onUpload={(field, file) => uploadLargeBannerSlideField('lowerFullWidthBannerSliderItems', index, field, file)}
+                    onChange={(field, value) => updateLargeBannerSlide('lowerFullWidthBannerSliderItems', index, field, value)}
+                    categoryOptions={categoryOptions}
+                    productOptions={productOptions}
+                  />
+                )
+              })}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => addLargeBannerSlide('lowerFullWidthBannerSliderItems', 'Lower full-width banner')}
+              disabled={(form.lowerFullWidthBannerSliderItems || []).length >= 8}
+              className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Plus size={16} />
+              Add lower full-width banner slide
+            </button>
+            <p className="mt-2 text-xs text-slate-500">
+              Desktop: full width · recommended 1920 × {normalizeLowerFullWidthBannerHeight(form.lowerFullWidthBannerDesktopHeight)} px. Max height 300 px.
+            </p>
+
+            <AccordionRow
+              title="Lower full-width banner text"
+              summary={`Optional title, subtitle, and button · click to ${openLowerFullWidthText ? 'hide' : 'edit'}`}
+              open={openLowerFullWidthText}
+              onToggle={() => setOpenLowerFullWidthText((current) => !current)}
+              className="mt-4"
+            >
+              <div className="grid gap-3">
+                <label className="inline-flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+                  <span className="text-sm text-slate-700">Enable title</span>
+                  <input
+                    type="checkbox"
+                    checked={!!form.lowerFullWidthBannerTitleEnabled}
+                    onChange={(event) => setForm((prev) => ({ ...prev, lowerFullWidthBannerTitleEnabled: event.target.checked }))}
+                  />
+                </label>
+                {form.lowerFullWidthBannerTitleEnabled ? (
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-medium text-slate-700">Title</span>
+                    <input
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2"
+                      value={form.lowerFullWidthBannerTitle}
+                      onChange={(event) => setForm((prev) => ({ ...prev, lowerFullWidthBannerTitle: event.target.value }))}
+                    />
+                  </label>
+                ) : null}
+
+                <label className="inline-flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+                  <span className="text-sm text-slate-700">Enable subtitle</span>
+                  <input
+                    type="checkbox"
+                    checked={!!form.lowerFullWidthBannerSubtitleEnabled}
+                    onChange={(event) => setForm((prev) => ({ ...prev, lowerFullWidthBannerSubtitleEnabled: event.target.checked }))}
+                  />
+                </label>
+                {form.lowerFullWidthBannerSubtitleEnabled ? (
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-medium text-slate-700">Subtitle</span>
+                    <input
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2"
+                      value={form.lowerFullWidthBannerSubtitle}
+                      onChange={(event) => setForm((prev) => ({ ...prev, lowerFullWidthBannerSubtitle: event.target.value }))}
+                    />
+                  </label>
+                ) : null}
+
+                <label className="inline-flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+                  <span className="text-sm text-slate-700">Enable button</span>
+                  <input
+                    type="checkbox"
+                    checked={!!form.lowerFullWidthBannerCtaEnabled}
+                    onChange={(event) => setForm((prev) => ({ ...prev, lowerFullWidthBannerCtaEnabled: event.target.checked }))}
+                  />
+                </label>
+                {form.lowerFullWidthBannerCtaEnabled ? (
+                  <>
+                    <label className="block">
+                      <span className="mb-1 block text-sm font-medium text-slate-700">Button text</span>
+                      <input
+                        className="w-full rounded-lg border border-slate-300 px-3 py-2"
+                        value={form.lowerFullWidthBannerCtaText}
+                        onChange={(event) => setForm((prev) => ({ ...prev, lowerFullWidthBannerCtaText: event.target.value }))}
+                      />
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="block">
+                        <span className="mb-1 block text-sm font-medium text-slate-700">Button BG</span>
+                        <input
+                          type="color"
+                          className="h-10 w-full rounded-lg border border-slate-300"
+                          value={form.lowerFullWidthBannerCtaBgColor}
+                          onChange={(event) => setForm((prev) => ({ ...prev, lowerFullWidthBannerCtaBgColor: event.target.value }))}
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="mb-1 block text-sm font-medium text-slate-700">Button Text</span>
+                        <input
+                          type="color"
+                          className="h-10 w-full rounded-lg border border-slate-300"
+                          value={form.lowerFullWidthBannerCtaTextColor}
+                          onChange={(event) => setForm((prev) => ({ ...prev, lowerFullWidthBannerCtaTextColor: event.target.value }))}
+                        />
+                      </label>
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            </AccordionRow>
+          </div>
+          ) : null}
         </div>
 
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="mb-3 text-base font-semibold text-slate-900">Top Large Banner</h2>
-            <p className="mb-3 text-xs font-medium text-slate-500">
-              Layout slot: Row 1 right side · upload multiple images for a slider · Slide 1 plays first
-            </p>
-
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2">
-              <span className="text-sm text-slate-700">Enable banner slider</span>
-              <input
-                type="checkbox"
-                checked={!!form.topBannerSliderEnabled}
-                onChange={(event) => setForm((prev) => ({ ...prev, topBannerSliderEnabled: event.target.checked }))}
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">Top Large Banner</h2>
+                <p className="text-xs text-slate-500">Row 1 right side. Enabling this turns off Full Width Banner.</p>
+              </div>
+              <VisibilitySwitch
+                enabled={!!form.topBannerEnabled}
+                onChange={(enabled) => setBannerEnabled('topBannerEnabled', enabled)}
               />
             </div>
+            {form.topBannerEnabled ? (
+            <div className="mt-4">
+            <p className="mb-3 text-xs font-medium text-slate-500">
+              Upload multiple images for a slider · Slide 1 plays first
+            </p>
 
             <label className="mb-4 block max-w-xs">
               <span className="mb-1 block text-sm font-medium text-slate-700">Slide interval (ms)</span>
@@ -1452,22 +2147,26 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
               </div>
             </div>
             </AccordionRow>
+            </div>
+            ) : null}
           </div>
 
           <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="mb-3 text-base font-semibold text-slate-900">Bottom Large Banner</h2>
-            <p className="mb-3 text-xs font-medium text-slate-500">
-              Layout slot: Row 2 right side · upload multiple images for a slider · Slide 1 plays first
-            </p>
-
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2">
-              <span className="text-sm text-slate-700">Enable banner slider</span>
-              <input
-                type="checkbox"
-                checked={!!form.bottomBannerSliderEnabled}
-                onChange={(event) => setForm((prev) => ({ ...prev, bottomBannerSliderEnabled: event.target.checked }))}
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">Bottom Large Banner</h2>
+                <p className="text-xs text-slate-500">Row 2 right side. Enabling this turns off Full Width Banner.</p>
+              </div>
+              <VisibilitySwitch
+                enabled={!!form.bottomBannerEnabled}
+                onChange={(enabled) => setBannerEnabled('bottomBannerEnabled', enabled)}
               />
             </div>
+            {form.bottomBannerEnabled ? (
+            <div className="mt-4">
+            <p className="mb-3 text-xs font-medium text-slate-500">
+              Upload multiple images for a slider · Slide 1 plays first
+            </p>
 
             <label className="mb-4 block max-w-xs">
               <span className="mb-1 block text-sm font-medium text-slate-700">Slide interval (ms)</span>
@@ -1599,6 +2298,8 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
               </div>
             </div>
             </AccordionRow>
+            </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -1716,14 +2417,17 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
         ))}
       </div>
 
-      <div className="mt-6 flex justify-end">
+      <div className="mt-6 flex flex-col items-end gap-2">
+        <p className="text-xs text-slate-500">
+          Adding or uploading a banner only updates this preview. Click Publish to show it on the storefront.
+        </p>
         <button
           onClick={save}
           disabled={saving}
           className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-          {saving ? 'Saving...' : 'Save Showcase Banners'}
+          {saving ? 'Publishing...' : 'Publish to storefront'}
         </button>
       </div>
     </div>

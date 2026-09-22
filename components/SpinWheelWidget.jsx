@@ -109,34 +109,38 @@ export default function SpinWheelWidget() {
   );
 
   useEffect(() => {
-    let ignore = false;
+    if (hiddenByPath) {
+      setCampaign(null);
+      setLoading(false);
+      return undefined;
+    }
+
+    const controller = new AbortController();
 
     const loadCampaign = async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/spin/campaign");
-        const data = await res.json();
-        if (ignore) return;
+        const res = await fetch("/api/spin/campaign", {
+          signal: controller.signal,
+          cache: "no-store",
+        });
+        const data = await res.json().catch(() => null);
+        if (controller.signal.aborted) return;
         if (res.ok && data?.isEnabled && data?.campaign?.slices?.length) {
           setCampaign(data.campaign);
         } else {
           setCampaign(null);
         }
       } catch (err) {
-        console.error("Spin campaign fetch failed:", err);
-        if (!ignore) setCampaign(null);
+        if (err?.name === "AbortError" || controller.signal.aborted) return;
+        setCampaign(null);
       } finally {
-        if (!ignore) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
 
-    if (!hiddenByPath) {
-      loadCampaign();
-    }
-
-    return () => {
-      ignore = true;
-    };
+    loadCampaign();
+    return () => controller.abort();
   }, [hiddenByPath]);
 
   useEffect(() => {

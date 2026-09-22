@@ -23,7 +23,9 @@ const AuthSessionGuard = dynamic(() => import("@/components/AuthSessionGuard"), 
 const GoogleOneTap = dynamic(() => import("@/components/GoogleOneTap"), { ssr: false });
 
 function DeferredWidgets() {
+  const pathname = usePathname();
   const [ready, setReady] = useState(false);
+  const hideStorefrontChrome = shouldHideStorefrontChrome(pathname);
 
   useEffect(() => {
     const start = () => setReady(true);
@@ -40,7 +42,7 @@ function DeferredWidgets() {
   return (
     <>
       <GiveawayCartManager />
-      <SpinWheelWidget />
+      {!hideStorefrontChrome ? <SpinWheelWidget /> : null}
       <TawkToWidget />
     </>
   );

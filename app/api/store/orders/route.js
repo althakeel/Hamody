@@ -11,6 +11,7 @@ import { batchPopulateOrderUsers } from '@/lib/storeOrderUsers';
 import { ACTIVE_RECORD_FILTER } from '@/lib/storeTrash';
 import { repairOrderBundleLines } from '@/lib/bundleOrderRepair';
 import { getOrderLineProduct } from '@/lib/orderDisplay';
+import { isCatalogSku, resolveLineSku } from '@/lib/storePickupExcelSku';
 
 const ORDER_LINE_PRODUCT_SELECT = 'name slug images sku variants price salePrice';
 
@@ -27,8 +28,9 @@ async function hydrateOrderItemProducts(orders = []) {
 
       const hasName = Boolean(String(product?.name || item?.name || '').trim());
       const hasImage = Boolean(product?.images?.length || item?.image);
-      const hasSku = Boolean(String(product?.sku || item?.sku || '').trim())
-        || (Array.isArray(product?.variants) && product.variants.some((variant) => String(variant?.sku || '').trim()));
+      const hasSku = isCatalogSku(product?.sku)
+        || isCatalogSku(item?.sku)
+        || (Array.isArray(product?.variants) && product.variants.some((variant) => isCatalogSku(variant?.sku)));
       // Always refill when populate was skipped/wiped, snapshot is empty, or SKU is missing for export.
       if (!hasName || !hasImage || !product?.variants || !hasSku) {
         missingIds.add(String(rawId));
@@ -56,6 +58,11 @@ async function hydrateOrderItemProducts(orders = []) {
         ...item,
         name: lineName || hydrated.name || item.name || '',
       };
+      const mergedProduct = typeof item.productId === 'object' && item.productId
+        ? { ...item.productId, ...hydrated }
+        : hydrated;
+      const resolvedSku = resolveLineSku({ ...nextItem, productId: mergedProduct });
+      if (resolvedSku) nextItem.sku = resolvedSku;
       if (typeof item.productId === 'object' && item.productId) {
         return { ...nextItem, productId: { ...item.productId, ...hydrated } };
       }

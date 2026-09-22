@@ -12,7 +12,7 @@ import {
 import ShowcaseProductBanners from './ShowcaseProductBanners'
 import ShowcaseLargeBannerSlider from './ShowcaseLargeBannerSlider'
 import { HOME_SECTION_CLASS } from '@/lib/storefrontCarousel'
-import { getLargeBannerSlides } from '@/lib/shopShowcaseLargeBanners'
+import { getLargeBannerSlides, normalizeFullWidthBannerHeight, normalizeLowerFullWidthBannerHeight, normalizeFullWidthBannerGap } from '@/lib/shopShowcaseLargeBanners'
 import { cleanDisplayText } from '@/lib/displayText'
 import { getProductPath } from '@/lib/productUrl'
 import {
@@ -589,44 +589,123 @@ export default function ShopShowcaseSection({
     return navItems.length ? navItems : categoryMenuItems
   }, [catalogCategories, categoryMenuItems, data?.categories, language, navMenuUseParentCategories, settingsNavMenuItems, storeMenuItems])
 
-  const bannerBlocks = useMemo(() => ([
-    {
-      type: 'top',
-      href: config?.topBannerLink || '/shop',
-      slides: getLargeBannerSlides(config, 'top'),
-      sliderEnabled: config?.topBannerSliderEnabled !== false,
-      sliderInterval: Number(config?.topBannerSliderInterval) || 4000,
-      title: config?.topBannerTitle || '',
-      showTitle: typeof config?.topBannerTitleEnabled === 'boolean' ? config.topBannerTitleEnabled : true,
-      subtitle: config?.topBannerSubtitle || '',
-      showSubtitle: typeof config?.topBannerSubtitleEnabled === 'boolean' ? config.topBannerSubtitleEnabled : true,
-      ctaText: config?.topBannerCtaText || '',
-      showCta: typeof config?.topBannerCtaEnabled === 'boolean' ? config.topBannerCtaEnabled : true,
-      ctaBgColor: config?.topBannerCtaBgColor || '#ef2d2d',
-      ctaTextColor: config?.topBannerCtaTextColor || '#ffffff',
-      accent: 'from-sky-200 via-sky-100 to-white',
-      gridRow: '1 / 2',
-      showTruckIcon: true,
-    },
-    {
-      type: 'bottom',
-      href: config?.bottomBannerLink || '/shop',
-      slides: getLargeBannerSlides(config, 'bottom'),
-      sliderEnabled: config?.bottomBannerSliderEnabled !== false,
-      sliderInterval: Number(config?.bottomBannerSliderInterval) || 4000,
-      title: config?.bottomBannerTitle || '',
-      showTitle: typeof config?.bottomBannerTitleEnabled === 'boolean' ? config.bottomBannerTitleEnabled : true,
-      subtitle: config?.bottomBannerSubtitle || '',
-      showSubtitle: typeof config?.bottomBannerSubtitleEnabled === 'boolean' ? config.bottomBannerSubtitleEnabled : true,
-      ctaText: config?.bottomBannerCtaText || '',
-      showCta: typeof config?.bottomBannerCtaEnabled === 'boolean' ? config.bottomBannerCtaEnabled : true,
-      ctaBgColor: config?.bottomBannerCtaBgColor || '#ef2d2d',
-      ctaTextColor: config?.bottomBannerCtaTextColor || '#ffffff',
+  const hideSideBanners = config?.mainBannerEnabled === true || config?.fullWidthBannerEnabled === true
+  const showTopBanner = config?.topBannerEnabled !== false && !hideSideBanners
+  const showBottomBanner = config?.bottomBannerEnabled !== false && !hideSideBanners
+
+  const bannerBlocks = useMemo(() => {
+    const blocks = []
+    if (showTopBanner) {
+
+      blocks.push({
+        type: 'top',
+        href: config?.topBannerLink || '/shop',
+        slides: getLargeBannerSlides(config, 'top'),
+        sliderEnabled: config?.topBannerSliderEnabled !== false,
+        sliderInterval: Number(config?.topBannerSliderInterval) || 4000,
+        title: config?.topBannerTitle || '',
+        showTitle: typeof config?.topBannerTitleEnabled === 'boolean' ? config.topBannerTitleEnabled : true,
+        subtitle: config?.topBannerSubtitle || '',
+        showSubtitle: typeof config?.topBannerSubtitleEnabled === 'boolean' ? config.topBannerSubtitleEnabled : true,
+        ctaText: config?.topBannerCtaText || '',
+        showCta: typeof config?.topBannerCtaEnabled === 'boolean' ? config.topBannerCtaEnabled : true,
+        ctaBgColor: config?.topBannerCtaBgColor || '#ef2d2d',
+        ctaTextColor: config?.topBannerCtaTextColor || '#ffffff',
+        accent: 'from-sky-200 via-sky-100 to-white',
+        gridRow: '1 / 2',
+        showTruckIcon: true,
+      })
+    }
+    if (showBottomBanner) {
+      blocks.push({
+        type: 'bottom',
+        href: config?.bottomBannerLink || '/shop',
+        slides: getLargeBannerSlides(config, 'bottom'),
+        sliderEnabled: config?.bottomBannerSliderEnabled !== false,
+        sliderInterval: Number(config?.bottomBannerSliderInterval) || 4000,
+        title: config?.bottomBannerTitle || '',
+        showTitle: typeof config?.bottomBannerTitleEnabled === 'boolean' ? config.bottomBannerTitleEnabled : true,
+        subtitle: config?.bottomBannerSubtitle || '',
+        showSubtitle: typeof config?.bottomBannerSubtitleEnabled === 'boolean' ? config.bottomBannerSubtitleEnabled : true,
+        ctaText: config?.bottomBannerCtaText || '',
+        showCta: typeof config?.bottomBannerCtaEnabled === 'boolean' ? config.bottomBannerCtaEnabled : true,
+        ctaBgColor: config?.bottomBannerCtaBgColor || '#ef2d2d',
+        ctaTextColor: config?.bottomBannerCtaTextColor || '#ffffff',
+        accent: 'from-[#180000] via-[#520000] to-[#d61f1f]',
+        gridRow: showTopBanner ? '2 / 3' : '1 / 2',
+        showTruckIcon: false,
+      })
+    }
+    return blocks
+  }, [config, showTopBanner, showBottomBanner])
+
+  const fullWidthBanner = useMemo(() => {
+    if (config?.fullWidthBannerEnabled !== true) return null
+
+    const slides = getLargeBannerSlides(config, 'fullWidth')
+    const title = config?.fullWidthBannerTitle || ''
+    const subtitle = config?.fullWidthBannerSubtitle || ''
+    const ctaText = config?.fullWidthBannerCtaText || ''
+    const showTitle = config?.fullWidthBannerTitleEnabled === true
+    const showSubtitle = config?.fullWidthBannerSubtitleEnabled === true
+    const showCta = config?.fullWidthBannerCtaEnabled === true
+    const hasFallbackText = (showTitle && title.trim()) || (showSubtitle && subtitle.trim()) || (showCta && ctaText.trim())
+
+    if (!slides.length && !hasFallbackText) return null
+
+    return {
+      type: 'fullWidth',
+      href: config?.fullWidthBannerLink || '/shop',
+      slides,
+      sliderEnabled: config?.fullWidthBannerSliderEnabled !== false,
+      sliderInterval: Number(config?.fullWidthBannerSliderInterval) || 4000,
+      desktopHeight: normalizeFullWidthBannerHeight(config?.fullWidthBannerDesktopHeight),
+      title,
+      showTitle,
+      subtitle,
+      showSubtitle,
+      ctaText,
+      showCta,
+      ctaBgColor: config?.fullWidthBannerCtaBgColor || '#ef2d2d',
+      ctaTextColor: config?.fullWidthBannerCtaTextColor || '#ffffff',
       accent: 'from-[#180000] via-[#520000] to-[#d61f1f]',
-      gridRow: '2 / 3',
       showTruckIcon: false,
     }
-  ]), [config])
+  }, [config])
+
+  const lowerFullWidthBanner = useMemo(() => {
+    if (config?.lowerFullWidthBannerEnabled !== true) return null
+
+    const slides = getLargeBannerSlides(config, 'lowerFullWidth')
+    const title = config?.lowerFullWidthBannerTitle || ''
+    const subtitle = config?.lowerFullWidthBannerSubtitle || ''
+    const ctaText = config?.lowerFullWidthBannerCtaText || ''
+    const showTitle = config?.lowerFullWidthBannerTitleEnabled === true
+    const showSubtitle = config?.lowerFullWidthBannerSubtitleEnabled === true
+    const showCta = config?.lowerFullWidthBannerCtaEnabled === true
+    const hasFallbackText = (showTitle && title.trim()) || (showSubtitle && subtitle.trim()) || (showCta && ctaText.trim())
+
+    if (!slides.length && !hasFallbackText) return null
+
+    return {
+      type: 'lowerFullWidth',
+      href: config?.lowerFullWidthBannerLink || '/shop',
+      slides,
+      sliderEnabled: config?.lowerFullWidthBannerSliderEnabled !== false,
+      sliderInterval: Number(config?.lowerFullWidthBannerSliderInterval) || 4000,
+      desktopHeight: normalizeLowerFullWidthBannerHeight(config?.lowerFullWidthBannerDesktopHeight),
+      title,
+      showTitle,
+      subtitle,
+      showSubtitle,
+      ctaText,
+      showCta,
+      ctaBgColor: config?.lowerFullWidthBannerCtaBgColor || '#ef2d2d',
+      ctaTextColor: config?.lowerFullWidthBannerCtaTextColor || '#ffffff',
+      accent: 'from-[#180000] via-[#520000] to-[#d61f1f]',
+      showTruckIcon: false,
+    }
+  }, [config])
 
   const hoveredMenuItem = useMemo(() => {
     if (hoveredMenuIndex == null) return null
@@ -685,14 +764,15 @@ export default function ShopShowcaseSection({
   const showCategoryFlyout = hoveredDropdownLinks.length > 0
     && (isArabic ? flyoutPosition.right != null : flyoutPosition.left != null)
 
-  const renderShowcaseBanner = (banner) => (
+  const renderShowcaseBanner = (banner, variant) => (
     <ShowcaseLargeBannerSlider
       key={banner.type}
       slides={banner.slides}
       enabled={banner.sliderEnabled}
       interval={banner.sliderInterval}
       gridRow={banner.gridRow}
-      bannerVariant={banner.type === 'top' ? 'main' : 'secondary'}
+      bannerVariant={variant || (banner.type === 'top' ? 'main' : banner.type === 'fullWidth' || banner.type === 'lowerFullWidth' ? 'full' : 'secondary')}
+      bannerHeight={banner.desktopHeight}
       showTruckIcon={banner.showTruckIcon}
       fallback={{
         href: banner.href,
@@ -709,13 +789,43 @@ export default function ShopShowcaseSection({
     />
   )
 
+  const fullWidthHeight = fullWidthBanner?.desktopHeight || 400
+  const lowerFullWidthHeight = lowerFullWidthBanner?.desktopHeight || 200
+  const fullWidthGap = fullWidthBanner && lowerFullWidthBanner
+    ? normalizeFullWidthBannerGap(config?.fullWidthBannerGap)
+    : 0
+
   return (
-    <section className={`${HOME_SECTION_CLASS} max-w-[1400px] mx-auto px-4 sm:px-6`}>
+    <div className={HOME_SECTION_CLASS}>
+      {fullWidthBanner || lowerFullWidthBanner ? (
+        <div className="mb-3 w-full" onMouseEnter={closeCategoryFlyout}>
+          {fullWidthBanner ? (
+            <div
+              className="w-full"
+              style={{ '--full-banner-height': `${fullWidthHeight}px` }}
+            >
+              {renderShowcaseBanner(fullWidthBanner, 'full')}
+            </div>
+          ) : null}
+          {lowerFullWidthBanner ? (
+            <div
+              className="w-full"
+              style={{
+                '--full-banner-height': `${lowerFullWidthHeight}px`,
+                marginTop: fullWidthGap,
+              }}
+            >
+              {renderShowcaseBanner(lowerFullWidthBanner, 'full')}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      <section className="max-w-[1400px] mx-auto px-4 sm:px-6">
       <div className="grid grid-cols-1 gap-3 overflow-visible lg:grid-cols-[280px_minmax(0,1fr)] lg:items-stretch">
-        <div className="relative z-30 hidden h-full min-h-0 lg:col-start-1 lg:row-start-1 lg:block">
+        <div className={`relative z-30 hidden min-h-0 lg:col-start-1 lg:row-start-1 lg:block ${hideSideBanners ? '' : 'h-full'}`}>
           <div
             ref={menuContainerRef}
-            className="relative h-full min-h-0 overflow-visible"
+            className={`relative min-h-0 overflow-visible ${hideSideBanners ? '' : 'h-full'}`}
             style={{ width: showCategoryFlyout ? 560 : 280 }}
             onMouseEnter={clearFlyoutCloseTimer}
             onMouseLeave={scheduleFlyoutClose}
@@ -723,7 +833,7 @@ export default function ShopShowcaseSection({
           <aside
             ref={asideRef}
             dir={isArabic ? 'rtl' : 'ltr'}
-            className="absolute inset-0 flex min-h-0 w-[280px] flex-col overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm"
+            className={`${hideSideBanners ? 'relative min-h-[420px]' : 'absolute inset-0 min-h-0'} flex w-[280px] flex-col overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm`}
           >
             <div
               className="flex items-center justify-between px-4 py-3 text-white"
@@ -951,16 +1061,19 @@ export default function ShopShowcaseSection({
           </div>
         </div>
 
-        <div className="shop-showcase-banner-grid lg:col-start-2 lg:row-start-1" onMouseEnter={closeCategoryFlyout}>
-          {bannerBlocks.map((banner) => renderShowcaseBanner(banner))}
-        </div>
+        {bannerBlocks.length ? (
+          <div className="shop-showcase-banner-grid lg:col-start-2 lg:row-start-1" onMouseEnter={closeCategoryFlyout}>
+            {bannerBlocks.map((banner) => renderShowcaseBanner(banner))}
+          </div>
+        ) : null}
 
         {/* 4-grid product/banner section below main banners */}
         <div className="lg:col-span-2 lg:row-start-2" onMouseEnter={closeCategoryFlyout}>
           <ShowcaseProductBanners banners={data.config?.productBanners} />
         </div>
       </div>
-    </section>
+      </section>
+    </div>
   )
 }
 

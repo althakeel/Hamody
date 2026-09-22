@@ -9,6 +9,7 @@ import { isValidCustomerImage } from "@/lib/storeCustomersApi"
 import axios from "axios"
 import { Calendar, Download, Mail, Package, Search, ShoppingBag, TrendingUp, User, X } from "lucide-react"
 import Image from "next/image"
+import { useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import toast from "react-hot-toast"
 
@@ -59,12 +60,15 @@ export default function CustomersPage() {
         total: 0,
         totalPages: 1,
     })
-    const [debouncedSearch, setDebouncedSearch] = useState('')
+    const searchParams = useSearchParams()
+    const initialSearch = String(searchParams.get('search') || '').trim()
+    const [debouncedSearch, setDebouncedSearch] = useState(initialSearch)
     const hasLoadedRef = useRef(false)
+    const fetchRequestRef = useRef(0)
     const [selectedCustomer, setSelectedCustomer] = useState(null)
     const [customerDetails, setCustomerDetails] = useState(null)
     const [detailsLoading, setDetailsLoading] = useState(false)
-    const [searchQuery, setSearchQuery] = useState('')
+    const [searchQuery, setSearchQuery] = useState(initialSearch)
     const [walletAmount, setWalletAmount] = useState('')
     const [walletDeductAmount, setWalletDeductAmount] = useState('')
     const [viewMode, setViewMode] = useState('all') // 'all' or 'registered'
@@ -76,6 +80,8 @@ export default function CustomersPage() {
     }
 
     const fetchCustomers = useCallback(async (page = 1, { initial = false } = {}) => {
+        const requestId = fetchRequestRef.current + 1
+        fetchRequestRef.current = requestId
         try {
             let token = await getToken(false)
             if (!token) token = await getToken(true)
@@ -91,6 +97,7 @@ export default function CustomersPage() {
                 },
                 headers: { Authorization: `Bearer ${token}` }
             })
+            if (requestId !== fetchRequestRef.current) return
             setCustomers(data.customers || [])
             setStats(data.stats || {})
             setPagination(data.pagination || {
@@ -100,10 +107,13 @@ export default function CustomersPage() {
                 totalPages: 1,
             })
         } catch (error) {
+            if (requestId !== fetchRequestRef.current) return
             toast.error(error?.response?.data?.error || error.message)
         } finally {
-            setLoading(false)
-            setListLoading(false)
+            if (requestId === fetchRequestRef.current) {
+                setLoading(false)
+                setListLoading(false)
+            }
         }
     }, [debouncedSearch, getToken, viewMode])
 
@@ -255,6 +265,13 @@ export default function CustomersPage() {
             setExporting(false)
         }
     }
+
+    useEffect(() => {
+        const initial = String(searchParams.get('search') || '').trim()
+        if (!initial) return
+        setSearchQuery(initial)
+        setDebouncedSearch(initial)
+    }, [searchParams])
 
     useEffect(() => {
         const timer = window.setTimeout(() => {

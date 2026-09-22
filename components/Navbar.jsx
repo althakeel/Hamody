@@ -15,6 +15,7 @@ import toast from "react-hot-toast";
 import WalletIcon from '@/assets/icons/wallet.png';
 import { isStorefrontWalletEnabled } from '@/lib/storefrontWallet';
 import SignInModal from './SignInModal';
+import NavbarMenuBar from './NavbarMenuBar';
 import AddressModal from './AddressModal';
 import ImageSearchModal from './ImageSearchModal';
 import { clearCart, fetchCart, uploadCart } from '@/lib/features/cart/cartSlice';
@@ -50,7 +51,7 @@ import { getProductPath } from '@/lib/productUrl';
 import NewProductTagBadge from '@/components/NewProductTagBadge';
 import { secureSignOut } from '@/lib/authClient';
 import { showStorefrontActionToast } from '@/lib/storefrontActionToast';
-import { DEFAULT_NAVBAR_LAYOUT, getNavbarCategoriesButtonAppearance, getNavbarCategoriesButtonLabel, getNavbarSearchAppearance, isNavbarItemVisible, normalizeNavbarItemOrder, normalizeNavbarLayout, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';
+import { DEFAULT_NAVBAR_LAYOUT, applyUnifiedNavbarText, getNavbarCategoriesButtonAppearance, getNavbarCategoriesButtonLabel, getNavbarSearchAppearance, getNavbarSearchSlotProps, getUnifiedNavbarFontId, getUnifiedNavbarTextCss, groupNavbarItemsBySide, isNavbarItemVisible, normalizeNavbarItemOrder, normalizeNavbarLayout, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';
 
 const NAVBAR_SELECTED_ADDRESS_KEY = 'navbarSelectedAddressId';
 const NAVBAR_APPEARANCE_CACHE_KEY = 'navbarAppearanceCache';
@@ -288,7 +289,11 @@ const Navbar = () => {
           {accountIcon}
         </span>
         <span className="min-w-0 flex flex-col leading-[1.15]">
-          <span className={`truncate text-[13px] font-bold leading-none xl:text-[14px] ${isLightTone ? 'text-white' : 'text-gray-900'}`}>
+          <span
+            className={`truncate font-bold leading-none ${navbarAppearance.unifyNavbarText ? '' : 'text-[13px] xl:text-[14px]'} ${isLightTone ? 'text-white' : 'text-gray-900'}`}
+            data-font={getUnifiedNavbarFontId(navbarAppearance) || undefined}
+            style={getUnifiedNavbarTextCss(navbarAppearance) || undefined}
+          >
             {topLine}
           </span>
           <span className={`mt-1 truncate text-[11px] font-normal leading-none ${isLightTone ? 'text-white/85' : 'text-gray-600'}`}>
@@ -302,7 +307,10 @@ const Navbar = () => {
   const renderTodaysDealsButton = ({ variant = 'desktop', className = '' }) => {
     const isDesktop = variant === 'desktop';
     const useLightText = isDesktop || mobileNavbarUsesBrandColor;
-    const appearance = getOffersNavButtonAppearance(dealsNavStyle, isDesktop ? 'desktop' : 'mobile');
+    const appearance = getOffersNavButtonAppearance(
+      applyUnifiedNavbarText(dealsNavStyle, navbarAppearance),
+      isDesktop ? 'desktop' : 'mobile',
+    );
     const shineClass = appearance.useShine
       ? `navbar-deals-text-shine ${useLightText ? '' : 'navbar-deals-text-shine-dark'}`
       : '';
@@ -324,7 +332,6 @@ const Navbar = () => {
         <span
           className="flex items-center leading-[1.05]"
           style={{
-            fontFamily: 'inherit',
             ...(appearance.textColor && !appearance.useShine
               ? { color: appearance.textColor }
               : {}),
@@ -1694,7 +1701,10 @@ const Navbar = () => {
   const renderDesktopNavbarItem = (itemId) => {
     if (itemId === 'logo') {
       return (
-        <div className="flex min-w-0 shrink-0 items-center gap-2">
+        <div
+          className="flex min-w-0 shrink-0 items-center gap-2"
+          style={{ marginInlineEnd: `${Number(navbarAppearance.logoGap) || 0}px` }}
+        >
           {isHomePage && (
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -1733,12 +1743,15 @@ const Navbar = () => {
         >
           <button
             type="button"
-            className={`inline-flex items-center gap-1.5 font-medium leading-none transition hover:opacity-90 ${categoriesAppearance.animationClass || ''}`}
+            className={`inline-flex items-center gap-1.5 bg-transparent font-medium leading-none transition hover:opacity-90 ${categoriesAppearance.animationClass || ''}`}
             data-font={categoriesAppearance.fontId || 'inherit'}
             style={{
               ...categoriesAppearance.style,
               minHeight: 44,
               height: 44,
+              ...(String(categoriesAppearance.style?.backgroundColor || '').toLowerCase() === 'transparent'
+                ? { backgroundColor: 'transparent', background: 'transparent' }
+                : {}),
             }}
           >
             <span>
@@ -1757,12 +1770,15 @@ const Navbar = () => {
     }
 
     if (itemId === 'search') {
+      const searchSlot = getNavbarSearchSlotProps(
+        navbarAppearance.searchAlign,
+        navbarAppearance.searchMaxWidth,
+      );
       return (
-        <div className="relative z-[70] min-w-0 w-full">
-          <div
-            className="relative w-full"
-            style={{ maxWidth: Number(navbarAppearance.searchMaxWidth) || 600 }}
-          >
+        <div
+          className={searchSlot.innerClassName}
+          style={searchSlot.innerStyle}
+        >
             <form onSubmit={handleSearch} className="w-full">
               <div
                 className="flex h-[44px] w-full min-w-0 items-center overflow-hidden px-2 shadow-sm xl:px-3"
@@ -1802,7 +1818,6 @@ const Navbar = () => {
             {renderSearchSuggestionsDropdown(
               'absolute left-0 right-0 top-full z-[80] mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl',
             )}
-          </div>
         </div>
       );
     }
@@ -1899,7 +1914,10 @@ const Navbar = () => {
 
     const extraButton = desktopExtraButtons.find((button) => button.id === itemId);
     if (!extraButton) return null;
-    const extraAppearance = getOffersNavButtonAppearance(extraButton.style, 'desktop');
+    const extraAppearance = getOffersNavButtonAppearance(
+      applyUnifiedNavbarText(extraButton.style, navbarAppearance),
+      'desktop',
+    );
     return (
       <Link
         href={extraButton.link || '/offers'}
@@ -2064,25 +2082,61 @@ const Navbar = () => {
         }}
       >
       <div className={NAVBAR_CONTAINER_CLASS} style={getNavbarContainerStyle(navbarAppearance.navbarMaxWidth)}>
-        <div
-          className="flex min-w-0 items-center py-2.5"
-          style={{ gap: `${Number(navbarAppearance.itemGap) || 0}px` }}
-        >
-          {desktopItemOrder.map((itemId) => {
-            const node = renderDesktopNavbarItem(itemId);
-            if (!node) return null;
-            return (
-              <div
-                key={itemId}
-                className={itemId === 'search' ? 'relative z-[70] min-w-0 flex-1 basis-0' : 'shrink-0'}
-              >
-                {node}
+        {(() => {
+          const rowGap = `${Number(navbarAppearance.itemGap) || 0}px`;
+          const sides = groupNavbarItemsBySide(
+            desktopItemOrder,
+            navbarAppearance.itemAlign,
+            navbarAppearance.extraButtons,
+          );
+          const renderSide = (itemIds, slotClassName) => (
+            <div className={`flex items-center ${slotClassName}`} style={{ gap: rowGap }}>
+              {itemIds.map((itemId) => {
+                const node = renderDesktopNavbarItem(itemId);
+                if (!node) return null;
+                const searchSlot = itemId === 'search'
+                  ? getNavbarSearchSlotProps('left', navbarAppearance.searchMaxWidth)
+                  : null;
+                return (
+                  <div
+                    key={itemId}
+                    className={itemId === 'search' ? 'relative z-[70] shrink-0' : 'shrink-0'}
+                    style={itemId === 'search' ? { width: searchSlot.innerStyle.maxWidth } : undefined}
+                  >
+                    {node}
+                  </div>
+                );
+              })}
+            </div>
+          );
+          return (
+            <div className="flex min-w-0 items-center py-2.5" style={{ gap: rowGap }}>
+              {renderSide(sides.left, 'shrink-0')}
+              <div className="flex min-w-0 flex-1 items-center justify-center" style={{ gap: rowGap }}>
+                {sides.center.map((itemId) => {
+                  const node = renderDesktopNavbarItem(itemId);
+                  if (!node) return null;
+                  const searchSlot = itemId === 'search'
+                    ? getNavbarSearchSlotProps(navbarAppearance.searchAlign, navbarAppearance.searchMaxWidth)
+                    : null;
+                  return (
+                    <div
+                      key={itemId}
+                      className={searchSlot ? searchSlot.slotClassName : 'shrink-0'}
+                    >
+                      {node}
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
+              {renderSide(sides.right, 'shrink-0')}
+            </div>
+          );
+        })()}
       </div>
       </nav>
+
+      <NavbarMenuBar />
 
       {desktopCategoriesDropdown}
       </div>

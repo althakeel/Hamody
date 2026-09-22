@@ -86,4 +86,18 @@ test('pickup Excel SKU comes from the product or selected variant, not a Mongo i
     name: 'Chunky Sole Sneakers',
     sku: 'WN-SNEAK-01',
   }), 'WN-SNEAK-01');
+
+  assert.equal(resolveLineSku({
+    name: 'Heated Massager',
+    sku: '64f1a2b3c4d5e6f7a8b9c0d1',
+    productId: {
+      _id: '64f1a2b3c4d5e6f7a8b9c0d1',
+      sku: '',
+      variants: [
+        { sku: 'ST4014-1', options: { bundleQty: 1, title: 'Buy 1' } },
+        { sku: 'ST4014-2', options: { bundleQty: 2, title: 'Bundle of 2' } },
+      ],
+    },
+    variantOptions: { bundleQty: 1, title: 'Buy 1' },
+  }), 'ST4014-1');
 });

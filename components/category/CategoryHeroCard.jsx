@@ -33,6 +33,7 @@ export default function CategoryHeroCard({
   stats = {},
   t,
   isArabic = false,
+  hideImage = false,
 }) {
   const [expanded, setExpanded] = useState(false);
   const productCount = Number(stats.productCount) || 0;
@@ -52,16 +53,18 @@ export default function CategoryHeroCard({
     <section className="mb-6" aria-label={name}>
       <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white">
         <div className={`flex flex-col gap-6 p-5 sm:p-7 md:flex-row md:items-start ${isArabic ? 'md:flex-row-reverse' : ''}`}>
-          <div className="mx-auto h-28 w-28 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 sm:h-32 sm:w-32 md:mx-0">
-            <img
-              src={imageSrc}
-              alt={name}
-              className="h-full w-full object-cover object-center"
-              onError={(event) => {
-                event.currentTarget.src = DEFAULT_CATEGORY_IMAGE;
-              }}
-            />
-          </div>
+          {!hideImage ? (
+            <div className="mx-auto h-28 w-28 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 sm:h-32 sm:w-32 md:mx-0">
+              <img
+                src={imageSrc}
+                alt={name}
+                className="h-full w-full object-cover object-center"
+                onError={(event) => {
+                  event.currentTarget.src = DEFAULT_CATEGORY_IMAGE;
+                }}
+              />
+            </div>
+          ) : null}
 
           <div className={`min-w-0 flex-1 text-center md:text-start ${isArabic ? 'md:text-end' : ''}`}>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-600">

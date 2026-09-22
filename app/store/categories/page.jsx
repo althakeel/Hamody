@@ -14,6 +14,69 @@ import { toPublicCategoryPath } from '@/lib/categorySlug';
 
 const DEFAULT_CATEGORY_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23eff6ff'/%3E%3Cstop offset='100%25' stop-color='%23e2e8f0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='160' height='160' rx='28' fill='url(%23g)'/%3E%3Ccircle cx='80' cy='64' r='24' fill='%23bfdbfe'/%3E%3Cpath d='M38 124c10-22 29-34 42-34s32 12 42 34' fill='%2394a3b8'/%3E%3C/svg%3E";
 
+const CATEGORY_BANNER_FIELDS = [
+  {
+    key: 'bannerEn',
+    label: 'Desktop banner (English)',
+    hint: 'Shown on desktop English category pages.',
+    sizeHint: '1440×320',
+    rtl: false,
+  },
+  {
+    key: 'bannerAr',
+    label: 'Desktop banner (Arabic)',
+    hint: 'Shown on desktop Arabic category pages.',
+    sizeHint: '1440×320',
+    rtl: true,
+  },
+  {
+    key: 'bannerTabletEn',
+    label: 'Tablet banner (English)',
+    hint: 'Shown on tablets in English. Falls back to the desktop English banner if empty.',
+    sizeHint: '1024×320',
+    rtl: false,
+  },
+  {
+    key: 'bannerTabletAr',
+    label: 'Tablet banner (Arabic)',
+    hint: 'Shown on tablets in Arabic. Falls back to the desktop Arabic banner if empty.',
+    sizeHint: '1024×320',
+    rtl: true,
+  },
+  {
+    key: 'bannerMobileEn',
+    label: 'Mobile banner (English)',
+    hint: 'Shown on phones in English. Falls back to the tablet or desktop English banner if empty.',
+    sizeHint: '768×280',
+    rtl: false,
+  },
+  {
+    key: 'bannerMobileAr',
+    label: 'Mobile banner (Arabic)',
+    hint: 'Shown on phones in Arabic. Falls back to the tablet or desktop Arabic banner if empty.',
+    sizeHint: '768×280',
+    rtl: true,
+  },
+];
+
+const EMPTY_BANNER_FILES = {
+  bannerEn: null,
+  bannerAr: null,
+  bannerTabletEn: null,
+  bannerTabletAr: null,
+  bannerMobileEn: null,
+  bannerMobileAr: null,
+};
+
+const EMPTY_BANNER_PREVIEWS = {
+  bannerEn: '',
+  bannerAr: '',
+  bannerTabletEn: '',
+  bannerTabletAr: '',
+  bannerMobileEn: '',
+  bannerMobileAr: '',
+};
+
 function getCategoryImageSrc(src = '') {
   return String(src || '').trim() || DEFAULT_CATEGORY_IMAGE;
 }
@@ -580,6 +643,12 @@ export default function StoreCategoryMenu() {
     name: '',
     nameAr: '',
     image: '',
+    bannerEn: '',
+    bannerAr: '',
+    bannerTabletEn: '',
+    bannerTabletAr: '',
+    bannerMobileEn: '',
+    bannerMobileAr: '',
     url: '',
     parentId: '',
     metaTitle: '',
@@ -590,6 +659,8 @@ export default function StoreCategoryMenu() {
 
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
+  const [bannerFiles, setBannerFiles] = useState(EMPTY_BANNER_FILES);
+  const [bannerPreviews, setBannerPreviews] = useState(EMPTY_BANNER_PREVIEWS);
   const [generatingImageKey, setGeneratingImageKey] = useState(null);
   const [backfillingArabic, setBackfillingArabic] = useState(false);
   const [translatingDescription, setTranslatingDescription] = useState(false);
@@ -947,6 +1018,30 @@ export default function StoreCategoryMenu() {
     reader.readAsDataURL(file);
   };
 
+  const handleBannerChange = (key, event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Banner must be 5MB or smaller');
+      event.target.value = '';
+      return;
+    }
+
+    setBannerFiles((prev) => ({ ...prev, [key]: file }));
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setBannerPreviews((prev) => ({ ...prev, [key]: reader.result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleClearBanner = (key) => {
+    setBannerFiles((prev) => ({ ...prev, [key]: null }));
+    setBannerPreviews((prev) => ({ ...prev, [key]: '' }));
+    setFormData((prev) => ({ ...prev, [key]: '' }));
+  };
+
   const uploadCategoryImageFile = async (file, token) => {
     const base64Image = await new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -1104,6 +1199,25 @@ export default function StoreCategoryMenu() {
         }
       }
 
+      const bannerUrls = {
+        bannerEn: formData.bannerEn || '',
+        bannerAr: formData.bannerAr || '',
+        bannerTabletEn: formData.bannerTabletEn || '',
+        bannerTabletAr: formData.bannerTabletAr || '',
+        bannerMobileEn: formData.bannerMobileEn || '',
+        bannerMobileAr: formData.bannerMobileAr || '',
+      };
+
+      for (const field of CATEGORY_BANNER_FIELDS) {
+        if (!bannerFiles[field.key]) continue;
+        const uploaded = await uploadCategoryImageFile(bannerFiles[field.key], token);
+        if (!uploaded) {
+          toast.error(`${field.label} upload failed. Please try again.`);
+          return;
+        }
+        bannerUrls[field.key] = uploaded;
+      }
+
       const existingSystemCategoryId = String(editingCategoryId || '').trim();
       const matchingSystemCategory = flatCategories.find((category) => (
         category.slug === slugify(formData.name)
@@ -1118,6 +1232,12 @@ export default function StoreCategoryMenu() {
           slug: slugify(formData.name.trim()),
         }) || '',
         image: imageUrl || null,
+        bannerEn: bannerUrls.bannerEn || '',
+        bannerAr: bannerUrls.bannerAr || '',
+        bannerTabletEn: bannerUrls.bannerTabletEn || '',
+        bannerTabletAr: bannerUrls.bannerTabletAr || '',
+        bannerMobileEn: bannerUrls.bannerMobileEn || '',
+        bannerMobileAr: bannerUrls.bannerMobileAr || '',
         parentId: selectedParentId || null,
         metaTitle: formData.metaTitle?.trim() || '',
         metaDescription: formData.metaDescription?.trim() || '',
@@ -1230,6 +1350,12 @@ export default function StoreCategoryMenu() {
       name: category.name,
       nameAr: category.nameAr || suggestUaeArabicCategory(category) || '',
       image: category.image || '',
+      bannerEn: category.bannerEn || '',
+      bannerAr: category.bannerAr || '',
+      bannerTabletEn: category.bannerTabletEn || '',
+      bannerTabletAr: category.bannerTabletAr || '',
+      bannerMobileEn: category.bannerMobileEn || '',
+      bannerMobileAr: category.bannerMobileAr || '',
       url: buildSystemCategoryMenuUrl(category),
       parentId: category.parentId || '',
       metaTitle: category.metaTitle || '',
@@ -1238,6 +1364,15 @@ export default function StoreCategoryMenu() {
       descriptionAr: category.descriptionAr || '',
     });
     setImagePreview(category.image || '');
+    setBannerFiles(EMPTY_BANNER_FILES);
+    setBannerPreviews({
+      bannerEn: category.bannerEn || '',
+      bannerAr: category.bannerAr || '',
+      bannerTabletEn: category.bannerTabletEn || '',
+      bannerTabletAr: category.bannerTabletAr || '',
+      bannerMobileEn: category.bannerMobileEn || '',
+      bannerMobileAr: category.bannerMobileAr || '',
+    });
     setEditingCategoryId(String(category._id));
     setShowForm(true);
   };
@@ -1245,9 +1380,27 @@ export default function StoreCategoryMenu() {
   const handleCancel = () => {
     setShowForm(false);
     setEditingCategoryId(null);
-    setFormData({ name: '', nameAr: '', image: '', url: '', parentId: '', metaTitle: '', metaDescription: '', description: '', descriptionAr: '' });
+    setFormData({
+      name: '',
+      nameAr: '',
+      image: '',
+      bannerEn: '',
+      bannerAr: '',
+      bannerTabletEn: '',
+      bannerTabletAr: '',
+      bannerMobileEn: '',
+      bannerMobileAr: '',
+      url: '',
+      parentId: '',
+      metaTitle: '',
+      metaDescription: '',
+      description: '',
+      descriptionAr: '',
+    });
     setImageFile(null);
     setImagePreview('');
+    setBannerFiles(EMPTY_BANNER_FILES);
+    setBannerPreviews(EMPTY_BANNER_PREVIEWS);
   };
 
   const toggleCategorySelection = (categoryId) => {
@@ -2029,6 +2182,63 @@ export default function StoreCategoryMenu() {
                             </div>
                           </div>
                         )}
+                      </div>
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-4 sm:pt-5">
+                      <div className="mb-3">
+                        <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 sm:text-sm">
+                          Category banners <span className="font-normal normal-case text-slate-500">(optional)</span>
+                        </label>
+                        <p className="mt-1 text-xs text-slate-500">
+                          Upload desktop, tablet, and mobile banners separately (English and Arabic). Shown under the breadcrumb. If any banner is set, the category thumbnail hides automatically.
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        {CATEGORY_BANNER_FIELDS.map((field) => {
+                          const preview = bannerPreviews[field.key] || formData[field.key];
+                          return (
+                            <div key={field.key} className="rounded-lg border border-slate-200 bg-white p-3">
+                              <div className="mb-2 flex items-start justify-between gap-2">
+                                <div>
+                                  <p className="text-xs font-semibold text-slate-800 sm:text-sm">{field.label}</p>
+                                  <p className="mt-0.5 text-[11px] leading-snug text-slate-500">{field.hint}</p>
+                                </div>
+                                {preview ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleClearBanner(field.key)}
+                                    className="shrink-0 text-xs font-semibold text-slate-500 hover:text-red-600"
+                                  >
+                                    Remove
+                                  </button>
+                                ) : null}
+                              </div>
+                              <div className="relative cursor-pointer rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 transition hover:border-blue-500">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(event) => handleBannerChange(field.key, event)}
+                                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                                />
+                                <div className="flex flex-col items-center justify-center text-center">
+                                  <FiPlus className="mb-1 text-xl text-slate-400" />
+                                  <p className="text-xs font-semibold text-slate-700">Click to upload</p>
+                                  <p className="mt-0.5 text-[11px] text-slate-400">PNG, JPG up to 5MB · {field.sizeHint}</p>
+                                </div>
+                              </div>
+                              {preview ? (
+                                <div className="mt-2 overflow-hidden rounded-lg border border-blue-200 bg-slate-50" dir={field.rtl ? 'rtl' : 'ltr'}>
+                                  <img
+                                    src={preview}
+                                    alt={`${field.label} preview`}
+                                    className="h-20 w-full object-cover object-center"
+                                  />
+                                </div>
+                              ) : null}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
 

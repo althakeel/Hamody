@@ -19,7 +19,7 @@ import { HomeSideImageSliderSkeleton } from '@/components/home/HomeSectionSkelet
 import BannerSlider from '@/components/BannerSlider'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
 import { getContentDirection } from '@/lib/storefrontLanguage'
-import { getLocalizedCategorySliderSubtitle, getLocalizedCategorySliderTitle } from '@/lib/categorySliderCopy'
+import { getLocalizedCategorySliderSideImage, getLocalizedCategorySliderSubtitle, getLocalizedCategorySliderTitle } from '@/lib/categorySliderCopy'
 
 const Section4 = ({ sections: initialSections = null, loading: loadingProp = false }) => {
   const shouldSelfFetch = initialSections == null
@@ -198,7 +198,7 @@ const HorizontalSlider = ({ section }) => {
 
   if (sectionProducts.length === 0 && !loading) return null
 
-  const sideImage = String(section.sideImage || '').trim()
+  const sideImage = getLocalizedCategorySliderSideImage(section, language)
   const hasSideImage = Boolean(sideImage)
   const sideImagePosition = normalizeCategorySliderSideImagePosition(section.sideImagePosition)
   const imageFirst = sideImagePosition === 'left'

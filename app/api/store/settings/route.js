@@ -3,6 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import NavbarMenuSettings from '@/models/NavbarMenuSettings';
 import { getAuth } from '@/lib/firebase-admin';
 import { deleteCacheKey } from '@/lib/cache';
+import { DEFAULT_NAVBAR_BOTTOM_BORDER, normalizeNavbarBottomBorder } from '@/lib/navbarLayoutSettings';
 
 const DEFAULT_SETTINGS = {
   navMenuEnabled: true,
@@ -13,7 +14,8 @@ const DEFAULT_SETTINGS = {
     cart: true,
   },
   navMenuStyle: {
-    barBackgroundColor: '#ffffff',
+    barBackgroundColor: '#000000',
+    categoryBarBackgroundColor: '#000000',
     barTextColor: '#334155',
     barHoverBackgroundColor: '#f1f5f9',
     dropdownBackgroundColor: '#ffffff',
@@ -25,6 +27,7 @@ const DEFAULT_SETTINGS = {
     showcaseFlyoutLinkColor: '#1f2937',
     showcaseFlyoutHoverColor: '#f8fafc',
     showcaseFlyoutBorderColor: '#dbe3ee',
+    ...DEFAULT_NAVBAR_BOTTOM_BORDER,
   },
   navMenuItems: [],
   navMenuUseParentCategories: false,
@@ -57,8 +60,19 @@ const normalizeHexColor = (value, fallback) => {
 
 const normalizeMenuStyle = (value, currentStyle = DEFAULT_SETTINGS.navMenuStyle) => {
   const source = value && typeof value === 'object' ? value : {};
+  const explicitCategoryBar = String(source.categoryBarBackgroundColor || '').trim();
+  const legacyBar = String(source.barBackgroundColor || '').trim();
+  const resolvedCategoryBar = explicitCategoryBar
+    || (legacyBar && legacyBar.toLowerCase() !== '#ffffff' ? legacyBar : '#000000');
   return {
-    barBackgroundColor: normalizeHexColor(source.barBackgroundColor, currentStyle.barBackgroundColor),
+    barBackgroundColor: normalizeHexColor(
+      resolvedCategoryBar,
+      currentStyle.categoryBarBackgroundColor || currentStyle.barBackgroundColor || '#000000',
+    ),
+    categoryBarBackgroundColor: normalizeHexColor(
+      resolvedCategoryBar,
+      currentStyle.categoryBarBackgroundColor || currentStyle.barBackgroundColor || '#000000',
+    ),
     barTextColor: normalizeHexColor(source.barTextColor, currentStyle.barTextColor),
     barHoverBackgroundColor: normalizeHexColor(source.barHoverBackgroundColor, currentStyle.barHoverBackgroundColor),
     dropdownBackgroundColor: normalizeHexColor(source.dropdownBackgroundColor, currentStyle.dropdownBackgroundColor),
@@ -70,6 +84,7 @@ const normalizeMenuStyle = (value, currentStyle = DEFAULT_SETTINGS.navMenuStyle)
     showcaseFlyoutLinkColor: normalizeHexColor(source.showcaseFlyoutLinkColor, currentStyle.showcaseFlyoutLinkColor),
     showcaseFlyoutHoverColor: normalizeHexColor(source.showcaseFlyoutHoverColor, currentStyle.showcaseFlyoutHoverColor),
     showcaseFlyoutBorderColor: normalizeHexColor(source.showcaseFlyoutBorderColor, currentStyle.showcaseFlyoutBorderColor),
+    ...normalizeNavbarBottomBorder(source, currentStyle),
   };
 };
 

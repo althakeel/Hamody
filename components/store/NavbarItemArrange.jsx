@@ -2,6 +2,7 @@
 
 import { GripVertical } from 'lucide-react';
 import {
+  ITEM_ALIGN_OPTIONS,
   defaultNavbarItemOrder,
   getNavbarArrangeItems,
 } from '@/lib/navbarLayoutSettings';
@@ -11,6 +12,8 @@ export default function NavbarItemArrange({
   layout,
   visibility = { orders: true, wishlist: true, cart: true },
   onChange,
+  onAlignChange,
+  onReset,
 }) {
   const items = getNavbarArrangeItems(layout, visibility);
   const { dragId, point, offset, start } = useNavbarItemReorder({
@@ -27,37 +30,63 @@ export default function NavbarItemArrange({
         <div>
           <h2 className="text-sm font-semibold text-slate-900">Arrange navbar items</h2>
           <p className="mt-1 text-xs text-slate-500">
-            Drag items left or right. The preview and live navbar follow this order.
+            Drag to reorder. Click Left, Default, or Right to move that item. The preview updates immediately.
           </p>
         </div>
         <button
           type="button"
-          onClick={() => onChange(defaultNavbarItemOrder(layout.extraButtons))}
+          onClick={() => {
+            if (onReset) {
+              onReset();
+              return;
+            }
+            onChange(defaultNavbarItemOrder(layout.extraButtons));
+          }}
           className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
         >
-          Reset order
+          Reset
         </button>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="mt-4 flex flex-wrap items-start gap-2">
         {items.map((item) => {
           const isDragging = dragId === item.id;
           return (
-            <button
+            <div
               key={item.id}
-              type="button"
               data-navbar-arrange-id={item.id}
-              onPointerDown={(event) => start(event, item.id)}
-              className={`inline-flex select-none items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold shadow-sm transition duration-150 ease-out ${
+              className={`rounded-xl border p-2 shadow-sm ${
                 isDragging
-                  ? 'border-indigo-300 bg-indigo-50 text-indigo-700 opacity-40'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-200 hover:bg-indigo-50/60'
+                  ? 'border-indigo-300 bg-indigo-50 opacity-40'
+                  : 'border-slate-200 bg-white'
               }`}
-              style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
             >
-              <GripVertical size={13} className="text-slate-400" />
-              {item.label}
-            </button>
+              <button
+                type="button"
+                onPointerDown={(event) => start(event, item.id)}
+                className="inline-flex select-none items-center gap-1.5 px-1 text-xs font-semibold text-slate-700"
+                style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+              >
+                <GripVertical size={13} className="text-slate-400" />
+                {item.label}
+              </button>
+              <div className="mt-1.5 inline-flex rounded-lg bg-slate-100 p-0.5">
+                {ITEM_ALIGN_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => onAlignChange?.(item.id, option.id)}
+                    className={`rounded-md px-2 py-1 text-[11px] font-semibold transition ${
+                      item.align === option.id
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           );
         })}
       </div>

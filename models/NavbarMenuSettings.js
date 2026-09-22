@@ -60,13 +60,17 @@ const NavbarMenuSettingsSchema = new mongoose.Schema(
       cart: { type: Boolean, default: true },
     },
     navMenuStyle: {
-      barBackgroundColor: { type: String, default: '#ffffff', trim: true },
+      barBackgroundColor: { type: String, default: '#000000', trim: true },
+      categoryBarBackgroundColor: { type: String, default: '#000000', trim: true },
       barTextColor: { type: String, default: '#334155', trim: true },
       barHoverBackgroundColor: { type: String, default: '#f1f5f9', trim: true },
       dropdownBackgroundColor: { type: String, default: '#ffffff', trim: true },
       dropdownTextColor: { type: String, default: '#334155', trim: true },
       dropdownMutedTextColor: { type: String, default: '#64748b', trim: true },
       dropdownBorderColor: { type: String, default: '#e2e8f0', trim: true },
+      showBottomBorder: { type: Boolean, default: false },
+      bottomBorderWidth: { type: Number, default: 2 },
+      bottomBorderColor: { type: String, default: '#e2e8f0', trim: true },
     },
     navMenuItems: [
       {
@@ -107,6 +111,11 @@ const NavbarMenuSettingsSchema = new mongoose.Schema(
       type: Number,
       default: 600,
     },
+    searchAlign: {
+      type: String,
+      default: 'left',
+      trim: true,
+    },
     searchPlaceholder: {
       type: String,
       default: '',
@@ -128,6 +137,10 @@ const NavbarMenuSettingsSchema = new mongoose.Schema(
     itemGap: {
       type: Number,
       default: 12,
+    },
+    logoGap: {
+      type: Number,
+      default: 16,
     },
     mobileItemGap: {
       type: Number,
@@ -158,6 +171,23 @@ const NavbarMenuSettingsSchema = new mongoose.Schema(
     navbarItemOrder: {
       type: [String],
       default: [],
+    },
+    navbarItemAlign: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+    unifyNavbarText: {
+      type: Boolean,
+      default: false,
+    },
+    unifiedTextFontFamily: {
+      type: String,
+      default: 'inherit',
+      trim: true,
+    },
+    unifiedTextFontSize: {
+      type: Number,
+      default: 13,
     },
     items: [
       {
@@ -253,14 +283,32 @@ if (!NavbarMenuSettingsModel.schema.path('navMenuItems')) {
 if (!NavbarMenuSettingsModel.schema.path('navMenuStyle')) {
   NavbarMenuSettingsModel.schema.add({
     navMenuStyle: {
-      barBackgroundColor: { type: String, default: '#ffffff', trim: true },
+      barBackgroundColor: { type: String, default: '#000000', trim: true },
+      categoryBarBackgroundColor: { type: String, default: '#000000', trim: true },
       barTextColor: { type: String, default: '#334155', trim: true },
       barHoverBackgroundColor: { type: String, default: '#f1f5f9', trim: true },
       dropdownBackgroundColor: { type: String, default: '#ffffff', trim: true },
       dropdownTextColor: { type: String, default: '#334155', trim: true },
       dropdownMutedTextColor: { type: String, default: '#64748b', trim: true },
       dropdownBorderColor: { type: String, default: '#e2e8f0', trim: true },
+      showBottomBorder: { type: Boolean, default: false },
+      bottomBorderWidth: { type: Number, default: 2 },
+      bottomBorderColor: { type: String, default: '#e2e8f0', trim: true },
     },
+  });
+}
+
+if (!NavbarMenuSettingsModel.schema.path('navMenuStyle.categoryBarBackgroundColor')) {
+  NavbarMenuSettingsModel.schema.add({
+    'navMenuStyle.categoryBarBackgroundColor': { type: String, default: '#000000', trim: true },
+  });
+}
+
+if (!NavbarMenuSettingsModel.schema.path('navMenuStyle.showBottomBorder')) {
+  NavbarMenuSettingsModel.schema.add({
+    'navMenuStyle.showBottomBorder': { type: Boolean, default: false },
+    'navMenuStyle.bottomBorderWidth': { type: Number, default: 2 },
+    'navMenuStyle.bottomBorderColor': { type: String, default: '#e2e8f0', trim: true },
   });
 }
 
@@ -324,6 +372,14 @@ if (!NavbarMenuSettingsModel.schema.path('categoriesButtonStyle')) {
   });
 }
 
+if (!NavbarMenuSettingsModel.schema.path('unifyNavbarText')) {
+  NavbarMenuSettingsModel.schema.add({
+    unifyNavbarText: { type: Boolean, default: false },
+    unifiedTextFontFamily: { type: String, default: 'inherit', trim: true },
+    unifiedTextFontSize: { type: Number, default: 13 },
+  });
+}
+
 if (!NavbarMenuSettingsModel.schema.path('searchStyle')) {
   NavbarMenuSettingsModel.schema.add({
     searchStyle: { type: mongoose.Schema.Types.Mixed, default: {} },
@@ -336,6 +392,12 @@ if (!NavbarMenuSettingsModel.schema.path('navbarItemOrder')) {
   });
 }
 
+if (!NavbarMenuSettingsModel.schema.path('navbarItemAlign')) {
+  NavbarMenuSettingsModel.schema.add({
+    navbarItemAlign: { type: mongoose.Schema.Types.Mixed, default: {} },
+  });
+}
+
 if (!NavbarMenuSettingsModel.schema.path('itemGap')) {
   NavbarMenuSettingsModel.schema.add({
     itemGap: { type: Number, default: 12 },
@@ -345,6 +407,18 @@ if (!NavbarMenuSettingsModel.schema.path('itemGap')) {
 if (!NavbarMenuSettingsModel.schema.path('mobileItemGap')) {
   NavbarMenuSettingsModel.schema.add({
     mobileItemGap: { type: Number, default: 4 },
+  });
+}
+
+if (!NavbarMenuSettingsModel.schema.path('searchAlign')) {
+  NavbarMenuSettingsModel.schema.add({
+    searchAlign: { type: String, default: 'left', trim: true },
+  });
+}
+
+if (!NavbarMenuSettingsModel.schema.path('logoGap')) {
+  NavbarMenuSettingsModel.schema.add({
+    logoGap: { type: Number, default: 16 },
   });
 }
 

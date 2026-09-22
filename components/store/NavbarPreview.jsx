@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Heart, Menu, Search, ShoppingCart, Package, User } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Heart, Menu, Search, ShoppingCart, Package, User } from 'lucide-react';
 import OffersNavLabel from '@/components/OffersNavLabel';
-import { buildParentCategoryNavMenuItems } from '@/lib/categoryNavigation';
+import { resolveStoreNavMenuItems } from '@/lib/categoryNavigation';
 import { STORE1920_LOGO_PATH } from '@/lib/brandLogo';
 import {
   DEFAULT_OFFERS_NAV_LABEL,
@@ -14,7 +14,7 @@ import {
   normalizeOffersNavStyle,
   splitOffersNavLabel,
 } from '@/lib/offersPageSettings';
-import { getNavbarArrangeItems, getNavbarCategoriesButtonAppearance, getNavbarCategoriesButtonLabel, getNavbarSearchAppearance, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';
+import { applyUnifiedNavbarText, getNavbarArrangeItems, getNavbarBottomBorderStyle, getNavbarCategoriesButtonAppearance, getNavbarCategoriesButtonLabel, getNavbarSearchAppearance, getNavbarSearchSlotProps, getUnifiedNavbarFontId, getUnifiedNavbarTextCss, groupNavbarItemsBySide, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';
 
 const DEFAULT_BG = '#9f4b1d';
 const NAVBAR_MAX_WIDTH_LIMIT = 1400;
@@ -43,25 +43,40 @@ export default function NavbarPreview({
   dealsLabel = '',
   extraButtons = [],
   searchMaxWidth = 600,
+  searchAlign = 'left',
   searchStyle,
   navbarMaxWidth = 1400,
   showCategoriesButton = true,
   categoriesButtonLabel = '',
   categoriesButtonStyle,
   itemOrder,
+  itemAlign,
   itemGap = 12,
+  logoGap = 16,
   mobileItemGap = 4,
   device = 'desktop',
   showMenuBar = true,
+  menuBarBackgroundColor = '#000000',
+  showBottomBorder = false,
+  bottomBorderWidth = 2,
+  bottomBorderColor = '#e2e8f0',
+  unifyNavbarText = false,
+  unifiedTextFontFamily = 'inherit',
+  unifiedTextFontSize = 13,
 }) {
   const bg = backgroundColor || DEFAULT_BG;
   const textColor = getContrastColor(bg);
   const searchAccentColor = bg || '#0f172a';
+  const bottomBorderStyle = getNavbarBottomBorderStyle({
+    showBottomBorder,
+    bottomBorderWidth,
+    bottomBorderColor,
+  });
   const menuItems = useMemo(() => {
-    const items = navMenuUseParentCategories
-      ? buildParentCategoryNavMenuItems(categoryOptions)
-      : (navMenuItems || []);
-    return items.filter((item) => String(item?.name || '').trim());
+    return resolveStoreNavMenuItems(
+      { navMenuUseParentCategories, navMenuItems },
+      categoryOptions,
+    ).filter((item) => String(item?.name || '').trim());
   }, [navMenuUseParentCategories, categoryOptions, navMenuItems]);
   const resolvedLogoUrl = String(logoUrl || '').trim() || STORE1920_LOGO_PATH;
   const logoW = Number(logoWidth) > 0 ? Number(logoWidth) : 120;
@@ -112,10 +127,20 @@ export default function NavbarPreview({
   }, [dealsLabel]);
 
   const resolvedDealsLabel = offersNav.label || DEFAULT_OFFERS_NAV_LABEL;
-  const dealsAppearance = getOffersNavButtonAppearance(offersNav.style || DEFAULT_OFFERS_NAV_STYLE, 'desktop');
-  const categoriesAppearance = getNavbarCategoriesButtonAppearance({ categoriesButtonStyle }, 'desktop');
-  const desktopSearchAppearance = getNavbarSearchAppearance({ searchStyle }, 'desktop');
-  const mobileSearchAppearance = getNavbarSearchAppearance({ searchStyle }, 'mobile');
+  const unifiedLayout = {
+    unifyNavbarText,
+    unifiedTextFontFamily,
+    unifiedTextFontSize,
+    categoriesButtonStyle,
+    searchStyle,
+  };
+  const dealsAppearance = getOffersNavButtonAppearance(
+    applyUnifiedNavbarText(offersNav.style || DEFAULT_OFFERS_NAV_STYLE, unifiedLayout),
+    'desktop',
+  );
+  const categoriesAppearance = getNavbarCategoriesButtonAppearance(unifiedLayout, 'desktop');
+  const desktopSearchAppearance = getNavbarSearchAppearance(unifiedLayout, 'desktop');
+  const mobileSearchAppearance = getNavbarSearchAppearance(unifiedLayout, 'mobile');
   const dealsParts = splitOffersNavLabel(resolvedDealsLabel);
   const previewExtraButtons = visibleNavbarExtraButtons(extraButtons, 'en');
   const previewLayout = {
@@ -124,6 +149,7 @@ export default function NavbarPreview({
     categoriesButtonLabel,
     categoriesButtonStyle,
     itemOrder,
+    itemAlign,
   };
   const previewItems = getNavbarArrangeItems(previewLayout, navActionsVisibility);
   const resolvedNavbarMaxWidth = Math.min(NAVBAR_MAX_WIDTH_LIMIT, Number(navbarMaxWidth) || NAVBAR_MAX_WIDTH_LIMIT);
@@ -151,7 +177,7 @@ export default function NavbarPreview({
           width={logoW}
           height={logoH}
           className="h-auto w-auto max-w-[88px] shrink-0 object-contain xl:max-w-[180px]"
-          style={{ maxHeight: '50px' }}
+          style={{ maxHeight: '50px', marginInlineEnd: `${Number(logoGap) || 0}px` }}
         />
       );
     }
@@ -198,9 +224,9 @@ export default function NavbarPreview({
       );
     }
     if (itemId === 'search') {
+      const searchSlot = getNavbarSearchSlotProps(searchAlign, searchMaxWidth);
       return (
-        <div className="min-w-0 w-full">
-          <div className="w-full" style={{ maxWidth: Number(searchMaxWidth) || 600 }}>
+        <div className={searchSlot.innerClassName} style={searchSlot.innerStyle}>
             <div
               className="flex h-[44px] w-full min-w-0 items-center overflow-hidden px-2 shadow-sm xl:px-3"
               data-font={desktopSearchAppearance.fontId || 'inherit'}
@@ -219,7 +245,6 @@ export default function NavbarPreview({
                 <Search size={15} />
               </span>
             </div>
-          </div>
         </div>
       );
     }
@@ -230,7 +255,11 @@ export default function NavbarPreview({
             <User size={22} strokeWidth={1.85} />
           </span>
           <span className="flex min-w-0 flex-col leading-[1.15]">
-            <span className="truncate text-[13px] font-bold leading-none text-white xl:text-[14px]">
+            <span
+              className={`truncate font-bold leading-none text-white ${unifyNavbarText ? '' : 'text-[13px] xl:text-[14px]'}`}
+              data-font={getUnifiedNavbarFontId(unifiedLayout) || undefined}
+              style={getUnifiedNavbarTextCss(unifiedLayout) || undefined}
+            >
               Sign In / Register
             </span>
             <span className="mt-1 truncate text-[11px] font-normal leading-none text-white/85">
@@ -246,7 +275,10 @@ export default function NavbarPreview({
 
     const extraButton = previewExtraButtons.find((button) => button.id === itemId);
     if (!extraButton) return null;
-    const extraAppearance = getOffersNavButtonAppearance(extraButton.style, 'desktop');
+    const extraAppearance = getOffersNavButtonAppearance(
+      applyUnifiedNavbarText(extraButton.style, unifiedLayout),
+      'desktop',
+    );
     return (
       <span
         className={`inline-flex shrink-0 items-center leading-none tracking-[0.04em] ${extraAppearance.animationClass || ''}`}
@@ -271,6 +303,7 @@ export default function NavbarPreview({
             style={{
               backgroundColor: bg,
               borderColor: 'rgba(15, 23, 42, 0.12)',
+              ...bottomBorderStyle,
             }}
           >
             <div
@@ -336,23 +369,56 @@ export default function NavbarPreview({
           }}
         >
           <div className="mx-auto w-full px-4 sm:px-6" style={{ maxWidth: resolvedNavbarMaxWidth }}>
-            <div
-              className="flex min-w-0 items-center py-2.5"
-              style={{ gap: `${Number(itemGap) || 0}px` }}
-            >
-              {previewItems.map((item) => {
-                const node = renderPreviewItem(item.id);
-                if (!node) return null;
-                return (
-                  <div
-                    key={item.id}
-                    className={item.id === 'search' ? 'min-w-0 flex-1 basis-0' : 'shrink-0'}
-                  >
-                    {node}
+            {(() => {
+              const rowGap = `${Number(itemGap) || 0}px`;
+              const sides = groupNavbarItemsBySide(
+                previewItems.map((item) => item.id),
+                itemAlign,
+                extraButtons,
+              );
+              const renderSide = (itemIds, className) => (
+                <div className={`flex items-center ${className}`} style={{ gap: rowGap }}>
+                  {itemIds.map((itemId) => {
+                    const node = renderPreviewItem(itemId);
+                    if (!node) return null;
+                    const searchSlot = itemId === 'search'
+                      ? getNavbarSearchSlotProps(searchAlign, searchMaxWidth)
+                      : null;
+                    return (
+                      <div
+                        key={itemId}
+                        className={itemId === 'search' && sides.center.includes('search')
+                          ? searchSlot.slotClassName
+                          : 'shrink-0'}
+                        style={itemId === 'search' && !sides.center.includes('search')
+                          ? { width: Number(searchMaxWidth) || 600 }
+                          : undefined}
+                      >
+                        {node}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+              return (
+                <div className="flex min-w-0 items-center py-2.5" style={{ gap: rowGap }}>
+                  {renderSide(sides.left, 'shrink-0')}
+                  <div className="flex min-w-0 flex-1 items-center justify-center" style={{ gap: rowGap }}>
+                    {sides.center.map((itemId) => {
+                      const node = renderPreviewItem(itemId);
+                      if (!node) return null;
+                      const searchSlot = getNavbarSearchSlotProps(searchAlign, searchMaxWidth);
+                      return (
+                        <div key={itemId} className={searchSlot.slotClassName}>
+                          {node}
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
+                  {renderSide(sides.right, 'shrink-0')}
+                </div>
+              );
+            })()}
           </div>
         </div>
 
@@ -361,20 +427,45 @@ export default function NavbarPreview({
             <div
               className="relative w-full"
               style={{
-                backgroundColor: bg,
-                boxShadow: `inset 0 1px 0 ${textColor === '#111827' ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.14)'}`,
+                backgroundColor: menuBarBackgroundColor || '#000000',
+                boxShadow: `inset 0 1px 0 ${getContrastColor(menuBarBackgroundColor || '#000000') === '#111827' ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.14)'}`,
+                ...bottomBorderStyle,
               }}
             >
-              <div className="mx-auto w-full overflow-hidden px-4 sm:px-6" style={{ maxWidth: resolvedNavbarMaxWidth }}>
-                <div className="relative flex items-center whitespace-nowrap py-2">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center ps-1">
+                <span
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border"
+                  style={{
+                    backgroundColor: menuBarBackgroundColor || '#000000',
+                    color: getContrastColor(menuBarBackgroundColor || '#000000'),
+                    borderColor: getContrastColor(menuBarBackgroundColor || '#000000') === '#111827' ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.14)',
+                  }}
+                >
+                  <ChevronLeft size={14} />
+                </span>
+              </div>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pe-1">
+                <span
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border"
+                  style={{
+                    backgroundColor: menuBarBackgroundColor || '#000000',
+                    color: getContrastColor(menuBarBackgroundColor || '#000000'),
+                    borderColor: getContrastColor(menuBarBackgroundColor || '#000000') === '#111827' ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.14)',
+                  }}
+                >
+                  <ChevronRight size={14} />
+                </span>
+              </div>
+              <div className="mx-auto w-full overflow-x-auto px-8 sm:px-10 scrollbar-hide" style={{ maxWidth: resolvedNavbarMaxWidth }}>
+                <div className="relative flex w-max items-center whitespace-nowrap py-2">
                   {menuItems.map((item, index) => (
                     <span key={`${item.name}-${index}`} className="inline-flex items-center">
                       {index > 0 ? (
-                        <span className="select-none px-2 text-xs opacity-40" style={{ color: textColor }}>|</span>
+                        <span className="select-none px-2 text-xs opacity-40" style={{ color: getContrastColor(menuBarBackgroundColor || '#000000') }}>|</span>
                       ) : null}
                       <span
                         className="inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-semibold uppercase tracking-wide"
-                        style={{ color: textColor }}
+                        style={{ color: getContrastColor(menuBarBackgroundColor || '#000000') }}
                       >
                         {item.icon ? (
                           <img src={item.icon} alt="" className="h-4 w-4 object-contain" />

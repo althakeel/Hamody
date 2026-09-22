@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getMjmlStarter, isMjmlMarkup } from '../lib/emailMjmlDetect.js';
+import { extractMjmlDocument, getMjmlStarter, isMjmlMarkup } from '../lib/emailMjmlDetect.js';
 import { compileEmailBlocksMjml, compileMjmlToHtml } from '../lib/emailMjml.js';
 
 test('detects MJML markup and ignores plain HTML', () => {

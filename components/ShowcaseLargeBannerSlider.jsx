@@ -22,6 +22,41 @@ function buildSlidesSignature(slides = [], language = 'en') {
   ].join(':')).join('|')}`;
 }
 
+function BannerTextOverlay({ fallback, showTruckIcon = false }) {
+  if (!fallback) return null;
+
+  const showTitle = fallback.showTitle && String(fallback.title || '').trim();
+  const showSubtitle = fallback.showSubtitle && String(fallback.subtitle || '').trim();
+  const showCta = fallback.showCta && String(fallback.ctaText || '').trim();
+  if (!showTitle && !showSubtitle && !showCta) return null;
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-[5] flex items-center px-5 py-4 sm:px-8">
+      <div className="max-w-[360px] rounded-xl bg-black/10 px-3 py-2 backdrop-blur-[1.5px]">
+        {showTitle ? (
+          <p className="text-[22px] font-black leading-[1.05] tracking-tight text-white sm:text-[28px]">
+            {fallback.title}
+          </p>
+        ) : null}
+        {showSubtitle ? (
+          <p className="mt-2 text-[13px] font-medium text-white/90 sm:text-[15px]">
+            {fallback.subtitle}
+          </p>
+        ) : null}
+        {showCta ? (
+          <div
+            className="mt-3 inline-flex items-center gap-2 rounded-md px-4 py-2 text-[13px] font-semibold shadow-sm"
+            style={{ backgroundColor: fallback.ctaBgColor, color: fallback.ctaTextColor }}
+          >
+            {showTruckIcon ? <Truck size={16} /> : <Search size={16} />}
+            <span>{fallback.ctaText}</span>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function ShowcaseDeviceImages({
   sources,
   alt,
@@ -61,22 +96,28 @@ export default function ShowcaseLargeBannerSlider({
   enabled = true,
   gridRow,
   bannerVariant,
+  bannerHeight,
   fallback = null,
   showTruckIcon = false,
 }) {
   const { language, isArabic } = useStorefrontI18n();
   const bannerRowClassName = [
-    'group relative overflow-hidden rounded-xl border-0 bg-transparent shadow-none shop-showcase-banner-row',
+    'group relative overflow-hidden border-0 bg-transparent shadow-none shop-showcase-banner-row',
+    bannerVariant === 'full' ? 'rounded-none' : 'rounded-xl',
     bannerVariant === 'main' ? 'shop-showcase-banner-row--main' : '',
     bannerVariant === 'secondary' ? 'shop-showcase-banner-row--secondary' : '',
+    bannerVariant === 'full' ? 'shop-showcase-banner-row--full' : '',
   ].filter(Boolean).join(' ');
 
-  const desktopWidth = bannerVariant === 'secondary' ? 1100 : 1400;
+  const desktopWidth = bannerVariant === 'full' ? 1920 : bannerVariant === 'secondary' ? 1100 : 1400;
   const deviceWidths = {
     mobile: 800,
     tablet: 1100,
     desktop: desktopWidth,
   };
+  const fullBannerStyle = bannerVariant === 'full' && bannerHeight
+    ? { height: `${bannerHeight}px`, maxHeight: `${bannerHeight}px` }
+    : {};
 
   const activeSlides = useMemo(
     () => slides
@@ -148,33 +189,11 @@ export default function ShowcaseLargeBannerSlider({
       <Link
         href={fallback.href || '/shop'}
         className={bannerRowClassName}
-        style={{ gridRow }}
+        style={{ gridRow, ...fullBannerStyle }}
       >
         <div className={`absolute inset-0 bg-gradient-to-r ${fallback.accent}`} />
         <div className="absolute inset-0 bg-gradient-to-r from-black/26 via-black/6 to-transparent" />
-        <div className="absolute inset-0 flex items-center px-5 py-4 sm:px-8">
-          <div className="max-w-[360px] rounded-xl bg-black/10 px-3 py-2 backdrop-blur-[1.5px]">
-            {fallback.showTitle && String(fallback.title || '').trim() ? (
-              <p className="text-[26px] font-black leading-[1.05] tracking-tight text-white sm:text-[34px]">
-                {fallback.title}
-              </p>
-            ) : null}
-            {fallback.showSubtitle && String(fallback.subtitle || '').trim() ? (
-              <p className="mt-2 text-[14px] font-medium text-white/90 sm:text-[16px]">
-                {fallback.subtitle}
-              </p>
-            ) : null}
-            {fallback.showCta && String(fallback.ctaText || '').trim() ? (
-              <div
-                className="mt-4 inline-flex items-center gap-2 rounded-md px-4 py-2 text-[13px] font-semibold shadow-sm transition duration-200"
-                style={{ backgroundColor: fallback.ctaBgColor, color: fallback.ctaTextColor }}
-              >
-                {showTruckIcon ? <Truck size={16} /> : <Search size={16} />}
-                <span>{fallback.ctaText}</span>
-              </div>
-            ) : null}
-          </div>
-        </div>
+        <BannerTextOverlay fallback={fallback} showTruckIcon={showTruckIcon} />
       </Link>
     );
   }
@@ -193,7 +212,7 @@ export default function ShowcaseLargeBannerSlider({
     <Link
       {...linkProps}
       className={`${bannerRowClassName} ${cursorClass} select-none`.trim()}
-      style={{ gridRow }}
+      style={{ gridRow, ...fullBannerStyle }}
       dir="ltr"
       onClick={handleLinkClick}
       onDragStart={(event) => event.preventDefault()}
@@ -224,6 +243,10 @@ export default function ShowcaseLargeBannerSlider({
           ))}
         </div>
       </div>
+
+      {bannerVariant === 'full' ? (
+        <BannerTextOverlay fallback={fallback} showTruckIcon={showTruckIcon} />
+      ) : null}
 
       {enabled && slideCount > 1 ? (
         <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2" data-banner-ignore-drag>

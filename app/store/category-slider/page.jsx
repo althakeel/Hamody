@@ -36,6 +36,7 @@ export default function CategorySliderPage() {
     titleAr: '',
     subtitleAr: '',
     sideImage: '',
+    sideImageAr: '',
     sideImagePosition: 'left',
     cardsPerRow: 6,
     autoSlide: false,
@@ -44,7 +45,7 @@ export default function CategorySliderPage() {
     productIds: [],
   });
   const [translatingCopy, setTranslatingCopy] = useState(false);
-  const [uploadingSideImage, setUploadingSideImage] = useState(false);
+  const [uploadingSideImage, setUploadingSideImage] = useState('');
   const [reorderingId, setReorderingId] = useState(null);
   const [myStoreScopeIds, setMyStoreScopeIds] = useState(() => new Set());
 
@@ -154,6 +155,7 @@ export default function CategorySliderPage() {
           id: normalizedId,
           subtitle: subtitleValue,
           sideImage: section.sideImage ? String(section.sideImage).trim() : '',
+          sideImageAr: section.sideImageAr ? String(section.sideImageAr).trim() : '',
           sideImagePosition: normalizeCategorySliderSideImagePosition(section.sideImagePosition),
           cardsPerRow: section.cardsPerRow === 5 ? 5 : 6,
           autoSlide: normalizeCategorySliderAutoSlide(section.autoSlide),
@@ -247,7 +249,7 @@ export default function CategorySliderPage() {
   };
 
   const handleAddSlider = () => {
-    setFormData({ title: '', subtitle: '', titleAr: '', subtitleAr: '', sideImage: '', sideImagePosition: 'left', cardsPerRow: 6, autoSlide: false, autoSlideIntervalMs: DEFAULT_CATEGORY_SLIDER_AUTO_SLIDE_INTERVAL_MS, backgroundColor: DEFAULT_CATEGORY_SLIDER_BACKGROUND, productIds: [] });
+    setFormData({ title: '', subtitle: '', titleAr: '', subtitleAr: '', sideImage: '', sideImageAr: '', sideImagePosition: 'left', cardsPerRow: 6, autoSlide: false, autoSlideIntervalMs: DEFAULT_CATEGORY_SLIDER_AUTO_SLIDE_INTERVAL_MS, backgroundColor: DEFAULT_CATEGORY_SLIDER_BACKGROUND, productIds: [] });
     setEditingIdx(null);
     setShowForm(true);
   };
@@ -271,6 +273,7 @@ export default function CategorySliderPage() {
       titleAr: slider.titleAr ? String(slider.titleAr).trim() : '',
       subtitleAr: slider.subtitleAr ? String(slider.subtitleAr).trim() : '',
       sideImage: slider.sideImage ? String(slider.sideImage).trim() : '',
+      sideImageAr: slider.sideImageAr ? String(slider.sideImageAr).trim() : '',
       sideImagePosition: normalizeCategorySliderSideImagePosition(slider.sideImagePosition),
       cardsPerRow: slider.cardsPerRow === 5 ? 5 : 6,
       autoSlide: normalizeCategorySliderAutoSlide(slider.autoSlide),
@@ -324,11 +327,12 @@ export default function CategorySliderPage() {
     }
   };
 
-  const handleSideImageUpload = async (file) => {
+  const handleSideImageUpload = async (file, field = 'sideImage') => {
     if (!file) return;
+    const imageField = field === 'sideImageAr' ? 'sideImageAr' : 'sideImage';
 
     try {
-      setUploadingSideImage(true);
+      setUploadingSideImage(imageField);
       let token = await getToken();
       if (!token) {
         toast.error('Please sign in again');
@@ -364,13 +368,13 @@ export default function CategorySliderPage() {
         throw new Error(data?.error || `Upload failed (${response.status})`);
       }
 
-      setFormData((prev) => ({ ...prev, sideImage: data.url }));
-      toast.success('Side image uploaded');
+      setFormData((prev) => ({ ...prev, [imageField]: data.url }));
+      toast.success(imageField === 'sideImageAr' ? 'Arabic side image uploaded' : 'Side image uploaded');
     } catch (error) {
       console.error('Side image upload failed:', error);
       toast.error(error?.message || 'Failed to upload image');
     } finally {
-      setUploadingSideImage(false);
+      setUploadingSideImage('');
     }
   };
 
@@ -420,6 +424,7 @@ export default function CategorySliderPage() {
           titleAr: formData.titleAr ? String(formData.titleAr).trim() : '',
           subtitleAr: formData.subtitleAr ? String(formData.subtitleAr).trim() : '',
           sideImage: formData.sideImage ? String(formData.sideImage).trim() : '',
+          sideImageAr: formData.sideImageAr ? String(formData.sideImageAr).trim() : '',
           sideImagePosition: normalizeCategorySliderSideImagePosition(formData.sideImagePosition),
           cardsPerRow: formData.cardsPerRow === 5 ? 5 : 6,
           autoSlide: normalizeCategorySliderAutoSlide(formData.autoSlide),
@@ -468,6 +473,7 @@ export default function CategorySliderPage() {
           titleAr: formData.titleAr ? String(formData.titleAr).trim() : '',
           subtitleAr: formData.subtitleAr ? String(formData.subtitleAr).trim() : '',
           sideImage: formData.sideImage ? String(formData.sideImage).trim() : '',
+          sideImageAr: formData.sideImageAr ? String(formData.sideImageAr).trim() : '',
           sideImagePosition: normalizeCategorySliderSideImagePosition(formData.sideImagePosition),
           cardsPerRow: formData.cardsPerRow === 5 ? 5 : 6,
           autoSlide: normalizeCategorySliderAutoSlide(formData.autoSlide),
@@ -672,15 +678,30 @@ export default function CategorySliderPage() {
                         {slider.subtitleAr ? (
                           <p className="text-sm text-gray-500 mb-2 italic" dir="rtl">"{slider.subtitleAr}"</p>
                         ) : null}
-                        {slider.sideImage ? (
-                          <div className="mb-2 flex items-center gap-2">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={slider.sideImage}
-                              alt=""
-                              className="h-12 w-12 rounded-lg border border-gray-200 object-cover"
-                            />
-                            <span className="text-xs text-gray-500">Desktop side image</span>
+                        {(slider.sideImage || slider.sideImageAr) ? (
+                          <div className="mb-2 flex items-center gap-3">
+                            {slider.sideImage ? (
+                              <div className="flex items-center gap-2">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={slider.sideImage}
+                                  alt=""
+                                  className="h-12 w-12 rounded-lg border border-gray-200 object-cover"
+                                />
+                                <span className="text-xs text-gray-500">English</span>
+                              </div>
+                            ) : null}
+                            {slider.sideImageAr ? (
+                              <div className="flex items-center gap-2">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={slider.sideImageAr}
+                                  alt=""
+                                  className="h-12 w-12 rounded-lg border border-gray-200 object-cover"
+                                />
+                                <span className="text-xs text-gray-500">Arabic</span>
+                              </div>
+                            ) : null}
                           </div>
                         ) : null}
                         <p className="text-sm text-gray-500 mt-1">📦 {slider.productIds?.length || 0} products · 🖥️ {slider.cardsPerRow === 5 ? 5 : 6} cards/row{slider.autoSlide ? ` · Auto slide ${Math.round((normalizeCategorySliderAutoSlideInterval(slider.autoSlideIntervalMs) || 4000) / 1000)}s` : ''}</p>
@@ -836,34 +857,33 @@ export default function CategorySliderPage() {
                     />
                   </div>
 
-                  {/* Side Image Upload (optional, desktop storefront) */}
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">
-                      Side Image (Optional)
+                      Side image (English)
                     </label>
                     <p className="mb-2 text-xs text-gray-500">
-                      Shown on desktop only. Choose whether the image sits on the left or right of the product slider (left in English appears on the right in Arabic).
+                      Shown on desktop when the storefront is in English. Left in English appears on the right in Arabic.
                     </p>
                     <input
                       type="file"
                       accept="image/*"
-                      disabled={uploadingSideImage}
+                      disabled={Boolean(uploadingSideImage)}
                       onChange={(e) => {
                         const file = e.target.files?.[0];
-                        if (file) handleSideImageUpload(file);
+                        if (file) handleSideImageUpload(file, 'sideImage');
                         e.target.value = '';
                       }}
                       className="w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:font-medium file:text-slate-700 hover:file:bg-slate-200"
                     />
-                    {uploadingSideImage ? (
-                      <p className="mt-2 text-xs text-blue-600">Uploading image...</p>
+                    {uploadingSideImage === 'sideImage' ? (
+                      <p className="mt-2 text-xs text-blue-600">Uploading English image...</p>
                     ) : null}
                     {formData.sideImage ? (
                       <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={formData.sideImage}
-                          alt="Side image preview"
+                          alt="English side image preview"
                           className="mx-auto max-h-40 w-full rounded-lg object-contain"
                         />
                         <button
@@ -871,33 +891,76 @@ export default function CategorySliderPage() {
                           onClick={() => setFormData((prev) => ({ ...prev, sideImage: '' }))}
                           className="mt-2 w-full rounded-lg border border-red-200 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
                         >
-                          Remove Image
+                          Remove English image
                         </button>
-                        <div className="mt-4 border-t border-gray-200 pt-4">
-                          <p className="mb-2 text-xs font-semibold text-gray-700">Side image position (desktop)</p>
-                          <div className="grid grid-cols-2 gap-2">
-                            {['left', 'right'].map((position) => {
-                              const selected = normalizeCategorySliderSideImagePosition(formData.sideImagePosition) === position;
-                              return (
-                                <button
-                                  key={position}
-                                  type="button"
-                                  onClick={() => setFormData((prev) => ({ ...prev, sideImagePosition: position }))}
-                                  className={`rounded-lg border-2 px-3 py-2 text-sm font-semibold capitalize transition ${
-                                    selected
-                                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                                  }`}
-                                >
-                                  {position}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
                       </div>
                     ) : null}
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                      Side image (Arabic)
+                    </label>
+                    <p className="mb-2 text-xs text-gray-500">
+                      Shown on desktop when the storefront is in Arabic. If empty, the English image is used.
+                    </p>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={Boolean(uploadingSideImage)}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleSideImageUpload(file, 'sideImageAr');
+                        e.target.value = '';
+                      }}
+                      className="w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:font-medium file:text-slate-700 hover:file:bg-slate-200"
+                    />
+                    {uploadingSideImage === 'sideImageAr' ? (
+                      <p className="mt-2 text-xs text-blue-600">Uploading Arabic image...</p>
+                    ) : null}
+                    {formData.sideImageAr ? (
+                      <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={formData.sideImageAr}
+                          alt="Arabic side image preview"
+                          className="mx-auto max-h-40 w-full rounded-lg object-contain"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setFormData((prev) => ({ ...prev, sideImageAr: '' }))}
+                          className="mt-2 w-full rounded-lg border border-red-200 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
+                        >
+                          Remove Arabic image
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {(formData.sideImage || formData.sideImageAr) ? (
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                      <p className="mb-2 text-xs font-semibold text-gray-700">Side image position (desktop)</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {['left', 'right'].map((position) => {
+                          const selected = normalizeCategorySliderSideImagePosition(formData.sideImagePosition) === position;
+                          return (
+                            <button
+                              key={position}
+                              type="button"
+                              onClick={() => setFormData((prev) => ({ ...prev, sideImagePosition: position }))}
+                              className={`rounded-lg border-2 px-3 py-2 text-sm font-semibold capitalize transition ${
+                                selected
+                                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                  : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                              }`}
+                            >
+                              {position}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
 
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">

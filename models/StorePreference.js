@@ -85,6 +85,9 @@ const StorePreferenceSchema = new mongoose.Schema(
       featuredSectionTitle: { type: String, trim: true, default: 'Craziest sale of the year!' },
       featuredSectionDescription: { type: String, trim: true, default: "Grab the best deals before they're gone!" },
       mainBannerEnabled: { type: Boolean, default: true },
+      topBannerEnabled: { type: Boolean, default: true },
+      bottomBannerEnabled: { type: Boolean, default: true },
+      fullWidthBannerEnabled: { type: Boolean, default: false },
       mainBannerImage: { type: String, trim: true, default: '' },
       mainBannerTitle: { type: String, trim: true, default: 'Power up instantly no battery needed' },
       mainBannerTitleEnabled: { type: Boolean, default: true },
@@ -138,6 +141,42 @@ const StorePreferenceSchema = new mongoose.Schema(
       bottomBannerSliderEnabled: { type: Boolean, default: true },
       bottomBannerSliderInterval: { type: Number, default: 4000 },
       bottomBannerSliderItems: {
+        type: [BannerSliderItemSchema],
+        default: [],
+      },
+      fullWidthBannerImage: { type: String, trim: true, default: '' },
+      fullWidthBannerTitle: { type: String, trim: true, default: '' },
+      fullWidthBannerTitleEnabled: { type: Boolean, default: false },
+      fullWidthBannerSubtitle: { type: String, trim: true, default: '' },
+      fullWidthBannerSubtitleEnabled: { type: Boolean, default: false },
+      fullWidthBannerCtaText: { type: String, trim: true, default: '' },
+      fullWidthBannerCtaEnabled: { type: Boolean, default: false },
+      fullWidthBannerCtaBgColor: { type: String, trim: true, default: '#ef2d2d' },
+      fullWidthBannerCtaTextColor: { type: String, trim: true, default: '#ffffff' },
+      fullWidthBannerLink: { type: String, trim: true, default: '/shop' },
+      fullWidthBannerSliderEnabled: { type: Boolean, default: true },
+      fullWidthBannerSliderInterval: { type: Number, default: 4000 },
+      fullWidthBannerDesktopHeight: { type: Number, default: 400 },
+      fullWidthBannerSliderItems: {
+        type: [BannerSliderItemSchema],
+        default: [],
+      },
+      lowerFullWidthBannerEnabled: { type: Boolean, default: false },
+      lowerFullWidthBannerImage: { type: String, trim: true, default: '' },
+      lowerFullWidthBannerTitle: { type: String, trim: true, default: '' },
+      lowerFullWidthBannerTitleEnabled: { type: Boolean, default: false },
+      lowerFullWidthBannerSubtitle: { type: String, trim: true, default: '' },
+      lowerFullWidthBannerSubtitleEnabled: { type: Boolean, default: false },
+      lowerFullWidthBannerCtaText: { type: String, trim: true, default: '' },
+      lowerFullWidthBannerCtaEnabled: { type: Boolean, default: false },
+      lowerFullWidthBannerCtaBgColor: { type: String, trim: true, default: '#ef2d2d' },
+      lowerFullWidthBannerCtaTextColor: { type: String, trim: true, default: '#ffffff' },
+      lowerFullWidthBannerLink: { type: String, trim: true, default: '/shop' },
+      lowerFullWidthBannerSliderEnabled: { type: Boolean, default: true },
+      lowerFullWidthBannerSliderInterval: { type: Number, default: 4000 },
+      lowerFullWidthBannerDesktopHeight: { type: Number, default: 200 },
+      fullWidthBannerGap: { type: Number, default: 12 },
+      lowerFullWidthBannerSliderItems: {
         type: [BannerSliderItemSchema],
         default: [],
       },
@@ -200,6 +239,18 @@ StorePreferenceSchema.index({ updatedAt: -1 })
 const StorePreferenceModel = mongoose.models.StorePreference || mongoose.model('StorePreference', StorePreferenceSchema)
 
 const missingShopShowcasePaths = {}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.topBannerEnabled')) {
+  missingShopShowcasePaths.topBannerEnabled = { type: Boolean, default: true }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.bottomBannerEnabled')) {
+  missingShopShowcasePaths.bottomBannerEnabled = { type: Boolean, default: true }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerEnabled')) {
+  missingShopShowcasePaths.fullWidthBannerEnabled = { type: Boolean, default: false }
+}
 
 if (!StorePreferenceModel.schema.path('shopShowcase.mainBannerTitleEnabled')) {
   missingShopShowcasePaths.mainBannerTitleEnabled = { type: Boolean, default: true }
@@ -384,6 +435,132 @@ if (!StorePreferenceModel.schema.path('shopShowcase.bottomBannerSliderItems')) {
   }
 }
 
+if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerImage')) {
+  missingShopShowcasePaths.fullWidthBannerImage = { type: String, trim: true, default: '' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerTitle')) {
+  missingShopShowcasePaths.fullWidthBannerTitle = { type: String, trim: true, default: '' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerTitleEnabled')) {
+  missingShopShowcasePaths.fullWidthBannerTitleEnabled = { type: Boolean, default: false }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerSubtitle')) {
+  missingShopShowcasePaths.fullWidthBannerSubtitle = { type: String, trim: true, default: '' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerSubtitleEnabled')) {
+  missingShopShowcasePaths.fullWidthBannerSubtitleEnabled = { type: Boolean, default: false }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerCtaText')) {
+  missingShopShowcasePaths.fullWidthBannerCtaText = { type: String, trim: true, default: '' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerCtaEnabled')) {
+  missingShopShowcasePaths.fullWidthBannerCtaEnabled = { type: Boolean, default: false }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerCtaBgColor')) {
+  missingShopShowcasePaths.fullWidthBannerCtaBgColor = { type: String, trim: true, default: '#ef2d2d' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerCtaTextColor')) {
+  missingShopShowcasePaths.fullWidthBannerCtaTextColor = { type: String, trim: true, default: '#ffffff' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerLink')) {
+  missingShopShowcasePaths.fullWidthBannerLink = { type: String, trim: true, default: '/shop' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerSliderEnabled')) {
+  missingShopShowcasePaths.fullWidthBannerSliderEnabled = { type: Boolean, default: true }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerSliderInterval')) {
+  missingShopShowcasePaths.fullWidthBannerSliderInterval = { type: Number, default: 4000 }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerDesktopHeight')) {
+  missingShopShowcasePaths.fullWidthBannerDesktopHeight = { type: Number, default: 400 }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerEnabled')) {
+  missingShopShowcasePaths.lowerFullWidthBannerEnabled = { type: Boolean, default: false }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerImage')) {
+  missingShopShowcasePaths.lowerFullWidthBannerImage = { type: String, trim: true, default: '' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerTitle')) {
+  missingShopShowcasePaths.lowerFullWidthBannerTitle = { type: String, trim: true, default: '' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerTitleEnabled')) {
+  missingShopShowcasePaths.lowerFullWidthBannerTitleEnabled = { type: Boolean, default: false }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerSubtitle')) {
+  missingShopShowcasePaths.lowerFullWidthBannerSubtitle = { type: String, trim: true, default: '' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerSubtitleEnabled')) {
+  missingShopShowcasePaths.lowerFullWidthBannerSubtitleEnabled = { type: Boolean, default: false }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerCtaText')) {
+  missingShopShowcasePaths.lowerFullWidthBannerCtaText = { type: String, trim: true, default: '' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerCtaEnabled')) {
+  missingShopShowcasePaths.lowerFullWidthBannerCtaEnabled = { type: Boolean, default: false }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerCtaBgColor')) {
+  missingShopShowcasePaths.lowerFullWidthBannerCtaBgColor = { type: String, trim: true, default: '#ef2d2d' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerCtaTextColor')) {
+  missingShopShowcasePaths.lowerFullWidthBannerCtaTextColor = { type: String, trim: true, default: '#ffffff' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerLink')) {
+  missingShopShowcasePaths.lowerFullWidthBannerLink = { type: String, trim: true, default: '/shop' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerSliderEnabled')) {
+  missingShopShowcasePaths.lowerFullWidthBannerSliderEnabled = { type: Boolean, default: true }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerSliderInterval')) {
+  missingShopShowcasePaths.lowerFullWidthBannerSliderInterval = { type: Number, default: 4000 }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerDesktopHeight')) {
+  missingShopShowcasePaths.lowerFullWidthBannerDesktopHeight = { type: Number, default: 200 }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerGap')) {
+  missingShopShowcasePaths.fullWidthBannerGap = { type: Number, default: 12 }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerSliderItems')) {
+  missingShopShowcasePaths.lowerFullWidthBannerSliderItems = {
+    type: [BannerSliderItemSchema],
+    default: [],
+  }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerSliderItems')) {
+  missingShopShowcasePaths.fullWidthBannerSliderItems = {
+    type: [BannerSliderItemSchema],
+    default: [],
+  }
+}
+
 if (Object.keys(missingShopShowcasePaths).length) {
   StorePreferenceModel.schema.add({
     shopShowcase: missingShopShowcasePaths
@@ -427,6 +604,8 @@ function addMissingShowcaseImageFields(nestedSchema) {
 ;[
   'shopShowcase.topBannerSliderItems',
   'shopShowcase.bottomBannerSliderItems',
+  'shopShowcase.fullWidthBannerSliderItems',
+  'shopShowcase.lowerFullWidthBannerSliderItems',
   'shopShowcase.bannerSliderItems',
   'shopShowcase.secondaryBannerSliderItems',
   'shopShowcase.productBanners',

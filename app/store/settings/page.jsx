@@ -12,6 +12,7 @@ import {
   Database,
   History,
   Mail,
+  RefreshCcw,
   Plus,
   Save,
   Shield,
@@ -34,6 +35,8 @@ import { useAuth } from "@/lib/useAuth";
 import { auth } from "@/lib/firebase";
 import { updateProfile } from "firebase/auth";
 import PermissionPicker from "@/components/store/PermissionPicker";
+import StoreCacheSettings from "@/components/store/StoreCacheSettings";
+import { isAdminEmail } from "@/lib/adminEmails";
 import {
   SIDEBAR_ACCESS_COMPONENTS,
   countEnabledPermissions,
@@ -80,6 +83,11 @@ const TAB_META = {
     label: "History",
     icon: History,
     description: "Super admin activity log",
+  },
+  cache: {
+    label: "Cache",
+    icon: RefreshCcw,
+    description: "Clear website cache",
   },
 };
 
@@ -214,12 +222,15 @@ export default function SettingsPage() {
   const [canManageTeamAccess, setCanManageTeamAccess] = useState(false);
   const [canViewActivityHistory, setCanViewActivityHistory] = useState(false);
 
+  const isSuperAdmin = isAdminEmail(user?.email);
+
   const settingsTabs = useMemo(() => {
     const tabs = ["profile", "store", "preferences", "payments", "newTag", "dataImport"];
     if (canManageTeamAccess) tabs.splice(4, 0, "dashboardAccess");
     if (canViewActivityHistory) tabs.push("history");
+    if (isSuperAdmin || isStoreOwner || canManageTeamAccess) tabs.push("cache");
     return tabs;
-  }, [canManageTeamAccess, canViewActivityHistory]);
+  }, [canManageTeamAccess, canViewActivityHistory, isSuperAdmin, isStoreOwner]);
 
   const isFormTab = ["profile", "store", "preferences", "payments", "newTag"].includes(activeTab);
   const activeMeta = TAB_META[activeTab] || TAB_META.profile;
@@ -362,6 +373,20 @@ export default function SettingsPage() {
       window.location.replace("/store/settings/history");
     }
   }, [canViewActivityHistory]);
+
+  const canManageCache = isSuperAdmin || isStoreOwner || canManageTeamAccess;
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !canManageCache) return;
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    if (tab === "cache") setActiveTab("cache");
+  }, [canManageCache]);
+
+  useEffect(() => {
+    if (!canManageCache && activeTab === "cache") {
+      setActiveTab("profile");
+    }
+  }, [canManageCache, activeTab]);
 
   const fetchTeamMembers = async () => {
     setLoadingTeam(true);
@@ -1491,6 +1516,7 @@ export default function SettingsPage() {
 
           {activeTab === "dashboardAccess" && canManageTeamAccess ? teamContent : null}
           {activeTab === "dataImport" ? importContent : null}
+          {activeTab === "cache" && canManageCache ? <StoreCacheSettings /> : null}
         </div>
       </div>
 
