@@ -183,7 +183,7 @@ export default function ShowcaseLargeBannerSlider({
   }, []);
 
   if (!visibleSlides.length) {
-    if (!fallback) return null;
+    if (!fallback || bannerVariant === 'full') return null;
 
     return (
       <Link

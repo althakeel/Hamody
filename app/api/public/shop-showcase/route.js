@@ -9,7 +9,7 @@ import { applyLargeBannerSliderDefaults, isFullWidthBannerActive } from '@/lib/s
 import { hasShowcaseBannerImage, serializeShowcaseImageFields } from '@/lib/showcaseBannerImages'
 import { resolvePublicStorePreference } from '@/lib/storePreferencePublic'
 
-const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v14'
+const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v15'
 
 const DEFAULT_SHOWCASE = {
   enabled: true,

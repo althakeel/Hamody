@@ -785,18 +785,33 @@ export default function ShopShowcaseSection({
       bannerVariant={variant || (banner.type === 'top' ? 'main' : banner.type === 'fullWidth' || banner.type === 'lowerFullWidth' ? 'full' : 'secondary')}
       bannerHeight={banner.desktopHeight}
       showTruckIcon={banner.showTruckIcon}
-      fallback={{
-        href: banner.href,
-        title: banner.title,
-        showTitle: banner.showTitle,
-        subtitle: banner.subtitle,
-        showSubtitle: banner.showSubtitle,
-        ctaText: banner.ctaText,
-        showCta: banner.showCta,
-        ctaBgColor: banner.ctaBgColor,
-        ctaTextColor: banner.ctaTextColor,
-        accent: banner.accent,
-      }}
+      fallback={
+        banner.type === 'fullWidth' || banner.type === 'lowerFullWidth'
+          ? {
+              href: banner.href,
+              title: banner.showTitle ? banner.title : '',
+              showTitle: banner.showTitle && Boolean(String(banner.title || '').trim()),
+              subtitle: banner.showSubtitle ? banner.subtitle : '',
+              showSubtitle: banner.showSubtitle && Boolean(String(banner.subtitle || '').trim()),
+              ctaText: banner.showCta ? banner.ctaText : '',
+              showCta: banner.showCta && Boolean(String(banner.ctaText || '').trim()),
+              ctaBgColor: banner.ctaBgColor,
+              ctaTextColor: banner.ctaTextColor,
+              accent: banner.accent,
+            }
+          : {
+              href: banner.href,
+              title: banner.title,
+              showTitle: banner.showTitle,
+              subtitle: banner.subtitle,
+              showSubtitle: banner.showSubtitle,
+              ctaText: banner.ctaText,
+              showCta: banner.showCta,
+              ctaBgColor: banner.ctaBgColor,
+              ctaTextColor: banner.ctaTextColor,
+              accent: banner.accent,
+            }
+      }
     />
   )
 
