@@ -24,7 +24,7 @@ import { TableHeader } from '@tiptap/extension-table-header'
 import { useAuth } from '@/lib/useAuth';
 import { readSellerCache } from '@/lib/storeDashboardCache';
 import { canChangeProductPricing } from '@/lib/productSaveGuards';
-import { Trash2 } from 'lucide-react';
+import { Trash2, X } from 'lucide-react';
 import { formatStorefrontMoney } from '@/lib/storefrontMarket';
 import { getProductImageAspectRatioClass } from '@/lib/productMedia';
 import { compressImageForUpload, getUploadErrorMessage } from '@/lib/compressImageForUpload';
@@ -769,10 +769,16 @@ function FormSection({ id, title, icon, subtitle, children, defaultOpen = true }
     )
 }
 
-export default function ProductForm({ product = null, onClose, onSubmitSuccess }) {
+export default function ProductForm({ product = null, onClose, onSubmitSuccess, supplierOptions: supplierOptionsProp = [] }) {
         // MISSING STATE HOOKS (add these at the top of ProductForm)
         const [dbCategories, setDbCategories] = useState([]);
         const [selectedCategories, setSelectedCategories] = useState([]);
+        const [supplierOptions, setSupplierOptions] = useState(() => (
+            Array.isArray(supplierOptionsProp) ? supplierOptionsProp : []
+        ));
+        const [suppliersLoading, setSuppliersLoading] = useState(!supplierOptionsProp?.length);
+        const [showSupplierPicker, setShowSupplierPicker] = useState(false);
+        const [supplierPickerQuery, setSupplierPickerQuery] = useState('');
         const isDirtyRef = useRef(false);
         const initializedProductIdRef = useRef(null);
         const markDirty = () => { isDirtyRef.current = true; };
@@ -784,7 +790,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
         const [draggingMediaKey, setDraggingMediaKey] = useState(null);
         const [dragOverMediaKey, setDragOverMediaKey] = useState(null);
         const [productInfo, setProductInfo] = useState({
-            name: '', nameAr: '', slug: '', brand: '', brandAr: '', shortDescription: '', shortDescriptionAr: '', shortDescription2: '', shortDescription2Ar: '', aboutThisItemTitle: 'About this item', aboutThisItemTitleAr: 'عن هذا المنتج', descriptionTabTitle: 'Description', descriptionTabTitleAr: 'الوصف', specificationTabTitle: 'Specification', specificationTabTitleAr: 'المواصفات', specTableEnabled: true, specTableTitle: 'Product information', specTableTitleAr: 'مواصفات المنتج', specTableColumns: ['Property', 'Value'], specTableColumnsAr: ['الخاصية', 'القيمة'], specTableRows: [['', '']], specTableRowsAr: [['', '']], description: '', descriptionAr: '', aPlusDesktop: '', aPlusMobile: '', aPlusDesktopAr: '', aPlusMobileAr: '', aPlusDesktopImages: [], aPlusMobileImages: [], AED: '', price: '', priceAr: '', AEDAr: '', category: '', sku: '', stockQuantity: 50, soldCount: 0, colors: [], sizes: [], fastDelivery: false, freeShippingEligible: false, useProductsPath: false, allowReturn: true, allowReplacement: true, reviews: [], badges: [], imageAspectRatio: '1:1', cardVideoPreviewEnabled: true, cardVideoPreviewDelaySec: 24, tags: [], seoTitle: '', seoH1: '', seoH1Ar: '', seoDescription: '', seoKeywords: [], deliveredBy: '', soldBy: '', paymentInfo: '', hsCode: '', originCountry: '', shippingWeightKg: ''
+            name: '', nameAr: '', slug: '', brand: '', brandAr: '', supplierId: '', supplierIds: [], shortDescription: '', shortDescriptionAr: '', shortDescription2: '', shortDescription2Ar: '', aboutThisItemTitle: 'About this item', aboutThisItemTitleAr: 'عن هذا المنتج', descriptionTabTitle: 'Description', descriptionTabTitleAr: 'الوصف', specificationTabTitle: 'Specification', specificationTabTitleAr: 'المواصفات', specTableEnabled: true, specTableTitle: 'Product information', specTableTitleAr: 'مواصفات المنتج', specTableColumns: ['Property', 'Value'], specTableColumnsAr: ['الخاصية', 'القيمة'], specTableRows: [['', '']], specTableRowsAr: [['', '']], description: '', descriptionAr: '', aPlusDesktop: '', aPlusMobile: '', aPlusDesktopAr: '', aPlusMobileAr: '', aPlusDesktopImages: [], aPlusMobileImages: [], AED: '', price: '', priceAr: '', AEDAr: '', category: '', sku: '', stockQuantity: 50, soldCount: 0, colors: [], sizes: [], fastDelivery: false, freeShippingEligible: false, useProductsPath: false, allowReturn: true, allowReplacement: true, reviews: [], badges: [], imageAspectRatio: '1:1', cardVideoPreviewEnabled: true, cardVideoPreviewDelaySec: 24, tags: [], seoTitle: '', seoH1: '', seoH1Ar: '', seoDescription: '', seoKeywords: [], deliveredBy: '', soldBy: '', paymentInfo: '', hsCode: '', originCountry: '', shippingWeightKg: ''
         });
         const [tagInput, setTagInput] = useState('');
         const [seoKeywordInput, setSeoKeywordInput] = useState('');
@@ -1001,6 +1007,41 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
         fetchBadgeOptions()
     }, [user, getToken])
 
+    useEffect(() => {
+        if (Array.isArray(supplierOptionsProp) && supplierOptionsProp.length) {
+            setSupplierOptions(supplierOptionsProp)
+            setSuppliersLoading(false)
+        }
+    }, [supplierOptionsProp])
+
+    useEffect(() => {
+        if (authLoading) return undefined
+        let cancelled = false
+
+        const loadSuppliers = async () => {
+            try {
+                setSuppliersLoading(true)
+                const token = await getToken()
+                if (!token) {
+                    if (!cancelled) setSuppliersLoading(false)
+                    return
+                }
+                const { data } = await axios.get('/api/store/suppliers', {
+                    headers: { Authorization: `Bearer ${token}` },
+                })
+                if (cancelled) return
+                setSupplierOptions(Array.isArray(data?.suppliers) ? data.suppliers : [])
+            } catch (error) {
+                console.warn('Failed to load suppliers:', error?.message)
+            } finally {
+                if (!cancelled) setSuppliersLoading(false)
+            }
+        }
+
+        loadSuppliers()
+        return () => { cancelled = true }
+    }, [authLoading, getToken])
+
     // Fetch products for FBT selection (lazy, only when enabled)
     useEffect(() => {
         if (!enableFBT || availableProducts.length > 0) return;
@@ -1074,6 +1115,30 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                 slug: product.slug || "",
                 brand: product.brand || "",
                 brandAr: product.brandAr || "",
+                supplierId: product.supplierId
+                    ? String(product.supplierId._id || product.supplierId.id || product.supplierId)
+                    : "",
+                supplierIds: (() => {
+                    const ids = [];
+                    if (Array.isArray(product.supplierIds)) {
+                        ids.push(...product.supplierIds.map((id) => String(id?._id || id?.id || id || '').trim()));
+                    }
+                    if (product.supplierId) {
+                        ids.push(String(product.supplierId._id || product.supplierId.id || product.supplierId));
+                    }
+                    const names = [
+                        ...(Array.isArray(product.supplierNames) ? product.supplierNames : []),
+                        product.supplierName,
+                    ].map((name) => String(name || '').trim().toLowerCase()).filter(Boolean);
+                    if (ids.length === 0 && names.length && Array.isArray(supplierOptions)) {
+                        supplierOptions.forEach((supplier) => {
+                            if (names.includes(String(supplier.name || '').trim().toLowerCase())) {
+                                ids.push(supplier.id);
+                            }
+                        });
+                    }
+                    return [...new Set(ids.filter(Boolean))];
+                })(),
                 shortDescription: product.shortDescription || "",
                 shortDescriptionAr: product.shortDescriptionAr || "",
                 shortDescription2: product.shortDescription2 || product.attributes?.shortDescription2 || "",
@@ -1342,6 +1407,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
             setIsSkuManuallyEdited(true)
             setProductInfo(prev => ({ ...prev, sku: value }))
         } else {
+            if (name === 'supplierId') markDirty()
             setProductInfo(prev => ({ ...prev, [name]: value }))
         }
     }
@@ -2319,6 +2385,10 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                 slug: productInfo.slug?.trim() || '',
                 brand: productInfo.brand || '',
                 brandAr: productInfo.brandAr || '',
+                supplierId: Array.isArray(productInfo.supplierIds) && productInfo.supplierIds[0]
+                    ? productInfo.supplierIds[0]
+                    : (productInfo.supplierId || ''),
+                supplierIds: Array.isArray(productInfo.supplierIds) ? productInfo.supplierIds : [],
                 shortDescription: productInfo.shortDescription || '',
                 shortDescriptionAr: productInfo.shortDescriptionAr || '',
                 shortDescription2: productInfo.shortDescription2 || '',
@@ -2657,6 +2727,56 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                     <div>
                         <label className="block text-xs font-semibold mb-1 text-gray-500 uppercase tracking-wide">Brand</label>
                         <input name="brand" value={productInfo.brand} onChange={onChangeHandler} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200" placeholder="Brand (optional)" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-semibold mb-1 text-gray-500 uppercase tracking-wide">Suppliers</label>
+                        <div className="flex flex-wrap items-center gap-1.5 min-h-[42px] rounded-lg border border-gray-200 bg-white px-2 py-1.5">
+                            {suppliersLoading ? (
+                                <span className="text-xs text-gray-400">Loading…</span>
+                            ) : (Array.isArray(productInfo.supplierIds) ? productInfo.supplierIds : []).length === 0 ? (
+                                <span className="text-xs text-gray-400">None selected</span>
+                            ) : (
+                                (Array.isArray(productInfo.supplierIds) ? productInfo.supplierIds : []).map((id) => {
+                                    const supplier = supplierOptions.find((item) => (item.id || item._id) === id);
+                                    return (
+                                        <span key={id} className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-800">
+                                            {supplier?.name || 'Supplier'}
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    markDirty();
+                                                    setProductInfo((prev) => {
+                                                        const next = (Array.isArray(prev.supplierIds) ? prev.supplierIds : []).filter((item) => item !== id);
+                                                        return { ...prev, supplierIds: next, supplierId: next[0] || '' };
+                                                    });
+                                                }}
+                                                className="rounded-full hover:bg-indigo-100"
+                                                aria-label="Remove supplier"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </span>
+                                    );
+                                })
+                            )}
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setSupplierPickerQuery('');
+                                setShowSupplierPicker(true);
+                            }}
+                            disabled={suppliersLoading || supplierOptions.length === 0}
+                            className="mt-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            Choose suppliers
+                        </button>
+                        {supplierOptions.length === 0 && !suppliersLoading ? (
+                            <p className="mt-1 text-[11px] text-slate-500">
+                                <a href="/store/suppliers" className="font-medium text-indigo-600 hover:underline">Add a supplier</a>
+                                {' '}first, then choose one or more here.
+                            </p>
+                        ) : null}
                     </div>
                     <div>
                         <label className="block text-xs font-semibold mb-1 text-gray-500 uppercase tracking-wide">SKU</label>
@@ -4011,6 +4131,94 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess }
                     </div>
                 </form>
             </div>
+            {showSupplierPicker ? (
+                <div
+                    className="fixed inset-0 z-[1100] flex items-center justify-center bg-slate-900/45 p-4"
+                    onClick={() => setShowSupplierPicker(false)}
+                    role="presentation"
+                >
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="choose-suppliers-title"
+                        className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                            <h3 id="choose-suppliers-title" className="text-base font-semibold text-slate-900">
+                                Choose suppliers
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => setShowSupplierPicker(false)}
+                                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                                aria-label="Close"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+                        <div className="px-5 py-4 space-y-3">
+                            <input
+                                type="search"
+                                value={supplierPickerQuery}
+                                onChange={(event) => setSupplierPickerQuery(event.target.value)}
+                                placeholder="Search suppliers…"
+                                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
+                            />
+                            <div className="max-h-64 overflow-y-auto space-y-1">
+                                {supplierOptions
+                                    .filter((supplier) => {
+                                        const query = supplierPickerQuery.trim().toLowerCase();
+                                        if (!query) return true;
+                                        return [
+                                            supplier.name,
+                                            supplier.company,
+                                            supplier.trn,
+                                            supplier.contactName,
+                                        ].join(' ').toLowerCase().includes(query);
+                                    })
+                                    .map((supplier) => {
+                                        const id = supplier.id || supplier._id;
+                                        const selected = Array.isArray(productInfo.supplierIds) && productInfo.supplierIds.includes(id);
+                                        return (
+                                            <label key={id} className="flex items-center gap-2 cursor-pointer rounded-lg px-2 py-2 hover:bg-slate-50">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selected}
+                                                    onChange={(event) => {
+                                                        markDirty();
+                                                        setProductInfo((prev) => {
+                                                            const current = Array.isArray(prev.supplierIds) ? prev.supplierIds : [];
+                                                            const next = event.target.checked
+                                                                ? [...new Set([...current, id])]
+                                                                : current.filter((item) => item !== id);
+                                                            return { ...prev, supplierIds: next, supplierId: next[0] || '' };
+                                                        });
+                                                    }}
+                                                    className="h-3.5 w-3.5 rounded accent-indigo-500"
+                                                />
+                                                <span className="text-sm text-slate-700">
+                                                    {supplier.name}
+                                                    {supplier.company ? <span className="text-slate-400"> · {supplier.company}</span> : null}
+                                                    {supplier.trn ? <span className="text-slate-400"> · TRN {supplier.trn}</span> : null}
+                                                </span>
+                                            </label>
+                                        );
+                                    })}
+                            </div>
+                        </div>
+                        <div className="flex justify-end border-t border-slate-100 bg-slate-50 px-5 py-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowSupplierPicker(false)}
+                                className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black"
+                            >
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
         </div>
     );
 }

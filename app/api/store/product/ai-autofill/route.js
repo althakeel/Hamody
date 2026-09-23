@@ -6,6 +6,7 @@ import { getAiErrorMessage, getAiErrorStatus } from '@/lib/aiProviderErrors';
 import { isProductAiConfigured } from '@/lib/runProductAutofill';
 import { autofillSingleProduct } from '@/lib/productAiAutofillService';
 import Category from '@/models/Category';
+import { assertAiBulkEditPin } from '@/lib/storeHelpAgentPin';
 
 async function getSellerContext(request) {
   const authHeader = request.headers.get('authorization') || '';
@@ -38,6 +39,14 @@ export async function POST(request) {
         ? [productId]
         : [];
     const includeArabic = body?.includeArabic !== false;
+    const isBulkEdit = body?.bulk === true || productIds.length > 1;
+
+    if (isBulkEdit) {
+      const pinCheck = assertAiBulkEditPin({ pin: body?.pin, token: body?.pinToken });
+      if (!pinCheck.ok) {
+        return NextResponse.json({ error: pinCheck.error }, { status: 403 });
+      }
+    }
 
     if (!productIds.length) {
       return NextResponse.json({ error: 'Select at least one product' }, { status: 400 });

@@ -16,6 +16,7 @@ import nextDynamic from "next/dynamic"
 import { ChevronDown } from 'lucide-react'
 import ProductDetailCompletenessDots from '@/components/store/ProductDetailCompletenessDots'
 import HideTawkOnWhatsAppToggle from '@/components/store/HideTawkOnWhatsAppToggle'
+import AiBulkEditPinModal from '@/components/store/AiBulkEditPinModal'
 import {
     buildCategoryLookup,
     getProductCategoryLabels,
@@ -23,7 +24,7 @@ import {
 } from '@/lib/categoryLookup'
 import { getProductThumbnailUrl } from '@/lib/productMedia'
 import { readSellerCache } from '@/lib/storeDashboardCache'
-import { canChangeProductPricing } from '@/lib/productSaveGuards'
+import { canBulkEditProducts, canChangeProductPricing } from '@/lib/productSaveGuards'
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100, 500]
 
@@ -226,7 +227,9 @@ export default function StoreManageProducts() {
     const searchParams = useSearchParams();
 
     const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || 'AED'
-    const canEditPricing = canChangeProductPricing(readSellerCache()?.dashboardAccess || {})
+    const sellerAccess = readSellerCache()?.dashboardAccess || {}
+    const canEditPricing = canChangeProductPricing(sellerAccess)
+    const canBulkEdit = canBulkEditProducts(sellerAccess)
     const formatAmount = (value) => {
         const numeric = Number(value)
         return Number.isFinite(numeric) ? numeric.toLocaleString() : '0'
@@ -267,6 +270,8 @@ export default function StoreManageProducts() {
     const [selectedCategory, setSelectedCategory] = useState('') // Category filter
     const [selectedBrand, setSelectedBrand] = useState('')
     const [brandOptions, setBrandOptions] = useState([])
+    const [selectedSupplier, setSelectedSupplier] = useState('')
+    const [supplierOptions, setSupplierOptions] = useState([])
     const [minPrice, setMinPrice] = useState('')
     const [maxPrice, setMaxPrice] = useState('')
     const [debouncedMinPrice, setDebouncedMinPrice] = useState('')
@@ -317,12 +322,18 @@ export default function StoreManageProducts() {
         freeShippingEligible: 'keep',
         published: 'keep',
         brand: '',
+        supplierId: 'keep',
         stockQuantity: '',
         price: '',
         AED: '',
+        findSkus: '',
+        assignSkus: '',
         addCategoryId: '',
         removeCategoryId: '',
     })
+    const [skuMatchPreview, setSkuMatchPreview] = useState({ products: [], missing: [] })
+    const [skuMatching, setSkuMatching] = useState(false)
+    const [bulkEditTarget, setBulkEditTarget] = useState('selected')
     const [categoryActionModal, setCategoryActionModal] = useState({
         open: false,
         mode: 'add', // add | replace
@@ -336,6 +347,8 @@ export default function StoreManageProducts() {
     const [bulkEligibleCount, setBulkEligibleCount] = useState(null)
     const [bulkAutofillLoading, setBulkAutofillLoading] = useState(false)
     const [bulkNow, setBulkNow] = useState(Date.now())
+    const [aiPinModal, setAiPinModal] = useState({ open: false, kind: '', description: '' })
+    const [aiPinChecking, setAiPinChecking] = useState(false)
     const [showImportPanel, setShowImportPanel] = useState(false)
     const [showDetailColumns, setShowDetailColumns] = useState(false)
     const BULK_AUTOFILL_INTERVAL_MS = 60000
@@ -347,6 +360,7 @@ export default function StoreManageProducts() {
         search = debouncedSearch,
         category = selectedCategory,
         brand = selectedBrand,
+        supplier = selectedSupplier,
         min = debouncedMinPrice,
         max = debouncedMaxPrice,
         stock = stockFilter,
@@ -368,6 +382,7 @@ export default function StoreManageProducts() {
                     search: search || undefined,
                     category: category || undefined,
                     brand: brand || undefined,
+                    supplierId: supplier || undefined,
                     minPrice: String(min || '').trim() !== '' ? String(min).trim() : undefined,
                     maxPrice: String(max || '').trim() !== '' ? String(max).trim() : undefined,
                     inStock: stock && stock !== 'all' ? stock : undefined,
@@ -395,6 +410,7 @@ export default function StoreManageProducts() {
         debouncedSearch,
         selectedCategory,
         selectedBrand,
+        selectedSupplier,
         debouncedMinPrice,
         debouncedMaxPrice,
         stockFilter,
@@ -404,6 +420,48 @@ export default function StoreManageProducts() {
         detailsProgressFilter,
         getToken,
     ])
+
+    const loadSupplierOptions = useCallback(async () => {
+        try {
+            const token = await getToken()
+            if (!token) return
+            const { data } = await axios.get('/api/store/suppliers', {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+            setSupplierOptions(Array.isArray(data?.suppliers) ? data.suppliers : [])
+        } catch (error) {
+            console.error('Failed to load suppliers', error)
+            setSupplierOptions([])
+        }
+    }, [getToken])
+
+    const getSupplierLabel = useCallback((product) => {
+        const names = [
+            ...(Array.isArray(product?.supplierNames) ? product.supplierNames : []),
+            product?.supplierName,
+        ].map((name) => String(name || '').trim()).filter(Boolean)
+        if (names.length) return [...new Set(names)].join(', ')
+        const ids = [
+            ...(Array.isArray(product?.supplierIds) ? product.supplierIds : []),
+            product?.supplierId,
+        ].map((id) => String(id?._id || id?.id || id || '').trim()).filter(Boolean)
+        const matched = ids.map((id) => supplierOptions.find((supplier) => supplier.id === id || supplier._id === id)?.name).filter(Boolean)
+        if (matched.length) return [...new Set(matched)].join(', ')
+        return ids.length ? 'Saved supplier' : '-'
+    }, [supplierOptions])
+
+    const getProductSkuLabel = useCallback((product) => {
+        const skus = []
+        const main = String(product?.sku || '').trim()
+        if (main) skus.push(main)
+        const variants = Array.isArray(product?.variants) ? product.variants : []
+        variants.forEach((variant) => {
+            const sku = String(variant?.sku || '').trim()
+            if (sku) skus.push(sku)
+        })
+        const unique = [...new Set(skus)]
+        return unique.length ? unique.join(', ') : '-'
+    }, [])
 
     const loadBrandOptions = useCallback(async () => {
         try {
@@ -550,15 +608,25 @@ export default function StoreManageProducts() {
         }
     }, [bulkAutofillJob, bulkNow])
 
-    const startBulkAutofillAll = async () => {
+    const getAiBulkPinToken = (value) => (
+        typeof value === 'string' && value.trim() ? value.trim() : ''
+    )
+
+    const startBulkAutofillAll = async (pinToken) => {
         const count = bulkEligibleCount ?? 0
         if (!count) {
             toast.error('No products missing details for AI auto-fill')
             return
         }
 
-        const hours = Math.ceil((count * BULK_AUTOFILL_INTERVAL_MS) / 3600000)
-        if (!confirm(`Start AI auto-fill for ${count} product(s) that are MISSING details?\n\nOne product every 1 minute.\nEstimated: ~${hours} hour(s).\n\nProducts that already have name/description are NEVER overwritten.`)) {
+        const unlockedPin = getAiBulkPinToken(pinToken)
+        if (!unlockedPin) {
+            const hours = Math.ceil((count * BULK_AUTOFILL_INTERVAL_MS) / 3600000)
+            setAiPinModal({
+                open: true,
+                kind: 'queue',
+                description: `Start AI auto-fill for ${count} product(s) missing details. One product every 1 minute (about ${hours} hour(s)). Products that already have name/description are not overwritten. Enter the admin PIN to continue.`,
+            })
             return
         }
 
@@ -570,6 +638,7 @@ export default function StoreManageProducts() {
                 mode: 'missing_details',
                 includeArabic: true,
                 intervalMs: BULK_AUTOFILL_INTERVAL_MS,
+                pinToken: unlockedPin,
             }, {
                 headers: { Authorization: `Bearer ${token}` },
             })
@@ -595,10 +664,20 @@ export default function StoreManageProducts() {
         }
     }
 
-    const resumeBulkAutofill = async () => {
+    const resumeBulkAutofill = async (pinToken) => {
+        const unlockedPin = getAiBulkPinToken(pinToken)
+        if (!unlockedPin) {
+            setAiPinModal({
+                open: true,
+                kind: 'resume',
+                description: 'Enter the admin PIN to resume AI bulk edit.',
+            })
+            return
+        }
+
         try {
             const token = await getToken()
-            const { data } = await axios.post('/api/store/product/ai-autofill/bulk', { action: 'resume' }, {
+            const { data } = await axios.post('/api/store/product/ai-autofill/bulk', { action: 'resume', pinToken: unlockedPin }, {
                 headers: { Authorization: `Bearer ${token}` },
             })
             setBulkAutofillJob(data?.job || null)
@@ -919,8 +998,9 @@ export default function StoreManageProducts() {
         if(user){
             fetchCategories()
             loadBrandOptions()
+            loadSupplierOptions()
         }
-    }, [user, loadBrandOptions])
+    }, [user, loadBrandOptions, loadSupplierOptions])
 
     useEffect(() => {
         if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
@@ -962,6 +1042,7 @@ export default function StoreManageProducts() {
             search: debouncedSearch,
             category: selectedCategory,
             brand: selectedBrand,
+            supplier: selectedSupplier,
             min: debouncedMinPrice,
             max: debouncedMaxPrice,
             stock: stockFilter,
@@ -977,6 +1058,7 @@ export default function StoreManageProducts() {
         debouncedSearch,
         selectedCategory,
         selectedBrand,
+        selectedSupplier,
         debouncedMinPrice,
         debouncedMaxPrice,
         stockFilter,
@@ -1075,7 +1157,8 @@ export default function StoreManageProducts() {
             id: product._id,
             name: product.name || '',
             slug: product.slug || '',
-            sku: product.sku || '',
+            sku: getProductSkuLabel(product) === '-' ? '' : getProductSkuLabel(product),
+            supplier: getSupplierLabel(product),
             categories: getDisplayCategoryLabels(product).join(', '),
             tags: Array.isArray(product.tags) ? product.tags.join(', ') : '',
             description: String(product.description || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(),
@@ -1229,28 +1312,66 @@ export default function StoreManageProducts() {
     }
 
     const openBulkEditModal = () => {
-        if (!selectedProductIds.length) {
-            toast.error('Select products to bulk edit first')
+        if (!canBulkEdit) {
+            toast.error('You do not have permission to bulk edit products. Ask the store owner to enable Bulk edit products in Team Access.')
             return
         }
+        setSkuMatchPreview({ products: [], missing: [] })
+        setBulkEditTarget(selectedProductIds.length ? 'selected' : 'skus')
         setShowBulkEditModal(true)
     }
 
     const closeBulkEditModal = () => {
         if (bulkEditSaving) return
         setShowBulkEditModal(false)
+        setSkuMatchPreview({ products: [], missing: [] })
+        setBulkEditTarget('selected')
         setBulkEditForm({
             inStock: 'keep',
             fastDelivery: 'keep',
             freeShippingEligible: 'keep',
             published: 'keep',
             brand: '',
+            supplierId: 'keep',
             stockQuantity: '',
             price: '',
             AED: '',
+            findSkus: '',
+            assignSkus: '',
             addCategoryId: '',
             removeCategoryId: '',
         })
+    }
+
+    const findProductsBySkuList = async () => {
+        const skus = String(bulkEditForm.findSkus || '').trim()
+        if (!skus) {
+            toast.error('Paste one or more SKUs first')
+            return
+        }
+        try {
+            setSkuMatching(true)
+            const token = await getToken()
+            const { data } = await axios.post('/api/store/product/resolve-skus', { skus }, {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+            const products = Array.isArray(data?.products) ? data.products : []
+            const missing = Array.isArray(data?.missing) ? data.missing : []
+            setSkuMatchPreview({ products, missing })
+            setBulkEditTarget('skus')
+            if (products.length) {
+                toast.success(data?.message || `Found ${products.length} product(s). Only these SKUs will be updated.`)
+            } else {
+                toast.error(data?.message || 'No products match those SKUs')
+            }
+            if (missing.length) {
+                toast.error(`SKU not found: ${missing.join(', ')}`)
+            }
+        } catch (error) {
+            toast.error(error?.response?.data?.error || error.message || 'Failed to find products by SKU')
+        } finally {
+            setSkuMatching(false)
+        }
     }
 
     const openCategoryActionModal = (mode = 'add') => {
@@ -1341,10 +1462,32 @@ export default function StoreManageProducts() {
             || bulkEditForm.freeShippingEligible !== 'keep'
             || bulkEditForm.published !== 'keep'
             || String(bulkEditForm.brand || '').trim() !== ''
+            || (String(bulkEditForm.supplierId || 'keep').trim() !== '' && bulkEditForm.supplierId !== 'keep')
             || String(bulkEditForm.stockQuantity || '').trim() !== ''
             || String(bulkEditForm.price || '').trim() !== ''
             || String(bulkEditForm.AED || '').trim() !== ''
+            || String(bulkEditForm.assignSkus || '').trim() !== ''
         )
+
+        if (!canBulkEdit) {
+            toast.error('You do not have permission to bulk edit products. Ask the store owner to enable Bulk edit products in Team Access.')
+            return
+        }
+
+        const skuTargetIds = skuMatchPreview.products.map((product) => String(product.id || product._id))
+        const includeSkus = bulkEditTarget === 'skus' || bulkEditTarget === 'both'
+        const includeSelected = bulkEditTarget === 'selected' || bulkEditTarget === 'both'
+        let targetProductIds = [...new Set([
+            ...(includeSelected ? selectedProductIds : []),
+            ...(includeSkus ? skuTargetIds : []),
+        ])]
+
+        if (!targetProductIds.length && !(includeSkus && String(bulkEditForm.findSkus || '').trim())) {
+            toast.error(includeSkus
+                ? 'Paste SKUs and click Find products first'
+                : 'Select products first')
+            return
+        }
 
         if (!hasFieldUpdates && !addCategoryId && !removeCategoryId) {
             toast.error('Choose at least one field or category change')
@@ -1366,25 +1509,53 @@ export default function StoreManageProducts() {
             const token = await getToken()
             const messages = []
 
+            if (includeSkus && String(bulkEditForm.findSkus || '').trim()) {
+                const { data: skuData } = await axios.post('/api/store/product/resolve-skus', { skus: bulkEditForm.findSkus }, {
+                    headers: { Authorization: `Bearer ${token}` },
+                })
+                const resolvedIds = Array.isArray(skuData?.productIds)
+                    ? skuData.productIds.map((id) => String(id))
+                    : (Array.isArray(skuData?.products) ? skuData.products.map((product) => String(product.id || product._id)) : [])
+                targetProductIds = [...new Set([
+                    ...(includeSelected ? selectedProductIds : []),
+                    ...resolvedIds,
+                ])]
+                if (Array.isArray(skuData?.missing) && skuData.missing.length) {
+                    toast.error(`SKU not found: ${skuData.missing.join(', ')}`)
+                }
+            }
+
+            if (!targetProductIds.length) {
+                toast.error('No products match the selected items or SKUs')
+                return
+            }
+
             if (hasFieldUpdates) {
                 const {
                     addCategoryId: _add,
                     removeCategoryId: _remove,
+                    findSkus,
+                    assignSkus,
                     ...fieldPayload
                 } = bulkEditForm
                 const { data } = await axios.patch('/api/store/product/bulk-update', {
-                    productIds: selectedProductIds,
+                    productIds: targetProductIds,
+                    skus: includeSkus ? findSkus : '',
+                    assignSkus,
                     ...fieldPayload,
                 }, {
                     headers: { Authorization: `Bearer ${token}` },
                 })
                 messages.push(data?.message || 'Product fields updated')
+                if (Array.isArray(data?.missingSkus) && data.missingSkus.length) {
+                    toast.error(`SKU not found: ${data.missingSkus.join(', ')}`)
+                }
             }
 
             if (addCategoryId) {
                 const { data } = await axios.post('/api/store/product/add-to-category', {
                     categoryId: addCategoryId,
-                    productIds: selectedProductIds,
+                    productIds: targetProductIds,
                 }, {
                     headers: { Authorization: `Bearer ${token}` },
                 })
@@ -1394,7 +1565,7 @@ export default function StoreManageProducts() {
             if (removeCategoryId) {
                 const { data } = await axios.post('/api/store/product/remove-from-category', {
                     categoryId: removeCategoryId,
-                    productIds: selectedProductIds,
+                    productIds: targetProductIds,
                 }, {
                     headers: { Authorization: `Bearer ${token}` },
                 })
@@ -1405,6 +1576,7 @@ export default function StoreManageProducts() {
             await fetchStoreProducts({ silent: true })
             dispatch(fetchProductsAction(STOREFRONT_CATALOG_FETCH))
             if (bulkEditForm.brand) loadBrandOptions()
+            if (bulkEditForm.supplierId && bulkEditForm.supplierId !== 'keep') loadSupplierOptions()
             closeBulkEditModal()
         } catch (error) {
             toast.error(error?.response?.data?.error || error.message || 'Failed to bulk update products')
@@ -1413,7 +1585,35 @@ export default function StoreManageProducts() {
         }
     }
 
-    const runAiAutofillQueue = async () => {
+    const closeAiPinModal = () => {
+        if (aiPinChecking) return
+        setAiPinModal({ open: false, kind: '', description: '' })
+    }
+
+    const submitAiBulkPin = async (pin) => {
+        setAiPinChecking(true)
+        try {
+            const authToken = await getToken()
+            const { data } = await axios.post('/api/store/admin-pin/verify', { pin }, {
+                headers: { Authorization: `Bearer ${authToken}` },
+            })
+            const pinToken = data?.token
+            if (!pinToken) {
+                throw new Error(data?.error || 'That PIN is not correct.')
+            }
+            const kind = aiPinModal.kind
+            setAiPinModal({ open: false, kind: '', description: '' })
+            if (kind === 'queue') await startBulkAutofillAll(pinToken)
+            if (kind === 'resume') await resumeBulkAutofill(pinToken)
+            if (kind === 'selected') await runAiAutofillQueue(pinToken)
+        } catch (error) {
+            throw new Error(error?.response?.data?.error || error.message || 'That PIN is not correct.')
+        } finally {
+            setAiPinChecking(false)
+        }
+    }
+
+    const runAiAutofillQueue = async (pinToken) => {
         if (!selectedProductIds.length) {
             toast.error('Select products to auto-fill first')
             return
@@ -1422,7 +1622,13 @@ export default function StoreManageProducts() {
         if (aiAutofillRunning) return
 
         const queueIds = [...selectedProductIds]
-        if (!confirm(`Run AI auto-fill for ${queueIds.length} selected product(s)? Existing titles and descriptions may be overwritten.`)) {
+        const unlockedPin = getAiBulkPinToken(pinToken)
+        if (!unlockedPin) {
+            setAiPinModal({
+                open: true,
+                kind: 'selected',
+                description: `Run AI auto-fill for ${queueIds.length} selected product(s)? Existing titles and descriptions may be overwritten. Enter the admin PIN to continue.`,
+            })
             return
         }
 
@@ -1451,6 +1657,8 @@ export default function StoreManageProducts() {
                 const { data } = await axios.post('/api/store/product/ai-autofill', {
                     productId,
                     includeArabic: true,
+                    bulk: true,
+                    pinToken: unlockedPin,
                 }, {
                     headers: { Authorization: `Bearer ${token}` },
                 })
@@ -1502,17 +1710,28 @@ export default function StoreManageProducts() {
                         <>Manage <span className="text-slate-800 font-medium">Products</span></>
                     )}
                 </h1>
-                <button
-                    type="button"
-                    onClick={() => setShowImportPanel((current) => !current)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                        showImportPanel
-                            ? 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                            : 'bg-slate-800 text-white hover:bg-slate-900'
-                    }`}
-                >
-                    {showImportPanel ? 'Back to products' : 'Import products'}
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                    {!showImportPanel && canBulkEdit ? (
+                        <button
+                            type="button"
+                            onClick={openBulkEditModal}
+                            className="px-4 py-2 rounded-lg bg-amber-500 text-sm font-medium text-white hover:bg-amber-600 transition"
+                        >
+                            Bulk Edit
+                        </button>
+                    ) : null}
+                    <button
+                        type="button"
+                        onClick={() => setShowImportPanel((current) => !current)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                            showImportPanel
+                                ? 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                : 'bg-slate-800 text-white hover:bg-slate-900'
+                        }`}
+                    >
+                        {showImportPanel ? 'Back to products' : 'Import products'}
+                    </button>
+                </div>
             </div>
 
             {showImportPanel ? null : (
@@ -1530,7 +1749,7 @@ export default function StoreManageProducts() {
                 <div className="flex-1 min-w-xs">
                     <input
                         type="search"
-                        placeholder="Search products by name, SKU, brand, category, or tags..."
+                        placeholder="Search products by name, SKU, brand, supplier, category, or tags..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         autoComplete="off"
@@ -1568,6 +1787,22 @@ export default function StoreManageProducts() {
                 </ManageProductSelect>
 
                 <ManageProductSelect
+                    wrapperClassName="min-w-[11rem] shrink-0"
+                    value={selectedSupplier}
+                    onChange={(e) => {
+                        setSelectedSupplier(e.target.value)
+                        setCurrentPage(1)
+                    }}
+                    aria-label="Filter by supplier"
+                >
+                    <option value="">All suppliers{supplierOptions.length ? ` (${supplierOptions.length})` : ''}</option>
+                    <option value="none">No supplier</option>
+                    {supplierOptions.map((supplier) => (
+                        <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
+                    ))}
+                </ManageProductSelect>
+
+                <ManageProductSelect
                     wrapperClassName="min-w-[10rem] shrink-0"
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
@@ -1598,6 +1833,15 @@ export default function StoreManageProducts() {
                 >
                     {showDetailColumns ? 'Hide extra columns' : 'Show categories & description'}
                 </button>
+                {canBulkEdit ? (
+                    <button
+                        type="button"
+                        onClick={openBulkEditModal}
+                        className="px-4 py-2 rounded-lg bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 transition"
+                    >
+                        Bulk Edit
+                    </button>
+                ) : null}
                 <button
                     type="button"
                     onClick={exportProductsToCsv}
@@ -1607,7 +1851,7 @@ export default function StoreManageProducts() {
                 </button>
                 <button
                     type="button"
-                    onClick={runAiAutofillQueue}
+                    onClick={() => runAiAutofillQueue()}
                     disabled={!hasSelectedProducts || aiAutofillRunning}
                     className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition disabled:cursor-not-allowed disabled:opacity-60"
                 >
@@ -1668,11 +1912,12 @@ export default function StoreManageProducts() {
                         ))}
                     </ManageProductSelect>
                 </label>
-                {(selectedBrand || minPrice || maxPrice || stockFilter !== 'all' || skuFilter !== 'all' || sortBy !== 'newest') ? (
+                {(selectedBrand || selectedSupplier || minPrice || maxPrice || stockFilter !== 'all' || skuFilter !== 'all' || sortBy !== 'newest') ? (
                     <button
                         type="button"
                         onClick={() => {
                             setSelectedBrand('')
+                            setSelectedSupplier('')
                             setMinPrice('')
                             setMaxPrice('')
                             setStockFilter('all')
@@ -1749,7 +1994,7 @@ export default function StoreManageProducts() {
                         {!bulkAutofillJob || bulkAutofillJob.status === 'completed' || bulkAutofillJob.status === 'cancelled' ? (
                             <button
                                 type="button"
-                                onClick={startBulkAutofillAll}
+                                onClick={() => startBulkAutofillAll()}
                                 disabled={bulkAutofillLoading || !bulkEligibleCount}
                                 className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                             >
@@ -1764,7 +2009,7 @@ export default function StoreManageProducts() {
                         ) : null}
                         {bulkAutofillJob?.status === 'paused' ? (
                             <>
-                                <button type="button" onClick={resumeBulkAutofill} className="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700">Resume</button>
+                                <button type="button" onClick={() => resumeBulkAutofill()} className="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700">Resume</button>
                                 <button type="button" onClick={cancelBulkAutofill} className="px-3 py-2 rounded-lg border border-red-200 bg-white text-xs font-semibold text-red-700 hover:bg-red-50">Stop</button>
                             </>
                         ) : null}
@@ -1975,19 +2220,21 @@ export default function StoreManageProducts() {
                         </button>
                         <button
                             type="button"
-                            onClick={runAiAutofillQueue}
+                            onClick={() => runAiAutofillQueue()}
                             disabled={aiAutofillRunning}
                             className="px-3 py-2 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {aiAutofillRunning ? 'AI Running...' : 'AI Auto Fill'}
                         </button>
-                        <button
-                            type="button"
-                            onClick={openBulkEditModal}
-                            className="px-3 py-2 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600 transition"
-                        >
-                            Bulk Edit
-                        </button>
+                        {canBulkEdit ? (
+                            <button
+                                type="button"
+                                onClick={openBulkEditModal}
+                                className="px-3 py-2 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600 transition"
+                            >
+                                Bulk Edit
+                            </button>
+                        ) : null}
                         {selectedCategory ? (
                             <button
                                 type="button"
@@ -2031,6 +2278,7 @@ export default function StoreManageProducts() {
                         <th className="px-4 py-3">Name</th>
                         <th className="px-4 py-3 hidden md:table-cell">Details</th>
                         <th className="px-4 py-3 hidden lg:table-cell">Brand</th>
+                        <th className="px-4 py-3 hidden lg:table-cell">Supplier</th>
                         <th className="px-4 py-3 hidden lg:table-cell">SKU</th>
                         <th className={`px-4 py-3 ${showDetailColumns ? '' : 'hidden'}`}>Categories</th>
                         <th className={`px-4 py-3 ${showDetailColumns ? '' : 'hidden'}`}>Description</th>
@@ -2097,7 +2345,14 @@ export default function StoreManageProducts() {
                             <td className="px-4 py-3 text-slate-600 hidden lg:table-cell">
                                 {product.brand || product.brandAr || '-'}
                             </td>
-                            <td className="px-4 py-3 text-slate-600 hidden lg:table-cell">{product.sku || '-'}</td>
+                            <td className="px-4 py-3 text-slate-600 hidden lg:table-cell">
+                                {getSupplierLabel(product)}
+                            </td>
+                            <td className="px-4 py-3 text-slate-600 hidden lg:table-cell max-w-[16rem]">
+                                <span className="line-clamp-2 break-words" title={getProductSkuLabel(product)}>
+                                    {getProductSkuLabel(product)}
+                                </span>
+                            </td>
                             <td className={`px-4 py-3 align-top ${showDetailColumns ? '' : 'hidden'}`}>
                                 {getDisplayCategoryLabels(product).length > 0 ? (
                                     <CompactPills
@@ -2275,6 +2530,7 @@ export default function StoreManageProducts() {
             {showEditModal && (
                 <ProductForm 
                     product={editingProduct}
+                    supplierOptions={supplierOptions}
                     onClose={() => {
                         setShowEditModal(false)
                         setEditingProduct(null)
@@ -2285,16 +2541,123 @@ export default function StoreManageProducts() {
 
             {showBulkEditModal && (
                 <div className="fixed inset-0 z-[1000] bg-black/50 flex items-center justify-center p-4" onClick={closeBulkEditModal}>
-                    <div className="w-full max-w-xl rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                    <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
                             <div>
                                 <h2 className="text-xl font-semibold text-slate-900">Bulk Edit Products</h2>
-                                <p className="text-sm text-slate-600">Update {selectedProductIds.length} selected product(s) at once.</p>
+                                <p className="text-sm text-slate-600">
+                                    {bulkEditTarget === 'skus'
+                                        ? (skuMatchPreview.products.length
+                                            ? `Only the ${skuMatchPreview.products.length} found SKU(s) will be updated. Checked products are ignored.`
+                                            : 'Paste SKUs and click Find products. Only those SKUs will be updated.')
+                                        : bulkEditTarget === 'selected'
+                                            ? `Only the ${selectedProductIds.length} checked product(s) will be updated.`
+                                            : `Checked products and found SKUs will both be updated.`}
+                                </p>
                             </div>
                             <button onClick={closeBulkEditModal} className="text-sm text-slate-500 hover:text-slate-800">Close</button>
                         </div>
 
                         <div className="space-y-4 px-5 py-5">
+                            <fieldset className="rounded-xl border border-slate-200 p-4">
+                                <legend className="px-1 text-sm font-semibold text-slate-900">Apply changes to</legend>
+                                <div className="mt-2 space-y-2">
+                                    <label className="flex items-start gap-2 text-sm text-slate-700">
+                                        <input
+                                            type="radio"
+                                            name="bulk-edit-target"
+                                            checked={bulkEditTarget === 'skus'}
+                                            onChange={() => setBulkEditTarget('skus')}
+                                            className="mt-0.5"
+                                        />
+                                        <span>
+                                            Pasted SKUs only
+                                            {skuMatchPreview.products.length ? ` (${skuMatchPreview.products.length} found)` : ''}
+                                            <span className="block text-xs text-slate-500">Use this to set a supplier on the SKU list without touching other checked products.</span>
+                                        </span>
+                                    </label>
+                                    <label className="flex items-start gap-2 text-sm text-slate-700">
+                                        <input
+                                            type="radio"
+                                            name="bulk-edit-target"
+                                            checked={bulkEditTarget === 'selected'}
+                                            onChange={() => setBulkEditTarget('selected')}
+                                            className="mt-0.5"
+                                        />
+                                        <span>
+                                            Checked products only
+                                            {selectedProductIds.length ? ` (${selectedProductIds.length})` : ''}
+                                        </span>
+                                    </label>
+                                    <label className="flex items-start gap-2 text-sm text-slate-700">
+                                        <input
+                                            type="radio"
+                                            name="bulk-edit-target"
+                                            checked={bulkEditTarget === 'both'}
+                                            onChange={() => setBulkEditTarget('both')}
+                                            className="mt-0.5"
+                                        />
+                                        <span>Checked products and pasted SKUs</span>
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <div className="rounded-xl border border-amber-100 bg-amber-50/70 p-4">
+                                <p className="text-sm font-semibold text-amber-950">Find products by SKU</p>
+                                <p className="mt-1 text-xs text-amber-900">
+                                    Paste SKUs separated by comma or new line. Finding SKUs switches the target to Pasted SKUs only.
+                                </p>
+                                <textarea
+                                    value={bulkEditForm.findSkus}
+                                    onChange={(e) => {
+                                        setBulkEditForm((prev) => ({ ...prev, findSkus: e.target.value }))
+                                        if (String(e.target.value || '').trim()) setBulkEditTarget('skus')
+                                    }}
+                                    rows={3}
+                                    className="mt-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"
+                                    placeholder="SKU-1001, SKU-1002"
+                                />
+                                <div className="mt-3 flex flex-wrap items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={findProductsBySkuList}
+                                        disabled={skuMatching || bulkEditSaving}
+                                        className="rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        {skuMatching ? 'Finding...' : 'Find products'}
+                                    </button>
+                                    {skuMatchPreview.products.length || skuMatchPreview.missing.length ? (
+                                        <span className="text-xs text-amber-950">
+                                            Found {skuMatchPreview.products.length}
+                                            {skuMatchPreview.missing.length ? ` · Missing ${skuMatchPreview.missing.length}` : ''}
+                                        </span>
+                                    ) : null}
+                                </div>
+                                {skuMatchPreview.products.length ? (
+                                    <p className="mt-2 text-xs text-slate-700">
+                                        {skuMatchPreview.products.slice(0, 8).map((product) => product.sku || product.name).join(', ')}
+                                        {skuMatchPreview.products.length > 8 ? ` +${skuMatchPreview.products.length - 8} more` : ''}
+                                    </p>
+                                ) : null}
+                                {skuMatchPreview.missing.length ? (
+                                    <p className="mt-1 text-xs text-red-700">Not found: {skuMatchPreview.missing.join(', ')}</p>
+                                ) : null}
+                            </div>
+
+                            <label className="block space-y-2 rounded-xl border border-slate-200 p-4">
+                                <span className="block text-sm font-semibold text-slate-900">Update SKUs</span>
+                                <span className="block text-xs text-slate-600">
+                                    Paste one SKU for every selected product, or one SKU per product in the same order.
+                                </span>
+                                <textarea
+                                    value={bulkEditForm.assignSkus}
+                                    onChange={(e) => setBulkEditForm((prev) => ({ ...prev, assignSkus: e.target.value }))}
+                                    rows={3}
+                                    className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
+                                    placeholder="Leave blank to keep current SKUs"
+                                />
+                            </label>
+
                             <div className="grid gap-4 md:grid-cols-2">
                                 <label className="space-y-2">
                                     <span className="block text-sm font-medium text-slate-700">Stock status</span>
@@ -2344,6 +2707,20 @@ export default function StoreManageProducts() {
                                         ))}
                                     </datalist>
                                 </label>
+                                <label className="space-y-2 md:col-span-2">
+                                    <span className="block text-sm font-medium text-slate-700">Supplier</span>
+                                    <select
+                                        value={bulkEditForm.supplierId}
+                                        onChange={(e) => setBulkEditForm((prev) => ({ ...prev, supplierId: e.target.value }))}
+                                        className="w-full rounded-lg border border-slate-300 px-3 py-2.5"
+                                    >
+                                        <option value="keep">Keep current</option>
+                                        <option value="none">No supplier</option>
+                                        {supplierOptions.map((supplier) => (
+                                            <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
+                                        ))}
+                                    </select>
+                                </label>
                                 <label className="space-y-2">
                                     <span className="block text-sm font-medium text-slate-700">Stock quantity</span>
                                     <input type="number" min="0" value={bulkEditForm.stockQuantity} onChange={(e) => setBulkEditForm((prev) => ({ ...prev, stockQuantity: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2.5" placeholder="Leave blank to keep current" />
@@ -2361,8 +2738,17 @@ export default function StoreManageProducts() {
                             <div className="rounded-xl border border-teal-100 bg-teal-50/60 p-4">
                                 <p className="text-sm font-semibold text-teal-950">Categories</p>
                                 <p className="mt-1 text-xs text-teal-800">
-                                    Add keeps existing categories. Remove only clears that category (products must keep at least one).
+                                    Leave both on Keep current. Existing categories will not change. Supplier, SKU, and other fields do not touch categories.
                                 </p>
+                                {!String(bulkEditForm.addCategoryId || '').trim() && !String(bulkEditForm.removeCategoryId || '').trim() ? (
+                                    <p className="mt-2 rounded-lg bg-white/80 px-3 py-2 text-xs font-medium text-teal-900">
+                                        Categories will stay exactly as they are on each product.
+                                    </p>
+                                ) : (
+                                    <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
+                                        Categories will change only for the chosen add/remove option.
+                                    </p>
+                                )}
                                 <div className="mt-3 grid gap-4 md:grid-cols-2">
                                     <label className="space-y-2">
                                         <span className="block text-sm font-medium text-slate-700">Add category</span>
@@ -2371,7 +2757,7 @@ export default function StoreManageProducts() {
                                             onChange={(e) => setBulkEditForm((prev) => ({ ...prev, addCategoryId: e.target.value }))}
                                             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
                                         >
-                                            <option value="">Don’t add</option>
+                                            <option value="">Keep current</option>
                                             {categoryFilterOptions.map(({ id, name }) => (
                                                 <option key={`bulk-add-${id}`} value={id}>{name}</option>
                                             ))}
@@ -2384,7 +2770,7 @@ export default function StoreManageProducts() {
                                             onChange={(e) => setBulkEditForm((prev) => ({ ...prev, removeCategoryId: e.target.value }))}
                                             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
                                         >
-                                            <option value="">Don’t remove</option>
+                                            <option value="">Keep current</option>
                                             {categoryFilterOptions.map(({ id, name }) => (
                                                 <option key={`bulk-remove-${id}`} value={id}>{name}</option>
                                             ))}
@@ -2393,7 +2779,18 @@ export default function StoreManageProducts() {
                                 </div>
                             </div>
 
-                            <div className="flex justify-end gap-3">
+                            <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:justify-end">
+                                <p className="me-auto text-xs text-slate-500">
+                                    {bulkEditTarget === 'skus'
+                                        ? `Save updates only the found SKU list${skuMatchPreview.products.length ? ` (${skuMatchPreview.products.length})` : ''}.`
+                                        : bulkEditTarget === 'selected'
+                                            ? `Save updates only checked products (${selectedProductIds.length}).`
+                                            : 'Save updates checked products and found SKUs.'}
+                                    {' '}
+                                    {!String(bulkEditForm.addCategoryId || '').trim() && !String(bulkEditForm.removeCategoryId || '').trim()
+                                        ? 'Categories will not change.'
+                                        : 'A category change is selected.'}
+                                </p>
                                 <button type="button" onClick={closeBulkEditModal} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">Cancel</button>
                                 <button type="button" onClick={saveBulkEdit} disabled={bulkEditSaving} className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition disabled:cursor-not-allowed disabled:opacity-60">
                                     {bulkEditSaving ? 'Saving...' : 'Apply Bulk Edit'}
@@ -2716,6 +3113,13 @@ export default function StoreManageProducts() {
                 onCancel={closeRemoveFromCategoryModal}
                 onConfirm={confirmRemoveFromCategory}
                 isRemoving={removingFromCategory}
+            />
+            <AiBulkEditPinModal
+                open={aiPinModal.open}
+                description={aiPinModal.description}
+                confirming={aiPinChecking}
+                onCancel={closeAiPinModal}
+                onConfirm={submitAiBulkPin}
             />
             </>
             )}

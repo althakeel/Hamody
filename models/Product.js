@@ -7,6 +7,10 @@ const ProductSchema = new mongoose.Schema({
   slug: { type: String, unique: true },
   brand: { type: String, default: '' },
   brandAr: { type: String, default: '' },
+  supplierId: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier', default: null, index: true },
+  supplierName: { type: String, default: '' },
+  supplierIds: { type: [mongoose.Schema.Types.ObjectId], ref: 'Supplier', default: [] },
+  supplierNames: { type: [String], default: [] },
   description: String,
   descriptionAr: { type: String, default: '' },
   shortDescription: String,
@@ -86,6 +90,8 @@ ProductSchema.index({ price: 1, AED: 1 }); // For discount calculations and pric
 ProductSchema.index({ tags: 1, inStock: 1 }); // For tag-based filtering
 ProductSchema.index({ fastDelivery: 1, inStock: 1 }); // For fast delivery filter
 ProductSchema.index({ brand: 1, inStock: 1 });                    // Brand page filtering
+ProductSchema.index({ storeId: 1, supplierId: 1 });               // Supplier filter on manage products
+ProductSchema.index({ storeId: 1, supplierIds: 1 });
 ProductSchema.index({ storeId: 1, category: 1, inStock: 1 });    // Store + category listings
 ProductSchema.index({ storeId: 1, createdAt: -1 });              // Store product picker (newest)
 ProductSchema.index({ storeId: 1, name: 1 });                      // Store product picker (name sort)
@@ -93,4 +99,14 @@ ProductSchema.index({ storeId: 1, price: 1 });                   // Store produc
 ProductSchema.index({ storeId: 1, sku: 1 });                     // Store SKU lookup
 ProductSchema.index({ name: 'text', brand: 'text', shortDescription: 'text', sku: 'text', seoTitle: 'text' }); // Full-text search
 
-export default mongoose.models.Product || mongoose.model("Product", ProductSchema);
+const Product = mongoose.models.Product || mongoose.model("Product", ProductSchema);
+if (!Product.schema.path('supplierId') || !Product.schema.path('supplierIds')) {
+  Product.schema.add({
+    supplierId: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier', default: null, index: true },
+    supplierName: { type: String, default: '' },
+    supplierIds: { type: [mongoose.Schema.Types.ObjectId], ref: 'Supplier', default: [] },
+    supplierNames: { type: [String], default: [] },
+  });
+}
+
+export default Product;

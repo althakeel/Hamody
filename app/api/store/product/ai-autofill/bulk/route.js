@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import authSeller from '@/middlewares/authSeller';
 import { getAuth } from '@/lib/firebase-admin';
 import { isProductAiConfigured } from '@/lib/runProductAutofill';
+import { assertAiBulkEditPin } from '@/lib/storeHelpAgentPin';
 import {
   cancelBulkAutofillJob,
   findBulkAutofillCandidates,
@@ -74,6 +75,12 @@ export async function POST(request) {
 
     const body = await request.json();
     const action = String(body?.action || 'start').trim().toLowerCase();
+    if (action === 'start' || action === 'resume') {
+      const pinCheck = assertAiBulkEditPin({ pin: body?.pin, token: body?.pinToken });
+      if (!pinCheck.ok) {
+        return NextResponse.json({ error: pinCheck.error }, { status: 403 });
+      }
+    }
     const mode = body?.mode === 'with_images' ? 'with_images' : 'missing_details';
     const includeArabic = body?.includeArabic !== false;
     const intervalMs = Number(body?.intervalMs) || getBulkAutofillIntervalMs();

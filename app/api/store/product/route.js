@@ -15,6 +15,7 @@ import { NextResponse } from "next/server";
 import { getAuth } from '@/lib/firebase-admin';
 import { sanitizeCategoryIdsForSave } from '@/lib/productCategoryRefs';
 import { createProductFromJson, updateProductFromJson } from '@/lib/productJsonSave';
+import { resolveProductSupplierFields } from '@/lib/supplierServer';
 import { resolveDashboardAccess } from '@/lib/storeAccessControl';
 import {
   canChangeProductPricing,
@@ -187,6 +188,7 @@ export async function POST(request) {
         const sku = formData.get("sku") || null;
         const brand = formData.get("brand") || '';
         const brandAr = formData.get("brandAr") || '';
+        const { supplierId } = await resolveProductSupplierFields(storeId, formData.get("supplierId"));
         const shortDescriptionRaw = formData.get("shortDescription");
         const shortDescriptionArRaw = formData.get("shortDescriptionAr");
         const shortDescription2Raw = formData.get("shortDescription2") || '';
@@ -356,6 +358,7 @@ export async function POST(request) {
             slug,
             brand,
             brandAr,
+            supplierId,
             description,
             descriptionAr,
             shortDescription,
@@ -543,6 +546,7 @@ export async function GET(request) {
             const maxPrice = String(searchParams.get('maxPrice') || '').trim();
             const sku = String(searchParams.get('sku') || '').trim();
             const brand = String(searchParams.get('brand') || '').trim();
+            const supplierId = String(searchParams.get('supplierId') || '').trim();
             const inStock = String(searchParams.get('inStock') || '').trim();
             const skuStatus = String(searchParams.get('skuStatus') || '').trim();
             const pickerResult = await fetchPickerPage(Product, {
@@ -559,6 +563,7 @@ export async function GET(request) {
                 maxPrice,
                 sku,
                 brand,
+                supplierId,
                 inStock,
                 skuStatus,
             });
@@ -734,6 +739,10 @@ export async function PUT(request) {
         const sku = formData.get("sku");
         const brand = formData.get("brand") || undefined;
         const brandAr = formData.get("brandAr") || undefined;
+        const supplierIdRaw = formData.get("supplierId");
+        const supplierFields = supplierIdRaw !== null && supplierIdRaw !== undefined
+            ? await resolveProductSupplierFields(storeId, supplierIdRaw)
+            : {};
         const shortDescriptionRaw = formData.get("shortDescription");
         const shortDescriptionArRaw = formData.get("shortDescriptionAr");
         const shortDescription2Raw = formData.get("shortDescription2");
@@ -932,6 +941,7 @@ export async function PUT(request) {
             specTableRows,
             ...(brand !== undefined ? { brand } : {}),
             ...(brandAr !== undefined ? { brandAr } : {}),
+            ...supplierFields,
             AED: finalAED,
             price: finalPrice,
             category: categories[0], // Keep first category for backward compatibility

@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation"
 
-import { HomeIcon, LayoutListIcon, SquarePenIcon, SquarePlusIcon, StarIcon, FolderIcon, TicketIcon, TruckIcon, RefreshCw, Users as UsersIcon, MessageSquare, Sparkles, BellIcon, MailIcon, Image as ImageIcon, ShoppingCart, Wallet, BarChart3, Target, Gift, Palette, CircleDashed, PackagePlus, Package, Activity, Layers, LineChart, Warehouse, MousePointerClick, ShieldAlert, Zap, Trash2, Smartphone, FileText, CalendarClock, MessageCircle, AlertTriangle, Download, Tag as TagIcon, ArrowUp, Search } from "lucide-react"
+import { HomeIcon, LayoutListIcon, SquarePenIcon, SquarePlusIcon, StarIcon, FolderIcon, TicketIcon, TruckIcon, RefreshCw, Users as UsersIcon, MessageSquare, Sparkles, BellIcon, MailIcon, Image as ImageIcon, ShoppingCart, Wallet, BarChart3, Target, Gift, Palette, CircleDashed, PackagePlus, Package, Activity, Layers, LineChart, Warehouse, MousePointerClick, ShieldAlert, Zap, Trash2, Smartphone, FileText, CalendarClock, MessageCircle, AlertTriangle, Download, Tag as TagIcon, ArrowUp, Search, Factory } from "lucide-react"
 
 import StoreNavLink from "@/components/store/StoreNavLink"
 
@@ -35,6 +35,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, permissions = {}, canViewAct
         { name: 'Categories', href: '/store/categories', icon: FolderIcon },
 
         { name: 'Brands', href: '/store/brands', icon: TagIcon },
+
+        { name: 'Suppliers', href: '/store/suppliers', icon: Factory },
 
         { name: 'Add Product', href: '/store/add-product', icon: SquarePlusIcon },
 
@@ -140,6 +142,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, permissions = {}, canViewAct
                 '/store/categories',
 
                 '/store/brands',
+
+                '/store/suppliers',
 
                 '/store/add-product',
 
