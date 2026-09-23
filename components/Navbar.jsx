@@ -51,7 +51,7 @@ import { getProductPath } from '@/lib/productUrl';
 import NewProductTagBadge from '@/components/NewProductTagBadge';
 import { secureSignOut } from '@/lib/authClient';
 import { showStorefrontActionToast } from '@/lib/storefrontActionToast';
-import { DEFAULT_NAVBAR_LAYOUT, applyUnifiedNavbarText, getNavbarCategoriesButtonAppearance, getNavbarCategoriesButtonLabel, getNavbarSearchAppearance, getNavbarSearchSlotProps, getUnifiedNavbarFontId, getUnifiedNavbarTextCss, groupNavbarItemsBySide, isNavbarItemVisible, normalizeNavbarItemOrder, normalizeNavbarLayout, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';
+import { DEFAULT_NAVBAR_LAYOUT, applyUnifiedNavbarText, getNavbarCategoriesButtonAppearance, getNavbarCategoriesButtonLabel, getNavbarDesktopRowSlots, getNavbarSearchAppearance, getNavbarSearchSlotProps, getUnifiedNavbarFontId, getUnifiedNavbarTextCss, groupNavbarItemsBySide, isNavbarItemVisible, normalizeNavbarItemOrder, normalizeNavbarLayout, resolveNavbarItemSide, resolveNavbarSearchSlotAlign, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';
 
 const NAVBAR_SELECTED_ADDRESS_KEY = 'navbarSelectedAddressId';
 const NAVBAR_APPEARANCE_CACHE_KEY = 'navbarAppearanceCache';
@@ -73,13 +73,60 @@ const NAVBAR_CONTAINER_CLASS = 'mx-auto w-full px-4 sm:px-6';
 
 const resolveNavbarLogoSrc = (logoUrl) => String(logoUrl || '').trim();
 
-const normalizeNavbarAppearance = (appearance = {}) => ({
-  logoUrl: resolveNavbarLogoSrc(appearance.logoUrl),
-  logoWidth: Number(appearance.logoWidth) > 0 ? Number(appearance.logoWidth) : 120,
-  logoHeight: Number(appearance.logoHeight) > 0 ? Number(appearance.logoHeight) : 40,
-  backgroundColor: String(appearance.backgroundColor || '').trim(),
-  ...normalizeNavbarLayout(appearance),
-});
+const normalizeNavbarAppearance = (appearance = {}) => {
+  try {
+    return {
+      logoUrl: resolveNavbarLogoSrc(appearance.logoUrl),
+      logoWidth: Number(appearance.logoWidth) > 0 ? Number(appearance.logoWidth) : 120,
+      logoHeight: Number(appearance.logoHeight) > 0 ? Number(appearance.logoHeight) : 40,
+      backgroundColor: String(appearance.backgroundColor || '').trim(),
+      ...normalizeNavbarLayout(appearance),
+      layoutUpdatedAt: String(appearance.layoutUpdatedAt || appearance.updatedAt || ''),
+    };
+  } catch (error) {
+    console.error('[Navbar] Failed to normalize appearance:', error);
+    return {
+      ...EMPTY_NAVBAR_APPEARANCE,
+      logoUrl: resolveNavbarLogoSrc(appearance?.logoUrl),
+      backgroundColor: String(appearance?.backgroundColor || '').trim(),
+    };
+  }
+};
+
+const appearanceTime = (appearance = {}) => {
+  const parsed = Date.parse(appearance?.layoutUpdatedAt || '');
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const mergeFresherNavbarLayout = (incoming = {}, cached = null) => {
+  if (!cached || appearanceTime(cached) <= appearanceTime(incoming)) {
+    return incoming;
+  }
+  return normalizeNavbarAppearance({
+    ...incoming,
+    extraButtons: cached.extraButtons,
+    searchAlign: cached.searchAlign,
+    searchMaxWidth: cached.searchMaxWidth,
+    searchPlaceholder: cached.searchPlaceholder,
+    searchPlaceholderAr: cached.searchPlaceholderAr,
+    searchStyle: cached.searchStyle,
+    navbarMaxWidth: cached.navbarMaxWidth,
+    itemGap: cached.itemGap,
+    logoGap: cached.logoGap,
+    mobileItemGap: cached.mobileItemGap,
+    stickyHeader: cached.stickyHeader,
+    showCategoriesButton: cached.showCategoriesButton,
+    categoriesButtonLabel: cached.categoriesButtonLabel,
+    categoriesButtonLabelAr: cached.categoriesButtonLabelAr,
+    categoriesButtonStyle: cached.categoriesButtonStyle,
+    itemOrder: cached.itemOrder,
+    itemAlign: cached.itemAlign,
+    unifyNavbarText: cached.unifyNavbarText,
+    unifiedTextFontFamily: cached.unifiedTextFontFamily,
+    unifiedTextFontSize: cached.unifiedTextFontSize,
+    layoutUpdatedAt: cached.layoutUpdatedAt,
+  });
+};
 
 const readCachedNavbarAppearance = () => {
   if (typeof window === 'undefined') return null;
@@ -616,7 +663,10 @@ const Navbar = () => {
           backgroundColor: data.backgroundColor || '(empty)',
         });
 
-        const nextAppearance = normalizeNavbarAppearance(data);
+        const nextAppearance = mergeFresherNavbarLayout(
+          normalizeNavbarAppearance(data),
+          readCachedNavbarAppearance(),
+        );
 
         setNavbarAppearance(nextAppearance);
         try {
@@ -681,13 +731,24 @@ const Navbar = () => {
       const detail = event?.detail || {};
       console.log('[Navbar] Event received:', { logoUrl: detail.logoUrl || '(empty)', source: 'navbarAppearanceUpdated' });
       
-      // Only apply event if it has meaningful data (preserve existing logo if empty event received)
       const hasValidLogoUrl = typeof detail.logoUrl === 'string' && detail.logoUrl.trim();
       const hasValidDimensions = (typeof detail.logoWidth === 'number' && detail.logoWidth > 0) || 
                                  (typeof detail.logoHeight === 'number' && detail.logoHeight > 0);
       const hasValidBgColor = typeof detail.backgroundColor === 'string' && detail.backgroundColor.trim();
+      const hasLayoutPatch = detail.itemAlign != null
+        || detail.searchAlign != null
+        || detail.itemOrder != null
+        || detail.itemGap != null
+        || detail.mobileItemGap != null
+        || detail.logoGap != null
+        || detail.extraButtons != null
+        || detail.stickyHeader != null
+        || detail.showCategoriesButton != null
+        || detail.searchMaxWidth != null
+        || detail.navbarMaxWidth != null
+        || detail.unifyNavbarText != null;
       
-      if (!hasValidLogoUrl && !hasValidDimensions && !hasValidBgColor) {
+      if (!hasValidLogoUrl && !hasValidDimensions && !hasValidBgColor && !hasLayoutPatch) {
         console.log('[Navbar] Ignoring empty appearance update event (preserving current logo)');
         return;
       }
@@ -700,6 +761,14 @@ const Navbar = () => {
         logoHeight: (typeof detail.logoHeight === 'number' && detail.logoHeight > 0) ? detail.logoHeight : prev.logoHeight,
         backgroundColor: hasValidBgColor ? detail.backgroundColor : prev.backgroundColor,
       }));
+      setNavbarAppearanceLoading(false);
+    };
+
+    const handleNavbarAppearanceStorage = (event) => {
+      if (event?.key && event.key !== NAVBAR_APPEARANCE_CACHE_KEY) return;
+      const cached = readCachedNavbarAppearance();
+      if (!cached) return;
+      setNavbarAppearance(cached);
       setNavbarAppearanceLoading(false);
     };
 
@@ -722,6 +791,7 @@ const Navbar = () => {
     if (typeof window !== 'undefined') {
       window.addEventListener('navbarAppearanceUpdated', handleNavbarAppearanceUpdate);
       window.addEventListener('offersNavLabelUpdated', handleOffersNavLabelUpdate);
+      window.addEventListener('storage', handleNavbarAppearanceStorage);
     }
 
     return () => {
@@ -729,6 +799,7 @@ const Navbar = () => {
       if (typeof window !== 'undefined') {
         window.removeEventListener('navbarAppearanceUpdated', handleNavbarAppearanceUpdate);
         window.removeEventListener('offersNavLabelUpdated', handleOffersNavLabelUpdate);
+        window.removeEventListener('storage', handleNavbarAppearanceStorage);
       }
     };
   }, [firebaseUser?.uid]);
@@ -1770,10 +1841,18 @@ const Navbar = () => {
     }
 
     if (itemId === 'search') {
-      const searchSlot = getNavbarSearchSlotProps(
+      const searchSide = resolveNavbarItemSide(
+        'search',
+        navbarAppearance.itemAlign?.search,
         navbarAppearance.searchAlign,
-        navbarAppearance.searchMaxWidth,
       );
+      const searchSlot = getNavbarSearchSlotProps(
+        resolveNavbarSearchSlotAlign(searchSide, navbarAppearance.searchAlign),
+        navbarAppearance.searchMaxWidth,
+      ) || {
+        innerClassName: 'relative min-w-0',
+        innerStyle: { width: Number(navbarAppearance.searchMaxWidth) || 600 },
+      };
       return (
         <div
           className={searchSlot.innerClassName}
@@ -2083,55 +2162,78 @@ const Navbar = () => {
       >
       <div className={NAVBAR_CONTAINER_CLASS} style={getNavbarContainerStyle(navbarAppearance.navbarMaxWidth)}>
         {(() => {
-          const rowGap = `${Number(navbarAppearance.itemGap) || 0}px`;
-          const sides = groupNavbarItemsBySide(
-            desktopItemOrder,
-            navbarAppearance.itemAlign,
-            navbarAppearance.extraButtons,
-          );
-          const renderSide = (itemIds, slotClassName) => (
-            <div className={`flex items-center ${slotClassName}`} style={{ gap: rowGap }}>
-              {itemIds.map((itemId) => {
-                const node = renderDesktopNavbarItem(itemId);
-                if (!node) return null;
-                const searchSlot = itemId === 'search'
-                  ? getNavbarSearchSlotProps('left', navbarAppearance.searchMaxWidth)
-                  : null;
-                return (
-                  <div
-                    key={itemId}
-                    className={itemId === 'search' ? 'relative z-[70] shrink-0' : 'shrink-0'}
-                    style={itemId === 'search' ? { width: searchSlot.innerStyle.maxWidth } : undefined}
-                  >
-                    {node}
-                  </div>
-                );
-              })}
-            </div>
-          );
-          return (
-            <div className="flex min-w-0 items-center py-2.5" style={{ gap: rowGap }}>
-              {renderSide(sides.left, 'shrink-0')}
-              <div className="flex min-w-0 flex-1 items-center justify-center" style={{ gap: rowGap }}>
-                {sides.center.map((itemId) => {
+          try {
+            const sides = groupNavbarItemsBySide(
+              desktopItemOrder,
+              navbarAppearance.itemAlign,
+              navbarAppearance.extraButtons,
+              navbarAppearance.searchAlign,
+            );
+            const rowSlots = getNavbarDesktopRowSlots(sides, navbarAppearance.itemGap);
+            const renderSide = (itemIds = [], side) => (
+              <div className="flex shrink-0 items-center" style={rowSlots.clusterStyle}>
+                {(Array.isArray(itemIds) ? itemIds : []).map((itemId) => {
                   const node = renderDesktopNavbarItem(itemId);
                   if (!node) return null;
                   const searchSlot = itemId === 'search'
-                    ? getNavbarSearchSlotProps(navbarAppearance.searchAlign, navbarAppearance.searchMaxWidth)
+                    ? getNavbarSearchSlotProps(
+                      resolveNavbarSearchSlotAlign(side, navbarAppearance.searchAlign),
+                      navbarAppearance.searchMaxWidth,
+                    )
                     : null;
                   return (
                     <div
                       key={itemId}
-                      className={searchSlot ? searchSlot.slotClassName : 'shrink-0'}
+                      className={itemId === 'search' ? 'relative z-[70] shrink-0' : 'shrink-0'}
+                      style={itemId === 'search' ? { width: searchSlot?.innerStyle?.maxWidth || navbarAppearance.searchMaxWidth || 600 } : undefined}
                     >
                       {node}
                     </div>
                   );
                 })}
               </div>
-              {renderSide(sides.right, 'shrink-0')}
-            </div>
-          );
+            );
+            return (
+              <div className={rowSlots.rowClassName}>
+                {renderSide(sides.left, 'left')}
+                {rowSlots.hasCenter ? (
+                  <div className={rowSlots.centerClassName} style={rowSlots.centerStyle}>
+                    {(sides.center || []).map((itemId) => {
+                      const node = renderDesktopNavbarItem(itemId);
+                      if (!node) return null;
+                      const searchSlot = itemId === 'search'
+                        ? getNavbarSearchSlotProps(
+                          resolveNavbarSearchSlotAlign('center', navbarAppearance.searchAlign),
+                          navbarAppearance.searchMaxWidth,
+                        )
+                        : null;
+                      return (
+                        <div
+                          key={itemId}
+                          className={searchSlot ? searchSlot.slotClassName : 'shrink-0'}
+                        >
+                          {node}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className={rowSlots.spacerClassName} style={rowSlots.spacerStyle} aria-hidden="true" />
+                )}
+                {renderSide(sides.right, 'right')}
+              </div>
+            );
+          } catch (error) {
+            console.error('[Navbar] Desktop row failed:', error);
+            return (
+              <div className="flex min-w-0 w-full items-center gap-3 py-2.5">
+                {desktopItemOrder.map((itemId) => {
+                  const node = renderDesktopNavbarItem(itemId);
+                  return node ? <div key={itemId} className="shrink-0">{node}</div> : null;
+                })}
+              </div>
+            );
+          }
         })()}
       </div>
       </nav>

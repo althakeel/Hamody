@@ -6,6 +6,7 @@ import authSeller from '@/middlewares/authSeller';
 import { getAuth } from '@/lib/firebase-admin';
 import {
   ensureUniqueCampaignPageSlug,
+  normalizeCampaignPageBanners,
   normalizeCampaignPageProductIds,
   resolveStoreObjectId,
   slugifyCampaignPageTitle,
@@ -85,6 +86,14 @@ export async function PATCH(request, { params }) {
     if (body.subtitle !== undefined) page.subtitle = String(body.subtitle || '').trim();
     if (body.subtitleAr !== undefined) page.subtitleAr = String(body.subtitleAr || '').trim();
     if (body.heroImage !== undefined) page.heroImage = String(body.heroImage || '').trim();
+    if (body.banners !== undefined || body.heroImage !== undefined) {
+      const banners = normalizeCampaignPageBanners(
+        body.banners !== undefined ? body.banners : page.banners,
+        body.heroImage !== undefined ? body.heroImage : page.heroImage,
+      );
+      page.banners = banners;
+      if (!page.heroImage && banners.desktop.en) page.heroImage = banners.desktop.en;
+    }
     if (body.ctaLabel !== undefined) page.ctaLabel = String(body.ctaLabel || '').trim();
     if (body.ctaUrl !== undefined) page.ctaUrl = String(body.ctaUrl || '').trim();
     if (body.backgroundColor !== undefined) {

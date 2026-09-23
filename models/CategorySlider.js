@@ -68,6 +68,10 @@ const CategorySliderSchema = new mongoose.Schema(
       type: Number,
       default: 4000,
     },
+    showOutOfStock: {
+      type: Boolean,
+      default: false,
+    },
     sortOrder: {
       type: Number,
       default: 0,
@@ -97,6 +101,10 @@ if (mongoose.models.CategorySlider && !mongoose.models.CategorySlider.schema.pat
 }
 
 if (mongoose.models.CategorySlider && !mongoose.models.CategorySlider.schema.paths.autoSlideIntervalMs) {
+  delete mongoose.models.CategorySlider;
+}
+
+if (mongoose.models.CategorySlider && !mongoose.models.CategorySlider.schema.paths.showOutOfStock) {
   delete mongoose.models.CategorySlider;
 }
 

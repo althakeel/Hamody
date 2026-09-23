@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/useAuth';
 import toast from 'react-hot-toast';
@@ -678,6 +678,29 @@ export default function MenuManagementPage() {
   const [addCategoryKey, setAddCategoryKey] = useState('');
   const [customBarLinkName, setCustomBarLinkName] = useState('');
   const [customBarLinkUrl, setCustomBarLinkUrl] = useState('');
+  const navbarLayoutSaveTimerRef = useRef(null);
+  const navbarLayoutRef = useRef(navbarLayout);
+  const navbarBrandingRef = useRef(navbarBranding);
+  const legacyNavbarItemsRef = useRef(legacyNavbarItems);
+  const pendingClearLogoRef = useRef(pendingClearLogo);
+
+  useEffect(() => {
+    navbarLayoutRef.current = navbarLayout;
+  }, [navbarLayout]);
+  useEffect(() => {
+    navbarBrandingRef.current = navbarBranding;
+  }, [navbarBranding]);
+  useEffect(() => {
+    legacyNavbarItemsRef.current = legacyNavbarItems;
+  }, [legacyNavbarItems]);
+  useEffect(() => {
+    pendingClearLogoRef.current = pendingClearLogo;
+  }, [pendingClearLogo]);
+  useEffect(() => () => {
+    if (navbarLayoutSaveTimerRef.current) {
+      window.clearTimeout(navbarLayoutSaveTimerRef.current);
+    }
+  }, []);
 
   const closeConfirmDialog = () => setConfirmDialog(null);
 
@@ -1118,36 +1141,78 @@ export default function MenuManagementPage() {
     }
   };
 
-  const saveNavbarBranding = async () => {
+  const publishNavbarAppearance = (layout, branding = navbarBrandingRef.current) => {
+    if (typeof window === 'undefined') return;
+    const detail = {
+      logoUrl: pendingClearLogoRef.current ? '' : String(branding?.logoUrl || '').trim(),
+      logoWidth: Number(branding?.logoWidth) || defaultNavbarBranding.logoWidth,
+      logoHeight: Number(branding?.logoHeight) || defaultNavbarBranding.logoHeight,
+      backgroundColor: String(branding?.backgroundColor || defaultNavbarBranding.backgroundColor).trim(),
+      ...layout,
+      layoutUpdatedAt: new Date().toISOString(),
+    };
+    try {
+      const raw = window.localStorage.getItem('navbarAppearanceCache');
+      const cached = raw ? JSON.parse(raw) : {};
+      window.localStorage.setItem('navbarAppearanceCache', JSON.stringify({
+        ...cached,
+        ...detail,
+      }));
+    } catch {
+      // Ignore storage write failures.
+    }
+    window.dispatchEvent(new CustomEvent('navbarAppearanceUpdated', { detail }));
+  };
+
+  const applyNavbarLayoutChange = (updater) => {
+    setNavbarLayout((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
+      navbarLayoutRef.current = next;
+      publishNavbarAppearance(next);
+      if (navbarLayoutSaveTimerRef.current) {
+        window.clearTimeout(navbarLayoutSaveTimerRef.current);
+      }
+      navbarLayoutSaveTimerRef.current = window.setTimeout(() => {
+        void saveNavbarBranding(next).catch((error) => {
+          toast.error(error?.message || 'Failed to save navbar alignment');
+        });
+      }, 400);
+      return next;
+    });
+  };
+
+  const saveNavbarBranding = async (layoutOverride) => {
+    const layout = layoutOverride || navbarLayoutRef.current || navbarLayout;
+    const branding = navbarBrandingRef.current || navbarBranding;
     const token = await getToken();
     const payload = {
       enabled: true,
-      items: Array.isArray(legacyNavbarItems) ? legacyNavbarItems : [],
-      logoUrl: String(navbarBranding.logoUrl || '').trim(),
-      logoWidth: Math.max(20, Math.min(400, Number(navbarBranding.logoWidth) || defaultNavbarBranding.logoWidth)),
-      logoHeight: Math.max(10, Math.min(200, Number(navbarBranding.logoHeight) || defaultNavbarBranding.logoHeight)),
-      backgroundColor: String(navbarBranding.backgroundColor || defaultNavbarBranding.backgroundColor).trim(),
-      clearLogo: pendingClearLogo,
-      extraButtons: navbarLayout.extraButtons,
-      searchMaxWidth: navbarLayout.searchMaxWidth,
-      searchAlign: navbarLayout.searchAlign,
-      searchPlaceholder: navbarLayout.searchPlaceholder,
-      searchPlaceholderAr: navbarLayout.searchPlaceholderAr,
-      searchStyle: navbarLayout.searchStyle,
-      navbarMaxWidth: navbarLayout.navbarMaxWidth,
-      itemGap: navbarLayout.itemGap,
-      logoGap: navbarLayout.logoGap,
-      mobileItemGap: navbarLayout.mobileItemGap,
-      stickyHeader: navbarLayout.stickyHeader,
-      showCategoriesButton: navbarLayout.showCategoriesButton,
-      categoriesButtonLabel: navbarLayout.categoriesButtonLabel,
-      categoriesButtonLabelAr: navbarLayout.categoriesButtonLabelAr,
-      categoriesButtonStyle: navbarLayout.categoriesButtonStyle,
-      itemOrder: navbarLayout.itemOrder,
-      itemAlign: navbarLayout.itemAlign,
-      unifyNavbarText: navbarLayout.unifyNavbarText,
-      unifiedTextFontFamily: navbarLayout.unifiedTextFontFamily,
-      unifiedTextFontSize: navbarLayout.unifiedTextFontSize,
+      items: Array.isArray(legacyNavbarItemsRef.current) ? legacyNavbarItemsRef.current : [],
+      logoUrl: String(branding.logoUrl || '').trim(),
+      logoWidth: Math.max(20, Math.min(400, Number(branding.logoWidth) || defaultNavbarBranding.logoWidth)),
+      logoHeight: Math.max(10, Math.min(200, Number(branding.logoHeight) || defaultNavbarBranding.logoHeight)),
+      backgroundColor: String(branding.backgroundColor || defaultNavbarBranding.backgroundColor).trim(),
+      clearLogo: pendingClearLogoRef.current,
+      extraButtons: layout.extraButtons,
+      searchMaxWidth: layout.searchMaxWidth,
+      searchAlign: layout.searchAlign,
+      searchPlaceholder: layout.searchPlaceholder,
+      searchPlaceholderAr: layout.searchPlaceholderAr,
+      searchStyle: layout.searchStyle,
+      navbarMaxWidth: layout.navbarMaxWidth,
+      itemGap: layout.itemGap,
+      logoGap: layout.logoGap,
+      mobileItemGap: layout.mobileItemGap,
+      stickyHeader: layout.stickyHeader,
+      showCategoriesButton: layout.showCategoriesButton,
+      categoriesButtonLabel: layout.categoriesButtonLabel,
+      categoriesButtonLabelAr: layout.categoriesButtonLabelAr,
+      categoriesButtonStyle: layout.categoriesButtonStyle,
+      itemOrder: layout.itemOrder,
+      itemAlign: layout.itemAlign,
+      unifyNavbarText: layout.unifyNavbarText,
+      unifiedTextFontFamily: layout.unifiedTextFontFamily,
+      unifiedTextFontSize: layout.unifiedTextFontSize,
     };
 
     const response = await fetch('/api/store/navbar-menu', {
@@ -1186,22 +1251,24 @@ export default function MenuManagementPage() {
         const cached = raw ? JSON.parse(raw) : {};
         window.localStorage.setItem('navbarAppearanceCache', JSON.stringify({
           ...cached,
-          logoUrl: pendingClearLogo ? '' : savedLogoUrl,
+          logoUrl: pendingClearLogoRef.current ? '' : savedLogoUrl,
           logoWidth: payload.logoWidth,
           logoHeight: payload.logoHeight,
           backgroundColor: payload.backgroundColor,
-          ...navbarLayout,
+          ...layout,
+          layoutUpdatedAt: data?.data?.layoutUpdatedAt || new Date().toISOString(),
         }));
       } catch {
         // Ignore storage write failures.
       }
       window.dispatchEvent(new CustomEvent('navbarAppearanceUpdated', {
         detail: {
-          logoUrl: pendingClearLogo ? '' : savedLogoUrl,
+          logoUrl: pendingClearLogoRef.current ? '' : savedLogoUrl,
           logoWidth: payload.logoWidth,
           logoHeight: payload.logoHeight,
           backgroundColor: payload.backgroundColor,
-          ...navbarLayout,
+          ...layout,
+          layoutUpdatedAt: data?.data?.layoutUpdatedAt || new Date().toISOString(),
         },
       }));
     }
@@ -1803,15 +1870,19 @@ export default function MenuManagementPage() {
           <NavbarItemArrange
             layout={navbarLayout}
             visibility={form.navActionsVisibility}
-            onChange={(itemOrder) => setNavbarLayout((prev) => ({ ...prev, itemOrder }))}
-            onAlignChange={(itemId, align) => setNavbarLayout((prev) => ({
+            onChange={(itemOrder) => applyNavbarLayoutChange((prev) => ({ ...prev, itemOrder }))}
+            onAlignChange={(itemId, align) => applyNavbarLayoutChange((prev) => ({
               ...prev,
               itemAlign: { ...(prev.itemAlign || {}), [itemId]: align },
+              ...(itemId === 'search'
+                ? { searchAlign: align === 'right' ? 'right' : align === 'left' ? 'left' : 'fill' }
+                : {}),
             }))}
-            onReset={() => setNavbarLayout((prev) => ({
+            onReset={() => applyNavbarLayoutChange((prev) => ({
               ...prev,
               itemOrder: defaultNavbarItemOrder(prev.extraButtons),
               itemAlign: defaultNavbarItemAlign(prev.extraButtons),
+              searchAlign: DEFAULT_NAVBAR_LAYOUT.searchAlign,
             }))}
           />
 
@@ -2337,14 +2408,21 @@ export default function MenuManagementPage() {
               <div>
                 <span className="text-xs font-medium text-slate-600">Search align</span>
                 <p className="mt-0.5 text-[11px] text-slate-500">
-                  Right moves the search next to account and cart and removes the empty gap.
+                  Right packs search beside account and cart. Default keeps the leftover stretch.
                 </p>
                 <div className="mt-2 inline-flex flex-wrap rounded-lg border border-slate-200 bg-slate-50 p-0.5">
                   {SEARCH_ALIGN_OPTIONS.map((option) => (
                     <button
                       key={option.id}
                       type="button"
-                      onClick={() => setNavbarLayout((prev) => ({ ...prev, searchAlign: option.id }))}
+                      onClick={() => applyNavbarLayoutChange((prev) => ({
+                        ...prev,
+                        searchAlign: option.id,
+                        itemAlign: {
+                          ...(prev.itemAlign || {}),
+                          search: option.id === 'right' ? 'right' : option.id === 'left' ? 'left' : 'default',
+                        },
+                      }))}
                       className={`rounded-md px-2.5 py-1.5 text-xs font-semibold transition ${
                         navbarLayout.searchAlign === option.id
                           ? 'bg-white text-slate-900 shadow-sm'

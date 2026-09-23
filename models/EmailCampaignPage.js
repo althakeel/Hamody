@@ -14,6 +14,20 @@ const EmailCampaignPageSchema = new mongoose.Schema(
     subtitle: { type: String, trim: true, default: '' },
     subtitleAr: { type: String, trim: true, default: '' },
     heroImage: { type: String, trim: true, default: '' },
+    banners: {
+      desktop: {
+        en: { type: String, trim: true, default: '' },
+        ar: { type: String, trim: true, default: '' },
+      },
+      tablet: {
+        en: { type: String, trim: true, default: '' },
+        ar: { type: String, trim: true, default: '' },
+      },
+      mobile: {
+        en: { type: String, trim: true, default: '' },
+        ar: { type: String, trim: true, default: '' },
+      },
+    },
     productIds: [{ type: String, trim: true }],
     ctaLabel: { type: String, trim: true, default: '' },
     ctaUrl: { type: String, trim: true, default: '' },
@@ -39,5 +53,24 @@ EmailCampaignPageSchema.index({ status: 1, slug: 1 });
 const EmailCampaignPage =
   mongoose.models.EmailCampaignPage
   || mongoose.model('EmailCampaignPage', EmailCampaignPageSchema);
+
+if (!EmailCampaignPage.schema.path('banners')) {
+  EmailCampaignPage.schema.add({
+    banners: {
+      desktop: {
+        en: { type: String, trim: true, default: '' },
+        ar: { type: String, trim: true, default: '' },
+      },
+      tablet: {
+        en: { type: String, trim: true, default: '' },
+        ar: { type: String, trim: true, default: '' },
+      },
+      mobile: {
+        en: { type: String, trim: true, default: '' },
+        ar: { type: String, trim: true, default: '' },
+      },
+    },
+  });
+}
 
 export default EmailCampaignPage;

@@ -5,6 +5,7 @@ import authSeller from '@/middlewares/authSeller';
 import { getAuth } from '@/lib/firebase-admin';
 import {
   ensureUniqueCampaignPageSlug,
+  normalizeCampaignPageBanners,
   normalizeCampaignPageProductIds,
   resolveStoreObjectId,
   slugifyCampaignPageTitle,
@@ -38,7 +39,8 @@ function parseBody(body = {}) {
     titleAr: String(body.titleAr || '').trim(),
     subtitle: String(body.subtitle || '').trim(),
     subtitleAr: String(body.subtitleAr || '').trim(),
-    heroImage: String(body.heroImage || '').trim(),
+    banners: normalizeCampaignPageBanners(body.banners, body.heroImage),
+    heroImage: String(body.heroImage || body.banners?.desktop?.en || '').trim(),
     productIds: normalizeCampaignPageProductIds(body.productIds),
     ctaLabel: String(body.ctaLabel || '').trim(),
     ctaUrl: String(body.ctaUrl || '').trim(),
@@ -107,7 +109,8 @@ export async function POST(request) {
       slug,
       subtitle: parsed.subtitle,
       subtitleAr: parsed.subtitleAr,
-      heroImage: parsed.heroImage,
+      heroImage: parsed.heroImage || parsed.banners.desktop.en,
+      banners: parsed.banners,
       productIds: parsed.productIds,
       ctaLabel: parsed.ctaLabel,
       ctaUrl: parsed.ctaUrl,

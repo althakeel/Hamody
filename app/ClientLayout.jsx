@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, Suspense } from "react";
+import { Component, useEffect, useState, Suspense } from "react";
 import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import ReduxProvider from "@/lib/ReduxProvider";
@@ -46,6 +46,26 @@ function DeferredWidgets() {
       <TawkToWidget />
     </>
   );
+}
+
+class StorefrontChromeErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error) {
+    console.error("[StorefrontChrome]", error);
+  }
+
+  render() {
+    if (this.state.hasError) return this.props.fallback || null;
+    return this.props.children;
+  }
 }
 
 const STOREFRONT_HIDDEN_PREFIXES = ["/store", "/admin"];
@@ -121,15 +141,19 @@ export default function ClientLayout({ children, initialStorefrontLanguage = 'en
         className={hideStorefrontChrome ? 'flex h-dvh min-h-0 min-w-0 flex-col overflow-hidden' : 'min-w-0'}
       >
         {!hideStorefrontChrome ? (
-          <>
+          <StorefrontChromeErrorBoundary>
             <TopBar initialLanguage={initialStorefrontLanguage} />
             <Navbar />
-          </>
+          </StorefrontChromeErrorBoundary>
         ) : null}
         {children}
         <DeferredWidgets />
         {!hideStorefrontChrome ? <ScrollToTopButton /> : null}
-        {!hideStorefrontChrome ? <Footer /> : null}
+        {!hideStorefrontChrome ? (
+          <StorefrontChromeErrorBoundary>
+            <Footer />
+          </StorefrontChromeErrorBoundary>
+        ) : null}
       </SilentDomErrorBoundary>
     </ReduxProvider>
   );

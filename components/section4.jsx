@@ -14,7 +14,7 @@ import {
   getSideImageLayoutCardsPerRow,
   getCategorySliderProductCardClass,
 } from '@/lib/storefrontCarousel'
-import { normalizeCategorySliderBackground, normalizeCategorySliderSideImagePosition, normalizeCategorySliderAutoSlide, normalizeCategorySliderAutoSlideInterval } from '@/lib/categorySliderTheme'
+import { normalizeCategorySliderBackground, normalizeCategorySliderSideImagePosition, normalizeCategorySliderAutoSlide, normalizeCategorySliderAutoSlideInterval, filterCategorySliderProducts } from '@/lib/categorySliderTheme'
 import { HomeSideImageSliderSkeleton } from '@/components/home/HomeSectionSkeletons'
 import BannerSlider from '@/components/BannerSlider'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
@@ -124,10 +124,8 @@ const SkeletonLoader = ({ hasSideImage = false, cardsPerRow = 6 }) => {
 }
 
 function resolveSectionProducts(section) {
-  if (Array.isArray(section?.products) && section.products.length > 0) {
-    return section.products
-  }
-  return []
+  const products = Array.isArray(section?.products) ? section.products : []
+  return filterCategorySliderProducts(products, section?.showOutOfStock)
 }
 
 const HorizontalSlider = ({ section }) => {

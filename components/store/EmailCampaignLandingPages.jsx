@@ -2,8 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { Copy, ExternalLink, Plus, Search, Trash2, Check } from 'lucide-react';
-import { EMAIL_CAMPAIGN_PAGE_MAX_PRODUCTS } from '@/lib/emailCampaignPageHelpers';
+import { Copy, ExternalLink, ImagePlus, Plus, Search, Trash2, Check } from 'lucide-react';
+import {
+  EMAIL_CAMPAIGN_BANNER_MAX_WIDTH,
+  EMAIL_CAMPAIGN_PAGE_MAX_PRODUCTS,
+  campaignPageHasBanner,
+  normalizeCampaignPageBanners,
+} from '@/lib/emailCampaignPageHelpers';
 
 const EMPTY_FORM = {
   title: '',
@@ -12,6 +17,7 @@ const EMPTY_FORM = {
   subtitle: '',
   subtitleAr: '',
   heroImage: '',
+  banners: normalizeCampaignPageBanners({}),
   productIds: [],
   ctaLabel: '',
   ctaUrl: '',
@@ -22,6 +28,139 @@ const EMPTY_FORM = {
   seoDescription: '',
 };
 
+const BANNER_SLOTS = [
+  { device: 'desktop', language: 'en', label: 'Desktop · English', hint: 'Shown from 1024px and up' },
+  { device: 'desktop', language: 'ar', label: 'Desktop · Arabic', hint: 'Shown from 1024px and up for Arabic' },
+  { device: 'tablet', language: 'en', label: 'Tablet · English', hint: 'Shown from 768px to 1023px' },
+  { device: 'tablet', language: 'ar', label: 'Tablet · Arabic', hint: 'Shown from 768px to 1023px for Arabic' },
+  { device: 'mobile', language: 'en', label: 'Mobile · English', hint: 'Shown below 768px' },
+  { device: 'mobile', language: 'ar', label: 'Mobile · Arabic', hint: 'Shown below 768px for Arabic' },
+];
+
+const BANNER_ACCEPT = 'image/png,image/jpeg,image/webp,image/gif,.gif,.png,.jpg,.jpeg,.webp';
+
+function isBannerFile(file) {
+  if (!file) return false;
+  const type = String(file.type || '').toLowerCase();
+  const name = String(file.name || '').toLowerCase();
+  return type.startsWith('image/') || /\.(gif|png|jpe?g|webp)$/i.test(name);
+}
+
+async function uploadCampaignBanner(file, getToken) {
+  if (!file || !getToken) throw new Error('Upload is not available');
+  if (!isBannerFile(file)) throw new Error('Use a JPG, PNG, WebP, or GIF file');
+  const token = await getToken();
+  const formData = new FormData();
+  formData.append('image', file);
+  formData.append('type', 'email-marketing');
+  const response = await fetch('/api/store/upload-image', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data?.url) {
+    throw new Error(data?.error || 'Upload failed');
+  }
+  return data.url;
+}
+
+function BannerImageField({ label, hint, value, onChange, getToken }) {
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [dragActive, setDragActive] = useState(false);
+
+  const handleUpload = async (file) => {
+    if (!file) return;
+    try {
+      setUploading(true);
+      setUploadError('');
+      const url = await uploadCampaignBanner(file, getToken);
+      onChange(url);
+    } catch (err) {
+      setUploadError(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const onDrop = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setDragActive(false);
+    const file = event.dataTransfer?.files?.[0];
+    handleUpload(file);
+  };
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-3">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-xs font-semibold text-slate-800">{label}</p>
+          <p className="mt-0.5 text-[11px] text-slate-500">{hint}</p>
+        </div>
+        {value ? (
+          <button
+            type="button"
+            onClick={() => onChange('')}
+            className="text-[11px] font-semibold text-red-600 hover:underline"
+          >
+            Remove
+          </button>
+        ) : null}
+      </div>
+      <label
+        className={`mt-2 flex min-h-[7.5rem] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border border-dashed px-3 py-4 text-center transition ${
+          dragActive
+            ? 'border-teal-400 bg-teal-50'
+            : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+        } ${uploading ? 'pointer-events-none opacity-70' : ''}`}
+        onDragEnter={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setDragActive(true);
+        }}
+        onDragOver={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setDragActive(true);
+        }}
+        onDragLeave={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setDragActive(false);
+        }}
+        onDrop={onDrop}
+      >
+        {value ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={value} alt="" className="max-h-28 w-full max-w-full object-contain" />
+        ) : (
+          <>
+            <ImagePlus className="h-5 w-5 text-slate-400" />
+            <p className="mt-2 text-[11px] font-medium text-slate-600">
+              {uploading ? 'Uploading…' : dragActive ? 'Drop image or GIF here' : 'Drag and drop or click to upload'}
+            </p>
+            <p className="mt-1 text-[10px] text-slate-400">JPG, PNG, WebP, or GIF</p>
+          </>
+        )}
+        <input
+          type="file"
+          accept={BANNER_ACCEPT}
+          className="sr-only"
+          disabled={uploading || !getToken}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.target.value = '';
+            handleUpload(file);
+          }}
+        />
+      </label>
+      {uploadError ? <p className="mt-1 text-[11px] text-red-600">{uploadError}</p> : null}
+    </div>
+  );
+}
+
 export default function EmailCampaignLandingPages({ getToken }) {
   const [pages, setPages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +169,7 @@ export default function EmailCampaignLandingPages({ getToken }) {
   const [statusMessage, setStatusMessage] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [showBanners, setShowBanners] = useState(false);
   const [copiedId, setCopiedId] = useState('');
 
   const [productSearch, setProductSearch] = useState('');
@@ -141,9 +281,28 @@ export default function EmailCampaignLandingPages({ getToken }) {
 
   const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
+  const setBanner = (device, language, value) => {
+    setForm((prev) => {
+      const banners = normalizeCampaignPageBanners(prev.banners, prev.heroImage);
+      const nextBanners = {
+        ...banners,
+        [device]: {
+          ...banners[device],
+          [language]: String(value || '').trim(),
+        },
+      };
+      return {
+        ...prev,
+        banners: nextBanners,
+        heroImage: nextBanners.desktop.en || prev.heroImage || '',
+      };
+    });
+  };
+
   const startCreate = () => {
     setEditingId(null);
-    setForm(EMPTY_FORM);
+    setForm({ ...EMPTY_FORM, banners: normalizeCampaignPageBanners({}), productIds: [] });
+    setShowBanners(false);
     setStatusMessage('');
     setError('');
   };
@@ -157,6 +316,7 @@ export default function EmailCampaignLandingPages({ getToken }) {
       subtitle: page.subtitle || '',
       subtitleAr: page.subtitleAr || '',
       heroImage: page.heroImage || '',
+      banners: normalizeCampaignPageBanners(page.banners, page.heroImage),
       productIds: Array.isArray(page.productIds) ? page.productIds : [],
       ctaLabel: page.ctaLabel || '',
       ctaUrl: page.ctaUrl || '',
@@ -166,6 +326,7 @@ export default function EmailCampaignLandingPages({ getToken }) {
       seoTitle: page.seoTitle || '',
       seoDescription: page.seoDescription || '',
     });
+    setShowBanners(campaignPageHasBanner(page.banners, page.heroImage));
     setStatusMessage('');
     setError('');
   };
@@ -432,15 +593,49 @@ export default function EmailCampaignLandingPages({ getToken }) {
               />
               <span className="mt-1 block text-[11px] text-slate-400">Public URL: /c/{form.slug || 'your-slug'}</span>
             </label>
-            <label className="block text-xs text-slate-600">
-              Hero image URL
-              <input
-                value={form.heroImage}
-                onChange={(e) => setField('heroImage', e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                placeholder="https://…"
-              />
-            </label>
+            <div className="sm:col-span-2">
+              {!showBanners ? (
+                <button
+                  type="button"
+                  onClick={() => setShowBanners(true)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50"
+                >
+                  <ImagePlus className="h-3.5 w-3.5" />
+                  Add banner
+                </button>
+              ) : (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-800">Banners (optional)</p>
+                      <p className="mt-0.5 text-[11px] text-slate-500">
+                        Drag and drop or click to upload JPG, PNG, WebP, or GIF. English and Arabic for desktop, tablet, and mobile.
+                        Max width on the public page is {EMAIL_CAMPAIGN_BANNER_MAX_WIDTH}px. Empty slots fall back to the next available image.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowBanners(false)}
+                      className="shrink-0 text-[11px] font-semibold text-slate-500 hover:text-slate-800"
+                    >
+                      Hide
+                    </button>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {BANNER_SLOTS.map((slot) => (
+                      <BannerImageField
+                        key={`${slot.device}-${slot.language}`}
+                        label={slot.label}
+                        hint={slot.hint}
+                        value={form.banners?.[slot.device]?.[slot.language] || ''}
+                        onChange={(url) => setBanner(slot.device, slot.language, url)}
+                        getToken={getToken}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             <label className="block text-xs text-slate-600">
               Background
               <input

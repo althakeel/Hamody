@@ -425,13 +425,6 @@ export async function PUT(request) {
         || ''
     }
 
-    const hasFullWidthImage = Boolean(
-      shopShowcase.fullWidthBannerSliderItems?.length
-      || String(shopShowcase.fullWidthBannerImage || '').trim(),
-    )
-    if (hasFullWidthImage && shopShowcase.mainBannerEnabled === false) {
-      shopShowcase.fullWidthBannerEnabled = true
-    }
     if (shopShowcase.fullWidthBannerEnabled === true) {
       shopShowcase.mainBannerEnabled = false
       shopShowcase.topBannerEnabled = false

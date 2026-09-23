@@ -5,6 +5,11 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import ProductCard from '@/components/ProductCard';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
+import {
+  EMAIL_CAMPAIGN_BANNER_MAX_WIDTH,
+  campaignPageHasBanner,
+  resolveCampaignPageBannerSources,
+} from '@/lib/emailCampaignPageHelpers';
 
 export default function CampaignLandingPage() {
   const params = useParams();
@@ -68,6 +73,11 @@ export default function CampaignLandingPage() {
 
   const accent = page?.accentColor || '#0f766e';
   const background = page?.backgroundColor || '#f8fafc';
+  const bannerSources = useMemo(
+    () => (page ? resolveCampaignPageBannerSources(page, language) : { desktop: '', tablet: '', mobile: '', fallback: '' }),
+    [page, language],
+  );
+  const hasBanner = Boolean(page && (campaignPageHasBanner(page.banners, page.heroImage) || page.heroImage));
 
   if (loading) {
     return (
@@ -107,19 +117,28 @@ export default function CampaignLandingPage() {
 
   return (
     <div className="min-h-screen" style={{ background }} dir={isArabic ? 'rtl' : 'ltr'} lang={language}>
-      {page.heroImage ? (
-        <div className="relative h-44 w-full overflow-hidden sm:h-56 md:h-64">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={page.heroImage}
-            alt=""
-            className="h-full w-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/20 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 px-4 pb-6 sm:px-6">
+      {hasBanner && bannerSources.fallback ? (
+        <div className="w-full">
+          <div className="mx-auto w-full px-4 sm:px-6" style={{ maxWidth: EMAIL_CAMPAIGN_BANNER_MAX_WIDTH }}>
+            <picture>
+              {bannerSources.desktop ? (
+                <source media="(min-width: 1024px)" srcSet={bannerSources.desktop} />
+              ) : null}
+              {bannerSources.tablet ? (
+                <source media="(min-width: 768px)" srcSet={bannerSources.tablet} />
+              ) : null}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={bannerSources.fallback}
+                alt=""
+                className="block h-auto w-full max-w-full object-contain"
+              />
+            </picture>
+          </div>
+          <div className="border-b border-slate-200/80 bg-white/70 px-4 py-6 sm:px-6">
             <div className="mx-auto max-w-6xl">
-              <h1 className="text-2xl font-bold text-white sm:text-3xl">{title}</h1>
-              {subtitle ? <p className="mt-1 max-w-2xl text-sm text-white/90 sm:text-base">{subtitle}</p> : null}
+              <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">{title}</h1>
+              {subtitle ? <p className="mt-1 max-w-2xl text-sm text-slate-600 sm:text-base">{subtitle}</p> : null}
             </div>
           </div>
         </div>

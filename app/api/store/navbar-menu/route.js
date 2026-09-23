@@ -22,28 +22,67 @@ function toFiniteNumber(value) {
 }
 
 function pickNavbarLayout(settings = {}) {
-  return normalizeNavbarLayout({
-    extraButtons: settings?.navExtraButtons,
-    searchMaxWidth: settings?.searchMaxWidth,
-    searchAlign: settings?.searchAlign,
-    searchPlaceholder: settings?.searchPlaceholder,
-    searchPlaceholderAr: settings?.searchPlaceholderAr,
-    searchStyle: settings?.searchStyle,
-    navbarMaxWidth: settings?.navbarMaxWidth,
-    itemGap: settings?.itemGap,
-    logoGap: settings?.logoGap,
-    mobileItemGap: settings?.mobileItemGap,
-    stickyHeader: settings?.stickyHeader,
-    showCategoriesButton: settings?.showCategoriesButton,
-    categoriesButtonLabel: settings?.categoriesButtonLabel,
-    categoriesButtonLabelAr: settings?.categoriesButtonLabelAr,
-    categoriesButtonStyle: settings?.categoriesButtonStyle,
-    itemOrder: settings?.navbarItemOrder || settings?.itemOrder,
-    itemAlign: settings?.navbarItemAlign || settings?.itemAlign,
-    unifyNavbarText: settings?.unifyNavbarText,
-    unifiedTextFontFamily: settings?.unifiedTextFontFamily,
-    unifiedTextFontSize: settings?.unifiedTextFontSize,
-  });
+  return {
+    ...normalizeNavbarLayout({
+      extraButtons: settings?.navExtraButtons,
+      searchMaxWidth: settings?.searchMaxWidth,
+      searchAlign: settings?.searchAlign,
+      searchPlaceholder: settings?.searchPlaceholder,
+      searchPlaceholderAr: settings?.searchPlaceholderAr,
+      searchStyle: settings?.searchStyle,
+      navbarMaxWidth: settings?.navbarMaxWidth,
+      itemGap: settings?.itemGap,
+      logoGap: settings?.logoGap,
+      mobileItemGap: settings?.mobileItemGap,
+      stickyHeader: settings?.stickyHeader,
+      showCategoriesButton: settings?.showCategoriesButton,
+      categoriesButtonLabel: settings?.categoriesButtonLabel,
+      categoriesButtonLabelAr: settings?.categoriesButtonLabelAr,
+      categoriesButtonStyle: settings?.categoriesButtonStyle,
+      itemOrder: settings?.navbarItemOrder || settings?.itemOrder,
+      itemAlign: settings?.navbarItemAlign || settings?.itemAlign,
+      unifyNavbarText: settings?.unifyNavbarText,
+      unifiedTextFontFamily: settings?.unifiedTextFontFamily,
+      unifiedTextFontSize: settings?.unifiedTextFontSize,
+    }),
+    layoutUpdatedAt: toIsoTimestamp(settings?.updatedAt),
+  };
+}
+
+function toIsoTimestamp(value) {
+  if (!value) return '';
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toISOString() : '';
+}
+
+function mergeNavbarLayoutSource(base = {}, latest = {}) {
+  if (!latest) return base;
+  return {
+    ...base,
+    navExtraButtons: latest.navExtraButtons ?? base.navExtraButtons,
+    searchMaxWidth: latest.searchMaxWidth ?? base.searchMaxWidth,
+    searchAlign: latest.searchAlign ?? base.searchAlign,
+    searchPlaceholder: latest.searchPlaceholder ?? base.searchPlaceholder,
+    searchPlaceholderAr: latest.searchPlaceholderAr ?? base.searchPlaceholderAr,
+    searchStyle: latest.searchStyle ?? base.searchStyle,
+    navbarMaxWidth: latest.navbarMaxWidth ?? base.navbarMaxWidth,
+    itemGap: latest.itemGap ?? base.itemGap,
+    logoGap: latest.logoGap ?? base.logoGap,
+    mobileItemGap: latest.mobileItemGap ?? base.mobileItemGap,
+    stickyHeader: latest.stickyHeader ?? base.stickyHeader,
+    showCategoriesButton: latest.showCategoriesButton ?? base.showCategoriesButton,
+    categoriesButtonLabel: latest.categoriesButtonLabel ?? base.categoriesButtonLabel,
+    categoriesButtonLabelAr: latest.categoriesButtonLabelAr ?? base.categoriesButtonLabelAr,
+    categoriesButtonStyle: latest.categoriesButtonStyle ?? base.categoriesButtonStyle,
+    navbarItemOrder: latest.navbarItemOrder ?? base.navbarItemOrder,
+    itemOrder: latest.navbarItemOrder ?? latest.itemOrder ?? base.navbarItemOrder ?? base.itemOrder,
+    unifyNavbarText: latest.unifyNavbarText ?? base.unifyNavbarText,
+    unifiedTextFontFamily: latest.unifiedTextFontFamily ?? base.unifiedTextFontFamily,
+    unifiedTextFontSize: latest.unifiedTextFontSize ?? base.unifiedTextFontSize,
+    navbarItemAlign: latest.navbarItemAlign ?? base.navbarItemAlign,
+    itemAlign: latest.navbarItemAlign ?? latest.itemAlign ?? base.navbarItemAlign ?? base.itemAlign,
+    updatedAt: latest.updatedAt || base.updatedAt,
+  };
 }
 
 function pickFooterBranding(settings = {}, navbarLogoUrl = '') {
@@ -189,7 +228,15 @@ export async function GET(req) {
     let resolvedWidth = toFiniteNumber(settings?.logoWidth);
     let resolvedHeight = toFiniteNumber(settings?.logoHeight);
 
-    if (settings?.storeId) {
+    const latestLayoutDoc = await NavbarMenuSettings.findOne({})
+      .sort({ updatedAt: -1, _id: -1 })
+      .lean();
+
+    if (latestLayoutDoc) {
+      if (resolvedWidth == null) resolvedWidth = toFiniteNumber(latestLayoutDoc.logoWidth);
+      if (resolvedHeight == null) resolvedHeight = toFiniteNumber(latestLayoutDoc.logoHeight);
+      settings = mergeNavbarLayoutSource(settings || {}, latestLayoutDoc);
+    } else if (settings?.storeId) {
       const latestStoreDoc = await NavbarMenuSettings.findOne({
         storeId: settings.storeId,
       })
@@ -199,29 +246,7 @@ export async function GET(req) {
       if (latestStoreDoc) {
         if (resolvedWidth == null) resolvedWidth = toFiniteNumber(latestStoreDoc.logoWidth);
         if (resolvedHeight == null) resolvedHeight = toFiniteNumber(latestStoreDoc.logoHeight);
-        settings = {
-          ...settings,
-          navExtraButtons: latestStoreDoc.navExtraButtons ?? settings.navExtraButtons,
-          searchMaxWidth: latestStoreDoc.searchMaxWidth ?? settings.searchMaxWidth,
-          searchAlign: latestStoreDoc.searchAlign ?? settings.searchAlign,
-          searchPlaceholder: latestStoreDoc.searchPlaceholder ?? settings.searchPlaceholder,
-          searchPlaceholderAr: latestStoreDoc.searchPlaceholderAr ?? settings.searchPlaceholderAr,
-          searchStyle: latestStoreDoc.searchStyle ?? settings.searchStyle,
-          navbarMaxWidth: latestStoreDoc.navbarMaxWidth ?? settings.navbarMaxWidth,
-          itemGap: latestStoreDoc.itemGap ?? settings.itemGap,
-          logoGap: latestStoreDoc.logoGap ?? settings.logoGap,
-          mobileItemGap: latestStoreDoc.mobileItemGap ?? settings.mobileItemGap,
-          stickyHeader: latestStoreDoc.stickyHeader ?? settings.stickyHeader,
-          showCategoriesButton: latestStoreDoc.showCategoriesButton ?? settings.showCategoriesButton,
-          categoriesButtonLabel: latestStoreDoc.categoriesButtonLabel ?? settings.categoriesButtonLabel,
-          categoriesButtonLabelAr: latestStoreDoc.categoriesButtonLabelAr ?? settings.categoriesButtonLabelAr,
-          categoriesButtonStyle: latestStoreDoc.categoriesButtonStyle ?? settings.categoriesButtonStyle,
-          navbarItemOrder: latestStoreDoc.navbarItemOrder ?? settings.navbarItemOrder,
-          unifyNavbarText: latestStoreDoc.unifyNavbarText ?? settings.unifyNavbarText,
-          unifiedTextFontFamily: latestStoreDoc.unifiedTextFontFamily ?? settings.unifiedTextFontFamily,
-          unifiedTextFontSize: latestStoreDoc.unifiedTextFontSize ?? settings.unifiedTextFontSize,
-          navbarItemAlign: latestStoreDoc.navbarItemAlign ?? settings.navbarItemAlign,
-        };
+        settings = mergeNavbarLayoutSource(settings, latestStoreDoc);
       }
     }
 
@@ -440,35 +465,55 @@ export async function POST(req) {
       { upsert: true, new: true, setDefaultsOnInsert: true, runValidators: true }
     ).lean();
 
-    // Backfill duplicate/legacy docs for this store so reads cannot pick stale docs.
+    const relatedStoreIds = new Set([String(userId)]);
+    try {
+      const authSeller = (await import('@/middlewares/authSeller')).default;
+      const storeObjectId = await authSeller(userId);
+      if (storeObjectId) relatedStoreIds.add(String(storeObjectId));
+    } catch {
+      // Ignore seller lookup failures; still backfill the signed-in store.
+    }
+    const publicLogoDoc = await NavbarMenuSettings.findOne({
+      enabled: true,
+      logoUrl: { $exists: true, $nin: [null, ''] },
+    })
+      .sort({ updatedAt: -1 })
+      .lean();
+    if (publicLogoDoc?.storeId) relatedStoreIds.add(String(publicLogoDoc.storeId));
+
+    const layoutBackfill = {
+      navExtraButtons: nextLayout.extraButtons,
+      searchMaxWidth: nextLayout.searchMaxWidth,
+      searchAlign: nextLayout.searchAlign,
+      searchPlaceholder: nextLayout.searchPlaceholder,
+      searchPlaceholderAr: nextLayout.searchPlaceholderAr,
+      searchStyle: nextLayout.searchStyle,
+      navbarMaxWidth: nextLayout.navbarMaxWidth,
+      itemGap: nextLayout.itemGap,
+      logoGap: nextLayout.logoGap,
+      mobileItemGap: nextLayout.mobileItemGap,
+      stickyHeader: nextLayout.stickyHeader,
+      showCategoriesButton: nextLayout.showCategoriesButton,
+      categoriesButtonLabel: nextLayout.categoriesButtonLabel,
+      categoriesButtonLabelAr: nextLayout.categoriesButtonLabelAr,
+      categoriesButtonStyle: nextLayout.categoriesButtonStyle,
+      navbarItemOrder: nextLayout.itemOrder,
+      navbarItemAlign: nextLayout.itemAlign,
+      unifyNavbarText: nextLayout.unifyNavbarText,
+      unifiedTextFontFamily: nextLayout.unifiedTextFontFamily,
+      unifiedTextFontSize: nextLayout.unifiedTextFontSize,
+    };
+
+    // Backfill duplicate/legacy docs so the public storefront cannot pick stale layout.
     await NavbarMenuSettings.updateMany(
-      { storeId: userId },
+      { storeId: { $in: [...relatedStoreIds] } },
       {
         $set: {
           logoUrl: nextLogoUrl,
           logoWidth: nextLogoWidth,
           logoHeight: nextLogoHeight,
           backgroundColor: nextBackgroundColor,
-          navExtraButtons: nextLayout.extraButtons,
-          searchMaxWidth: nextLayout.searchMaxWidth,
-          searchAlign: nextLayout.searchAlign,
-          searchPlaceholder: nextLayout.searchPlaceholder,
-          searchPlaceholderAr: nextLayout.searchPlaceholderAr,
-          searchStyle: nextLayout.searchStyle,
-          navbarMaxWidth: nextLayout.navbarMaxWidth,
-          itemGap: nextLayout.itemGap,
-          logoGap: nextLayout.logoGap,
-          mobileItemGap: nextLayout.mobileItemGap,
-          stickyHeader: nextLayout.stickyHeader,
-          showCategoriesButton: nextLayout.showCategoriesButton,
-          categoriesButtonLabel: nextLayout.categoriesButtonLabel,
-          categoriesButtonLabelAr: nextLayout.categoriesButtonLabelAr,
-          categoriesButtonStyle: nextLayout.categoriesButtonStyle,
-          navbarItemOrder: nextLayout.itemOrder,
-          navbarItemAlign: nextLayout.itemAlign,
-          unifyNavbarText: nextLayout.unifyNavbarText,
-          unifiedTextFontFamily: nextLayout.unifiedTextFontFamily,
-          unifiedTextFontSize: nextLayout.unifiedTextFontSize,
+          ...layoutBackfill,
         },
       }
     );

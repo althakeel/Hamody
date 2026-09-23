@@ -9,7 +9,7 @@ import { applyLargeBannerSliderDefaults, isFullWidthBannerActive } from '@/lib/s
 import { hasShowcaseBannerImage, serializeShowcaseImageFields } from '@/lib/showcaseBannerImages'
 import { resolvePublicStorePreference } from '@/lib/storePreferencePublic'
 
-const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v15'
+const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v16'
 
 const DEFAULT_SHOWCASE = {
   enabled: true,
@@ -199,8 +199,8 @@ function normalize(data = {}) {
   return {
     ...DEFAULT_SHOWCASE,
     ...data,
-    topBannerEnabled: fullWidthActive ? false : data.topBannerEnabled !== false,
-    bottomBannerEnabled: fullWidthActive ? false : data.bottomBannerEnabled !== false,
+    topBannerEnabled: fullWidthActive ? false : data.topBannerEnabled === true,
+    bottomBannerEnabled: fullWidthActive ? false : data.bottomBannerEnabled === true,
     fullWidthBannerEnabled: fullWidthActive,
     mainBannerEnabled: fullWidthActive ? false : (typeof data.mainBannerEnabled === 'boolean' ? data.mainBannerEnabled : DEFAULT_SHOWCASE.mainBannerEnabled),
     lowerFullWidthBannerEnabled: data.lowerFullWidthBannerEnabled === true,

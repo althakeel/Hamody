@@ -14,7 +14,7 @@ import {
   normalizeOffersNavStyle,
   splitOffersNavLabel,
 } from '@/lib/offersPageSettings';
-import { applyUnifiedNavbarText, getNavbarArrangeItems, getNavbarBottomBorderStyle, getNavbarCategoriesButtonAppearance, getNavbarCategoriesButtonLabel, getNavbarSearchAppearance, getNavbarSearchSlotProps, getUnifiedNavbarFontId, getUnifiedNavbarTextCss, groupNavbarItemsBySide, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';
+import { applyUnifiedNavbarText, getNavbarArrangeItems, getNavbarBottomBorderStyle, getNavbarCategoriesButtonAppearance, getNavbarCategoriesButtonLabel, getNavbarDesktopRowSlots, getNavbarSearchAppearance, getNavbarSearchSlotProps, getUnifiedNavbarFontId, getUnifiedNavbarTextCss, groupNavbarItemsBySide, resolveNavbarItemSide, resolveNavbarSearchSlotAlign, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';
 
 const DEFAULT_BG = '#9f4b1d';
 const NAVBAR_MAX_WIDTH_LIMIT = 1400;
@@ -224,7 +224,11 @@ export default function NavbarPreview({
       );
     }
     if (itemId === 'search') {
-      const searchSlot = getNavbarSearchSlotProps(searchAlign, searchMaxWidth);
+      const searchSide = resolveNavbarItemSide('search', itemAlign?.search, searchAlign);
+      const searchSlot = getNavbarSearchSlotProps(
+        resolveNavbarSearchSlotAlign(searchSide, searchAlign),
+        searchMaxWidth,
+      );
       return (
         <div className={searchSlot.innerClassName} style={searchSlot.innerStyle}>
             <div
@@ -370,29 +374,29 @@ export default function NavbarPreview({
         >
           <div className="mx-auto w-full px-4 sm:px-6" style={{ maxWidth: resolvedNavbarMaxWidth }}>
             {(() => {
-              const rowGap = `${Number(itemGap) || 0}px`;
               const sides = groupNavbarItemsBySide(
                 previewItems.map((item) => item.id),
                 itemAlign,
                 extraButtons,
+                searchAlign,
               );
-              const renderSide = (itemIds, className) => (
-                <div className={`flex items-center ${className}`} style={{ gap: rowGap }}>
+              const rowSlots = getNavbarDesktopRowSlots(sides, itemGap);
+              const renderSide = (itemIds, side) => (
+                <div className="flex shrink-0 items-center" style={rowSlots.clusterStyle}>
                   {itemIds.map((itemId) => {
                     const node = renderPreviewItem(itemId);
                     if (!node) return null;
                     const searchSlot = itemId === 'search'
-                      ? getNavbarSearchSlotProps(searchAlign, searchMaxWidth)
+                      ? getNavbarSearchSlotProps(
+                        resolveNavbarSearchSlotAlign(side, searchAlign),
+                        searchMaxWidth,
+                      )
                       : null;
                     return (
                       <div
                         key={itemId}
-                        className={itemId === 'search' && sides.center.includes('search')
-                          ? searchSlot.slotClassName
-                          : 'shrink-0'}
-                        style={itemId === 'search' && !sides.center.includes('search')
-                          ? { width: Number(searchMaxWidth) || 600 }
-                          : undefined}
+                        className={itemId === 'search' ? 'relative z-[70] shrink-0' : 'shrink-0'}
+                        style={itemId === 'search' ? { width: searchSlot.innerStyle.maxWidth } : undefined}
                       >
                         {node}
                       </div>
@@ -401,21 +405,28 @@ export default function NavbarPreview({
                 </div>
               );
               return (
-                <div className="flex min-w-0 items-center py-2.5" style={{ gap: rowGap }}>
-                  {renderSide(sides.left, 'shrink-0')}
-                  <div className="flex min-w-0 flex-1 items-center justify-center" style={{ gap: rowGap }}>
-                    {sides.center.map((itemId) => {
-                      const node = renderPreviewItem(itemId);
-                      if (!node) return null;
-                      const searchSlot = getNavbarSearchSlotProps(searchAlign, searchMaxWidth);
-                      return (
-                        <div key={itemId} className={searchSlot.slotClassName}>
-                          {node}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {renderSide(sides.right, 'shrink-0')}
+                <div className={rowSlots.rowClassName}>
+                  {renderSide(sides.left, 'left')}
+                  {rowSlots.hasCenter ? (
+                    <div className={rowSlots.centerClassName} style={rowSlots.centerStyle}>
+                      {sides.center.map((itemId) => {
+                        const node = renderPreviewItem(itemId);
+                        if (!node) return null;
+                        const searchSlot = getNavbarSearchSlotProps(
+                          resolveNavbarSearchSlotAlign('center', searchAlign),
+                          searchMaxWidth,
+                        );
+                        return (
+                          <div key={itemId} className={searchSlot.slotClassName}>
+                            {node}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className={rowSlots.spacerClassName} style={rowSlots.spacerStyle} aria-hidden="true" />
+                  )}
+                  {renderSide(sides.right, 'right')}
                 </div>
               );
             })()}

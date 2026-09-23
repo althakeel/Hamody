@@ -3,7 +3,7 @@ import CategorySlider from '@/models/CategorySlider';
 import { NextResponse } from 'next/server';
 import { invalidateCategorySliderCaches } from '@/lib/categorySliderCache';
 import { resolveCategorySliderAccess, buildCategorySliderFilter } from '@/lib/categorySliderAccess';
-import { normalizeCategorySliderBackground, normalizeCategorySliderSideImagePosition, normalizeCategorySliderAutoSlide, normalizeCategorySliderAutoSlideInterval } from '@/lib/categorySliderTheme';
+import { normalizeCategorySliderBackground, normalizeCategorySliderSideImagePosition, normalizeCategorySliderAutoSlide, normalizeCategorySliderAutoSlideInterval, normalizeCategorySliderShowOutOfStock } from '@/lib/categorySliderTheme';
 
 function parseAuthHeader(req) {
   const auth = req.headers.get('authorization') || req.headers.get('Authorization');
@@ -35,7 +35,7 @@ export async function PUT(req, { params }) {
       return NextResponse.json({ error: 'Slider ID is required' }, { status: 400 });
     }
 
-    const { title, subtitle, titleAr, subtitleAr, productIds, sideImage, sideImageAr, sideImagePosition, cardsPerRow, backgroundColor, autoSlide, autoSlideIntervalMs } = await req.json();
+    const { title, subtitle, titleAr, subtitleAr, productIds, sideImage, sideImageAr, sideImagePosition, cardsPerRow, backgroundColor, autoSlide, autoSlideIntervalMs, showOutOfStock } = await req.json();
     console.log('=== 💾 PUT SLIDER START ===');
     console.log('💾 Received ID:', id);
     console.log('💾 Received title:', title);
@@ -84,6 +84,7 @@ export async function PUT(req, { params }) {
       backgroundColor: normalizeCategorySliderBackground(backgroundColor),
       autoSlide: normalizeCategorySliderAutoSlide(autoSlide),
       autoSlideIntervalMs: normalizeCategorySliderAutoSlideInterval(autoSlideIntervalMs),
+      showOutOfStock: normalizeCategorySliderShowOutOfStock(showOutOfStock),
     };
 
     console.log('💾 About to update with:', JSON.stringify(updateData));
@@ -118,6 +119,7 @@ export async function PUT(req, { params }) {
           backgroundColor: normalizeCategorySliderBackground(sliderData.backgroundColor),
           autoSlide: normalizeCategorySliderAutoSlide(sliderData.autoSlide),
           autoSlideIntervalMs: normalizeCategorySliderAutoSlideInterval(sliderData.autoSlideIntervalMs),
+          showOutOfStock: normalizeCategorySliderShowOutOfStock(sliderData.showOutOfStock),
         },
       },
       { status: 200 }

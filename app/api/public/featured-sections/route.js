@@ -4,7 +4,7 @@ import Product from '@/models/Product';
 import { NextResponse } from 'next/server';
 import { getCachedData, setCachedData } from '@/lib/cache';
 import { FEATURED_SECTIONS_CACHE_KEY } from '@/lib/categorySliderCache';
-import { normalizeCategorySliderBackground, normalizeCategorySliderSideImagePosition, normalizeCategorySliderAutoSlide, normalizeCategorySliderAutoSlideInterval } from '@/lib/categorySliderTheme';
+import { normalizeCategorySliderBackground, normalizeCategorySliderSideImagePosition, normalizeCategorySliderAutoSlide, normalizeCategorySliderAutoSlideInterval, normalizeCategorySliderShowOutOfStock, filterCategorySliderProducts } from '@/lib/categorySliderTheme';
 import { sortCategorySliders, backfillCategorySliderSortOrdersIfNeeded } from '@/lib/categorySliderOrder';
 import mongoose from 'mongoose';
 import { attachProductRatings } from '@/lib/attachProductRatings';
@@ -45,7 +45,7 @@ export async function GET() {
 
     const sections = sortCategorySliders(
       await CategorySlider.find({})
-        .select('title titleAr subtitle subtitleAr sideImage sideImageAr sideImagePosition cardsPerRow backgroundColor autoSlide autoSlideIntervalMs productIds storeId sortOrder createdAt updatedAt')
+        .select('title titleAr subtitle subtitleAr sideImage sideImageAr sideImagePosition cardsPerRow backgroundColor autoSlide autoSlideIntervalMs showOutOfStock productIds storeId sortOrder createdAt updatedAt')
         .lean()
     );
 
@@ -80,7 +80,11 @@ export async function GET() {
           backgroundColor: normalizeCategorySliderBackground(section.backgroundColor),
           autoSlide: normalizeCategorySliderAutoSlide(section.autoSlide),
           autoSlideIntervalMs: normalizeCategorySliderAutoSlideInterval(section.autoSlideIntervalMs),
-          products: orderProductsByIds(products, productIds),
+          showOutOfStock: normalizeCategorySliderShowOutOfStock(section.showOutOfStock),
+          products: filterCategorySliderProducts(
+            orderProductsByIds(products, productIds),
+            section.showOutOfStock,
+          ),
         };
       }),
     };
