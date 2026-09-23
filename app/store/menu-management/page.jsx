@@ -31,10 +31,13 @@ import {
   getOffersNavButtonAppearance,
 } from '@/lib/offersPageSettings';
 import {
+  buildCategoryShopLink,
   buildParentCategoryNavMenuItems,
   filterParentCategories,
   getCategoryDisplayName,
   getCategoryRecordId,
+  isDisplayableCategoryName,
+  isLegacyPlaceholderNavItems,
   resolveStoreNavMenuItems,
 } from '@/lib/categoryNavigation';
 import { toPublicCategoryPath } from '@/lib/categorySlug';
@@ -502,6 +505,20 @@ const createMenuItem = () => ({
   },
 });
 
+const createNavItemFromCategory = (category, allCategories = []) => ({
+  name: getCategoryDisplayName(category),
+  link: buildCategoryShopLink(category, allCategories),
+  slug: String(category?.slug || '').trim(),
+  icon: '',
+  hasDropdown: false,
+  categoryId: getCategoryRecordId(category),
+  megaMenu: {
+    linkColumns: 1,
+    links: [],
+    images: [],
+  },
+});
+
 const defaultSettings = {
   navMenuEnabled: true,
   navActionsVisibility: {
@@ -658,6 +675,9 @@ export default function MenuManagementPage() {
   const [legacyNavbarItems, setLegacyNavbarItems] = useState([]);
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [translatingKey, setTranslatingKey] = useState('');
+  const [addCategoryKey, setAddCategoryKey] = useState('');
+  const [customBarLinkName, setCustomBarLinkName] = useState('');
+  const [customBarLinkUrl, setCustomBarLinkUrl] = useState('');
 
   const closeConfirmDialog = () => setConfirmDialog(null);
 
@@ -800,7 +820,8 @@ export default function MenuManagementPage() {
           ...normalizeNavbarBottomBorder(data?.navMenuStyle, defaultSettings.navMenuStyle),
         },
         navMenuItems: Array.isArray(data?.navMenuItems) ? data.navMenuItems : [],
-        navMenuUseParentCategories: Boolean(data?.navMenuUseParentCategories),
+        navMenuUseParentCategories: Boolean(data?.navMenuUseParentCategories)
+          || isLegacyPlaceholderNavItems(data?.navMenuItems),
       });
 
       if (brandingResponse.ok) {
@@ -878,62 +899,162 @@ export default function MenuManagementPage() {
     [categoryOptions],
   );
 
-  const isParentCategorySelected = (category) => {
+  const isNavItemForCategory = (item, category) => {
     const categoryId = getCategoryRecordId(category);
     const slug = String(category?.slug || '').trim().toLowerCase();
     const name = getCategoryDisplayName(category).toLowerCase();
-    return form.navMenuItems.some((item) => {
-      const itemId = String(item?.categoryId || '').trim();
-      const itemSlug = String(item?.slug || '').trim().toLowerCase();
-      const itemName = String(item?.name || '').trim().toLowerCase();
-      return (categoryId && itemId === categoryId)
-        || (slug && itemSlug === slug)
-        || (name && itemName === name);
-    });
+    const itemId = String(item?.categoryId || '').trim();
+    const itemSlug = String(item?.slug || '').trim().toLowerCase();
+    const itemName = String(item?.name || '').trim().toLowerCase();
+    return (categoryId && itemId === categoryId)
+      || (slug && itemSlug === slug)
+      || (name && itemName === name);
   };
 
-  const toggleParentCategoryChip = (category) => {
+  const isParentCategorySelected = (category) => {
+    return form.navMenuItems.some((item) => isNavItemForCategory(item, category));
+  };
+
+  const addableCategories = useMemo(
+    () => categoryOptions
+      .filter((category) => isDisplayableCategoryName(getCategoryDisplayName(category)))
+      .filter((category) => !form.navMenuItems.some((item) => isNavItemForCategory(item, category)))
+      .sort((left, right) => getCategoryDisplayName(left).localeCompare(getCategoryDisplayName(right))),
+    [categoryOptions, form.navMenuItems],
+  );
+
+  const persistCategoryBar = async (nextItems, useParents, message) => {
+    setForm((prev) => ({
+      ...prev,
+      navMenuUseParentCategories: useParents,
+      navMenuItems: nextItems,
+    }));
+    try {
+      await saveSettings({
+        navMenuUseParentCategories: useParents,
+        navMenuItems: nextItems,
+      }, message);
+    } catch (error) {
+      toast.error(error?.message || 'Failed to update category bar');
+    }
+  };
+
+  const setCategoryBarSource = async (useParents) => {
+    const nextItems = useParents
+      ? form.navMenuItems
+      : (isLegacyPlaceholderNavItems(form.navMenuItems)
+        ? buildParentCategoryNavMenuItems(categoryOptions)
+        : form.navMenuItems);
+    await persistCategoryBar(
+      nextItems,
+      useParents,
+      useParents ? 'Category bar uses parent categories' : 'Category bar uses your selected links',
+    );
+  };
+
+  const matchesNavItem = (item, match) => {
+    const itemId = String(item?.categoryId || '').trim();
+    const itemSlug = String(item?.slug || '').trim().toLowerCase();
+    const itemName = String(item?.name || '').trim().toLowerCase();
+    return (match.categoryId && itemId === match.categoryId)
+      || (match.slug && itemSlug === String(match.slug).toLowerCase())
+      || (match.name && itemName === String(match.name).toLowerCase());
+  };
+
+  const toggleParentCategoryChip = async (category) => {
     const match = parentCategoryItems.find((item) => {
       const categoryId = getCategoryRecordId(category);
       const slug = String(category?.slug || '').trim().toLowerCase();
       return (categoryId && String(item?.categoryId || '') === categoryId)
         || (slug && String(item?.slug || '').trim().toLowerCase() === slug);
-    });
-    if (!match) return;
+    }) || createNavItemFromCategory(category, categoryOptions);
+    if (!match?.name) return;
 
-    setForm((prev) => {
-      const selected = prev.navMenuItems.some((item) => {
-        const itemId = String(item?.categoryId || '').trim();
-        const itemSlug = String(item?.slug || '').trim().toLowerCase();
-        const itemName = String(item?.name || '').trim().toLowerCase();
-        return (match.categoryId && itemId === match.categoryId)
-          || (match.slug && itemSlug === String(match.slug).toLowerCase())
-          || (match.name && itemName === String(match.name).toLowerCase());
-      });
-
-      if (selected) {
-        return {
-          ...prev,
-          navMenuItems: prev.navMenuItems.filter((item) => {
-            const itemId = String(item?.categoryId || '').trim();
-            const itemSlug = String(item?.slug || '').trim().toLowerCase();
-            const itemName = String(item?.name || '').trim().toLowerCase();
-            return !((match.categoryId && itemId === match.categoryId)
-              || (match.slug && itemSlug === String(match.slug).toLowerCase())
-              || (match.name && itemName === String(match.name).toLowerCase()));
-          }),
-        };
-      }
-
-      const next = [...prev.navMenuItems, match];
+    const selected = form.navMenuItems.some((item) => matchesNavItem(item, match));
+    let nextItems;
+    if (selected) {
+      nextItems = form.navMenuItems.filter((item) => !matchesNavItem(item, match));
+    } else {
+      nextItems = [...form.navMenuItems, match];
       const order = new Map(parentCategoryItems.map((item, index) => [String(item.categoryId || item.slug || item.name), index]));
-      next.sort((left, right) => {
+      nextItems.sort((left, right) => {
         const leftKey = String(left.categoryId || left.slug || left.name);
         const rightKey = String(right.categoryId || right.slug || right.name);
         return (order.get(leftKey) ?? 999) - (order.get(rightKey) ?? 999);
       });
-      return { ...prev, navMenuItems: next };
-    });
+    }
+
+    await persistCategoryBar(
+      nextItems,
+      false,
+      selected ? 'Category hidden from the bar' : 'Category added to the bar',
+    );
+  };
+
+  const addCategoryToBar = async () => {
+    const key = String(addCategoryKey || '').trim();
+    if (!key) {
+      toast.error('Choose a category to add');
+      return;
+    }
+    const category = categoryOptions.find((item) => (
+      getCategoryRecordId(item) === key || String(item?.slug || '').trim() === key
+    ));
+    if (!category) {
+      toast.error('Category not found');
+      return;
+    }
+    if (isParentCategorySelected(category)) {
+      toast.error('That category is already on the bar');
+      return;
+    }
+    const match = parentCategoryItems.find((item) => {
+      const categoryId = getCategoryRecordId(category);
+      const slug = String(category?.slug || '').trim().toLowerCase();
+      return (categoryId && String(item?.categoryId || '') === categoryId)
+        || (slug && String(item?.slug || '').trim().toLowerCase() === slug);
+    }) || createNavItemFromCategory(category, categoryOptions);
+
+    setAddCategoryKey('');
+    await persistCategoryBar(
+      [...form.navMenuItems, match],
+      false,
+      'Category added to the bar',
+    );
+  };
+
+  const addCustomBarLink = async () => {
+    const name = String(customBarLinkName || '').trim();
+    const link = String(customBarLinkUrl || '').trim();
+    if (!name || !link) {
+      toast.error('Enter a name and a link');
+      return;
+    }
+    setCustomBarLinkName('');
+    setCustomBarLinkUrl('');
+    await persistCategoryBar(
+      [...form.navMenuItems, {
+        ...createMenuItem(),
+        name,
+        link: link.startsWith('/') || /^https?:\/\//i.test(link) ? link : `/${link}`,
+      }],
+      false,
+      'Link added to the bar',
+    );
+  };
+
+  const removeManualBarItem = async (index) => {
+    const nextItems = form.navMenuItems.filter((_, itemIndex) => itemIndex !== index);
+    await persistCategoryBar(nextItems, false, 'Item removed from the bar');
+  };
+
+  const moveManualBarItem = async (index, step) => {
+    const nextIndex = index + step;
+    if (nextIndex < 0 || nextIndex >= form.navMenuItems.length) return;
+    const nextItems = [...form.navMenuItems];
+    const [moved] = nextItems.splice(index, 1);
+    nextItems.splice(nextIndex, 0, moved);
+    await persistCategoryBar(nextItems, false, 'Category bar order updated');
   };
 
   const updateCategoryBarColor = (nextColor) => {
@@ -1378,6 +1499,7 @@ export default function MenuManagementPage() {
           setSaving(true);
           try {
             await saveSettings({
+              navMenuEnabled: form.navMenuEnabled,
               navMenuItems: form.navMenuItems,
               navMenuUseParentCategories: form.navMenuUseParentCategories,
               navMenuStyle: form.navMenuStyle,
@@ -1395,6 +1517,7 @@ export default function MenuManagementPage() {
     setSaving(true);
     try {
       await saveSettings({
+        navMenuEnabled: form.navMenuEnabled,
         navMenuItems: form.navMenuItems,
         navMenuUseParentCategories: form.navMenuUseParentCategories,
         navMenuStyle: form.navMenuStyle,
@@ -1695,8 +1818,8 @@ export default function MenuManagementPage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-slate-900">Enable desktop menu</p>
-                <p className="text-xs text-slate-500">Shown when enabled and menu has items.</p>
+                <p className="text-sm font-semibold text-slate-900">Show category bar</p>
+                <p className="text-xs text-slate-500">The black bar under the navbar with Baby, Clothing, Electronics, and the other category names.</p>
               </div>
               <label className="relative inline-flex cursor-pointer items-center">
                 <input
@@ -1708,6 +1831,13 @@ export default function MenuManagementPage() {
                 <span className="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-indigo-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-5" />
               </label>
             </div>
+            <button
+              type="button"
+              onClick={() => setActivePanel('menu')}
+              className="mt-3 text-xs font-semibold text-indigo-700 hover:text-indigo-800"
+            >
+              Auto-fill parent categories or add links on Menu links
+            </button>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
@@ -2367,6 +2497,245 @@ export default function MenuManagementPage() {
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Show category bar</p>
+              <p className="text-xs text-slate-500">
+                Turn this off to hide the black category names bar under the navbar.
+              </p>
+            </div>
+            <label className="relative inline-flex cursor-pointer items-center">
+              <input
+                type="checkbox"
+                checked={form.navMenuEnabled}
+                onChange={async (event) => {
+                  const enabled = event.target.checked;
+                  setForm((prev) => ({ ...prev, navMenuEnabled: enabled }));
+                  try {
+                    await saveSettings({
+                      navMenuEnabled: enabled,
+                    }, enabled ? 'Category bar shown' : 'Category bar hidden');
+                  } catch (error) {
+                    toast.error(error?.message || 'Failed to update category bar');
+                  }
+                }}
+                className="peer sr-only"
+              />
+              <span className="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-indigo-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-5" />
+            </label>
+          </div>
+        </div>
+
+        <div className={`rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 ${form.navMenuEnabled ? '' : 'pointer-events-none opacity-50'}`}>
+          <div>
+            <p className="text-sm font-semibold text-slate-900">Category bar links</p>
+            <p className="text-xs text-slate-500">
+              Auto-fill every parent category, or pick and add links yourself. Changes apply to the storefront.
+            </p>
+          </div>
+
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setCategoryBarSource(true)}
+              className={`rounded-xl border px-4 py-3 text-left transition ${
+                form.navMenuUseParentCategories
+                  ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-200'
+                  : 'border-slate-200 bg-white hover:border-slate-300'
+              }`}
+            >
+              <p className="text-sm font-semibold text-slate-900">Auto parent categories</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Show every top-level category that has children.
+              </p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCategoryBarSource(false)}
+              className={`rounded-xl border px-4 py-3 text-left transition ${
+                !form.navMenuUseParentCategories
+                  ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-200'
+                  : 'border-slate-200 bg-white hover:border-slate-300'
+              }`}
+            >
+              <p className="text-sm font-semibold text-slate-900">Choose manually</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Pick categories, hide some, or add your own links.
+              </p>
+            </button>
+          </div>
+
+          {form.navMenuUseParentCategories ? (
+            <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-indigo-800">
+                {parentCategoryPreview.length} parent categories
+              </p>
+              <p className="mt-1 text-xs text-indigo-900/80">
+                These names appear on the category bar automatically.
+              </p>
+              {parentCategoryPreview.length > 0 ? (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {parentCategoryPreview.map((category) => (
+                    <span
+                      key={category._id || category.slug || category.name}
+                      className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 ring-1 ring-indigo-100"
+                    >
+                      {getCategoryDisplayName(category)}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-sm text-indigo-900">
+                  No parent categories found. Add categories under Store → Categories first.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="mt-4 space-y-4">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  Parent categories
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Click to show or hide. Selected names stay on the bar.
+                </p>
+                {parentCategoryPreview.length > 0 ? (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {parentCategoryPreview.map((category) => {
+                      const selected = isParentCategorySelected(category);
+                      return (
+                        <button
+                          key={category._id || category.slug || category.name}
+                          type="button"
+                          onClick={() => toggleParentCategoryChip(category)}
+                          className={`rounded-full px-3 py-1 text-xs font-medium ring-1 transition ${
+                            selected
+                              ? 'bg-white text-slate-700 ring-indigo-100'
+                              : 'bg-slate-100 text-slate-400 ring-slate-200 line-through'
+                          }`}
+                        >
+                          {getCategoryDisplayName(category)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-slate-600">
+                    No parent categories found. Add categories under Store → Categories first.
+                  </p>
+                )}
+              </div>
+
+              <div className="rounded-xl border border-slate-200 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  Add a category
+                </p>
+                <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                  <select
+                    value={addCategoryKey}
+                    onChange={(event) => setAddCategoryKey(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  >
+                    <option value="">Select a category</option>
+                    {addableCategories.map((category) => {
+                      const value = getCategoryRecordId(category) || String(category?.slug || '');
+                      return (
+                        <option key={value} value={value}>
+                          {getCategoryDisplayName(category)}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={addCategoryToBar}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                  >
+                    <Plus size={14} />
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  Add a custom link
+                </p>
+                <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                  <input
+                    type="text"
+                    value={customBarLinkName}
+                    onChange={(event) => setCustomBarLinkName(event.target.value)}
+                    placeholder="Name, e.g. New arrivals"
+                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  />
+                  <input
+                    type="text"
+                    value={customBarLinkUrl}
+                    onChange={(event) => setCustomBarLinkUrl(event.target.value)}
+                    placeholder="/new-arrivals or https://..."
+                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={addCustomBarLink}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
+                  >
+                    <Plus size={14} />
+                    Add link
+                  </button>
+                </div>
+              </div>
+
+              {form.navMenuItems.length ? (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                    On the bar now
+                  </p>
+                  {form.navMenuItems.map((item, index) => (
+                    <div
+                      key={`${item.categoryId || item.slug || item.name || 'item'}-${index}`}
+                      className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
+                    >
+                      <p className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">
+                        {item.name || `Item ${index + 1}`}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => moveManualBarItem(index, -1)}
+                        disabled={index === 0}
+                        className="rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 disabled:opacity-40"
+                      >
+                        Up
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveManualBarItem(index, 1)}
+                        disabled={index === form.navMenuItems.length - 1}
+                        className="rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 disabled:opacity-40"
+                      >
+                        Down
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeManualBarItem(index)}
+                        className="rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500">
+                  No links yet. Pick a parent category or add one above.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className={`rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 ${form.navMenuEnabled ? '' : 'opacity-50'}`}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-semibold text-slate-900">Category bar background</p>
@@ -2436,92 +2805,6 @@ export default function MenuManagementPage() {
                 </div>
               </div>
             ) : null}
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-slate-900">Use parent categories</p>
-              <p className="text-xs text-slate-500">
-                {form.navMenuUseParentCategories
-                  ? 'Automatically build the navbar from top-level store categories. Manual navigation items are hidden.'
-                  : 'Choose which parent categories appear. The live bar keeps the same uppercase, pipe-separated design.'}
-              </p>
-            </div>
-            <label className="relative inline-flex cursor-pointer items-center">
-              <input
-                type="checkbox"
-                checked={form.navMenuUseParentCategories}
-                onChange={async (e) => {
-                  const enabled = e.target.checked;
-                  const nextItems = enabled
-                    ? form.navMenuItems
-                    : buildParentCategoryNavMenuItems(categoryOptions);
-                  setForm((prev) => ({
-                    ...prev,
-                    navMenuUseParentCategories: enabled,
-                    navMenuItems: nextItems,
-                  }));
-                  try {
-                    await saveSettings({
-                      navMenuUseParentCategories: enabled,
-                      navMenuItems: nextItems,
-                    }, enabled
-                      ? 'Using parent categories'
-                      : 'Navbar kept the same parent-category bar');
-                  } catch (error) {
-                    toast.error(error?.message || 'Failed to update menu');
-                  }
-                }}
-                className="peer sr-only"
-              />
-              <span className="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-indigo-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-5" />
-            </label>
-          </div>
-
-          <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-800">
-              {parentCategoryPreview.length} parent categories with subcategories
-            </p>
-            <p className="mt-1 text-xs text-indigo-900/80">
-              {form.navMenuUseParentCategories
-                ? 'Only top-level categories that have child categories are shown in the navbar.'
-                : 'Same navbar bar. Click a category to show or hide it. Save menu to apply.'}
-            </p>
-            {parentCategoryPreview.length > 0 ? (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {parentCategoryPreview.map((category) => {
-                  const selected = form.navMenuUseParentCategories || isParentCategorySelected(category);
-                  const label = getCategoryDisplayName(category);
-                  return form.navMenuUseParentCategories ? (
-                    <span
-                      key={category._id || category.slug || category.name}
-                      className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 ring-1 ring-indigo-100"
-                    >
-                      {label}
-                    </span>
-                  ) : (
-                    <button
-                      key={category._id || category.slug || category.name}
-                      type="button"
-                      onClick={() => toggleParentCategoryChip(category)}
-                      className={`rounded-full px-3 py-1 text-xs font-medium ring-1 transition ${
-                        selected
-                          ? 'bg-white text-slate-700 ring-indigo-100'
-                          : 'bg-indigo-100/40 text-slate-400 ring-indigo-100 line-through'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="mt-2 text-sm text-indigo-900">
-                No parent categories found. Add categories under Store → Categories first.
-              </p>
-            )}
           </div>
         </div>
 

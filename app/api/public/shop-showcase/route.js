@@ -5,11 +5,11 @@ import Category from '@/models/Category'
 import Store from '@/models/Store'
 import mongoose from 'mongoose'
 import { getCachedData, setCachedData } from '@/lib/cache'
-import { applyLargeBannerSliderDefaults } from '@/lib/shopShowcaseLargeBanners'
+import { applyLargeBannerSliderDefaults, isFullWidthBannerActive } from '@/lib/shopShowcaseLargeBanners'
 import { hasShowcaseBannerImage, serializeShowcaseImageFields } from '@/lib/showcaseBannerImages'
 import { resolvePublicStorePreference } from '@/lib/storePreferencePublic'
 
-const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v12'
+const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v14'
 
 const DEFAULT_SHOWCASE = {
   enabled: true,
@@ -192,12 +192,17 @@ function normalizeProductBanners(items) {
 }
 
 function normalize(data = {}) {
+  const fullWidthActive = isFullWidthBannerActive({
+    ...data,
+    ...applyLargeBannerSliderDefaults(data),
+  })
   return {
     ...DEFAULT_SHOWCASE,
     ...data,
-    topBannerEnabled: data.topBannerEnabled !== false,
-    bottomBannerEnabled: data.bottomBannerEnabled !== false,
-    fullWidthBannerEnabled: data.fullWidthBannerEnabled === true,
+    topBannerEnabled: fullWidthActive ? false : data.topBannerEnabled !== false,
+    bottomBannerEnabled: fullWidthActive ? false : data.bottomBannerEnabled !== false,
+    fullWidthBannerEnabled: fullWidthActive,
+    mainBannerEnabled: fullWidthActive ? false : (typeof data.mainBannerEnabled === 'boolean' ? data.mainBannerEnabled : DEFAULT_SHOWCASE.mainBannerEnabled),
     lowerFullWidthBannerEnabled: data.lowerFullWidthBannerEnabled === true,
     leftBlockBadgeText: typeof data.leftBlockBadgeText === 'string' ? data.leftBlockBadgeText.trim().slice(0, 12) : DEFAULT_SHOWCASE.leftBlockBadgeText,
     leftBlockSource: data.leftBlockSource === 'product' ? 'product' : 'category',

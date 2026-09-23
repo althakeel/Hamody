@@ -12,7 +12,7 @@ import {
 import ShowcaseProductBanners from './ShowcaseProductBanners'
 import ShowcaseLargeBannerSlider from './ShowcaseLargeBannerSlider'
 import { HOME_SECTION_CLASS } from '@/lib/storefrontCarousel'
-import { getLargeBannerSlides, normalizeFullWidthBannerHeight, normalizeLowerFullWidthBannerHeight, normalizeFullWidthBannerGap } from '@/lib/shopShowcaseLargeBanners'
+import { getLargeBannerSlides, isFullWidthBannerActive, normalizeFullWidthBannerHeight, normalizeLowerFullWidthBannerHeight, normalizeFullWidthBannerGap } from '@/lib/shopShowcaseLargeBanners'
 import { cleanDisplayText } from '@/lib/displayText'
 import { getProductPath } from '@/lib/productUrl'
 import {
@@ -522,15 +522,15 @@ export default function ShopShowcaseSection({
         || initialStoreSettings?.navMenuItems?.length,
       );
 
+      refreshShowcase();
+
       if (!hasInitialNavigation) {
         loadNavigation()
           .catch(() => {})
           .finally(() => setLoading(false));
-        refreshShowcase();
       } else {
         const scheduleNavigationRefresh = () => {
           loadNavigation().catch(() => {});
-          refreshShowcase();
         };
 
         if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
@@ -600,9 +600,9 @@ export default function ShopShowcaseSection({
     return navItems.length ? navItems : categoryMenuItems
   }, [catalogCategories, categoryMenuItems, data?.categories, language, navMenuUseParentCategories, settingsNavMenuItems, storeMenuItems])
 
-  const hideSideBanners = config?.mainBannerEnabled === true || config?.fullWidthBannerEnabled === true
-  const showTopBanner = config?.topBannerEnabled !== false && !hideSideBanners
-  const showBottomBanner = config?.bottomBannerEnabled !== false && !hideSideBanners
+  const hideSideBanners = isFullWidthBannerActive(config)
+  const showTopBanner = config?.topBannerEnabled === true && !hideSideBanners
+  const showBottomBanner = config?.bottomBannerEnabled === true && !hideSideBanners
 
   const bannerBlocks = useMemo(() => {
     const blocks = []
@@ -651,7 +651,7 @@ export default function ShopShowcaseSection({
   }, [config, showTopBanner, showBottomBanner])
 
   const fullWidthBanner = useMemo(() => {
-    if (config?.fullWidthBannerEnabled !== true) return null
+    if (!isFullWidthBannerActive(config)) return null
 
     const slides = getLargeBannerSlides(config, 'fullWidth')
     const title = config?.fullWidthBannerTitle || ''

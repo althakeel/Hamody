@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { isFullWidthBannerActive } from '@/lib/shopShowcaseLargeBanners';
 
 const DEFAULT_DESKTOP_HEIGHT = 320;
 const DEFAULT_MOBILE_HEIGHT = 100;
@@ -28,7 +29,7 @@ export default function HeroBannerSlider({ showcaseConfig: showcaseConfigProp = 
       return [];
     }
 
-    if (showcaseConfig?.fullWidthBannerEnabled === true) {
+    if (isFullWidthBannerActive(showcaseConfig)) {
       return [];
     }
 

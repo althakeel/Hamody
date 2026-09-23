@@ -425,6 +425,12 @@ export async function PUT(request) {
         || ''
     }
 
+    if (shopShowcase.fullWidthBannerEnabled === true) {
+      shopShowcase.mainBannerEnabled = false
+      shopShowcase.topBannerEnabled = false
+      shopShowcase.bottomBannerEnabled = false
+    }
+
     let preference = await StorePreference.findOne({ storeId: storeObjectId })
     if (!preference) {
       preference = new StorePreference({ storeId: storeObjectId })

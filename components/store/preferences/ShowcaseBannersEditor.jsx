@@ -1028,6 +1028,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
   const [loadedShowcase, setLoadedShowcase] = useState({})
   const formRef = useRef(form)
   const loadedShowcaseRef = useRef(loadedShowcase)
+  const saveRef = useRef(async () => {})
   formRef.current = form
   loadedShowcaseRef.current = loadedShowcase
 
@@ -1046,8 +1047,20 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
       if (enabled && (key === 'topBannerEnabled' || key === 'bottomBannerEnabled' || key === 'mainBannerEnabled')) {
         next.fullWidthBannerEnabled = false
       }
+      formRef.current = next
       return next
     })
+    if (
+      key === 'fullWidthBannerEnabled'
+      || key === 'mainBannerEnabled'
+      || key === 'topBannerEnabled'
+      || key === 'bottomBannerEnabled'
+      || key === 'lowerFullWidthBannerEnabled'
+    ) {
+      window.setTimeout(() => {
+        void saveRef.current()
+      }, 0)
+    }
   }
 
   const loadData = async () => {
@@ -1438,6 +1451,8 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
       setSaving(false)
     }
   }
+
+  saveRef.current = save
 
   if (loading) {
     return (
