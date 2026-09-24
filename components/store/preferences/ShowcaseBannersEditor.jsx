@@ -168,53 +168,48 @@ function formatImageRatio(width, height) {
 }
 
 function DesignerSizeGuide({ sizes }) {
+  const [open, setOpen] = useState(false)
   const desktop = sizes?.image || {}
   const tablet = sizes?.tabletImage || {}
   const mobile = sizes?.mobileImage || {}
   const rows = [
-    { label: 'Desktop / big screen', size: desktop },
+    { label: 'Desktop', size: desktop },
     { label: 'Tablet', size: tablet },
     { label: 'Mobile', size: mobile },
   ]
 
   return (
     <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-      <p className="text-sm font-semibold text-slate-900">Sizes for designer</p>
-      <p className="mt-1 text-xs text-slate-500">
-        Send 3 English files, plus the same 3 in Arabic if you use Arabic. Do not use 1400 — that is only the inner page width. This banner is full screen on all devices, including large monitors.
-      </p>
-      <div className="mt-3 overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <table className="w-full text-left text-xs text-slate-700">
-          <thead className="bg-slate-100 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-            <tr>
-              <th className="px-3 py-2">Screen</th>
-              <th className="px-3 py-2">Size</th>
-              <th className="px-3 py-2">Ratio</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.label} className="border-t border-slate-100">
-                <td className="px-3 py-2 font-medium">{row.label}</td>
-                <td className="px-3 py-2">
-                  {row.size.width} × {row.size.height} px
-                </td>
-                <td className="px-3 py-2">
-                  {row.size.width && row.size.height
-                    ? formatImageRatio(row.size.width, row.size.height)
-                    : '—'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-1.5">
+          {rows.map((row) => (
+            <span
+              key={row.label}
+              className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 ring-1 ring-slate-200"
+            >
+              {row.label} {row.size.width}×{row.size.height}
+            </span>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setOpen((current) => !current)}
+          className="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+        >
+          {open ? 'Hide designer notes' : 'Designer notes'}
+        </button>
       </div>
-      <ul className="mt-3 list-disc space-y-1 ps-4 text-xs text-slate-500">
-        <li>Big screens (2K / ultrawide): still use the desktop {desktop.width} × {desktop.height} file. The site stretches it to fill the monitor.</li>
-        <li>Keep the offer, person, and text in the center. Left and right edges get cropped on very wide screens.</li>
-        <li>Optional sharper 4K file: 2560 × {desktop.height} px. Not required.</li>
-        <li>Export JPG or PNG, landscape, no extra padding. Safe zone: keep important text inside the middle about 1600 px.</li>
-      </ul>
+      {open ? (
+        <div className="mt-3 border-t border-slate-200 pt-3">
+          <p className="text-xs text-slate-500">
+            Upload desktop, tablet, and mobile. Add Arabic files only if the Arabic storefront should use different art. Keep the offer in the center — wide screens crop the sides.
+          </p>
+          <ul className="mt-2 list-disc space-y-1 ps-4 text-xs text-slate-500">
+            <li>Full screen on all monitors. Do not design for 1400 px inner width.</li>
+            <li>JPG or PNG, landscape. Optional 4K: 2560 × {desktop.height} px.</li>
+          </ul>
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -312,7 +307,7 @@ function VisibilitySwitch({ enabled, onChange }) {
   )
 }
 
-function AccordionRow({ title, summary, open, onToggle, children, actions, className = '' }) {
+function AccordionRow({ title, summary, preview, open, onToggle, children, actions, className = '' }) {
   return (
     <div className={`min-w-0 rounded-xl border border-slate-200 bg-white ${className}`.trim()}>
       <div className="flex items-center gap-2 px-3 py-2.5">
@@ -322,6 +317,11 @@ function AccordionRow({ title, summary, open, onToggle, children, actions, class
           className="flex min-w-0 flex-1 items-center gap-3 text-left"
           aria-expanded={open}
         >
+          {preview ? (
+            <span className="relative h-10 w-16 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-100">
+              <Image src={preview} alt="" fill unoptimized className="object-cover" />
+            </span>
+          ) : null}
           <div className="min-w-0 flex-1">
             <div className="text-sm font-semibold text-slate-900">{title}</div>
             {summary ? <div className="truncate text-xs text-slate-500">{summary}</div> : null}
@@ -478,9 +478,19 @@ function ShowcaseSearchDropdown({
   )
 }
 
-function ShowcaseLinkAccordion(props) {
+function ShowcaseLinkAccordion({ flat = false, ...props }) {
   const [open, setOpen] = useState(false)
   const summary = getLinkSummary(props.link, props.linkType)
+
+  if (flat) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+        <p className="text-sm font-semibold text-slate-900">Where this slide goes</p>
+        <p className="mb-3 text-xs text-slate-500">{summary}</p>
+        <ShowcaseLinkFields {...props} />
+      </div>
+    )
+  }
 
   return (
     <AccordionRow
@@ -622,8 +632,8 @@ function ShowcaseLinkFields({
   )
 }
 
-function ShowcaseLocaleImageGroups({ item, recommendedSizes, onUpload, onChange }) {
-  const [openGroups, setOpenGroups] = useState({})
+function ShowcaseLocaleImageGroups({ item, recommendedSizes, onUpload, onChange, defaultOpen = 'en' }) {
+  const [openGroups, setOpenGroups] = useState({ [defaultOpen]: true })
 
   return (
     <div className="space-y-3">
@@ -684,7 +694,8 @@ function LargeBannerSlideCard({
   return (
     <AccordionRow
       title={`Slide ${index + 1}`}
-      summary={`${slideOrdinalLabel(index)} · click to ${open ? 'hide' : 'edit'}`}
+      summary={slide.image || slide.imageAr ? `${slideOrdinalLabel(index)} · click to ${open ? 'hide' : 'edit'}` : 'Upload a desktop image, then add tablet and mobile if you have them'}
+      preview={slide.image || slide.imageAr || ''}
       open={open}
       onToggle={onToggle}
       actions={(
@@ -726,6 +737,7 @@ function LargeBannerSlideCard({
           onChange={onChange}
         />
         <ShowcaseLinkAccordion
+          flat
           link={slide.link}
           linkType={slide.linkType}
           targetBlank={slide.targetBlank}
@@ -1039,7 +1051,10 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
         next.mainBannerEnabled = false
         next.topBannerEnabled = false
         next.bottomBannerEnabled = false
+        next.fullWidthBannerSliderEnabled = true
         setOpenLayoutGuide(true)
+        const firstSlide = next.fullWidthBannerSliderItems?.[0]
+        if (firstSlide?.id) setOpenFullWidthSlideId(firstSlide.id)
       }
       if (enabled && key === 'lowerFullWidthBannerEnabled') {
         setOpenLayoutGuide(true)
@@ -1071,8 +1086,13 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
         headers: { Authorization: `Bearer ${token}` }
       })
 
+      const nextForm = buildShowcaseFormState(res.data?.shopShowcase || {})
       setLoadedShowcase(res.data?.shopShowcase || {})
-      setForm(buildShowcaseFormState(res.data?.shopShowcase || {}))
+      setForm(nextForm)
+      const firstFullWidth = nextForm.fullWidthBannerSliderItems?.[0]
+      if (nextForm.fullWidthBannerEnabled && firstFullWidth?.id) {
+        setOpenFullWidthSlideId(firstFullWidth.id)
+      }
     } catch (error) {
       toast.error('Failed to load showcase banners')
       console.error(error)
@@ -1172,12 +1192,13 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
   const addLargeBannerSlide = (itemsKey, altPrefix) => {
     setForm((prev) => {
       if (prev[itemsKey].length >= 8) return prev
+      const nextSlide = createLargeBannerSlide({ alt: `${altPrefix} ${prev[itemsKey].length + 1}`, file: null })
+      if (itemsKey === 'fullWidthBannerSliderItems' && nextSlide.id) {
+        setOpenFullWidthSlideId(nextSlide.id)
+      }
       return {
         ...prev,
-        [itemsKey]: [
-          ...prev[itemsKey],
-          createLargeBannerSlide({ alt: `${altPrefix} ${prev[itemsKey].length + 1}`, file: null }),
-        ],
+        [itemsKey]: [...prev[itemsKey], nextSlide],
       }
     })
   }
@@ -1417,7 +1438,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
         fullWidthBannerCtaBgColor: String(currentForm.fullWidthBannerCtaBgColor || '').trim(),
         fullWidthBannerCtaTextColor: String(currentForm.fullWidthBannerCtaTextColor || '').trim(),
         fullWidthBannerLink: String(currentForm.fullWidthBannerLink || '/shop').trim(),
-        fullWidthBannerSliderEnabled: !!currentForm.fullWidthBannerSliderEnabled,
+        fullWidthBannerSliderEnabled: true,
         fullWidthBannerSliderInterval: Number(currentForm.fullWidthBannerSliderInterval) || 4000,
         fullWidthBannerDesktopHeight: normalizeFullWidthBannerHeight(currentForm.fullWidthBannerDesktopHeight),
         fullWidthBannerSliderItems,
@@ -1676,183 +1697,201 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
             />
           </div>
           {form.fullWidthBannerEnabled ? (
-          <div className="mt-4">
-          <p className="mb-3 text-xs font-medium text-slate-500">
-            Desktop full width · height {FULL_WIDTH_BANNER_HEIGHT_MIN}–{FULL_WIDTH_BANNER_HEIGHT_MAX} px · upload multiple images for a slider
-          </p>
+          <div className="mt-4 space-y-4">
+          <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-900">
+            <div
+              className="relative w-full"
+              style={{ height: Math.max(120, Math.round(normalizeFullWidthBannerHeight(form.fullWidthBannerDesktopHeight) * 0.4)) }}
+            >
+              {form.fullWidthBannerSliderItems?.[0]?.image || form.fullWidthBannerImage ? (
+                <Image
+                  src={form.fullWidthBannerSliderItems?.[0]?.image || form.fullWidthBannerImage}
+                  alt="Full width banner preview"
+                  fill
+                  unoptimized
+                  className="object-cover"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-slate-300">
+                  Upload slide 1 to see a live preview
+                </div>
+              )}
+            </div>
+          </div>
 
           <DesignerSizeGuide sizes={fullWidthSizes} />
 
-          <label className="mb-4 block max-w-md">
-            <span className="mb-1 block text-sm font-medium text-slate-700">
-              Desktop height ({normalizeFullWidthBannerHeight(form.fullWidthBannerDesktopHeight)} px)
-            </span>
-            <input
-              type="range"
-              min={FULL_WIDTH_BANNER_HEIGHT_MIN}
-              max={FULL_WIDTH_BANNER_HEIGHT_MAX}
-              step="10"
-              className="w-full"
-              value={normalizeFullWidthBannerHeight(form.fullWidthBannerDesktopHeight)}
-              onChange={(event) => setForm((prev) => ({
-                ...prev,
-                fullWidthBannerDesktopHeight: normalizeFullWidthBannerHeight(event.target.value),
-              }))}
-            />
-            <input
-              type="number"
-              min={FULL_WIDTH_BANNER_HEIGHT_MIN}
-              max={FULL_WIDTH_BANNER_HEIGHT_MAX}
-              step="10"
-              className="mt-2 w-28 rounded-lg border border-slate-300 px-3 py-2"
-              value={normalizeFullWidthBannerHeight(form.fullWidthBannerDesktopHeight)}
-              onChange={(event) => setForm((prev) => ({
-                ...prev,
-                fullWidthBannerDesktopHeight: normalizeFullWidthBannerHeight(event.target.value),
-              }))}
-            />
-          </label>
-
-          <label className="mb-4 block max-w-xs">
-            <span className="mb-1 block text-sm font-medium text-slate-700">Slide interval (ms)</span>
-            <input
-              type="number"
-              min="2000"
-              max="15000"
-              step="500"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2"
-              value={form.fullWidthBannerSliderInterval}
-              onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerSliderInterval: Number(event.target.value) || 4000 }))}
-            />
-          </label>
-
-          <div className="space-y-3">
-            {(form.fullWidthBannerSliderItems || []).map((slide, index) => {
-              const slideId = slide.id || `full-width-slide-${index}`
-              return (
-                <LargeBannerSlideCard
-                  key={slideId}
-                  slide={slide}
-                  index={index}
-                  total={form.fullWidthBannerSliderItems.length}
-                  recommendedSizes={fullWidthSizes}
-                  open={openFullWidthSlideId === slideId}
-                  onToggle={() => setOpenFullWidthSlideId((current) => (current === slideId ? null : slideId))}
-                  onMove={(direction) => moveLargeBannerSlide('fullWidthBannerSliderItems', index, direction)}
-                  onRemove={() => removeLargeBannerSlide('fullWidthBannerSliderItems', index)}
-                  onUpload={(field, file) => uploadLargeBannerSlideField('fullWidthBannerSliderItems', index, field, file)}
-                  onChange={(field, value) => updateLargeBannerSlide('fullWidthBannerSliderItems', index, field, value)}
-                  categoryOptions={categoryOptions}
-                  productOptions={productOptions}
-                />
-              )
-            })}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">
+                Height · {normalizeFullWidthBannerHeight(form.fullWidthBannerDesktopHeight)} px
+              </span>
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {[350, 400, 450, 500].map((height) => (
+                  <button
+                    key={height}
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, fullWidthBannerDesktopHeight: height }))}
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      normalizeFullWidthBannerHeight(form.fullWidthBannerDesktopHeight) === height
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {height}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="range"
+                min={FULL_WIDTH_BANNER_HEIGHT_MIN}
+                max={FULL_WIDTH_BANNER_HEIGHT_MAX}
+                step="10"
+                className="w-full accent-emerald-600"
+                value={normalizeFullWidthBannerHeight(form.fullWidthBannerDesktopHeight)}
+                onChange={(event) => setForm((prev) => ({
+                  ...prev,
+                  fullWidthBannerDesktopHeight: normalizeFullWidthBannerHeight(event.target.value),
+                }))}
+              />
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">
+                Slide every {Math.round((Number(form.fullWidthBannerSliderInterval) || 4000) / 1000)} seconds
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {[3, 4, 5, 6, 8, 10].map((seconds) => (
+                  <button
+                    key={seconds}
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, fullWidthBannerSliderInterval: seconds * 1000 }))}
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      Math.round((Number(form.fullWidthBannerSliderInterval) || 4000) / 1000) === seconds
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {seconds}s
+                  </button>
+                ))}
+              </div>
+            </label>
           </div>
 
-          <button
-            type="button"
-            onClick={() => addLargeBannerSlide('fullWidthBannerSliderItems', 'Full-width banner')}
-            disabled={(form.fullWidthBannerSliderItems || []).length >= 8}
-            className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Plus size={16} />
-            Add full-width banner slide
-          </button>
-          <p className="mt-2 text-xs text-slate-500">
-            Use the Sizes for designer table above. Desktop {fullWidthSizes.image.width} × {fullWidthSizes.image.height} px, tablet {fullWidthSizes.tabletImage.width} × {fullWidthSizes.tabletImage.height} px, mobile {fullWidthSizes.mobileImage.width} × {fullWidthSizes.mobileImage.height} px.
-          </p>
-
-          <AccordionRow
-            title="Full-width banner text"
-            summary={`Optional title, subtitle, and button · click to ${openFullWidthText ? 'hide' : 'edit'}`}
-            open={openFullWidthText}
-            onToggle={() => setOpenFullWidthText((current) => !current)}
-            className="mt-4"
-          >
-          <div className="grid gap-3">
-            <p className="text-xs text-slate-500">
-              Off by default. Enable an option to show it on the banner. If all are off, only the image is shown.
+          <div>
+            <p className="mb-2 text-sm font-semibold text-slate-900">Slides</p>
+            <p className="mb-3 text-xs text-slate-500">
+              Add one or more images. They rotate on the live homepage — this is not a static file.
             </p>
-            <label className="inline-flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
-              <span className="text-sm text-slate-700">Enable title</span>
-              <input
-                type="checkbox"
-                checked={!!form.fullWidthBannerTitleEnabled}
-                onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerTitleEnabled: event.target.checked }))}
-              />
-            </label>
-            {form.fullWidthBannerTitleEnabled ? (
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Title</span>
-                <input
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2"
-                  value={form.fullWidthBannerTitle}
-                  onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerTitle: event.target.value }))}
-                />
-              </label>
-            ) : null}
-
-            <label className="inline-flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
-              <span className="text-sm text-slate-700">Enable subtitle</span>
-              <input
-                type="checkbox"
-                checked={!!form.fullWidthBannerSubtitleEnabled}
-                onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerSubtitleEnabled: event.target.checked }))}
-              />
-            </label>
-            {form.fullWidthBannerSubtitleEnabled ? (
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Subtitle</span>
-                <input
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2"
-                  value={form.fullWidthBannerSubtitle}
-                  onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerSubtitle: event.target.value }))}
-                />
-              </label>
-            ) : null}
-
-            <label className="inline-flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
-              <span className="text-sm text-slate-700">Enable button</span>
-              <input
-                type="checkbox"
-                checked={!!form.fullWidthBannerCtaEnabled}
-                onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerCtaEnabled: event.target.checked }))}
-              />
-            </label>
-            {form.fullWidthBannerCtaEnabled ? (
-              <>
-                <label className="block">
-                  <span className="mb-1 block text-sm font-medium text-slate-700">Button text</span>
-                  <input
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2"
-                    value={form.fullWidthBannerCtaText}
-                    onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerCtaText: event.target.value }))}
+            <div className="space-y-3">
+              {(form.fullWidthBannerSliderItems || []).map((slide, index) => {
+                const slideId = slide.id || `full-width-slide-${index}`
+                return (
+                  <LargeBannerSlideCard
+                    key={slideId}
+                    slide={slide}
+                    index={index}
+                    total={form.fullWidthBannerSliderItems.length}
+                    recommendedSizes={fullWidthSizes}
+                    open={openFullWidthSlideId === slideId}
+                    onToggle={() => setOpenFullWidthSlideId((current) => (current === slideId ? null : slideId))}
+                    onMove={(direction) => moveLargeBannerSlide('fullWidthBannerSliderItems', index, direction)}
+                    onRemove={() => removeLargeBannerSlide('fullWidthBannerSliderItems', index)}
+                    onUpload={(field, file) => uploadLargeBannerSlideField('fullWidthBannerSliderItems', index, field, file)}
+                    onChange={(field, value) => updateLargeBannerSlide('fullWidthBannerSliderItems', index, field, value)}
+                    categoryOptions={categoryOptions}
+                    productOptions={productOptions}
                   />
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="block">
-                    <span className="mb-1 block text-sm font-medium text-slate-700">Button BG</span>
-                    <input
-                      type="color"
-                      className="h-10 w-full rounded-lg border border-slate-300"
-                      value={form.fullWidthBannerCtaBgColor}
-                      onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerCtaBgColor: event.target.value }))}
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="mb-1 block text-sm font-medium text-slate-700">Button Text</span>
-                    <input
-                      type="color"
-                      className="h-10 w-full rounded-lg border border-slate-300"
-                      value={form.fullWidthBannerCtaTextColor}
-                      onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerCtaTextColor: event.target.value }))}
-                    />
-                  </label>
-                </div>
-              </>
-            ) : null}
+                )
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={() => addLargeBannerSlide('fullWidthBannerSliderItems', 'Full-width banner')}
+              disabled={(form.fullWidthBannerSliderItems || []).length >= 8}
+              className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Plus size={16} />
+              Add slide
+            </button>
           </div>
-          </AccordionRow>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-sm font-semibold text-slate-900">Optional text on the banner</p>
+            <p className="mt-1 text-xs text-slate-500">Leave these off to show only the image.</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <label className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                <span className="flex items-center justify-between text-sm text-slate-700">
+                  Title
+                  <input
+                    type="checkbox"
+                    checked={!!form.fullWidthBannerTitleEnabled}
+                    onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerTitleEnabled: event.target.checked }))}
+                  />
+                </span>
+                {form.fullWidthBannerTitleEnabled ? (
+                  <input
+                    className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    value={form.fullWidthBannerTitle}
+                    onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerTitle: event.target.value }))}
+                    placeholder="Title"
+                  />
+                ) : null}
+              </label>
+              <label className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                <span className="flex items-center justify-between text-sm text-slate-700">
+                  Subtitle
+                  <input
+                    type="checkbox"
+                    checked={!!form.fullWidthBannerSubtitleEnabled}
+                    onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerSubtitleEnabled: event.target.checked }))}
+                  />
+                </span>
+                {form.fullWidthBannerSubtitleEnabled ? (
+                  <input
+                    className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    value={form.fullWidthBannerSubtitle}
+                    onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerSubtitle: event.target.value }))}
+                    placeholder="Subtitle"
+                  />
+                ) : null}
+              </label>
+              <label className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                <span className="flex items-center justify-between text-sm text-slate-700">
+                  Button
+                  <input
+                    type="checkbox"
+                    checked={!!form.fullWidthBannerCtaEnabled}
+                    onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerCtaEnabled: event.target.checked }))}
+                  />
+                </span>
+                {form.fullWidthBannerCtaEnabled ? (
+                  <div className="mt-2 space-y-2">
+                    <input
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      value={form.fullWidthBannerCtaText}
+                      onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerCtaText: event.target.value }))}
+                      placeholder="Button text"
+                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        className="h-9 w-12 rounded border border-slate-300"
+                        value={form.fullWidthBannerCtaBgColor}
+                        onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerCtaBgColor: event.target.value }))}
+                      />
+                      <input
+                        type="color"
+                        className="h-9 w-12 rounded border border-slate-300"
+                        value={form.fullWidthBannerCtaTextColor}
+                        onChange={(event) => setForm((prev) => ({ ...prev, fullWidthBannerCtaTextColor: event.target.value }))}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+              </label>
+            </div>
+          </div>
           </div>
           ) : null}
         </div>

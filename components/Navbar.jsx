@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, ShoppingCart, Menu, X, HeartIcon, StarIcon, ArrowLeft, LogOut, User, MapPin, Package, ChevronDown, Grid3x3, Heart, Shield, History, Flame, Sparkles, Camera } from "lucide-react";
+import { Search, ShoppingCart, Menu, X, HeartIcon, StarIcon, ArrowLeft, LogOut, User, MapPin, Package, ChevronDown, Grid3x3, Heart, Shield, History, Flame, Sparkles, Camera, Phone } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
@@ -53,6 +53,11 @@ import NewProductTagBadge from '@/components/NewProductTagBadge';
 import { secureSignOut } from '@/lib/authClient';
 import { showStorefrontActionToast } from '@/lib/storefrontActionToast';
 import { DEFAULT_NAVBAR_LAYOUT, applyUnifiedNavbarText, getNavbarCategoriesButtonAppearance, getNavbarCategoriesButtonLabel, getNavbarDesktopRowSlots, getNavbarSearchAppearance, getNavbarSearchSlotProps, getUnifiedNavbarFontId, getUnifiedNavbarTextCss, groupNavbarItemsBySide, isNavbarItemVisible, normalizeNavbarItemOrder, normalizeNavbarLayout, resolveNavbarItemSide, resolveNavbarSearchSlotAlign, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';
+import {
+  DEFAULT_NAVBAR_PHONE,
+  resolveNavbarPhone,
+} from '@/lib/storeContact';
+import { DEFAULT_NAVBAR_LANGUAGE, normalizeNavbarLanguage } from '@/lib/storefrontMarket';
 
 const NAVBAR_SELECTED_ADDRESS_KEY = 'navbarSelectedAddressId';
 const NAVBAR_APPEARANCE_CACHE_KEY = 'navbarAppearanceCache';
@@ -202,7 +207,11 @@ const Navbar = () => {
     orders: true,
     wishlist: true,
     cart: true,
+    phone: true,
+    language: true,
   });
+  const [navbarPhone, setNavbarPhone] = useState(DEFAULT_NAVBAR_PHONE);
+  const [navbarLanguage, setNavbarLanguage] = useState(DEFAULT_NAVBAR_LANGUAGE);
   const [signInOpen, setSignInOpen] = useState(false);
   const [signInMode, setSignInMode] = useState('login');
   const [firebaseUser, setFirebaseUser] = useState(undefined);
@@ -563,10 +572,32 @@ const Navbar = () => {
         orders: raw.orders !== false,
         wishlist: raw.wishlist !== false,
         cart: raw.cart !== false,
+        phone: raw.phone !== false,
+        language: raw.language !== false,
       };
       setNavActionsVisibility(next);
       try {
         window.sessionStorage.setItem('nav:actions:visibility:v1', JSON.stringify(next));
+      } catch {
+        // Ignore storage failures.
+      }
+    };
+
+    const applyNavbarPhone = (raw = {}) => {
+      const next = resolveNavbarPhone(raw);
+      setNavbarPhone(next);
+      try {
+        window.sessionStorage.setItem('nav:phone:v1', JSON.stringify(next));
+      } catch {
+        // Ignore storage failures.
+      }
+    };
+
+    const applyNavbarLanguage = (raw = {}) => {
+      const next = normalizeNavbarLanguage(raw);
+      setNavbarLanguage(next);
+      try {
+        window.sessionStorage.setItem('nav:language:v1', JSON.stringify(next));
       } catch {
         // Ignore storage failures.
       }
@@ -580,12 +611,30 @@ const Navbar = () => {
       // Ignore cache parse failures.
     }
 
+    try {
+      const rawPhone = window.sessionStorage.getItem('nav:phone:v1');
+      const parsedPhone = rawPhone ? JSON.parse(rawPhone) : null;
+      if (parsedPhone && typeof parsedPhone === 'object') applyNavbarPhone(parsedPhone);
+    } catch {
+      // Ignore cache parse failures.
+    }
+
+    try {
+      const rawLanguage = window.sessionStorage.getItem('nav:language:v1');
+      const parsedLanguage = rawLanguage ? JSON.parse(rawLanguage) : null;
+      if (parsedLanguage && typeof parsedLanguage === 'object') applyNavbarLanguage(parsedLanguage);
+    } catch {
+      // Ignore cache parse failures.
+    }
+
     const loadVisibility = async () => {
       try {
         const response = await fetch('/api/store/settings', { cache: 'no-store' });
         if (!response.ok) return;
         const data = await response.json();
         if (data?.navActionsVisibility) applyVisibility(data.navActionsVisibility);
+        if (data?.navbarPhone) applyNavbarPhone(data.navbarPhone);
+        applyNavbarLanguage(data?.navbarLanguage || {});
       } catch {
         // Keep cached values if the request fails.
       }
@@ -597,10 +646,22 @@ const Navbar = () => {
       applyVisibility(event?.detail || {});
     };
 
+    const handlePhoneUpdate = (event) => {
+      applyNavbarPhone(event?.detail || {});
+    };
+
+    const handleLanguageAppearanceUpdate = (event) => {
+      applyNavbarLanguage(event?.detail || {});
+    };
+
     window.addEventListener('navActionsVisibilityUpdated', handleVisibilityUpdate);
+    window.addEventListener('navbarPhoneUpdated', handlePhoneUpdate);
+    window.addEventListener('navbarLanguageUpdated', handleLanguageAppearanceUpdate);
     window.addEventListener('navMenuUpdated', loadVisibility);
     return () => {
       window.removeEventListener('navActionsVisibilityUpdated', handleVisibilityUpdate);
+      window.removeEventListener('navbarPhoneUpdated', handlePhoneUpdate);
+      window.removeEventListener('navbarLanguageUpdated', handleLanguageAppearanceUpdate);
       window.removeEventListener('navMenuUpdated', loadVisibility);
     };
   }, []);
@@ -1924,6 +1985,7 @@ const Navbar = () => {
                 <Link href="/dashboard/profile" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm" onClick={() => setUserDropdownOpen(false)}>{t('navbar.profile')}</Link>
                 <Link href="/dashboard/security" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm" onClick={() => setUserDropdownOpen(false)}>Security</Link>
                 <Link href="/dashboard/orders" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm" onClick={() => setUserDropdownOpen(false)}>{t('navbar.orders')}</Link>
+                <Link href="/track-order" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm" onClick={() => setUserDropdownOpen(false)}>{t('navbar.trackOrder')}</Link>
                 {storefrontWalletEnabled ? (
                   <Link href="/wallet" className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 transition text-sm" onClick={() => setUserDropdownOpen(false)}>
                     <Image src={WalletIcon} alt="" width={18} height={18} className="shrink-0 object-contain" aria-hidden="true" />
@@ -1990,6 +2052,42 @@ const Navbar = () => {
         ariaLabel: t('navbar.cart'),
         tone: 'light',
       });
+    }
+
+    if (itemId === 'phone') {
+      if (!navActionsVisibility.phone) return null;
+      const phone = resolveNavbarPhone(navbarPhone, storefrontLanguage);
+      return (
+        <a
+          href={phone.tel}
+          dir="ltr"
+          className="relative inline-flex shrink-0 items-center gap-1.5 px-1 py-1 text-white transition hover:opacity-85"
+          aria-label={`${phone.displayLabel || t('navbar.support')} ${phone.number}`}
+        >
+          <Phone size={18} strokeWidth={1.7} aria-hidden="true" />
+          <span className="flex min-w-0 flex-col leading-[1.05]">
+            <span className="text-[13px] font-bold tabular-nums leading-none" dir="ltr">
+              {phone.short}
+            </span>
+            {phone.displayLabel ? (
+              <span className="mt-0.5 whitespace-nowrap text-[10px] font-medium leading-none text-white/85">
+                {phone.displayLabel}
+              </span>
+            ) : null}
+          </span>
+        </a>
+      );
+    }
+
+    if (itemId === 'language') {
+      if (!navActionsVisibility.language) return null;
+      return (
+        <StorefrontLanguageMarketSwitch
+          initialLanguage={storefrontLanguage}
+          tone="onDark"
+          appearance={navbarLanguage}
+        />
+      );
     }
 
     const extraButton = desktopExtraButtons.find((button) => button.id === itemId);
@@ -2103,10 +2201,34 @@ const Navbar = () => {
           </form>
 
           <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
-          <StorefrontLanguageMarketSwitch
-            initialLanguage={storefrontLanguage}
-            tone={mobileNavbarUsesBrandColor ? 'onDark' : 'onLight'}
-          />
+          {navActionsVisibility.phone ? (() => {
+            const phone = resolveNavbarPhone(navbarPhone, storefrontLanguage);
+            const mobilePhoneClass = mobileNavbarUsesBrandColor
+              ? 'text-white hover:bg-white/12'
+              : 'text-gray-900 hover:bg-gray-100';
+            return (
+              <a
+                href={phone.tel}
+                dir="ltr"
+                className={`inline-flex h-9 shrink-0 flex-col items-center justify-center rounded-md px-1 transition ${mobilePhoneClass}`}
+                aria-label={`${phone.displayLabel || t('navbar.support')} ${phone.number}`}
+              >
+                <Phone size={16} strokeWidth={1.7} aria-hidden="true" />
+                {phone.displayLabel ? (
+                  <span className="mt-0.5 text-[8px] font-semibold leading-none">
+                    {phone.displayLabel}
+                  </span>
+                ) : null}
+              </a>
+            );
+          })() : null}
+          {navActionsVisibility.language ? (
+            <StorefrontLanguageMarketSwitch
+              initialLanguage={storefrontLanguage}
+              tone={mobileNavbarUsesBrandColor ? 'onDark' : 'onLight'}
+              appearance={navbarLanguage}
+            />
+          ) : null}
           {!isHomePage && (
             firebaseUser ? (
               renderAccountMenuTrigger({
@@ -2196,12 +2318,6 @@ const Navbar = () => {
                     </div>
                   );
                 })}
-                {side === 'right' ? (
-                  <StorefrontLanguageMarketSwitch
-                    initialLanguage={storefrontLanguage}
-                    tone="onDark"
-                  />
-                ) : null}
               </div>
             );
             return (
@@ -2354,6 +2470,10 @@ const Navbar = () => {
                       <Link href="/dashboard/orders" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50">
                         <Package size={17} className="text-slate-500" />
                         <span>{t('navbar.myOrders')}</span>
+                      </Link>
+                      <Link href="/track-order" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50">
+                        <Package size={17} className="text-slate-500" />
+                        <span>{t('navbar.trackOrder')}</span>
                       </Link>
                       <Link href="/browse-history" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50">
                         <History size={17} className="text-slate-500" />

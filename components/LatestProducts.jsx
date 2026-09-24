@@ -7,6 +7,7 @@ import ProductCarousel from '@/components/ProductCarousel'
 import { HOME_SECTION_CLASS, PRODUCT_CARD_CELL_CLASS } from '@/lib/storefrontCarousel'
 import { useAuth } from '@/lib/useAuth'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
+import { filterStorefrontInStockProducts } from '@/lib/productVisibility'
 import Title from './Title'
 
 const DEFAULT_ITEMS_PER_ROW = 6
@@ -38,10 +39,10 @@ const BestSelling = ({
   initialSectionDescriptionAr = null,
   initialLayout = null,
 }) => {
-  const hasInitialProducts = Array.isArray(initialProducts) && initialProducts.length > 0
+  const hasInitialProducts = Array.isArray(initialProducts) && filterStorefrontInStockProducts(initialProducts).length > 0
   const { getToken, user, loading: authLoading } = useAuth()
   const { t, isArabic } = useStorefrontI18n()
-  const [featuredProducts, setFeaturedProducts] = useState(hasInitialProducts ? initialProducts : [])
+  const [featuredProducts, setFeaturedProducts] = useState(hasInitialProducts ? filterStorefrontInStockProducts(initialProducts) : [])
   const [isLoading, setIsLoading] = useState(!hasInitialProducts)
   const [error, setError] = useState(null)
   const [sectionTitle, setSectionTitle] = useState(initialSectionTitle || 'Craziest sale of the year!')
@@ -132,8 +133,10 @@ const BestSelling = ({
           setSectionDescriptionAr(featuredData.sectionDescriptionAr)
         }
 
-        const resolvedProducts = (Array.isArray(featuredData.products) ? featuredData.products : [])
-          .filter((product) => product?.published !== false)
+        const resolvedProducts = filterStorefrontInStockProducts(
+          (Array.isArray(featuredData.products) ? featuredData.products : [])
+            .filter((product) => product?.published !== false)
+        )
         if (resolvedProducts.length > 0) {
           featuredProductsLengthRef.current = resolvedProducts.length
           setFeaturedProducts(resolvedProducts)
@@ -155,7 +158,7 @@ const BestSelling = ({
           timeout: 15000
         })
         if (controller.signal.aborted) return
-        const products = productsData.products || []
+        const products = filterStorefrontInStockProducts(productsData.products || [])
 
         featuredProductsLengthRef.current = products.length
         setFeaturedProducts(products)

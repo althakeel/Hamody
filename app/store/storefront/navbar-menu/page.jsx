@@ -66,7 +66,7 @@ export default function NavbarMenuPage() {
     const [previewMenu, setPreviewMenu] = useState({
         navMenuEnabled: true,
         navMenuItems: [],
-        navActionsVisibility: { wishlist: true, cart: true, orders: true },
+        navActionsVisibility: { wishlist: true, cart: true, orders: true, phone: true, language: true },
     })
 
     useEffect(() => {
@@ -101,6 +101,8 @@ export default function NavbarMenuPage() {
                         orders: settings?.navActionsVisibility?.orders !== false,
                         wishlist: settings?.navActionsVisibility?.wishlist !== false,
                         cart: settings?.navActionsVisibility?.cart !== false,
+                        phone: settings?.navActionsVisibility?.phone !== false,
+                        language: settings?.navActionsVisibility?.language !== false,
                     },
                 })
             } catch (error) {

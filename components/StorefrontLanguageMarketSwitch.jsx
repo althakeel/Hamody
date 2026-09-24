@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, ChevronDown } from 'lucide-react';
 import { useStorefrontMarket } from '@/lib/useStorefrontMarket';
+import { DEFAULT_NAVBAR_LANGUAGE, normalizeNavbarLanguage, resolveNavbarLanguageTrigger } from '@/lib/storefrontMarket';
 import CurrencySymbol from '@/components/CurrencySymbol';
 import {
   STOREFRONT_LANGUAGE_EVENT,
@@ -24,8 +25,10 @@ const GCC_MARKETS = [
 export default function StorefrontLanguageMarketSwitch({
   initialLanguage = 'en',
   tone = 'onDark',
+  appearance = DEFAULT_NAVBAR_LANGUAGE,
 }) {
   const { market: storefrontMarket, setMarketCode } = useStorefrontMarket();
+  const [languageAppearance, setLanguageAppearance] = useState(() => normalizeNavbarLanguage(appearance));
   const [storefrontLanguage, setStorefrontLanguage] = useState(() => normalizeStorefrontLanguage(initialLanguage));
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -56,6 +59,52 @@ export default function StorefrontLanguageMarketSwitch({
     if (suppressToggleRef.current) return;
     setDropdownOpen((value) => !value);
   };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const applyAppearance = (raw = {}) => {
+      const next = normalizeNavbarLanguage(raw);
+      setLanguageAppearance(next);
+      try {
+        window.sessionStorage.setItem('nav:language:v1', JSON.stringify(next));
+      } catch {
+        // Ignore storage failures.
+      }
+    };
+
+    try {
+      const cached = window.sessionStorage.getItem('nav:language:v1');
+      const parsed = cached ? JSON.parse(cached) : null;
+      if (parsed && typeof parsed === 'object') applyAppearance(parsed);
+    } catch {
+      // Ignore cache parse failures.
+    }
+
+    const loadAppearance = async () => {
+      try {
+        const response = await fetch('/api/store/settings', { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data?.navbarLanguage) applyAppearance(data.navbarLanguage);
+      } catch {
+        // Keep current values if the request fails.
+      }
+    };
+
+    void loadAppearance();
+
+    const handleAppearanceUpdate = (event) => {
+      applyAppearance(event?.detail || {});
+    };
+
+    window.addEventListener('navbarLanguageUpdated', handleAppearanceUpdate);
+    window.addEventListener('navMenuUpdated', loadAppearance);
+    return () => {
+      window.removeEventListener('navbarLanguageUpdated', handleAppearanceUpdate);
+      window.removeEventListener('navMenuUpdated', loadAppearance);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -157,6 +206,7 @@ export default function StorefrontLanguageMarketSwitch({
 
   const isArabic = storefrontLanguage === 'ar';
   const languageShort = isArabic ? 'AR' : 'EN';
+  const triggerMark = resolveNavbarLanguageTrigger(languageAppearance, storefrontMarket?.code);
   const activeMarket = GCC_MARKETS.find((market) => market.code === storefrontMarket?.code) || GCC_MARKETS[0];
   const activeCountryName = isArabic ? activeMarket.countryNameAr : activeMarket.countryName;
   const onDark = tone === 'onDark';
@@ -192,7 +242,16 @@ export default function StorefrontLanguageMarketSwitch({
         aria-haspopup="true"
         aria-label={`${activeCountryName}, ${languageShort}`}
       >
-        <span className="text-sm leading-none" aria-hidden="true">{activeMarket.flag}</span>
+        {triggerMark.iconUrl ? (
+          <img
+            src={triggerMark.iconUrl}
+            alt=""
+            className="h-5 w-5 shrink-0 rounded-sm object-contain"
+            aria-hidden="true"
+          />
+        ) : (
+          <span className="text-sm leading-none" aria-hidden="true">{triggerMark.flag}</span>
+        )}
         <span>{languageShort}</span>
         <ChevronDown className="h-3 w-3 shrink-0 opacity-80" />
       </button>

@@ -60,7 +60,12 @@ export async function GET() {
 
     const products = allProductIds.length
       ? await attachProductRatings(
-          await Product.find({ _id: { $in: allProductIds }, published: { $ne: false } })
+          await Product.find({
+            _id: { $in: allProductIds },
+            published: { $ne: false },
+            inStock: { $ne: false },
+            stockQuantity: { $not: { $lte: 0 } },
+          })
             .select('name nameAr slug price mrp AED images category inStock stockQuantity fastDelivery freeShippingEligible useProductsPath imageAspectRatio legacySourceId createdAt')
             .lean()
         )
@@ -83,7 +88,7 @@ export async function GET() {
           showOutOfStock: normalizeCategorySliderShowOutOfStock(section.showOutOfStock),
           products: filterCategorySliderProducts(
             orderProductsByIds(products, productIds),
-            section.showOutOfStock,
+            false,
           ),
         };
       }),

@@ -8,8 +8,9 @@ import { getCachedData, setCachedData } from '@/lib/cache'
 import { applyLargeBannerSliderDefaults, isFullWidthBannerActive } from '@/lib/shopShowcaseLargeBanners'
 import { hasShowcaseBannerImage, serializeShowcaseImageFields } from '@/lib/showcaseBannerImages'
 import { resolvePublicStorePreference } from '@/lib/storePreferencePublic'
+import { STOREFRONT_IN_STOCK_FILTER, STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility'
 
-const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v16'
+const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v17'
 
 const DEFAULT_SHOWCASE = {
   enabled: true,
@@ -303,13 +304,21 @@ export async function GET() {
 
     const [sectionProducts, products, categories] = await Promise.all([
       validSectionProductIds.length
-        ? Product.find({ _id: { $in: validSectionProductIds }, published: { $ne: false } })
-            .select('_id name slug images price AED')
+        ? Product.find({
+            _id: { $in: validSectionProductIds },
+            ...STOREFRONT_PUBLISHED_FILTER,
+            ...STOREFRONT_IN_STOCK_FILTER,
+          })
+            .select('_id name slug images price AED inStock stockQuantity')
             .lean()
         : Promise.resolve([]),
       validProductIds.length
-        ? Product.find({ _id: { $in: validProductIds }, published: { $ne: false } })
-            .select('_id name slug images price AED')
+        ? Product.find({
+            _id: { $in: validProductIds },
+            ...STOREFRONT_PUBLISHED_FILTER,
+            ...STOREFRONT_IN_STOCK_FILTER,
+          })
+            .select('_id name slug images price AED inStock stockQuantity')
             .lean()
         : Promise.resolve([]),
       validCategoryIds.length

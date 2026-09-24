@@ -4,6 +4,9 @@ import NavbarMenuSettings from '@/models/NavbarMenuSettings';
 import { getAuth } from '@/lib/firebase-admin';
 import { deleteCacheKey } from '@/lib/cache';
 import { DEFAULT_NAVBAR_BOTTOM_BORDER, normalizeNavbarBottomBorder } from '@/lib/navbarLayoutSettings';
+import { DEFAULT_NAVBAR_PHONE, normalizeNavbarPhone } from '@/lib/storeContact';
+import { DEFAULT_NAVBAR_LANGUAGE, normalizeNavbarLanguage } from '@/lib/storefrontMarket';
+import { DEFAULT_BNPL_TOP_BAR, normalizeBnplTopBar } from '@/lib/bnplTopBar';
 
 const DEFAULT_SETTINGS = {
   navMenuEnabled: true,
@@ -12,7 +15,11 @@ const DEFAULT_SETTINGS = {
     orders: true,
     wishlist: true,
     cart: true,
+    phone: true,
+    language: true,
   },
+  navbarPhone: { ...DEFAULT_NAVBAR_PHONE },
+  navbarLanguage: { ...DEFAULT_NAVBAR_LANGUAGE },
   navMenuStyle: {
     barBackgroundColor: '#000000',
     categoryBarBackgroundColor: '#000000',
@@ -31,6 +38,8 @@ const DEFAULT_SETTINGS = {
   },
   navMenuItems: [],
   navMenuUseParentCategories: false,
+  navMenuHoverDropdown: true,
+  bnplTopBar: { ...DEFAULT_BNPL_TOP_BAR },
 };
 
 let inMemorySettings = {
@@ -47,6 +56,8 @@ const normalizeVisibility = (value) => {
     orders: boolOrDefault(input.orders, true),
     wishlist: boolOrDefault(input.wishlist, true),
     cart: boolOrDefault(input.cart, true),
+    phone: boolOrDefault(input.phone, true),
+    language: boolOrDefault(input.language, true),
   };
 };
 
@@ -98,6 +109,18 @@ const normalizeMegaMenu = (megaMenu) => {
         .map((entry) => ({
           name: String(entry?.name || '').trim(),
           link: String(entry?.link || '').trim(),
+          categoryId: String(entry?.categoryId || '').trim(),
+          slug: String(entry?.slug || '').trim(),
+          children: Array.isArray(entry?.children)
+            ? entry.children
+                .map((child) => ({
+                  name: String(child?.name || '').trim(),
+                  link: String(child?.link || '').trim(),
+                  categoryId: String(child?.categoryId || '').trim(),
+                  slug: String(child?.slug || '').trim(),
+                }))
+                .filter((child) => child.name || child.link)
+            : [],
         }))
         .filter((entry) => entry.name || entry.link)
     : [];
@@ -114,6 +137,7 @@ const normalizeMegaMenu = (megaMenu) => {
 
   return {
     linkColumns,
+    manualLinks: Boolean(source.manualLinks),
     links,
     images,
   };
@@ -167,7 +191,11 @@ const mergeWithDefaults = (raw) => {
   return {
     navMenuEnabled: boolOrDefault(raw?.navMenuEnabled, boolOrDefault(raw?.enabled, DEFAULT_SETTINGS.navMenuEnabled)),
     navMenuUseParentCategories: boolOrDefault(raw?.navMenuUseParentCategories, DEFAULT_SETTINGS.navMenuUseParentCategories),
+    navMenuHoverDropdown: boolOrDefault(raw?.navMenuHoverDropdown, DEFAULT_SETTINGS.navMenuHoverDropdown),
+    bnplTopBar: normalizeBnplTopBar(raw?.bnplTopBar, DEFAULT_SETTINGS.bnplTopBar),
     navActionsVisibility: normalizeVisibility(raw?.navActionsVisibility),
+    navbarPhone: normalizeNavbarPhone(raw?.navbarPhone),
+    navbarLanguage: normalizeNavbarLanguage(raw?.navbarLanguage),
     navMenuStyle: normalizeMenuStyle(raw?.navMenuStyle, DEFAULT_SETTINGS.navMenuStyle),
     navMenuItems,
   };
@@ -240,12 +268,33 @@ export async function PUT(request) {
       navMenuUseParentCategories: incoming.navMenuUseParentCategories == null
         ? current.navMenuUseParentCategories
         : boolOrDefault(incoming.navMenuUseParentCategories, current.navMenuUseParentCategories),
+      navMenuHoverDropdown: incoming.navMenuHoverDropdown == null
+        ? current.navMenuHoverDropdown
+        : boolOrDefault(incoming.navMenuHoverDropdown, current.navMenuHoverDropdown),
+      bnplTopBar: incoming.bnplTopBar == null
+        ? current.bnplTopBar
+        : normalizeBnplTopBar({
+            ...current.bnplTopBar,
+            ...incoming.bnplTopBar,
+          }, current.bnplTopBar),
       navActionsVisibility: incoming.navActionsVisibility == null
         ? current.navActionsVisibility
         : {
             ...current.navActionsVisibility,
             ...normalizeVisibility(incoming.navActionsVisibility),
           },
+      navbarPhone: incoming.navbarPhone == null
+        ? current.navbarPhone
+        : normalizeNavbarPhone({
+            ...current.navbarPhone,
+            ...incoming.navbarPhone,
+          }),
+      navbarLanguage: incoming.navbarLanguage == null
+        ? current.navbarLanguage
+        : normalizeNavbarLanguage({
+            ...current.navbarLanguage,
+            ...incoming.navbarLanguage,
+          }),
       navMenuStyle: incoming.navMenuStyle == null
         ? current.navMenuStyle
         : normalizeMenuStyle(incoming.navMenuStyle, current.navMenuStyle),
@@ -265,7 +314,11 @@ export async function PUT(request) {
           storeId: userId,
           navMenuEnabled: next.navMenuEnabled,
           navMenuUseParentCategories: next.navMenuUseParentCategories,
+          navMenuHoverDropdown: next.navMenuHoverDropdown,
+          bnplTopBar: next.bnplTopBar,
           navActionsVisibility: next.navActionsVisibility,
+          navbarPhone: next.navbarPhone,
+          navbarLanguage: next.navbarLanguage,
           navMenuStyle: next.navMenuStyle,
           navMenuItems: next.navMenuItems,
           enabled: next.navMenuEnabled,
@@ -304,12 +357,33 @@ export async function PUT(request) {
         navMenuUseParentCategories: incoming.navMenuUseParentCategories == null
           ? current.navMenuUseParentCategories
           : boolOrDefault(incoming.navMenuUseParentCategories, current.navMenuUseParentCategories),
+        navMenuHoverDropdown: incoming.navMenuHoverDropdown == null
+          ? current.navMenuHoverDropdown
+          : boolOrDefault(incoming.navMenuHoverDropdown, current.navMenuHoverDropdown),
+        bnplTopBar: incoming.bnplTopBar == null
+          ? normalizeBnplTopBar(current.bnplTopBar)
+          : normalizeBnplTopBar({
+              ...normalizeBnplTopBar(current.bnplTopBar),
+              ...incoming.bnplTopBar,
+            }),
         navActionsVisibility: incoming.navActionsVisibility == null
           ? normalizeVisibility(current.navActionsVisibility)
           : {
               ...normalizeVisibility(current.navActionsVisibility),
               ...normalizeVisibility(incoming.navActionsVisibility),
             },
+        navbarPhone: incoming.navbarPhone == null
+          ? normalizeNavbarPhone(current.navbarPhone)
+          : normalizeNavbarPhone({
+              ...current.navbarPhone,
+              ...incoming.navbarPhone,
+            }),
+        navbarLanguage: incoming.navbarLanguage == null
+          ? normalizeNavbarLanguage(current.navbarLanguage)
+          : normalizeNavbarLanguage({
+              ...current.navbarLanguage,
+              ...incoming.navbarLanguage,
+            }),
         navMenuStyle: incoming.navMenuStyle == null
           ? normalizeMenuStyle(current.navMenuStyle, DEFAULT_SETTINGS.navMenuStyle)
           : normalizeMenuStyle(incoming.navMenuStyle, normalizeMenuStyle(current.navMenuStyle, DEFAULT_SETTINGS.navMenuStyle)),

@@ -2,14 +2,14 @@ import dbConnect from "@/lib/mongodb";
 import HomeSection from "@/models/HomeSection";
 import Product from "@/models/Product";
 import { NextResponse } from "next/server";
-import { STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility';
+import { STOREFRONT_IN_STOCK_FILTER, STOREFRONT_PUBLISHED_FILTER, isStorefrontProductInStock } from '@/lib/productVisibility';
 
-const PRODUCT_SELECT = '_id name price mrp AED images inStock';
+const PRODUCT_SELECT = '_id name price mrp AED images inStock stockQuantity';
 
 function mapSectionProducts(productIds, productMap) {
   return (productIds || [])
     .map((id) => productMap.get(String(id)))
-    .filter(Boolean)
+    .filter((product) => product && isStorefrontProductInStock(product))
     .map((product) => ({
       ...product,
       id: product._id.toString(),
@@ -48,6 +48,7 @@ export async function GET() {
       ? await Product.find({
           _id: { $in: allProductIds },
           ...STOREFRONT_PUBLISHED_FILTER,
+          ...STOREFRONT_IN_STOCK_FILTER,
         }).select(PRODUCT_SELECT).lean()
       : [];
 

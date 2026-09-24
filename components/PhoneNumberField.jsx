@@ -27,6 +27,7 @@ export default function PhoneNumberField({
   showHint = true,
   showLabel = true,
   inputKey,
+  autoComplete = 'tel-national',
 }) {
   const resolvedOptions = countryOptions.length > 0 ? countryOptions : UAE_PHONE_CODE_OPTIONS;
   const resolvedPhoneCode = resolvedOptions.some((c) => c.code === phoneCode)
@@ -81,7 +82,7 @@ export default function PhoneNumberField({
           pattern={resolvedPhoneCode === '+91' || resolvedPhoneCode === '+92' ? '[0-9]{10}' : '[0-9]{9,10}'}
           title={getPhoneValidationMessage(resolvedPhoneCode)}
           required={required}
-          autoComplete="tel"
+          autoComplete={autoComplete}
         />
       </div>
       {showHint ? (

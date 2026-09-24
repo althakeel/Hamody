@@ -3,6 +3,7 @@
 import { useAuth } from '@/lib/useAuth';
 import Loading from '@/components/Loading';
 import { applyPreviewNewStock, applyPreviewVariantStock } from '@/lib/applyMainStock';
+import { parseSkuStockExcelFile, downloadSkuStockExcelTemplate, downloadInventoryPreviewExcel } from '@/lib/parseSkuStockExcel';
 import axios from 'axios';
 import Image from 'next/image';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -18,6 +19,7 @@ import {
   Save,
   Search,
   TrendingUp,
+  Upload,
   X,
 } from 'lucide-react';
 
@@ -266,11 +268,15 @@ export default function StoreInventoryPage() {
   const [bulkSkuSaving, setBulkSkuSaving] = useState(false);
   const [bulkSkuPreviewing, setBulkSkuPreviewing] = useState(false);
   const [bulkSkuPreview, setBulkSkuPreview] = useState(null);
+  const [showBulkSkuPreviewModal, setShowBulkSkuPreviewModal] = useState(false);
   const [bulkSkuResult, setBulkSkuResult] = useState(null);
+  const [bulkExcelName, setBulkExcelName] = useState('');
+  const [bulkExcelRows, setBulkExcelRows] = useState([]);
   const [sheetStatus, setSheetStatus] = useState(null);
   const [sheetSyncing, setSheetSyncing] = useState(false);
   const searchBoxRef = useRef(null);
   const suggestTimerRef = useRef(null);
+  const bulkExcelInputRef = useRef(null);
 
   const fetchSelectedProduct = useCallback(async (productId, fallbackItem = null) => {
     const id = String(productId || '').trim();
@@ -414,10 +420,46 @@ export default function StoreInventoryPage() {
     return parsePositiveAddAmount(draft.stockToAdd) > 0;
   }, [drafts]);
 
-  const validateBulkSkuForm = () => {
+  const resetBulkSkuPreview = () => {
+    setBulkSkuPreview(null);
+    setBulkSkuResult(null);
+    setShowBulkSkuPreviewModal(false);
+  };
+
+  const downloadBulkSkuNotFoundSheet = async () => {
+    const missing = Array.isArray(bulkSkuPreview?.missing) ? bulkSkuPreview.missing : [];
+    if (!bulkExcelRows.length && !missing.length) {
+      toast.error('Upload a sheet first, then download the not-found rows');
+      return;
+    }
+    try {
+      const baseName = String(bulkExcelName || 'inventory-sheet')
+        .replace(/\.(xlsx|xls|csv)$/i, '')
+        .replace(/[^\w\- ]+/g, '')
+        .trim() || 'inventory-sheet';
+      await downloadInventoryPreviewExcel({
+        rows: bulkExcelRows,
+        missingSkus: missing,
+        fileName: `${baseName}-not-found.xlsx`,
+      });
+      toast.success('Downloaded the uploaded sheet. Not-found SKUs are marked in red.');
+    } catch (error) {
+      toast.error(error?.message || 'Failed to download the sheet');
+    }
+  };
+
+  const closeBulkSkuPreviewModal = () => {
+    if (bulkSkuSaving || bulkSkuPreviewing) return;
+    setShowBulkSkuPreviewModal(false);
+  };
+
+  const buildBulkSkuPayload = () => {
+    if (bulkExcelRows.length) {
+      return { rows: bulkExcelRows, skus: bulkExcelRows.map((row) => row.sku) };
+    }
     const stockQuantity = Number(bulkSkuStock);
     if (!String(bulkSkuText || '').trim()) {
-      toast.error('Paste one or more SKUs');
+      toast.error('Paste SKUs or upload an Excel file');
       return null;
     }
     if (!Number.isFinite(stockQuantity) || stockQuantity < 0 || !Number.isInteger(stockQuantity)) {
@@ -427,10 +469,13 @@ export default function StoreInventoryPage() {
     return { skus: bulkSkuText, stockQuantity };
   };
 
-  const handleBulkSkuPreview = async () => {
-    const payload = validateBulkSkuForm();
+  const handleBulkSkuPreview = async (payloadOverride) => {
+    const payload = payloadOverride?.rows || payloadOverride?.skus
+      ? payloadOverride
+      : buildBulkSkuPayload();
     if (!payload) return;
     try {
+      setShowBulkSkuPreviewModal(true);
       setBulkSkuPreviewing(true);
       setBulkSkuResult(null);
       const token = await getToken();
@@ -492,8 +537,29 @@ export default function StoreInventoryPage() {
     });
   };
 
+  const handleBulkExcelUpload = async (file) => {
+    if (!file) return;
+    try {
+      const rows = await parseSkuStockExcelFile(file);
+      setBulkExcelRows(rows);
+      setBulkExcelName(file.name);
+      setBulkSkuText(rows.map((row) => row.sku).join(', '));
+      setBulkSkuStock('');
+      resetBulkSkuPreview();
+      toast.success(`Loaded ${rows.length} SKU row(s) from Excel`);
+      await handleBulkSkuPreview({
+        rows,
+        skus: rows.map((row) => row.sku),
+      });
+    } catch (error) {
+      setBulkExcelRows([]);
+      setBulkExcelName('');
+      toast.error(error?.message || 'Failed to read Excel file');
+    }
+  };
+
   const handleBulkSkuConfirm = async () => {
-    const payload = validateBulkSkuForm();
+    const payload = buildBulkSkuPayload();
     if (!payload) return;
     if (!bulkSkuPreview?.matches?.length) {
       toast.error('Preview the SKUs first');
@@ -502,32 +568,42 @@ export default function StoreInventoryPage() {
     const updates = [];
     for (const row of bulkSkuPreview.matches) {
       const stockQuantity = parsePreviewStock(row.newStock);
-      if (stockQuantity == null) {
+      const supplierName = String(row.supplierName || '').trim();
+      const brand = String(row.brand || '').trim();
+      if (stockQuantity == null && !supplierName && !brand) {
         toast.error('Enter a whole-number stock (0 or more) in the New column');
         return;
       }
       const variants = [];
-      for (const variant of row.variants || []) {
-        const displayed = variant.isBundle && !variant.isFamilyRow
-          ? variant.newPacks
-          : variant.newStock;
-        if (parsePreviewStock(displayed) == null) {
-          toast.error(`Enter a whole-number stock for ${variant.label || 'each variant'}`);
-          return;
+      if (stockQuantity != null) {
+        for (const variant of row.variants || []) {
+          const displayed = variant.isBundle && !variant.isFamilyRow
+            ? variant.newPacks
+            : variant.newStock;
+          if (parsePreviewStock(displayed) == null) {
+            toast.error(`Enter a whole-number stock for ${variant.label || 'each variant'}`);
+            return;
+          }
+          const stock = parsePreviewStock(variant.newStock);
+          if (stock == null) {
+            toast.error(`Enter a whole-number stock for ${variant.label || 'each variant'}`);
+            return;
+          }
+          const indexes = Array.isArray(variant.indexes) && variant.indexes.length
+            ? variant.indexes
+            : [variant.index];
+          indexes.forEach((index) => {
+            variants.push({ index, stock });
+          });
         }
-        const stock = parsePreviewStock(variant.newStock);
-        if (stock == null) {
-          toast.error(`Enter a whole-number stock for ${variant.label || 'each variant'}`);
-          return;
-        }
-        const indexes = Array.isArray(variant.indexes) && variant.indexes.length
-          ? variant.indexes
-          : [variant.index];
-        indexes.forEach((index) => {
-          variants.push({ index, stock });
-        });
       }
-      updates.push({ productId: row.productId, stockQuantity, variants });
+      updates.push({
+        productId: row.productId,
+        stockQuantity,
+        variants,
+        supplierName,
+        brand,
+      });
     }
     try {
       setBulkSkuSaving(true);
@@ -541,6 +617,7 @@ export default function StoreInventoryPage() {
       });
       setBulkSkuResult(data);
       setBulkSkuPreview(null);
+      setShowBulkSkuPreviewModal(false);
       await fetchHistory(1);
       toast.success(data.message || 'Stock updated');
     } catch (error) {
@@ -650,6 +727,35 @@ export default function StoreInventoryPage() {
   }, [getToken]);
 
   useEffect(() => { fetchSheetStatus(); }, [fetchSheetStatus]);
+
+  const applyFromGoogleSheet = async () => {
+    try {
+      setSheetSyncing(true);
+      const token = await getToken();
+      const { data } = await axios.post('/api/store/inventory/google-sheet', { apply: true }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const rows = Array.isArray(data?.rows) ? data.rows : [];
+      if (!rows.length) {
+        toast.error(data?.message || 'No SKU rows found in the Google Sheet');
+        return;
+      }
+      setBulkExcelRows(rows);
+      setBulkExcelName('Google Sheet');
+      setBulkSkuText(rows.map((row) => row.sku).join(', '));
+      setBulkSkuStock('');
+      resetBulkSkuPreview();
+      toast.success(data.message || `Loaded ${rows.length} row(s) from Google Sheet`);
+      await handleBulkSkuPreview({
+        rows,
+        skus: rows.map((row) => row.sku),
+      });
+    } catch (error) {
+      toast.error(error?.response?.data?.error || error.message || 'Failed to read Google Sheet');
+    } finally {
+      setSheetSyncing(false);
+    }
+  };
 
   const syncGoogleSheet = async () => {
     try {
@@ -779,8 +885,18 @@ export default function StoreInventoryPage() {
             className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <FileSpreadsheet size={16} />
-            {sheetSyncing ? 'Syncing...' : 'Sync Google Sheet'}
+            {sheetSyncing ? 'Working…' : 'Sync Google Sheet'}
           </button>
+          {sheetStatus?.configured ? (
+            <button
+              type="button"
+              onClick={applyFromGoogleSheet}
+              disabled={sheetSyncing || bulkSkuPreviewing || bulkSkuSaving}
+              className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-800 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Apply from Google Sheet
+            </button>
+          ) : null}
           <button type="button" onClick={openExportModal} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800">
             <Download size={16} /> Excel
           </button>
@@ -799,15 +915,15 @@ export default function StoreInventoryPage() {
 
       {sheetStatus && !sheetStatus.configured ? (
         <p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          Google Sheet view is not connected yet. Add GOOGLE_SHEETS_SPREADSHEET_ID in .env and share the sheet with
+          Google Sheet is not connected yet. Add GOOGLE_SHEETS_SPREADSHEET_ID in .env and share the sheet with
           {' '}{sheetStatus.clientEmail || 'the service account email'} as Editor. Share staff as Viewer.
-          The sheet updates automatically a few seconds after you change stock, cost, products, or suppliers. Extra tabs: Product Cost, Nexso, and Suppliers. You can still Sync now.
+          Sync writes store data to the sheet. Apply from Google Sheet updates stock, supplier, and brand only — SKU and product name stay the same. Extra tabs: Product Cost, Nexso, and Suppliers.
         </p>
       ) : sheetStatus?.clientEmail ? (
         <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-          If Sync says the caller does not have permission, open the Google Sheet, click Share, add
+          Inventory columns: SKU, PRODUCT NAME, STOCK, SUPPLIER NAME, BRAND. Apply from Google Sheet updates only stock, supplier, and brand. A missing supplier name is created. If Sync says the caller does not have permission, share
           {' '}<span className="font-mono text-slate-800">{sheetStatus.clientEmail}</span>{' '}
-          as Editor, then click Sync Google Sheet again. Staff can stay as Viewer.
+          as Editor. Staff can stay as Viewer.
         </p>
       ) : null}
 
@@ -826,20 +942,39 @@ export default function StoreInventoryPage() {
         <div className="mb-3">
           <h2 className="text-sm font-semibold text-slate-900">Set main stock by SKU</h2>
           <p className="mt-0.5 text-xs text-slate-500">
-            Paste SKUs, enter the new stock, then Preview. Variant products show each option only — bundle packs share that stock. Bundle-only products split main stock by pack size. Stock changes only after you confirm.
+            Paste SKUs and one stock, or upload a sheet with SKU, PRODUCT NAME, STOCK, SUPPLIER NAME, and BRAND (up to 10,000). SKU and product name stay the same. Only stock, supplier, and brand update. A missing supplier name is created so you can add details later. Review the popup and confirm — nothing saves before that.
           </p>
         </div>
         <textarea
           value={bulkSkuText}
           onChange={(e) => {
             setBulkSkuText(e.target.value);
-            setBulkSkuPreview(null);
-            setBulkSkuResult(null);
+            setBulkExcelRows([]);
+            setBulkExcelName('');
+            resetBulkSkuPreview();
           }}
           rows={3}
           placeholder="ST4006, ST4007, ST4008"
           className="w-full rounded-lg border border-slate-200 px-3 py-2 font-mono text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
         />
+        {bulkExcelName ? (
+          <p className="mt-2 inline-flex items-center gap-2 text-xs text-emerald-700">
+            <FileSpreadsheet size={14} />
+            {bulkExcelName} · {bulkExcelRows.length} SKU(s) with stock
+            <button
+              type="button"
+              onClick={() => {
+                setBulkExcelRows([]);
+                setBulkExcelName('');
+                setBulkSkuText('');
+                resetBulkSkuPreview();
+              }}
+              className="font-semibold text-slate-500 hover:text-slate-800"
+            >
+              Clear file
+            </button>
+          </p>
+        ) : null}
         <div className="mt-3 flex flex-wrap items-end gap-3">
           <label className="min-w-[140px]">
             <span className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-500">Main stock</span>
@@ -848,115 +983,51 @@ export default function StoreInventoryPage() {
               min="0"
               step="1"
               value={bulkSkuStock}
+              disabled={bulkExcelRows.length > 0}
               onChange={(e) => {
                 setBulkSkuStock(e.target.value);
-                setBulkSkuPreview(null);
-                setBulkSkuResult(null);
+                resetBulkSkuPreview();
               }}
-              placeholder="e.g. 20"
-              className="w-32 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400"
+              placeholder={bulkExcelRows.length ? 'From sheet' : 'e.g. 20'}
+              className="w-32 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 disabled:bg-slate-50 disabled:text-slate-400"
             />
           </label>
           <button
             type="button"
-            onClick={handleBulkSkuPreview}
+            onClick={() => handleBulkSkuPreview()}
             disabled={bulkSkuPreviewing || bulkSkuSaving}
             className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
           >
             {bulkSkuPreviewing ? 'Loading preview…' : 'Preview'}
           </button>
+          <button
+            type="button"
+            onClick={() => bulkExcelInputRef.current?.click()}
+            className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
+          >
+            <Upload size={16} />
+            Upload Excel
+          </button>
+          <button
+            type="button"
+            onClick={() => downloadSkuStockExcelTemplate()}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            <Download size={16} />
+            Excel template
+          </button>
+          <input
+            ref={bulkExcelInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = '';
+              handleBulkExcelUpload(file);
+            }}
+          />
         </div>
-
-        {bulkSkuPreview ? (
-          <div className="mt-4 overflow-hidden rounded-lg border border-slate-200">
-            <div className="bg-slate-50 px-3 py-2 text-sm text-slate-700">{bulkSkuPreview.message}</div>
-            {bulkSkuPreview.matches?.length ? (
-              <div className="max-h-96 overflow-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-white text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                    <tr>
-                      <th className="px-3 py-2">SKU</th>
-                      <th className="px-3 py-2">Product</th>
-                      <th className="px-3 py-2 text-right">Current</th>
-                      <th className="px-3 py-2 text-right">New</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {bulkSkuPreview.matches.map((row) => (
-                      <Fragment key={row.productId}>
-                        <tr className="border-t border-slate-100">
-                          <td className="px-3 py-2 font-mono text-xs text-slate-600">{row.sku}</td>
-                          <td className="px-3 py-2 text-slate-800">{row.name}</td>
-                          <td className="px-3 py-2 text-right text-slate-500">{row.currentStock}</td>
-                          <td className="px-3 py-2 text-right">
-                            <StockNewInput
-                              value={row.newStock}
-                              disabled={bulkSkuSaving}
-                              onChange={(value) => handlePreviewMainStockChange(row.productId, value)}
-                            />
-                          </td>
-                        </tr>
-                        {(row.variants || []).map((variant) => (
-                          <tr key={`${row.productId}-${variant.index}`} className="border-t border-slate-50 bg-slate-50/70">
-                            <td className="px-3 py-1.5 ps-6 font-mono text-[11px] text-slate-400">
-                              {variant.sku || '—'}
-                            </td>
-                            <td className="px-3 py-1.5 text-[11px] text-slate-600">
-                              <span className="font-medium text-slate-700">{variant.label}</span>
-                              {variant.isBundle && !variant.isFamilyRow ? (
-                                <span className="ms-2 text-slate-400">
-                                  {variant.bundleQty > 1 ? `${variant.bundleQty} units / pack` : 'packs'}
-                                </span>
-                              ) : null}
-                            </td>
-                            <td className="px-3 py-1.5 text-right text-[11px] text-slate-400">
-                              {variant.isBundle && !variant.isFamilyRow
-                                ? variant.currentPacks
-                                : variant.currentStock}
-                            </td>
-                            <td className="px-3 py-1.5 text-right">
-                              <StockNewInput
-                                value={variant.isBundle && !variant.isFamilyRow
-                                  ? variant.newPacks
-                                  : variant.newStock}
-                                disabled={bulkSkuSaving}
-                                onChange={(value) => handlePreviewVariantStockChange(row.productId, variant.index, value)}
-                              />
-                            </td>
-                          </tr>
-                        ))}
-                      </Fragment>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : null}
-            {Array.isArray(bulkSkuPreview.missing) && bulkSkuPreview.missing.length ? (
-              <p className="border-t border-amber-100 bg-amber-50 px-3 py-2 font-mono text-xs text-amber-800">
-                Not found: {bulkSkuPreview.missing.join(', ')}
-              </p>
-            ) : null}
-            <div className="flex flex-wrap gap-2 border-t border-slate-100 bg-white px-3 py-3">
-              <button
-                type="button"
-                onClick={handleBulkSkuConfirm}
-                disabled={bulkSkuSaving || !bulkSkuPreview.matches?.length}
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-40"
-              >
-                <Save size={16} />
-                {bulkSkuSaving ? 'Updating…' : `Confirm and set stock (${bulkSkuPreview.matches?.length || 0})`}
-              </button>
-              <button
-                type="button"
-                onClick={() => setBulkSkuPreview(null)}
-                disabled={bulkSkuSaving}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : null}
 
         {bulkSkuResult ? (
           <p className="mt-3 text-sm text-slate-600">
@@ -1087,6 +1158,165 @@ export default function StoreInventoryPage() {
           </div>
         ) : null}
       </div>
+
+      {showBulkSkuPreviewModal ? (
+        <div
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 p-4"
+          onClick={closeBulkSkuPreviewModal}
+        >
+          <div
+            className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between border-b border-zinc-100 px-5 py-4">
+              <div>
+                <h2 className="text-base font-semibold text-zinc-900">Preview inventory changes</h2>
+                <p className="mt-0.5 text-xs text-zinc-500">
+                  SKU and product name stay the same. Only stock, supplier, and brand will update after you confirm.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeBulkSkuPreviewModal}
+                disabled={bulkSkuSaving}
+                className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 disabled:opacity-40"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-auto px-5 py-4">
+              {bulkSkuPreviewing && !bulkSkuPreview ? (
+                <p className="py-10 text-center text-sm text-slate-500">Loading preview…</p>
+              ) : bulkSkuPreview?.matches?.length ? (
+                <>
+                  <p className="mb-3 text-sm text-slate-600">{bulkSkuPreview.message}</p>
+                  <table className="w-full min-w-[920px] text-sm">
+                    <thead className="sticky top-0 bg-white text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                      <tr>
+                        <th className="pb-2 pr-3">SKU</th>
+                        <th className="pb-2 pr-3">Product</th>
+                        <th className="pb-2 pr-3">Supplier</th>
+                        <th className="pb-2 pr-3">Brand</th>
+                        <th className="pb-2 pr-3 text-right">Current</th>
+                        <th className="pb-2 text-right">New</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bulkSkuPreview.matches.map((row) => (
+                        <Fragment key={row.productId}>
+                          <tr className="border-t border-slate-100">
+                            <td className="py-2 pr-3 font-mono text-xs text-slate-600">{row.sku || '—'}</td>
+                            <td className="py-2 pr-3 font-medium text-slate-800">{row.name || '—'}</td>
+                            <td className="py-2 pr-3 text-xs text-slate-600">
+                              {row.currentSupplier || '—'}
+                              {row.supplierName ? (
+                                <span className="mt-0.5 block text-emerald-700">
+                                  → {row.newSupplier}{row.createSupplier ? ' (new)' : ''}
+                                </span>
+                              ) : null}
+                            </td>
+                            <td className="py-2 pr-3 text-xs text-slate-600">
+                              {row.currentBrand || '—'}
+                              {row.brand && row.brand !== row.currentBrand ? (
+                                <span className="mt-0.5 block text-emerald-700">→ {row.newBrand}</span>
+                              ) : null}
+                            </td>
+                            <td className="py-2 pr-3 text-right text-slate-500">{row.currentStock}</td>
+                            <td className="py-2 text-right">
+                              <StockNewInput
+                                value={row.newStock}
+                                disabled={bulkSkuSaving}
+                                onChange={(value) => handlePreviewMainStockChange(row.productId, value)}
+                              />
+                            </td>
+                          </tr>
+                          {(row.variants || []).map((variant) => (
+                            <tr key={`${row.productId}-${variant.index}`} className="bg-slate-50/60">
+                              <td className="py-1.5 pr-3 pl-4 font-mono text-[11px] text-slate-400">{variant.sku || '—'}</td>
+                              <td className="py-1.5 pr-3 text-xs text-slate-500">{variant.label}</td>
+                              <td className="py-1.5 pr-3" />
+                              <td className="py-1.5 pr-3" />
+                              <td className="py-1.5 pr-3 text-right text-xs text-slate-400">
+                                {variant.isBundle && !variant.isFamilyRow
+                                  ? `${variant.currentPacks} packs`
+                                  : variant.currentStock}
+                              </td>
+                              <td className="py-1.5 text-right">
+                                <StockNewInput
+                                  value={variant.isBundle && !variant.isFamilyRow ? variant.newPacks : variant.newStock}
+                                  disabled={bulkSkuSaving}
+                                  onChange={(value) => handlePreviewVariantStockChange(row.productId, variant.index, value)}
+                                />
+                              </td>
+                            </tr>
+                          ))}
+                        </Fragment>
+                      ))}
+                    </tbody>
+                  </table>
+                  {Array.isArray(bulkSkuPreview.missing) && bulkSkuPreview.missing.length ? (
+                    <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-3">
+                      <p className="text-sm font-semibold text-red-800">
+                        Not found ({bulkSkuPreview.missing.length}) — marked in red on the download
+                      </p>
+                      <p className="mt-1 font-mono text-xs text-red-700">
+                        {bulkSkuPreview.missing.join(', ')}
+                      </p>
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <div className="space-y-3">
+                  <p className="py-4 text-center text-sm text-slate-500">
+                    {bulkSkuPreview?.message || 'No matching products found. Stock was not changed.'}
+                  </p>
+                  {Array.isArray(bulkSkuPreview?.missing) && bulkSkuPreview.missing.length ? (
+                    <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-3">
+                      <p className="text-sm font-semibold text-red-800">
+                        Not found ({bulkSkuPreview.missing.length}) — marked in red on the download
+                      </p>
+                      <p className="mt-1 font-mono text-xs text-red-700">
+                        {bulkSkuPreview.missing.join(', ')}
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-zinc-100 px-5 py-4">
+              <button
+                type="button"
+                onClick={downloadBulkSkuNotFoundSheet}
+                disabled={bulkSkuSaving || (!bulkExcelRows.length && !bulkSkuPreview?.missing?.length)}
+                className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-800 hover:bg-red-100 disabled:opacity-40"
+              >
+                <Download size={16} />
+                Download sheet (not found in red)
+              </button>
+              <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={closeBulkSkuPreviewModal}
+                disabled={bulkSkuSaving}
+                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleBulkSkuConfirm}
+                disabled={bulkSkuSaving || bulkSkuPreviewing || !bulkSkuPreview?.matches?.length}
+                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-40"
+              >
+                {bulkSkuSaving ? 'Updating…' : 'Confirm'}
+              </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {showExportModal ? (
         <div

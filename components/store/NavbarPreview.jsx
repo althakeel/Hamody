@@ -1,9 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, Heart, Menu, Search, ShoppingCart, Package, User } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Heart, Menu, Phone, Search, ShoppingCart, Package, User } from 'lucide-react';
+import { DEFAULT_NAVBAR_PHONE, resolveNavbarPhone } from '@/lib/storeContact';
+import { DEFAULT_NAVBAR_LANGUAGE, resolveNavbarLanguageTrigger } from '@/lib/storefrontMarket';
 import OffersNavLabel from '@/components/OffersNavLabel';
 import { resolveStoreNavMenuItems } from '@/lib/categoryNavigation';
+import { DEFAULT_BNPL_TOP_BAR, resolveBnplPartners } from '@/lib/bnplTopBar';
 import { STORE1920_LOGO_PATH } from '@/lib/brandLogo';
 import {
   DEFAULT_OFFERS_NAV_LABEL,
@@ -14,7 +17,7 @@ import {
   normalizeOffersNavStyle,
   splitOffersNavLabel,
 } from '@/lib/offersPageSettings';
-import { applyUnifiedNavbarText, getNavbarArrangeItems, getNavbarBottomBorderStyle, getNavbarCategoriesButtonAppearance, getNavbarCategoriesButtonLabel, getNavbarDesktopRowSlots, getNavbarSearchAppearance, getNavbarSearchSlotProps, getUnifiedNavbarFontId, getUnifiedNavbarTextCss, groupNavbarItemsBySide, resolveNavbarItemSide, resolveNavbarSearchSlotAlign, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';
+import { applyUnifiedNavbarText, getNavbarArrangeItems, getNavbarBottomBorderStyle, getNavbarCategoriesButtonAppearance, getNavbarCategoriesButtonLabel, getNavbarSearchAppearance, getUnifiedNavbarFontId, getUnifiedNavbarTextCss, groupNavbarItemsBySide, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';
 
 const DEFAULT_BG = '#9f4b1d';
 const NAVBAR_MAX_WIDTH_LIMIT = 1400;
@@ -37,8 +40,11 @@ export default function NavbarPreview({
   navMenuEnabled = true,
   navMenuItems = [],
   navMenuUseParentCategories = false,
+  navMenuHoverDropdown = true,
   categoryOptions = [],
-  navActionsVisibility = { orders: true, wishlist: true, cart: true },
+  navActionsVisibility = { orders: true, wishlist: true, cart: true, phone: true, language: true },
+  navbarPhone = DEFAULT_NAVBAR_PHONE,
+  navbarLanguage = DEFAULT_NAVBAR_LANGUAGE,
   searchPlaceholder = 'Search products...',
   dealsLabel = '',
   extraButtons = [],
@@ -63,6 +69,7 @@ export default function NavbarPreview({
   unifyNavbarText = false,
   unifiedTextFontFamily = 'inherit',
   unifiedTextFontSize = 13,
+  bnplTopBar = DEFAULT_BNPL_TOP_BAR,
 }) {
   const bg = backgroundColor || DEFAULT_BG;
   const textColor = getContrastColor(bg);
@@ -78,6 +85,8 @@ export default function NavbarPreview({
       categoryOptions,
     ).filter((item) => String(item?.name || '').trim());
   }, [navMenuUseParentCategories, categoryOptions, navMenuItems]);
+  const bnplPartners = useMemo(() => resolveBnplPartners(bnplTopBar, 'en'), [bnplTopBar]);
+  const bnplPreview = bnplPartners[0] || null;
   const resolvedLogoUrl = String(logoUrl || '').trim() || STORE1920_LOGO_PATH;
   const logoW = Number(logoWidth) > 0 ? Number(logoWidth) : 120;
   const logoH = Number(logoHeight) > 0 ? Number(logoHeight) : 40;
@@ -153,18 +162,17 @@ export default function NavbarPreview({
   };
   const previewItems = getNavbarArrangeItems(previewLayout, navActionsVisibility);
   const resolvedNavbarMaxWidth = Math.min(NAVBAR_MAX_WIDTH_LIMIT, Number(navbarMaxWidth) || NAVBAR_MAX_WIDTH_LIMIT);
-
   const renderPreviewAction = (Icon, label, badge) => (
-    <span className="relative inline-flex shrink-0 items-center gap-2 px-1 py-1 text-white transition">
+    <span className="relative inline-flex shrink-0 items-center gap-1 px-0.5 py-1 text-white">
       <span className="relative inline-flex shrink-0 items-center justify-center">
-        <Icon size={22} strokeWidth={1.5} />
+        <Icon size={18} strokeWidth={1.5} />
         {badge ? (
-          <span className="absolute -right-1 -top-1 inline-flex min-h-[16px] min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
+          <span className="absolute -right-1 -top-1 inline-flex min-h-[14px] min-w-[14px] items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] font-bold leading-none text-white">
             {badge}
           </span>
         ) : null}
       </span>
-      <span className="whitespace-nowrap text-[14px] font-normal leading-none">{label}</span>
+      <span className="whitespace-nowrap text-[12px] font-normal leading-none">{label}</span>
     </span>
   );
 
@@ -176,8 +184,8 @@ export default function NavbarPreview({
           alt="Store logo"
           width={logoW}
           height={logoH}
-          className="h-auto w-auto max-w-[88px] shrink-0 object-contain xl:max-w-[180px]"
-          style={{ maxHeight: '50px', marginInlineEnd: `${Number(logoGap) || 0}px` }}
+          className="h-8 w-auto max-w-[72px] shrink-0 object-contain"
+          style={{ maxHeight: '32px', marginInlineEnd: `${Math.min(Number(logoGap) || 0, 8)}px` }}
         />
       );
     }
@@ -186,7 +194,7 @@ export default function NavbarPreview({
         <span
           className={`navbar-deals-btn inline-flex shrink-0 items-center font-extrabold leading-none tracking-[0.04em] ${dealsAppearance.animationClass || ''}`}
           data-font={dealsAppearance.fontId || 'inherit'}
-          style={dealsAppearance.style}
+          style={{ ...dealsAppearance.style, fontSize: 12 }}
         >
           <span className="flex items-center leading-[1.05]">
             <OffersNavLabel
@@ -208,8 +216,9 @@ export default function NavbarPreview({
           data-font={categoriesAppearance.fontId || 'inherit'}
           style={{
             ...categoriesAppearance.style,
-            minHeight: 44,
-            height: 44,
+            minHeight: 36,
+            height: 36,
+            fontSize: 12,
           }}
         >
           <span style={{ textTransform: 'none' }}>{getNavbarCategoriesButtonLabel({ categoriesButtonLabel }, 'en', 'Categories')}</span>
@@ -224,15 +233,10 @@ export default function NavbarPreview({
       );
     }
     if (itemId === 'search') {
-      const searchSide = resolveNavbarItemSide('search', itemAlign?.search, searchAlign);
-      const searchSlot = getNavbarSearchSlotProps(
-        resolveNavbarSearchSlotAlign(searchSide, searchAlign),
-        searchMaxWidth,
-      );
       return (
-        <div className={searchSlot.innerClassName} style={searchSlot.innerStyle}>
+        <div className="relative min-w-0 w-full">
             <div
-              className="flex h-[44px] w-full min-w-0 items-center overflow-hidden px-2 shadow-sm xl:px-3"
+              className="flex h-9 w-full min-w-0 items-center overflow-hidden px-2 shadow-sm"
               data-font={desktopSearchAppearance.fontId || 'inherit'}
               style={desktopSearchAppearance.boxStyle}
             >
@@ -254,19 +258,19 @@ export default function NavbarPreview({
     }
     if (itemId === 'account') {
       return (
-        <span className="inline-flex max-w-[148px] items-center gap-2 rounded-md px-1 py-1 text-left text-white xl:max-w-[168px] xl:gap-2.5">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center">
-            <User size={22} strokeWidth={1.85} />
+        <span className="inline-flex max-w-[128px] items-center gap-1.5 rounded-md px-0.5 py-1 text-left text-white">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center">
+            <User size={18} strokeWidth={1.85} />
           </span>
-          <span className="flex min-w-0 flex-col leading-[1.15]">
+          <span className="flex min-w-0 flex-col leading-[1.1]">
             <span
-              className={`truncate font-bold leading-none text-white ${unifyNavbarText ? '' : 'text-[13px] xl:text-[14px]'}`}
+              className={`truncate font-bold leading-none text-white ${unifyNavbarText ? '' : 'text-[12px]'}`}
               data-font={getUnifiedNavbarFontId(unifiedLayout) || undefined}
               style={getUnifiedNavbarTextCss(unifiedLayout) || undefined}
             >
               Sign In / Register
             </span>
-            <span className="mt-1 truncate text-[11px] font-normal leading-none text-white/85">
+            <span className="mt-0.5 truncate text-[10px] font-normal leading-none text-white/85">
               Orders &amp; Account
             </span>
           </span>
@@ -276,6 +280,38 @@ export default function NavbarPreview({
     if (itemId === 'orders') return renderPreviewAction(Package, 'Orders');
     if (itemId === 'wishlist') return renderPreviewAction(Heart, 'Wishlist', '1');
     if (itemId === 'cart') return renderPreviewAction(ShoppingCart, 'Cart', '2');
+    if (itemId === 'phone') {
+      const phone = resolveNavbarPhone(navbarPhone);
+      return (
+        <span className="inline-flex shrink-0 items-center gap-1 px-0.5 py-1 text-white">
+          <Phone size={16} strokeWidth={1.7} />
+          <span className="flex min-w-0 flex-col leading-[1.05]">
+            <span className="text-[12px] font-bold tabular-nums leading-none" dir="ltr">
+              {phone.short}
+            </span>
+            {phone.displayLabel ? (
+              <span className="mt-0.5 max-w-[72px] truncate text-[9px] font-medium leading-none text-white/85">
+                {phone.displayLabel}
+              </span>
+            ) : null}
+          </span>
+        </span>
+      );
+    }
+    if (itemId === 'language') {
+      const languageTrigger = resolveNavbarLanguageTrigger(navbarLanguage);
+      return (
+        <span className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-semibold leading-none text-white">
+          {languageTrigger.iconUrl ? (
+            <img src={languageTrigger.iconUrl} alt="" className="h-5 w-5 rounded-sm object-contain" />
+          ) : (
+            <span className="text-sm leading-none" aria-hidden="true">{languageTrigger.flag}</span>
+          )}
+          <span>EN</span>
+          <ChevronDown className="h-3 w-3 shrink-0 opacity-80" />
+        </span>
+      );
+    }
 
     const extraButton = previewExtraButtons.find((button) => button.id === itemId);
     if (!extraButton) return null;
@@ -302,6 +338,12 @@ export default function NavbarPreview({
           <div className="flex items-center justify-center bg-slate-200/80 py-1.5">
             <span className="h-1 w-16 rounded-full bg-slate-400/70" />
           </div>
+          {bnplPreview ? (
+            <div className="flex items-center justify-center gap-1.5 border-b border-[#e7e7e7] bg-white px-2 py-1.5">
+              <img src={bnplPreview.logoUrl} alt={bnplPreview.name} className="h-3.5 w-auto" />
+              <span className="truncate text-[9px] font-medium text-gray-700">{bnplPreview.mobileText}</span>
+            </div>
+          ) : null}
           <nav
             className="border-b shadow-[0_1px_3px_rgba(15,23,42,0.06)]"
             style={{
@@ -345,6 +387,30 @@ export default function NavbarPreview({
                   </span>
                 </div>
               </div>
+              {navActionsVisibility.phone !== false ? (
+                <span className={`inline-flex h-9 shrink-0 flex-col items-center justify-center px-1 ${iconClass}`}>
+                  <Phone size={16} strokeWidth={1.7} />
+                  {resolveNavbarPhone(navbarPhone).displayLabel ? (
+                    <span className="mt-0.5 text-[8px] font-semibold leading-none">
+                      {resolveNavbarPhone(navbarPhone).displayLabel}
+                    </span>
+                  ) : null}
+                </span>
+              ) : null}
+              {navActionsVisibility.language !== false ? (
+                <span className={`inline-flex items-center gap-0.5 px-1 text-[11px] font-semibold ${iconClass}`}>
+                  {resolveNavbarLanguageTrigger(navbarLanguage).iconUrl ? (
+                    <img
+                      src={resolveNavbarLanguageTrigger(navbarLanguage).iconUrl}
+                      alt=""
+                      className="h-3.5 w-3.5 rounded-sm object-cover"
+                    />
+                  ) : (
+                    <span aria-hidden="true">{resolveNavbarLanguageTrigger(navbarLanguage).flag}</span>
+                  )}
+                  EN
+                </span>
+              ) : null}
               {navActionsVisibility.wishlist !== false ? (
                 <span className={`relative inline-flex h-9 w-9 shrink-0 items-center justify-center ${iconClass}`}>
                   <Heart size={20} strokeWidth={1.6} />
@@ -362,17 +428,22 @@ export default function NavbarPreview({
   }
 
   return (
-    <div className="relative w-full overflow-x-auto rounded-xl border border-slate-200/80 shadow-sm">
-      <div className="min-w-[1100px]">
+    <div className="relative w-full overflow-hidden rounded-xl border border-slate-200/80 shadow-sm">
+        {bnplPreview ? (
+          <div className="flex items-center justify-center gap-1.5 border-b border-[#e7e7e7] bg-white px-3 py-1.5">
+            <img src={bnplPreview.logoUrl} alt={bnplPreview.name} className="h-4 w-auto" />
+            <span className="truncate text-[11px] font-medium text-gray-700">{bnplPreview.desktopText}</span>
+          </div>
+        ) : null}
         <div
-          className="overflow-visible border-b text-white shadow-[0_12px_28px_rgba(15,23,42,0.08)]"
+          className="border-b text-white"
           style={{
             backgroundColor: bg,
             borderColor: 'rgba(15, 23, 42, 0.18)',
             color: textColor,
           }}
         >
-          <div className="mx-auto w-full px-4 sm:px-6" style={{ maxWidth: resolvedNavbarMaxWidth }}>
+          <div className="px-3">
             {(() => {
               const sides = groupNavbarItemsBySide(
                 previewItems.map((item) => item.id),
@@ -380,53 +451,21 @@ export default function NavbarPreview({
                 extraButtons,
                 searchAlign,
               );
-              const rowSlots = getNavbarDesktopRowSlots(sides, itemGap);
-              const renderSide = (itemIds, side) => (
-                <div className="flex shrink-0 items-center" style={rowSlots.clusterStyle}>
-                  {itemIds.map((itemId) => {
+              const orderedIds = [...sides.left, ...sides.center, ...sides.right];
+              return (
+                <div className="flex w-full items-center gap-2 py-2">
+                  {orderedIds.map((itemId) => {
                     const node = renderPreviewItem(itemId);
                     if (!node) return null;
-                    const searchSlot = itemId === 'search'
-                      ? getNavbarSearchSlotProps(
-                        resolveNavbarSearchSlotAlign(side, searchAlign),
-                        searchMaxWidth,
-                      )
-                      : null;
                     return (
                       <div
                         key={itemId}
-                        className={itemId === 'search' ? 'relative z-[70] shrink-0' : 'shrink-0'}
-                        style={itemId === 'search' ? { width: searchSlot.innerStyle.maxWidth } : undefined}
+                        className={itemId === 'search' ? 'relative min-w-[140px] flex-1' : 'shrink-0'}
                       >
                         {node}
                       </div>
                     );
                   })}
-                </div>
-              );
-              return (
-                <div className={rowSlots.rowClassName}>
-                  {renderSide(sides.left, 'left')}
-                  {rowSlots.hasCenter ? (
-                    <div className={rowSlots.centerClassName} style={rowSlots.centerStyle}>
-                      {sides.center.map((itemId) => {
-                        const node = renderPreviewItem(itemId);
-                        if (!node) return null;
-                        const searchSlot = getNavbarSearchSlotProps(
-                          resolveNavbarSearchSlotAlign('center', searchAlign),
-                          searchMaxWidth,
-                        );
-                        return (
-                          <div key={itemId} className={searchSlot.slotClassName}>
-                            {node}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className={rowSlots.spacerClassName} style={rowSlots.spacerStyle} aria-hidden="true" />
-                  )}
-                  {renderSide(sides.right, 'right')}
                 </div>
               );
             })()}
@@ -469,7 +508,10 @@ export default function NavbarPreview({
               </div>
               <div className="mx-auto w-full overflow-x-auto px-8 sm:px-10 scrollbar-hide" style={{ maxWidth: resolvedNavbarMaxWidth }}>
                 <div className="relative flex w-max items-center whitespace-nowrap py-2">
-                  {menuItems.map((item, index) => (
+                  {menuItems.map((item, index) => {
+                    const childCount = Array.isArray(item?.megaMenu?.links) ? item.megaMenu.links.length : 0;
+                    const showHoverHint = navMenuHoverDropdown && childCount > 0;
+                    return (
                     <span key={`${item.name}-${index}`} className="inline-flex items-center">
                       {index > 0 ? (
                         <span className="select-none px-2 text-xs opacity-40" style={{ color: getContrastColor(menuBarBackgroundColor || '#000000') }}>|</span>
@@ -482,9 +524,11 @@ export default function NavbarPreview({
                           <img src={item.icon} alt="" className="h-4 w-4 object-contain" />
                         ) : null}
                         <span>{item.name}</span>
+                        {showHoverHint ? <ChevronDown size={11} className="opacity-70" /> : null}
                       </span>
                     </span>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -504,7 +548,6 @@ export default function NavbarPreview({
             </div>
           )
         ) : null}
-      </div>
     </div>
   );
 }

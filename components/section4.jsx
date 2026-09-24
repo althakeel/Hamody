@@ -125,7 +125,7 @@ const SkeletonLoader = ({ hasSideImage = false, cardsPerRow = 6 }) => {
 
 function resolveSectionProducts(section) {
   const products = Array.isArray(section?.products) ? section.products : []
-  return filterCategorySliderProducts(products, section?.showOutOfStock)
+  return filterCategorySliderProducts(products, false)
 }
 
 const HorizontalSlider = ({ section }) => {

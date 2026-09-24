@@ -24,6 +24,22 @@ import {
   normalizeNavbarLayout,
 } from '@/lib/navbarLayoutSettings';
 import {
+  DEFAULT_NAVBAR_PHONE,
+  normalizeNavbarPhone,
+} from '@/lib/storeContact';
+import {
+  DEFAULT_NAVBAR_LANGUAGE,
+  GCC_MARKETS,
+  normalizeNavbarLanguage,
+  resolveNavbarLanguageTrigger,
+} from '@/lib/storefrontMarket';
+import {
+  BNPL_PARTNER_DEFS,
+  DEFAULT_BNPL_TOP_BAR,
+  getDefaultBnplBannerText,
+  normalizeBnplTopBar,
+} from '@/lib/bnplTopBar';
+import {
   DEFAULT_OFFERS_NAV_STYLE,
   OFFERS_NAV_ANIMATION_OPTIONS,
   OFFERS_NAV_FONT_OPTIONS,
@@ -34,8 +50,10 @@ import {
   buildCategoryShopLink,
   buildParentCategoryNavMenuItems,
   filterParentCategories,
+  findCategoryForNavItem,
   getCategoryDisplayName,
   getCategoryRecordId,
+  getDirectChildCategories,
   isDisplayableCategoryName,
   isLegacyPlaceholderNavItems,
   resolveStoreNavMenuItems,
@@ -43,6 +61,7 @@ import {
 import { toPublicCategoryPath } from '@/lib/categorySlug';
 import {
   ChevronDown,
+  GripVertical,
   Eye,
   Loader2,
   Menu,
@@ -57,6 +76,7 @@ import {
   Heart,
   Languages,
   Package,
+  Phone,
   Plus,
   Search,
   Trash2,
@@ -505,6 +525,19 @@ const createMenuItem = () => ({
   },
 });
 
+const createSubLinkFromCategory = (category, allCategories = []) => ({
+  name: getCategoryDisplayName(category),
+  link: buildCategoryShopLink(category, allCategories),
+  categoryId: getCategoryRecordId(category),
+  slug: String(category?.slug || '').trim(),
+  children: getDirectChildCategories(allCategories, category).map((child) => ({
+    name: getCategoryDisplayName(child),
+    link: buildCategoryShopLink(child, allCategories),
+    categoryId: getCategoryRecordId(child),
+    slug: String(child?.slug || '').trim(),
+  })),
+});
+
 const createNavItemFromCategory = (category, allCategories = []) => ({
   name: getCategoryDisplayName(category),
   link: buildCategoryShopLink(category, allCategories),
@@ -514,6 +547,7 @@ const createNavItemFromCategory = (category, allCategories = []) => ({
   categoryId: getCategoryRecordId(category),
   megaMenu: {
     linkColumns: 1,
+    manualLinks: false,
     links: [],
     images: [],
   },
@@ -526,7 +560,11 @@ const defaultSettings = {
     orders: true,
     wishlist: true,
     cart: true,
+    phone: true,
+    language: true,
   },
+  navbarPhone: { ...DEFAULT_NAVBAR_PHONE },
+  navbarLanguage: { ...DEFAULT_NAVBAR_LANGUAGE },
   navMenuStyle: {
     barBackgroundColor: '#000000',
     categoryBarBackgroundColor: '#000000',
@@ -547,6 +585,8 @@ const defaultSettings = {
   },
   navMenuItems: [],
   navMenuUseParentCategories: false,
+  navMenuHoverDropdown: true,
+  bnplTopBar: { ...DEFAULT_BNPL_TOP_BAR },
 };
 
 const defaultNavbarBranding = {
@@ -665,9 +705,10 @@ export default function MenuManagementPage() {
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [productOptions, setProductOptions] = useState([]);
   const [activePanel, setActivePanel] = useState('settings');
-  const [settingsSection, setSettingsSection] = useState('layout');
+  const [settingsSection, setSettingsSection] = useState('topbar');
   const [uploadingMegaImageKey, setUploadingMegaImageKey] = useState('');
   const [uploadingNavbarLogo, setUploadingNavbarLogo] = useState(false);
+  const [uploadingLanguageIcon, setUploadingLanguageIcon] = useState(false);
   const [pendingClearLogo, setPendingClearLogo] = useState(false);
   const [navbarBranding, setNavbarBranding] = useState(defaultNavbarBranding);
   const [navbarLayout, setNavbarLayout] = useState(DEFAULT_NAVBAR_LAYOUT);
@@ -676,8 +717,12 @@ export default function MenuManagementPage() {
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [translatingKey, setTranslatingKey] = useState('');
   const [addCategoryKey, setAddCategoryKey] = useState('');
+  const [addSubKeys, setAddSubKeys] = useState({});
+  const [customLinkDrafts, setCustomLinkDrafts] = useState({});
   const [customBarLinkName, setCustomBarLinkName] = useState('');
   const [customBarLinkUrl, setCustomBarLinkUrl] = useState('');
+  const [customBarLinkParent, setCustomBarLinkParent] = useState('bar');
+  const [pendingCustomDrag, setPendingCustomDrag] = useState(false);
   const navbarLayoutSaveTimerRef = useRef(null);
   const navbarLayoutRef = useRef(navbarLayout);
   const navbarBrandingRef = useRef(navbarBranding);
@@ -831,7 +876,11 @@ export default function MenuManagementPage() {
           orders: data?.navActionsVisibility?.orders !== false,
           wishlist: data?.navActionsVisibility?.wishlist !== false,
           cart: data?.navActionsVisibility?.cart !== false,
+          phone: data?.navActionsVisibility?.phone !== false,
+          language: data?.navActionsVisibility?.language !== false,
         },
+        navbarPhone: normalizeNavbarPhone(data?.navbarPhone),
+        navbarLanguage: normalizeNavbarLanguage(data?.navbarLanguage),
         navMenuStyle: {
           ...defaultSettings.navMenuStyle,
           ...(data?.navMenuStyle || {}),
@@ -845,6 +894,8 @@ export default function MenuManagementPage() {
         navMenuItems: Array.isArray(data?.navMenuItems) ? data.navMenuItems : [],
         navMenuUseParentCategories: Boolean(data?.navMenuUseParentCategories)
           || isLegacyPlaceholderNavItems(data?.navMenuItems),
+        navMenuHoverDropdown: data?.navMenuHoverDropdown !== false,
+        bnplTopBar: normalizeBnplTopBar(data?.bnplTopBar),
       });
 
       if (brandingResponse.ok) {
@@ -975,6 +1026,34 @@ export default function MenuManagementPage() {
     );
   };
 
+  const setHoverDropdown = async (enabled) => {
+    setForm((prev) => ({ ...prev, navMenuHoverDropdown: enabled }));
+    try {
+      await saveSettings(
+        { navMenuHoverDropdown: enabled },
+        enabled ? 'Hover dropdown enabled' : 'Hover dropdown disabled',
+      );
+    } catch (error) {
+      toast.error(error?.message || 'Failed to update hover dropdown');
+    }
+  };
+
+  const persistBnplTopBar = async (patch, message) => {
+    const next = normalizeBnplTopBar({
+      ...(form.bnplTopBar || DEFAULT_BNPL_TOP_BAR),
+      ...patch,
+    });
+    setForm((prev) => ({ ...prev, bnplTopBar: next }));
+    try {
+      await saveSettings({ bnplTopBar: next }, message);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('bnplTopBarUpdated'));
+      }
+    } catch (error) {
+      toast.error(error?.message || 'Failed to update top bar');
+    }
+  };
+
   const matchesNavItem = (item, match) => {
     const itemId = String(item?.categoryId || '').trim();
     const itemSlug = String(item?.slug || '').trim().toLowerCase();
@@ -1046,20 +1125,67 @@ export default function MenuManagementPage() {
     );
   };
 
+  const normalizeBarHref = (value) => {
+    const link = String(value || '').trim();
+    if (!link) return '';
+    return link.startsWith('/') || /^https?:\/\//i.test(link) ? link : `/${link}`;
+  };
+
+  const createCustomSubLink = (name, link) => ({
+    name: String(name || '').trim(),
+    link: normalizeBarHref(link),
+    categoryId: '',
+    slug: '',
+    children: [],
+  });
+
+  const isCustomBarItem = (item) => {
+    if (!item) return false;
+    if (String(item.categoryId || '').trim()) return false;
+    return !findCategoryForNavItem(item, categoryOptions);
+  };
+
+  const withManualSubs = (item, nextLinks) => ({
+    ...item,
+    hasDropdown: nextLinks.length > 0,
+    megaMenu: {
+      ...(item.megaMenu && typeof item.megaMenu === 'object' ? item.megaMenu : {}),
+      manualLinks: true,
+      linkColumns: nextLinks.length > 8 ? 3 : nextLinks.length > 4 ? 2 : 1,
+      links: nextLinks,
+      images: Array.isArray(item?.megaMenu?.images) ? item.megaMenu.images : [],
+    },
+  });
+
   const addCustomBarLink = async () => {
     const name = String(customBarLinkName || '').trim();
-    const link = String(customBarLinkUrl || '').trim();
+    const link = normalizeBarHref(customBarLinkUrl);
     if (!name || !link) {
       toast.error('Enter a name and a link');
       return;
     }
+    const parentKey = String(customBarLinkParent || 'bar');
     setCustomBarLinkName('');
     setCustomBarLinkUrl('');
+    if (parentKey !== 'bar') {
+      const parentIndex = Number(parentKey);
+      if (!Number.isInteger(parentIndex) || !form.navMenuItems[parentIndex]) {
+        toast.error('Choose a bar row to place this link under');
+        return;
+      }
+      const current = getItemSubLinks(form.navMenuItems[parentIndex]);
+      await persistBarItemSubs(
+        parentIndex,
+        [...current, createCustomSubLink(name, link)],
+        'Custom link added to the hover menu',
+      );
+      return;
+    }
     await persistCategoryBar(
       [...form.navMenuItems, {
         ...createMenuItem(),
         name,
-        link: link.startsWith('/') || /^https?:\/\//i.test(link) ? link : `/${link}`,
+        link,
       }],
       false,
       'Link added to the bar',
@@ -1078,6 +1204,230 @@ export default function MenuManagementPage() {
     const [moved] = nextItems.splice(index, 1);
     nextItems.splice(nextIndex, 0, moved);
     await persistCategoryBar(nextItems, false, 'Category bar order updated');
+  };
+
+  const getAutoSubLinks = (item) => {
+    const match = findCategoryForNavItem(item, categoryOptions);
+    if (!match) return [];
+    return getDirectChildCategories(categoryOptions, match).map((child) => (
+      createSubLinkFromCategory(child, categoryOptions)
+    ));
+  };
+
+  const getItemSubLinks = (item) => {
+    const saved = Array.isArray(item?.megaMenu?.links)
+      ? item.megaMenu.links.filter((entry) => String(entry?.name || '').trim())
+      : [];
+    if (item?.megaMenu?.manualLinks) return saved;
+    return saved.length ? saved : getAutoSubLinks(item);
+  };
+
+  const isSameSubLink = (left, right) => {
+    const leftId = String(left?.categoryId || '').trim();
+    const rightId = String(right?.categoryId || '').trim();
+    if (leftId && rightId && leftId === rightId) return true;
+    const leftSlug = String(left?.slug || '').trim().toLowerCase();
+    const rightSlug = String(right?.slug || '').trim().toLowerCase();
+    if (leftSlug && rightSlug && leftSlug === rightSlug) return true;
+    const leftName = String(left?.name || '').trim().toLowerCase();
+    const rightName = String(right?.name || '').trim().toLowerCase();
+    return Boolean(leftName && rightName && leftName === rightName);
+  };
+
+  const getAddableSubCategories = (item) => {
+    const current = getItemSubLinks(item);
+    const parent = findCategoryForNavItem(item, categoryOptions);
+    const parentId = getCategoryRecordId(parent);
+    const children = parent ? getDirectChildCategories(categoryOptions, parent) : [];
+    const childIds = new Set(children.map((category) => getCategoryRecordId(category)).filter(Boolean));
+    return categoryOptions
+      .filter((category) => isDisplayableCategoryName(getCategoryDisplayName(category)))
+      .filter((category) => getCategoryRecordId(category) !== parentId)
+      .filter((category) => !current.some((entry) => isSameSubLink(entry, {
+        categoryId: getCategoryRecordId(category),
+        slug: category?.slug,
+        name: getCategoryDisplayName(category),
+      })))
+      .sort((left, right) => {
+        const leftChild = childIds.has(getCategoryRecordId(left)) ? 0 : 1;
+        const rightChild = childIds.has(getCategoryRecordId(right)) ? 0 : 1;
+        if (leftChild !== rightChild) return leftChild - rightChild;
+        return getCategoryDisplayName(left).localeCompare(getCategoryDisplayName(right));
+      });
+  };
+
+  const persistBarItemSubs = async (index, nextLinks, message) => {
+    const nextItems = form.navMenuItems.map((item, itemIndex) => (
+      itemIndex === index ? withManualSubs(item, nextLinks) : item
+    ));
+    await persistCategoryBar(nextItems, false, message);
+  };
+
+  const addSubToBarItem = async (index) => {
+    const key = String(addSubKeys[index] || '').trim();
+    if (!key) {
+      toast.error('Choose a subcategory to add');
+      return;
+    }
+    const category = categoryOptions.find((item) => (
+      getCategoryRecordId(item) === key || String(item?.slug || '').trim() === key
+    ));
+    if (!category) {
+      toast.error('Category not found');
+      return;
+    }
+    const nextLink = createSubLinkFromCategory(category, categoryOptions);
+    const current = getItemSubLinks(form.navMenuItems[index]);
+    if (current.some((entry) => isSameSubLink(entry, nextLink))) {
+      toast.error('That subcategory is already on this menu');
+      return;
+    }
+    setAddSubKeys((prev) => ({ ...prev, [index]: '' }));
+    await persistBarItemSubs(index, [...current, nextLink], 'Subcategory added to the hover menu');
+  };
+
+  const addCustomSubToBarItem = async (index) => {
+    const draft = customLinkDrafts[index] || {};
+    const name = String(draft.name || '').trim();
+    const link = normalizeBarHref(draft.url);
+    if (!name || !link) {
+      toast.error('Enter a name and a link');
+      return;
+    }
+    const nextLink = createCustomSubLink(name, link);
+    const current = getItemSubLinks(form.navMenuItems[index]);
+    if (current.some((entry) => isSameSubLink(entry, nextLink))) {
+      toast.error('That link is already on this menu');
+      return;
+    }
+    setCustomLinkDrafts((prev) => ({ ...prev, [index]: { name: '', url: '' } }));
+    await persistBarItemSubs(index, [...current, nextLink], 'Custom link added to the hover menu');
+  };
+
+  const removeSubFromBarItem = async (index, subIndex) => {
+    const current = getItemSubLinks(form.navMenuItems[index]);
+    const nextLinks = current.filter((_, itemIndex) => itemIndex !== subIndex);
+    await persistBarItemSubs(index, nextLinks, 'Item removed from the hover menu');
+  };
+
+  const dropManualBarItem = async (targetIndex) => {
+    if (dragIndex == null || dragIndex === targetIndex) {
+      setDragIndex(null);
+      setDropIndex(null);
+      return;
+    }
+    const nextItems = [...form.navMenuItems];
+    const [moved] = nextItems.splice(dragIndex, 1);
+    nextItems.splice(targetIndex, 0, moved);
+    setDragIndex(null);
+    setDropIndex(null);
+    await persistCategoryBar(nextItems, false, 'Category bar order updated');
+  };
+
+  const nestBarItemUnder = async (sourceIndex, targetIndex, targetSubIndex = null) => {
+    if (sourceIndex == null || sourceIndex === targetIndex || !form.navMenuItems[sourceIndex]) return;
+    const movedItem = form.navMenuItems[sourceIndex];
+    const movedLink = createCustomSubLink(movedItem.name, movedItem.link);
+    const withoutSource = form.navMenuItems.filter((_, itemIndex) => itemIndex !== sourceIndex);
+    const adjustedTarget = sourceIndex < targetIndex ? targetIndex - 1 : targetIndex;
+    const targetLinks = [...getItemSubLinks(withoutSource[adjustedTarget])];
+    const insertAt = Number.isInteger(targetSubIndex)
+      ? Math.min(Math.max(targetSubIndex, 0), targetLinks.length)
+      : targetLinks.length;
+    targetLinks.splice(insertAt, 0, movedLink);
+    const nextItems = withoutSource.map((item, itemIndex) => (
+      itemIndex === adjustedTarget ? withManualSubs(item, targetLinks) : item
+    ));
+    setDragIndex(null);
+    setDropIndex(null);
+    setNestedDrag(null);
+    setNestedDrop(null);
+    await persistCategoryBar(nextItems, false, 'Link moved under that bar row');
+  };
+
+  const dropPendingCustomOnRow = async (targetIndex, targetSubIndex = null) => {
+    const name = String(customBarLinkName || '').trim();
+    const link = normalizeBarHref(customBarLinkUrl);
+    if (!name || !link || !form.navMenuItems[targetIndex]) {
+      setPendingCustomDrag(false);
+      return;
+    }
+    const current = [...getItemSubLinks(form.navMenuItems[targetIndex])];
+    const insertAt = Number.isInteger(targetSubIndex)
+      ? Math.min(Math.max(targetSubIndex, 0), current.length)
+      : current.length;
+    current.splice(insertAt, 0, createCustomSubLink(name, link));
+    setCustomBarLinkName('');
+    setCustomBarLinkUrl('');
+    setPendingCustomDrag(false);
+    setNestedDrag(null);
+    setNestedDrop(null);
+    await persistBarItemSubs(targetIndex, current, 'Custom link added to the hover menu');
+  };
+
+  const dropBarSubItem = async (targetItemIndex, targetSubIndex = null) => {
+    if (pendingCustomDrag) {
+      await dropPendingCustomOnRow(targetItemIndex, targetSubIndex);
+      return;
+    }
+    if (dragIndex != null && isCustomBarItem(form.navMenuItems[dragIndex])) {
+      await nestBarItemUnder(dragIndex, targetItemIndex, targetSubIndex);
+      return;
+    }
+    if (!nestedDrag || nestedDrag.itemIndex == null) {
+      setNestedDrag(null);
+      setNestedDrop(null);
+      return;
+    }
+
+    const fromItemIndex = nestedDrag.itemIndex;
+    const fromSubIndex = nestedDrag.subIndex;
+    if (fromItemIndex === targetItemIndex) {
+      if (fromSubIndex == null || fromSubIndex === targetSubIndex) {
+        setNestedDrag(null);
+        setNestedDrop(null);
+        return;
+      }
+      const current = [...getItemSubLinks(form.navMenuItems[fromItemIndex])];
+      const [moved] = current.splice(fromSubIndex, 1);
+      const insertAt = Number.isInteger(targetSubIndex)
+        ? Math.min(Math.max(targetSubIndex, 0), current.length)
+        : current.length;
+      current.splice(insertAt, 0, moved);
+      setNestedDrag(null);
+      setNestedDrop(null);
+      await persistBarItemSubs(fromItemIndex, current, 'Hover menu order updated');
+      return;
+    }
+
+    const sourceLinks = [...getItemSubLinks(form.navMenuItems[fromItemIndex])];
+    const [moved] = sourceLinks.splice(fromSubIndex, 1);
+    if (!moved) {
+      setNestedDrag(null);
+      setNestedDrop(null);
+      return;
+    }
+    const targetLinks = [...getItemSubLinks(form.navMenuItems[targetItemIndex])];
+    const insertAt = Number.isInteger(targetSubIndex)
+      ? Math.min(Math.max(targetSubIndex, 0), targetLinks.length)
+      : targetLinks.length;
+    targetLinks.splice(insertAt, 0, moved);
+    const nextItems = form.navMenuItems.map((item, itemIndex) => {
+      if (itemIndex === fromItemIndex) return withManualSubs(item, sourceLinks);
+      if (itemIndex === targetItemIndex) return withManualSubs(item, targetLinks);
+      return item;
+    });
+    setNestedDrag(null);
+    setNestedDrop(null);
+    await persistCategoryBar(nextItems, false, 'Link moved under that bar row');
+  };
+
+  const dropOnHoverZone = async (targetIndex) => {
+    if (pendingCustomDrag || nestedDrag || (dragIndex != null && isCustomBarItem(form.navMenuItems[dragIndex]))) {
+      await dropBarSubItem(targetIndex, null);
+      return;
+    }
+    await dropManualBarItem(targetIndex);
   };
 
   const updateCategoryBarColor = (nextColor) => {
@@ -1133,6 +1483,26 @@ export default function MenuManagementPage() {
         }
         window.dispatchEvent(new CustomEvent('navActionsVisibilityUpdated', {
           detail: payload.navActionsVisibility,
+        }));
+      }
+      if (payload?.navbarPhone) {
+        try {
+          window.sessionStorage.setItem('nav:phone:v1', JSON.stringify(payload.navbarPhone));
+        } catch {
+          // Ignore storage failures.
+        }
+        window.dispatchEvent(new CustomEvent('navbarPhoneUpdated', {
+          detail: payload.navbarPhone,
+        }));
+      }
+      if (payload?.navbarLanguage) {
+        try {
+          window.sessionStorage.setItem('nav:language:v1', JSON.stringify(payload.navbarLanguage));
+        } catch {
+          // Ignore storage failures.
+        }
+        window.dispatchEvent(new CustomEvent('navbarLanguageUpdated', {
+          detail: payload.navbarLanguage,
         }));
       }
     }
@@ -1316,6 +1686,58 @@ export default function MenuManagementPage() {
       toast.error(error?.message || 'Failed to upload logo');
     } finally {
       setUploadingNavbarLogo(false);
+    }
+  };
+
+  const persistNavbarLanguage = async (nextLanguage) => {
+    const navbarLanguage = normalizeNavbarLanguage(nextLanguage);
+    setForm((prev) => ({ ...prev, navbarLanguage }));
+    await saveSettings({ navbarLanguage }, null);
+  };
+
+  const uploadLanguageIcon = async (file) => {
+    if (!file) return;
+    if (!String(file.type || '').startsWith('image/')) {
+      toast.error('Please choose an image file');
+      return;
+    }
+
+    try {
+      setUploadingLanguageIcon(true);
+      const token = await getToken();
+      const { compressImageForUpload } = await import('@/lib/compressImageForUpload');
+      const prepared = await compressImageForUpload(file, {
+        maxWidth: 256,
+        maxHeight: 256,
+        maxBytes: 512 * 1024,
+        preserveTransparency: true,
+      });
+      const body = new FormData();
+      body.append('image', prepared);
+      body.append('type', 'navbar-language-icon');
+
+      const uploadResponse = await fetch('/api/store/upload-image', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body,
+      });
+
+      const uploadData = await uploadResponse.json().catch(() => ({}));
+      if (!uploadResponse.ok || !uploadData?.url) {
+        throw new Error(uploadData?.error || 'Failed to upload icon');
+      }
+
+      await persistNavbarLanguage({
+        ...form.navbarLanguage,
+        iconUrl: uploadData.url,
+      });
+      toast.success('Language icon updated');
+    } catch (error) {
+      toast.error(error?.message || 'Failed to upload language icon');
+    } finally {
+      setUploadingLanguageIcon(false);
     }
   };
 
@@ -1519,6 +1941,8 @@ export default function MenuManagementPage() {
     { key: 'orders', label: 'Orders action', icon: Package },
     { key: 'wishlist', label: 'Wishlist action', icon: Heart },
     { key: 'cart', label: 'Cart action', icon: ShoppingCart },
+    { key: 'phone', label: 'Phone action', icon: Phone },
+    { key: 'language', label: 'Language action', icon: Languages },
   ];
 
   const handleSaveSettings = async () => {
@@ -1536,7 +1960,11 @@ export default function MenuManagementPage() {
         await saveSettings({
           navMenuEnabled: form.navMenuEnabled,
           navActionsVisibility: form.navActionsVisibility,
+          navbarPhone: form.navbarPhone,
+          navbarLanguage: form.navbarLanguage,
           navMenuStyle: form.navMenuStyle,
+          navMenuHoverDropdown: form.navMenuHoverDropdown,
+          bnplTopBar: form.bnplTopBar,
         }, null);
       } catch (error) {
         saveErrors.push(error?.message || 'Failed to save settings');
@@ -1569,6 +1997,7 @@ export default function MenuManagementPage() {
               navMenuEnabled: form.navMenuEnabled,
               navMenuItems: form.navMenuItems,
               navMenuUseParentCategories: form.navMenuUseParentCategories,
+              navMenuHoverDropdown: form.navMenuHoverDropdown,
               navMenuStyle: form.navMenuStyle,
             }, 'Menu saved');
           } catch (error) {
@@ -1587,6 +2016,7 @@ export default function MenuManagementPage() {
         navMenuEnabled: form.navMenuEnabled,
         navMenuItems: form.navMenuItems,
         navMenuUseParentCategories: form.navMenuUseParentCategories,
+        navMenuHoverDropdown: form.navMenuHoverDropdown,
         navMenuStyle: form.navMenuStyle,
       }, 'Menu saved');
     } catch (error) {
@@ -1720,8 +2150,12 @@ export default function MenuManagementPage() {
                 navMenuEnabled={form.navMenuEnabled}
                 navMenuItems={previewMenuItems}
                 navMenuUseParentCategories={form.navMenuUseParentCategories}
+                navMenuHoverDropdown={form.navMenuHoverDropdown !== false}
+                bnplTopBar={form.bnplTopBar}
                 categoryOptions={categoryOptions}
                 navActionsVisibility={form.navActionsVisibility}
+                navbarPhone={form.navbarPhone}
+                navbarLanguage={form.navbarLanguage}
                 userName={user?.displayName || user?.email?.split('@')[0] || 'store1920'}
                 searchPlaceholder={navbarLayout.searchPlaceholder || 'Wireless Headphones'}
                 extraButtons={navbarLayout.extraButtons}
@@ -1800,6 +2234,7 @@ export default function MenuManagementPage() {
 
           <div className="flex flex-wrap gap-2">
             {[
+              { id: 'topbar', label: 'Top bar' },
               { id: 'layout', label: 'Layout' },
               { id: 'logo', label: 'Logo & color' },
               { id: 'search', label: 'Search' },
@@ -1820,6 +2255,144 @@ export default function MenuManagementPage() {
               </button>
             ))}
           </div>
+
+          {settingsSection === 'topbar' ? (
+          <div className="space-y-5">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Show top bar</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    The thin Tamara / Tabby strip above the navbar. Turn this off to hide the whole section.
+                  </p>
+                </div>
+                <label className="relative inline-flex shrink-0 cursor-pointer items-center">
+                  <input
+                    type="checkbox"
+                    checked={form.bnplTopBar?.enabled !== false}
+                    onChange={(event) => persistBnplTopBar(
+                      { enabled: event.target.checked },
+                      event.target.checked ? 'Top bar shown' : 'Top bar hidden',
+                    )}
+                    className="peer sr-only"
+                  />
+                  <span className="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-indigo-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-5" />
+                </label>
+              </div>
+            </div>
+
+            <div className={`space-y-4 ${form.bnplTopBar?.enabled !== false ? '' : 'pointer-events-none opacity-50'}`}>
+              {BNPL_PARTNER_DEFS.map((partner) => {
+                const partnerEnabled = Boolean(form.bnplTopBar?.[partner.enabledKey]);
+                const payments = Number(form.bnplTopBar?.[partner.paymentsKey]) || 4;
+                const text = form.bnplTopBar?.[partner.textKey] || '';
+                const textAr = form.bnplTopBar?.[partner.textArKey] || '';
+                const preview = getDefaultBnplBannerText({
+                  name: partner.name,
+                  nameAr: partner.nameAr,
+                  payments,
+                }, 'en');
+                return (
+                  <div key={partner.key} className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <img src={partner.logoUrl} alt={partner.name} className="h-5 w-auto" />
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">{partner.name}</p>
+                          <p className="text-xs text-slate-500">Show this partner in the top bar rotation.</p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex shrink-0 cursor-pointer items-center">
+                        <input
+                          type="checkbox"
+                          checked={partnerEnabled}
+                          onChange={(event) => persistBnplTopBar(
+                            { [partner.enabledKey]: event.target.checked },
+                            event.target.checked ? `${partner.name} shown` : `${partner.name} hidden`,
+                          )}
+                          className="peer sr-only"
+                        />
+                        <span className="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-indigo-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-5" />
+                      </label>
+                    </div>
+
+                    <div className={`mt-4 space-y-3 ${partnerEnabled ? '' : 'pointer-events-none opacity-50'}`}>
+                      <label className="block space-y-1">
+                        <span className="text-xs font-medium text-slate-600">Payments</span>
+                        <input
+                          type="number"
+                          min={2}
+                          max={12}
+                          value={payments}
+                          onChange={(event) => setForm((prev) => ({
+                            ...prev,
+                            bnplTopBar: {
+                              ...normalizeBnplTopBar(prev.bnplTopBar),
+                              [partner.paymentsKey]: Number(event.target.value) || 4,
+                            },
+                          }))}
+                          onBlur={() => persistBnplTopBar(
+                            { [partner.paymentsKey]: payments },
+                            `${partner.name} payments updated`,
+                          )}
+                          className="w-24 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        />
+                      </label>
+                      <label className="block space-y-1">
+                        <span className="text-xs font-medium text-slate-600">English text</span>
+                        <input
+                          type="text"
+                          value={text}
+                          placeholder={preview.desktop}
+                          onChange={(event) => setForm((prev) => ({
+                            ...prev,
+                            bnplTopBar: {
+                              ...normalizeBnplTopBar(prev.bnplTopBar),
+                              [partner.textKey]: event.target.value,
+                            },
+                          }))}
+                          onBlur={() => persistBnplTopBar(
+                            { [partner.textKey]: text },
+                            `${partner.name} text updated`,
+                          )}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        />
+                      </label>
+                      <label className="block space-y-1">
+                        <span className="text-xs font-medium text-slate-600">Arabic text</span>
+                        <input
+                          type="text"
+                          dir="rtl"
+                          value={textAr}
+                          placeholder={getDefaultBnplBannerText({
+                            name: partner.name,
+                            nameAr: partner.nameAr,
+                            payments,
+                          }, 'ar').desktop}
+                          onChange={(event) => setForm((prev) => ({
+                            ...prev,
+                            bnplTopBar: {
+                              ...normalizeBnplTopBar(prev.bnplTopBar),
+                              [partner.textArKey]: event.target.value,
+                            },
+                          }))}
+                          onBlur={() => persistBnplTopBar(
+                            { [partner.textArKey]: textAr },
+                            `${partner.name} Arabic text updated`,
+                          )}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        />
+                      </label>
+                      <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                        Preview: {text.trim() || preview.desktop}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          ) : null}
 
           {settingsSection === 'layout' ? (
           <div className="space-y-5">
@@ -1913,7 +2486,7 @@ export default function MenuManagementPage() {
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
               <h2 className="mb-4 text-sm font-semibold text-slate-900">Show or hide icons</h2>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {actionToggles.map(({ key, label, icon: Icon }) => {
                   const checked = form.navActionsVisibility[key];
                   return (
@@ -1946,6 +2519,216 @@ export default function MenuManagementPage() {
                     </button>
                   );
                 })}
+              </div>
+
+              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/80 p-3 sm:p-4">
+                <h3 className="text-sm font-semibold text-slate-900">Navbar phone</h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  Short number and Toll-free label shown in the storefront navbar. Full number is used when a customer taps to call.
+                </p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium text-slate-700">Phone number</span>
+                    <input
+                      type="tel"
+                      dir="ltr"
+                      value={form.navbarPhone?.number || ''}
+                      onChange={(event) => {
+                        setForm((prev) => ({
+                          ...prev,
+                          navbarPhone: {
+                            ...normalizeNavbarPhone(prev.navbarPhone),
+                            number: event.target.value.replace(/\D/g, ''),
+                          },
+                        }));
+                      }}
+                      onBlur={async () => {
+                        try {
+                          await saveSettings({ navbarPhone: normalizeNavbarPhone(form.navbarPhone) }, null);
+                        } catch (error) {
+                          toast.error(error?.message || 'Failed to save navbar phone');
+                        }
+                      }}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15"
+                      placeholder="8007861920"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium text-slate-700">Short display</span>
+                    <input
+                      type="text"
+                      dir="ltr"
+                      value={form.navbarPhone?.shortText || ''}
+                      onChange={(event) => {
+                        setForm((prev) => ({
+                          ...prev,
+                          navbarPhone: {
+                            ...normalizeNavbarPhone(prev.navbarPhone),
+                            shortText: event.target.value,
+                          },
+                        }));
+                      }}
+                      onBlur={async () => {
+                        try {
+                          await saveSettings({ navbarPhone: normalizeNavbarPhone(form.navbarPhone) }, null);
+                        } catch (error) {
+                          toast.error(error?.message || 'Failed to save navbar phone');
+                        }
+                      }}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15"
+                      placeholder="800"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium text-slate-700">Label</span>
+                    <input
+                      type="text"
+                      value={form.navbarPhone?.label || ''}
+                      onChange={(event) => {
+                        setForm((prev) => ({
+                          ...prev,
+                          navbarPhone: {
+                            ...normalizeNavbarPhone(prev.navbarPhone),
+                            label: event.target.value,
+                          },
+                        }));
+                      }}
+                      onBlur={async () => {
+                        try {
+                          await saveSettings({ navbarPhone: normalizeNavbarPhone(form.navbarPhone) }, null);
+                        } catch (error) {
+                          toast.error(error?.message || 'Failed to save navbar phone');
+                        }
+                      }}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15"
+                      placeholder="Toll-free"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium text-slate-700">Arabic label</span>
+                    <input
+                      type="text"
+                      dir="rtl"
+                      value={form.navbarPhone?.labelAr || ''}
+                      onChange={(event) => {
+                        setForm((prev) => ({
+                          ...prev,
+                          navbarPhone: {
+                            ...normalizeNavbarPhone(prev.navbarPhone),
+                            labelAr: event.target.value,
+                          },
+                        }));
+                      }}
+                      onBlur={async () => {
+                        try {
+                          await saveSettings({ navbarPhone: normalizeNavbarPhone(form.navbarPhone) }, null);
+                        } catch (error) {
+                          toast.error(error?.message || 'Failed to save navbar phone');
+                        }
+                      }}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15"
+                      placeholder="مجاني"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/80 p-3 sm:p-4">
+                <h3 className="text-sm font-semibold text-slate-900">Navbar language</h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  Choose the flag shown next to EN / AR, or upload a custom icon to replace it.
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-900 px-2.5 py-1.5 text-[11px] font-semibold text-white">
+                    {form.navbarLanguage?.iconUrl ? (
+                      <img
+                        src={form.navbarLanguage.iconUrl}
+                        alt="Language icon"
+                        className="h-6 w-6 rounded-sm object-contain"
+                      />
+                    ) : (
+                      <span className="text-base leading-none">
+                        {resolveNavbarLanguageTrigger(form.navbarLanguage).flag}
+                      </span>
+                    )}
+                    <span>EN</span>
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    {form.navbarLanguage?.iconUrl ? 'Custom icon is active' : 'Live preview'}
+                  </span>
+                </div>
+                <div className="mt-3">
+                  <p className="mb-2 text-xs font-medium text-slate-700">Flag</p>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {[{ code: 'auto', label: 'Follow market', flag: '🌐' }, ...GCC_MARKETS.map((market) => ({
+                      code: market.code,
+                      label: market.code,
+                      flag: market.flag,
+                    }))].map((option) => {
+                      const selected = (form.navbarLanguage?.flagCode || 'auto') === option.code;
+                      return (
+                        <button
+                          key={option.code}
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await persistNavbarLanguage({
+                                ...form.navbarLanguage,
+                                flagCode: option.code,
+                              });
+                            } catch (error) {
+                              toast.error(error?.message || 'Failed to save language flag');
+                            }
+                          }}
+                          className={`rounded-lg border px-2 py-2 text-left transition ${
+                            selected
+                              ? 'border-indigo-300 bg-white ring-2 ring-indigo-200'
+                              : 'border-slate-200 bg-white hover:border-slate-300'
+                          }`}
+                        >
+                          <span className="text-base leading-none">{option.flag}</span>
+                          <p className="mt-1 text-[11px] font-semibold text-slate-800">{option.label}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <p className="mb-2 text-xs font-medium text-slate-700">Custom icon</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="inline-flex cursor-pointer items-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          event.target.value = '';
+                          void uploadLanguageIcon(file);
+                        }}
+                      />
+                      {uploadingLanguageIcon ? 'Uploading…' : 'Upload icon'}
+                    </label>
+                    {form.navbarLanguage?.iconUrl ? (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await persistNavbarLanguage({
+                              ...form.navbarLanguage,
+                              iconUrl: '',
+                            });
+                          } catch (error) {
+                            toast.error(error?.message || 'Failed to remove language icon');
+                          }
+                        }}
+                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        Remove icon
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -2545,8 +3328,12 @@ export default function MenuManagementPage() {
               navMenuEnabled={form.navMenuEnabled}
               navMenuItems={previewMenuItems}
               navMenuUseParentCategories={form.navMenuUseParentCategories}
+              navMenuHoverDropdown={form.navMenuHoverDropdown !== false}
+              bnplTopBar={form.bnplTopBar}
               categoryOptions={categoryOptions}
               navActionsVisibility={form.navActionsVisibility}
+              navbarPhone={form.navbarPhone}
+              navbarLanguage={form.navbarLanguage}
               userName={user?.displayName || user?.email?.split('@')[0] || 'store1920'}
               searchPlaceholder={navbarLayout.searchPlaceholder || 'Coffee Maker'}
               extraButtons={navbarLayout.extraButtons}
@@ -2572,6 +3359,67 @@ export default function MenuManagementPage() {
               unifiedTextFontSize={navbarLayout.unifiedTextFontSize}
             />
           </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Show top bar</p>
+              <p className="text-xs text-slate-500">
+                The Tamara / Tabby strip above the navbar. Open Look → Top bar to edit text or enable Tabby.
+              </p>
+            </div>
+            <label className="relative inline-flex cursor-pointer items-center">
+              <input
+                type="checkbox"
+                checked={form.bnplTopBar?.enabled !== false}
+                onChange={(event) => persistBnplTopBar(
+                  { enabled: event.target.checked },
+                  event.target.checked ? 'Top bar shown' : 'Top bar hidden',
+                )}
+                className="peer sr-only"
+              />
+              <span className="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-indigo-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-5" />
+            </label>
+          </div>
+          <div className={`mt-4 grid gap-2 sm:grid-cols-2 ${form.bnplTopBar?.enabled !== false ? '' : 'pointer-events-none opacity-50'}`}>
+            {BNPL_PARTNER_DEFS.map((partner) => {
+              const partnerEnabled = Boolean(form.bnplTopBar?.[partner.enabledKey]);
+              return (
+                <button
+                  key={partner.key}
+                  type="button"
+                  onClick={() => persistBnplTopBar(
+                    { [partner.enabledKey]: !partnerEnabled },
+                    !partnerEnabled ? `${partner.name} shown` : `${partner.name} hidden`,
+                  )}
+                  className={`flex items-center justify-between rounded-xl border px-3 py-2.5 text-left ${
+                    partnerEnabled
+                      ? 'border-indigo-200 bg-indigo-50'
+                      : 'border-slate-200 bg-white'
+                  }`}
+                >
+                  <span className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                    <img src={partner.logoUrl} alt="" className="h-4 w-auto" />
+                    {partner.name}
+                  </span>
+                  <span className={`text-xs font-medium ${partnerEnabled ? 'text-indigo-700' : 'text-slate-400'}`}>
+                    {partnerEnabled ? 'On' : 'Off'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setActivePanel('settings');
+              setSettingsSection('topbar');
+            }}
+            className="mt-3 text-xs font-semibold text-indigo-700 hover:text-indigo-800"
+          >
+            Edit top bar text
+          </button>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
@@ -2643,6 +3491,24 @@ export default function MenuManagementPage() {
             </button>
           </div>
 
+          <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Auto hover dropdown</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Show subcategories when shoppers hover a parent name. Categories with their own children open a nested submenu.
+              </p>
+            </div>
+            <label className="relative inline-flex shrink-0 cursor-pointer items-center">
+              <input
+                type="checkbox"
+                checked={form.navMenuHoverDropdown !== false}
+                onChange={(event) => setHoverDropdown(event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-indigo-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-5" />
+            </label>
+          </div>
+
           {form.navMenuUseParentCategories ? (
             <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-indigo-800">
@@ -2650,17 +3516,26 @@ export default function MenuManagementPage() {
               </p>
               <p className="mt-1 text-xs text-indigo-900/80">
                 These names appear on the category bar automatically.
+                {form.navMenuHoverDropdown !== false
+                  ? ' Hover a name on the storefront to open its subcategories.'
+                  : ''}
               </p>
               {parentCategoryPreview.length > 0 ? (
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {parentCategoryPreview.map((category) => (
-                    <span
-                      key={category._id || category.slug || category.name}
-                      className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 ring-1 ring-indigo-100"
-                    >
-                      {getCategoryDisplayName(category)}
-                    </span>
-                  ))}
+                  {parentCategoryPreview.map((category) => {
+                    const childCount = getDirectChildCategories(categoryOptions, category).length;
+                    return (
+                      <span
+                        key={category._id || category.slug || category.name}
+                        className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 ring-1 ring-indigo-100"
+                      >
+                        {getCategoryDisplayName(category)}
+                        {childCount ? (
+                          <span className="ms-1 text-slate-400">{childCount}</span>
+                        ) : null}
+                      </span>
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="mt-2 text-sm text-indigo-900">
@@ -2681,6 +3556,7 @@ export default function MenuManagementPage() {
                   <div className="mt-2 flex flex-wrap gap-2">
                     {parentCategoryPreview.map((category) => {
                       const selected = isParentCategorySelected(category);
+                      const childCount = getDirectChildCategories(categoryOptions, category).length;
                       return (
                         <button
                           key={category._id || category.slug || category.name}
@@ -2693,6 +3569,9 @@ export default function MenuManagementPage() {
                           }`}
                         >
                           {getCategoryDisplayName(category)}
+                          {childCount ? (
+                            <span className="ms-1 opacity-60">{childCount}</span>
+                          ) : null}
                         </button>
                       );
                     })}
@@ -2739,7 +3618,10 @@ export default function MenuManagementPage() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
                   Add a custom link
                 </p>
-                <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                <p className="mt-1 text-xs text-slate-500">
+                  Add it on the bar, place it under a row, or drag the chip onto any hover menu.
+                </p>
+                <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_1fr]">
                   <input
                     type="text"
                     value={customBarLinkName}
@@ -2754,6 +3636,20 @@ export default function MenuManagementPage() {
                     placeholder="/new-arrivals or https://..."
                     className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
                   />
+                </div>
+                <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                  <select
+                    value={customBarLinkParent}
+                    onChange={(event) => setCustomBarLinkParent(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  >
+                    <option value="bar">On the bar</option>
+                    {form.navMenuItems.map((item, index) => (
+                      <option key={`${item.name || 'row'}-${index}`} value={String(index)}>
+                        Under {item.name || `Item ${index + 1}`}
+                      </option>
+                    ))}
+                  </select>
                   <button
                     type="button"
                     onClick={addCustomBarLink}
@@ -2763,46 +3659,259 @@ export default function MenuManagementPage() {
                     Add link
                   </button>
                 </div>
+                {customBarLinkName.trim() && customBarLinkUrl.trim() ? (
+                  <button
+                    type="button"
+                    draggable
+                    onDragStart={() => setPendingCustomDrag(true)}
+                    onDragEnd={() => setPendingCustomDrag(false)}
+                    className={`mt-2 inline-flex cursor-grab items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 active:cursor-grabbing ${
+                      pendingCustomDrag
+                        ? 'bg-indigo-50 text-indigo-700 ring-indigo-200'
+                        : 'bg-white text-slate-700 ring-slate-200'
+                    }`}
+                  >
+                    <GripVertical size={12} />
+                    {customBarLinkName.trim()} — drag onto a row
+                  </button>
+                ) : null}
               </div>
 
               {form.navMenuItems.length ? (
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                    On the bar now
-                  </p>
-                  {form.navMenuItems.map((item, index) => (
-                    <div
-                      key={`${item.categoryId || item.slug || item.name || 'item'}-${index}`}
-                      className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
-                    >
-                      <p className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">
-                        {item.name || `Item ${index + 1}`}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => moveManualBarItem(index, -1)}
-                        disabled={index === 0}
-                        className="rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 disabled:opacity-40"
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                      On the bar now
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Drag a row to change order. Drag a custom link or hover item onto any row to place it under that name.
+                    </p>
+                  </div>
+                  {form.navMenuItems.map((item, index) => {
+                    const subLinks = getItemSubLinks(item);
+                    const addableSubs = getAddableSubCategories(item);
+                    const customItem = isCustomBarItem(item);
+                    const acceptHoverDrop = Boolean(
+                      pendingCustomDrag
+                      || nestedDrag
+                      || (dragIndex != null && dragIndex !== index && isCustomBarItem(form.navMenuItems[dragIndex])),
+                    );
+                    const rowReorderActive = dropIndex === index && dragIndex !== null && dragIndex !== index && !acceptHoverDrop;
+                    const hoverDropActive = dropIndex === index && acceptHoverDrop;
+                    const draft = customLinkDrafts[index] || { name: '', url: '' };
+                    return (
+                      <div
+                        key={`${item.categoryId || item.slug || item.name || 'item'}-${index}`}
+                        className={`rounded-xl border bg-white transition ${
+                          rowReorderActive
+                            ? 'border-indigo-300 ring-2 ring-indigo-100'
+                            : hoverDropActive
+                              ? 'border-indigo-400 ring-2 ring-indigo-200'
+                              : 'border-slate-200'
+                        }`}
                       >
-                        Up
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => moveManualBarItem(index, 1)}
-                        disabled={index === form.navMenuItems.length - 1}
-                        className="rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 disabled:opacity-40"
-                      >
-                        Down
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeManualBarItem(index)}
-                        className="rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
+                        <div
+                          className="flex items-center gap-2 px-3 py-2.5"
+                          onDragOver={(event) => {
+                            if (acceptHoverDrop) return;
+                            event.preventDefault();
+                            setDropIndex(index);
+                          }}
+                          onDrop={(event) => {
+                            if (acceptHoverDrop) return;
+                            event.preventDefault();
+                            dropManualBarItem(index);
+                          }}
+                        >
+                          <button
+                            type="button"
+                            draggable
+                            onDragStart={() => setDragIndex(index)}
+                            onDragEnd={() => {
+                              setDragIndex(null);
+                              setDropIndex(null);
+                            }}
+                            className="inline-flex cursor-grab items-center rounded-md border border-slate-200 bg-slate-50 p-1.5 text-slate-500 active:cursor-grabbing"
+                            title="Drag to reorder the bar"
+                          >
+                            <GripVertical size={14} />
+                          </button>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold text-slate-800">
+                              {item.name || `Item ${index + 1}`}
+                            </p>
+                            <p className="truncate text-[11px] text-slate-400">
+                              {customItem ? item.link || 'Custom link' : `${subLinks.length} hover items`}
+                            </p>
+                          </div>
+                          <span className="hidden rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 sm:inline">
+                            {customItem ? 'Custom' : 'Category'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => moveManualBarItem(index, -1)}
+                            disabled={index === 0}
+                            className="rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 disabled:opacity-40"
+                          >
+                            Up
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveManualBarItem(index, 1)}
+                            disabled={index === form.navMenuItems.length - 1}
+                            className="rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 disabled:opacity-40"
+                          >
+                            Down
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeManualBarItem(index)}
+                            className="rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                          >
+                            Remove
+                          </button>
+                        </div>
+
+                        <div
+                          className={`space-y-2 border-t px-3 py-3 ${
+                            hoverDropActive ? 'border-indigo-200 bg-indigo-50/70' : 'border-slate-100'
+                          }`}
+                          onDragOver={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setDropIndex(index);
+                          }}
+                          onDrop={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            dropOnHoverZone(index);
+                          }}
+                        >
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                            {hoverDropActive ? 'Drop here to add under this name' : 'Hover menu'}
+                          </p>
+                          {subLinks.length ? (
+                            <div className="space-y-1.5">
+                              {subLinks.map((sub, subIndex) => (
+                                <div
+                                  key={`${sub.categoryId || sub.slug || sub.name || 'sub'}-${subIndex}`}
+                                  draggable
+                                  onDragStart={(event) => {
+                                    event.stopPropagation();
+                                    setNestedDrag({ itemIndex: index, subIndex });
+                                  }}
+                                  onDragEnd={() => {
+                                    setNestedDrag(null);
+                                    setNestedDrop(null);
+                                  }}
+                                  onDragOver={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                  }}
+                                  onDragEnter={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    setNestedDrop({ itemIndex: index, subIndex });
+                                  }}
+                                  onDrop={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    dropBarSubItem(index, subIndex);
+                                  }}
+                                  className={`flex cursor-grab items-center gap-2 rounded-lg border bg-white px-2.5 py-1.5 active:cursor-grabbing ${
+                                    nestedDrop?.itemIndex === index && nestedDrop?.subIndex === subIndex
+                                      ? 'border-indigo-300 ring-1 ring-indigo-200'
+                                      : 'border-slate-200'
+                                  }`}
+                                >
+                                  <GripVertical size={13} className="shrink-0 text-slate-400" />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate text-sm font-medium text-slate-700">{sub.name}</p>
+                                    {sub.link ? (
+                                      <p className="truncate text-[11px] text-slate-400">{sub.link}</p>
+                                    ) : null}
+                                  </div>
+                                  {Array.isArray(sub.children) && sub.children.length ? (
+                                    <span className="text-[11px] text-slate-400">{sub.children.length}</span>
+                                  ) : null}
+                                  <button
+                                    type="button"
+                                    onClick={() => removeSubFromBarItem(index, subIndex)}
+                                    className="rounded-md p-1 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                    title="Remove from hover menu"
+                                  >
+                                    <X size={13} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="rounded-lg border border-dashed border-slate-200 px-3 py-4 text-center text-xs text-slate-500">
+                              Drop a custom link here, or add a subcategory below.
+                            </p>
+                          )}
+                          <div className="flex flex-col gap-2 sm:flex-row">
+                            <select
+                              value={addSubKeys[index] || ''}
+                              onChange={(event) => setAddSubKeys((prev) => ({
+                                ...prev,
+                                [index]: event.target.value,
+                              }))}
+                              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                            >
+                              <option value="">Select a subcategory</option>
+                              {addableSubs.map((category) => {
+                                const value = getCategoryRecordId(category) || String(category?.slug || '');
+                                return (
+                                  <option key={value} value={value}>
+                                    {getCategoryDisplayName(category)}
+                                  </option>
+                                );
+                              })}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => addSubToBarItem(index)}
+                              className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
+                            >
+                              <Plus size={14} />
+                              Add sub
+                            </button>
+                          </div>
+                          <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                            <input
+                              type="text"
+                              value={draft.name}
+                              onChange={(event) => setCustomLinkDrafts((prev) => ({
+                                ...prev,
+                                [index]: { ...draft, name: event.target.value },
+                              }))}
+                              placeholder="Custom name"
+                              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                            />
+                            <input
+                              type="text"
+                              value={draft.url}
+                              onChange={(event) => setCustomLinkDrafts((prev) => ({
+                                ...prev,
+                                [index]: { ...draft, url: event.target.value },
+                              }))}
+                              placeholder="/link or https://..."
+                              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => addCustomSubToBarItem(index)}
+                              className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                            >
+                              <Plus size={14} />
+                              Add link
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-sm text-slate-500">

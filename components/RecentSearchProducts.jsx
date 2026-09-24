@@ -17,6 +17,7 @@ import {
   HOME_SECTION_SUBTITLE_CLASS,
   HOME_SECTION_GRID_INNER_CLASS,
 } from '@/lib/storefrontCarousel';
+import { filterStorefrontInStockProducts, isStorefrontProductInStock } from '@/lib/productVisibility';
 
 const normalizeImages = (images) => {
   // Handle array
@@ -78,10 +79,11 @@ export default function RecentSearchProducts() {
             
             // API returns history with products already populated
             if (response.data?.success && response.data?.history && response.data.history.length > 0) {
-              const viewed = response.data.history
-                .map(h => h.product)
-                .filter(Boolean)
-                .slice(0, 8);
+              const viewed = filterStorefrontInStockProducts(
+                response.data.history
+                  .map(h => h.product)
+                  .filter(Boolean)
+              ).slice(0, 8);
               if (viewed.length > 0) {
                 setRecentProducts(viewed);
                 setIsNewCustomer(false);
@@ -135,7 +137,7 @@ export default function RecentSearchProducts() {
             }
             return p;
           })
-          .filter(Boolean)
+          .filter((product) => product && isStorefrontProductInStock(product))
           .slice(0, 8);
         
         if (viewed.length > 0) {

@@ -7,6 +7,7 @@ import { HOME_PRODUCT_GRID_CLASS, HOME_SECTION_CLASS, HOME_SECTION_GRID_INNER_CL
 import { localizeField } from '@/lib/storefrontLanguage'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
 import { findTopDealsSection, isTopDealsVisibleOnWebsite } from '@/lib/homeTopDeals'
+import { filterStorefrontInStockProducts } from '@/lib/productVisibility'
 
 function TopDealsSkeleton() {
   return (
@@ -36,15 +37,15 @@ export default function TopDeals({
 }) {
   const { language } = useStorefrontI18n()
   const configuredSection = findTopDealsSection(homeSections)
-  const hasInitialProducts = Array.isArray(initialProducts) && initialProducts.length > 0
-  const [products, setProducts] = useState(hasInitialProducts ? initialProducts : [])
+  const hasInitialProducts = Array.isArray(initialProducts) && filterStorefrontInStockProducts(initialProducts).length > 0
+  const [products, setProducts] = useState(hasInitialProducts ? filterStorefrontInStockProducts(initialProducts) : [])
   const [loading, setLoading] = useState(!hasInitialProducts)
   const [title, setTitle] = useState(initialTitle || configuredSection?.title || '')
   const [titleAr, setTitleAr] = useState(configuredSection?.titleAr || '')
 
   useEffect(() => {
     if (hasInitialProducts) {
-      setProducts(initialProducts)
+      setProducts(filterStorefrontInStockProducts(initialProducts))
       setTitle(initialTitle || configuredSection?.title || '')
       setTitleAr(configuredSection?.titleAr || '')
       setLoading(false)
@@ -75,15 +76,15 @@ export default function TopDeals({
           const { data } = await axios.post('/api/products/batch', {
             productIds: section.productIds.slice(0, 12),
           })
-          if (!cancelled) setProducts(data.products || [])
+          if (!cancelled) setProducts(filterStorefrontInStockProducts(data.products || []))
           return
         }
 
         if (section.category) {
           const { data } = await axios.get('/api/products', {
-            params: { category: section.category, limit: 12 },
+            params: { category: section.category, limit: 12, inStockOnly: true },
           })
-          if (!cancelled) setProducts(data.products || [])
+          if (!cancelled) setProducts(filterStorefrontInStockProducts(data.products || []))
           return
         }
 

@@ -3,6 +3,7 @@ import authSeller from '@/middlewares/authSeller';
 import { getAuth } from '@/lib/firebase-admin';
 import {
   getGoogleSheetsInventoryStatus,
+  readInventorySheetRows,
   syncStoreInventoryToGoogleSheet,
 } from '@/lib/googleSheetsInventory';
 
@@ -41,10 +42,21 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const body = await request.json().catch(() => ({}));
+    if (body?.apply === true) {
+      const rows = await readInventorySheetRows();
+      return NextResponse.json({
+        success: true,
+        apply: true,
+        rows,
+        message: `Loaded ${rows.length} Inventory row(s). SKU and product name will not change. Review and confirm to update stock, supplier, and brand.`,
+      });
+    }
+
     const result = await syncStoreInventoryToGoogleSheet(storeId);
     return NextResponse.json({
       ...result,
-      message: `Google Sheet updated: ${result.rowCount} inventory row(s), ${result.costRowCount} product cost SKU(s), ${result.nexsoRowCount} Nexso SKU(s), and ${result.supplierRowCount} supplier(s). The sheet is view-only — it does not change the store.`,
+      message: `Google Sheet updated: ${result.rowCount} inventory row(s), ${result.costRowCount} product cost SKU(s), ${result.nexsoRowCount} Nexso SKU(s), and ${result.supplierRowCount} supplier(s). Edit stock, supplier, and brand in Inventory, then use Apply from Google Sheet. SKU and product name stay the same.`,
     });
   } catch (error) {
     console.error('[inventory google-sheet POST]', error);

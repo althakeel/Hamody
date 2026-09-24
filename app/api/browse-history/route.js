@@ -3,7 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import BrowseHistory from '@/models/BrowseHistory';
 import Product from '@/models/Product';
 import { getAuth } from '@/lib/firebase-admin';
-import { STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility';
+import { STOREFRONT_IN_STOCK_FILTER, STOREFRONT_PUBLISHED_FILTER, isStorefrontProductInStock } from '@/lib/productVisibility';
 
 // GET - Fetch user's browse history
 export async function GET(request) {
@@ -30,6 +30,7 @@ export async function GET(request) {
     const products = await Product.find({
       _id: { $in: productIds },
       ...STOREFRONT_PUBLISHED_FILTER,
+      ...STOREFRONT_IN_STOCK_FILTER,
     })
       .select('_id name slug images price mrp AED category inStock stockQuantity')
       .lean();
@@ -40,7 +41,7 @@ export async function GET(request) {
     // Map products to history
     const historyWithProducts = history
       .map(h => ({ ...h, product: productMap.get(h.productId) || null }))
-      .filter(h => h.product !== null && h.product.name); // Filter out deleted products and invalid entries
+      .filter(h => h.product !== null && h.product.name && isStorefrontProductInStock(h.product));
 
     return NextResponse.json({ 
       success: true, 

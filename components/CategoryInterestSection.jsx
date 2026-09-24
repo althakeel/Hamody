@@ -21,6 +21,7 @@ import {
   fetchProductsByIdsInOrder,
 } from '@/lib/recommendedProductCatalog';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
+import { isStorefrontProductInStock } from '@/lib/productVisibility';
 import CategoryChipScroller from '@/components/CategoryChipScroller';
 import { HomeExploreInterestsSkeleton } from '@/components/home/HomeSectionSkeletons';
 
@@ -201,6 +202,7 @@ const normalizeImages = (images) => {
 function isRenderableProduct(product) {
   if (!product || typeof product !== 'object') return false;
   if (!product.name || !product.slug) return false;
+  if (!isStorefrontProductInStock(product)) return false;
   const thumbnail = getProductThumbnailUrl(product, { fallback: PLACEHOLDER_IMAGE });
   return Boolean(thumbnail && thumbnail !== PLACEHOLDER_IMAGE);
 }

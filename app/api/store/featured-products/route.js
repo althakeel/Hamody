@@ -7,7 +7,7 @@ import authSeller from '@/middlewares/authSeller'
 import Store from '@/models/Store'
 import Product from '@/models/Product'
 import { attachProductRatings } from '@/lib/attachProductRatings'
-import { STOREFRONT_PUBLISHED_FILTER, isProductPublished } from '@/lib/productVisibility'
+import { STOREFRONT_IN_STOCK_FILTER, STOREFRONT_PUBLISHED_FILTER, filterStorefrontInStockProducts, isProductPublished } from '@/lib/productVisibility'
 
 const DEFAULT_FEATURED_RESPONSE = {
     productIds: [],
@@ -81,7 +81,7 @@ export async function GET(request) {
         }
 
         const isPublicRequest = !userId
-        const cacheKey = isPublicRequest ? `public:featured-products:api:v5:${includeProducts}:${limit}` : null
+        const cacheKey = isPublicRequest ? `public:featured-products:api:v6:${includeProducts}:${limit}` : null
         if (cacheKey) {
             const cached = getCachedData(cacheKey)
             if (cached) {
@@ -119,6 +119,7 @@ export async function GET(request) {
                 const productsRaw = await Product.find({
                     _id: { $in: productIds },
                     ...STOREFRONT_PUBLISHED_FILTER,
+                    ...(isPublicRequest ? STOREFRONT_IN_STOCK_FILTER : {}),
                 })
                     .select(buildProductProjection)
                     .lean()
@@ -160,6 +161,9 @@ export async function GET(request) {
         }
 
         let products = await resolveProducts()
+        if (isPublicRequest) {
+            products = filterStorefrontInStockProducts(products)
+        }
 
         if (limit > 0) {
             products = products.slice(0, limit)

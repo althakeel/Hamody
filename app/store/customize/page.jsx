@@ -5,6 +5,7 @@ import ExploreInterestsCustomizeCard from '@/components/store/ExploreInterestsCu
 import {
   ArrowRight,
   ArrowUp,
+  LayoutList,
   LayoutTemplate,
   Palette,
   PanelsTopLeft,
@@ -23,6 +24,12 @@ import {
 } from 'lucide-react'
 
 const designPages = [
+  {
+    title: 'Menu Management',
+    description: 'Navbar look, top bar, category bar links, hover menus, logo, and search.',
+    href: '/store/menu-management',
+    icon: LayoutList,
+  },
   {
     title: 'Section 1 - home page',
     description: 'Control homepage product blocks and design settings in one place.',
@@ -43,8 +50,8 @@ const designPages = [
   },
   {
     title: 'Navbar Design',
-    description: 'Manage navbar links, upload a logo, and change the navbar background color.',
-    href: '/store/navbar-menu',
+    description: 'Same as Menu Management — logo, colors, and navbar layout.',
+    href: '/store/menu-management',
     icon: PanelsTopLeft,
   },
   {

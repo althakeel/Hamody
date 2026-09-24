@@ -27,6 +27,7 @@ import {
 } from "@/lib/fbtCart";
 import { decrementCartItem, incrementCartItem } from "@/lib/bundleCartActions";
 import MobileProductActions from "./MobileProductActions";
+import ProductNotifyMeForm from "./ProductNotifyMeForm";
 import ProductShareButton from "./ProductShareButton";
 import NewProductTagBadge from "./NewProductTagBadge";
 import ProductWhatsAppWidget from "./ProductWhatsAppWidget";
@@ -3839,6 +3840,13 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
             {/* Action Buttons */}
             <div className="mt-5" dir={isArabic ? 'rtl' : 'ltr'}>
               {!showCartMatchedUi ? (
+                !isSelectionInStock ? (
+                  <ProductNotifyMeForm
+                    productId={product._id}
+                    sku={String(selectedVariant?.sku || product.sku || '').trim()}
+                    defaultEmail={user?.email || ''}
+                  />
+                ) : (
                 <div className="space-y-3">
                   <button
                     onClick={handleAddToCart}
@@ -3866,6 +3874,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                     {t('common.buyNow')}
                   </button>
                 </div>
+                )
               ) : (
                 <div className="space-y-2.5">
                   <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5">
@@ -4111,6 +4120,9 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
         isOrdering={isOrderingNow}
         quantity={quantity}
         formatQuantity={(value) => formatCount(value)}
+        notifyProductId={product._id}
+        notifySku={String(selectedVariant?.sku || product.sku || '').trim()}
+        notifyEmail={user?.email || ''}
       />
 
       <style jsx>{`

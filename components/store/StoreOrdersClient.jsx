@@ -11,6 +11,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { Package, Truck, X, Download, Printer, RefreshCw, MapPin, Trash2, CalendarClock, AlertTriangle, Search, Plus, ArrowUp, ArrowDown, ArrowUpDown, History, Pencil, Filter, Phone, Undo2, CheckCircle2, FileText } from "lucide-react";
 import StoreCreateOrderModal from '@/components/store/StoreCreateOrderModal';
+import StoreNotifyRequestsCard from '@/components/store/StoreNotifyRequestsCard';
 import PaymentFailedCallCustomerModal from '@/components/store/PaymentFailedCallCustomerModal';
 import StoreEditOrderPanel from '@/components/store/StoreEditOrderPanel';
 import OrderStatusPicker, { getStoreOrderStatusMeta, STORE_ORDER_STATUS_FILTER_OPTIONS, STORE_ORDER_STATUS_OPTIONS } from '@/components/store/OrderStatusPicker';
@@ -4077,6 +4078,8 @@ export default function StoreOrders() {
                     Create order
                 </button>
             </div>
+
+            <StoreNotifyRequestsCard />
 
             <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
                 <label htmlFor="order-search" className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">

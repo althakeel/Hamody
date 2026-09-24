@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   filterParentCategories,
   getCategoryDisplayName,
@@ -32,6 +33,8 @@ const defaultActionsVisibility = {
   orders: true,
   wishlist: true,
   cart: true,
+  phone: true,
+  language: true,
 };
 
 const NAVBAR_CONTAINER_CLASS = 'mx-auto w-full px-4 sm:px-6';
@@ -108,6 +111,18 @@ const sanitizeMenuItems = (items) => {
             .map((entry) => ({
               name: String(entry?.name || '').trim(),
               link: normalizeStorefrontCategoryHref(String(entry?.link || '').trim() || '#'),
+              categoryId: String(entry?.categoryId || '').trim(),
+              slug: String(entry?.slug || '').trim(),
+              children: Array.isArray(entry?.children)
+                ? entry.children
+                    .map((child) => ({
+                      name: String(child?.name || '').trim(),
+                      link: normalizeStorefrontCategoryHref(String(child?.link || '').trim() || '#'),
+                      categoryId: String(child?.categoryId || '').trim(),
+                      slug: String(child?.slug || '').trim(),
+                    }))
+                    .filter((child) => child.name)
+                : [],
             }))
             .filter((entry) => entry.name)
         : [];
@@ -130,6 +145,7 @@ const sanitizeMenuItems = (items) => {
         categoryId,
         megaMenu: {
           linkColumns,
+          manualLinks: Boolean(megaMenu.manualLinks),
           links,
           images,
         },
@@ -149,6 +165,87 @@ const hasMegaContent = (item) => {
   const images = Array.isArray(item.megaMenu.images) ? item.megaMenu.images : [];
   return links.length > 0 || images.some((entry) => entry?.url);
 };
+
+function CategoryHoverPanel({
+  links,
+  anchorRect,
+  isArabic,
+  menuStyle,
+  onKeepOpen,
+  onClose,
+}) {
+  const [openChildIndex, setOpenChildIndex] = useState(null);
+
+  if (typeof document === 'undefined' || !anchorRect || !Array.isArray(links) || links.length === 0) {
+    return null;
+  }
+
+  const panelWidth = 260;
+  const left = isArabic
+    ? Math.max(8, anchorRect.right - panelWidth)
+    : Math.min(Math.max(8, anchorRect.left), window.innerWidth - panelWidth - 8);
+  const top = Math.min(anchorRect.bottom + 2, window.innerHeight - 16);
+
+  return createPortal(
+    <div
+      className="fixed z-[120] min-w-[220px] max-w-[280px] rounded-xl border py-1.5 shadow-2xl"
+      style={{
+        top,
+        left,
+        borderColor: menuStyle.dropdownBorderColor,
+        backgroundColor: menuStyle.dropdownBackgroundColor,
+      }}
+      dir={isArabic ? 'rtl' : 'ltr'}
+      onMouseEnter={onKeepOpen}
+      onMouseLeave={onClose}
+    >
+      {links.map((entry, idx) => {
+        const children = Array.isArray(entry.children) ? entry.children.filter((child) => child?.name) : [];
+        const hasChildren = children.length > 0;
+        return (
+          <div
+            key={`${entry.name}-${idx}`}
+            className="relative"
+            onMouseEnter={() => setOpenChildIndex(hasChildren ? idx : null)}
+          >
+            <Link
+              href={entry.link || '#'}
+              className="flex items-center justify-between gap-3 px-3.5 py-2 text-sm font-medium transition hover:bg-slate-50"
+              style={{ color: menuStyle.dropdownTextColor }}
+            >
+              <span className="min-w-0 truncate">{entry.name}</span>
+              {hasChildren ? (
+                isArabic ? <ChevronLeft size={14} className="shrink-0 opacity-60" /> : <ChevronRight size={14} className="shrink-0 opacity-60" />
+              ) : null}
+            </Link>
+            {hasChildren && openChildIndex === idx ? (
+              <div
+                className="absolute top-0 z-[121] min-w-[200px] rounded-xl border py-1.5 shadow-2xl"
+                style={{
+                  [isArabic ? 'right' : 'left']: 'calc(100% + 4px)',
+                  borderColor: menuStyle.dropdownBorderColor,
+                  backgroundColor: menuStyle.dropdownBackgroundColor,
+                }}
+              >
+                {children.map((child, childIdx) => (
+                  <Link
+                    key={`${child.name}-${childIdx}`}
+                    href={child.link || '#'}
+                    className="block px-3.5 py-2 text-sm transition hover:bg-slate-50"
+                    style={{ color: menuStyle.dropdownTextColor }}
+                  >
+                    {child.name}
+                  </Link>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>,
+    document.body,
+  );
+}
 
 function MegaDropdown({ item, dropdownLinks, featuredImages, onClose, timerRef, menuStyle }) {
   const columns = item?.megaMenu?.linkColumns || 1;
@@ -247,10 +344,13 @@ function MegaDropdown({ item, dropdownLinks, featuredImages, onClose, timerRef, 
 export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
   const [navMenuItems, setNavMenuItems] = useState([]);
   const [navMenuUseParentCategories, setNavMenuUseParentCategories] = useState(false);
+  const [navMenuHoverDropdown, setNavMenuHoverDropdown] = useState(true);
   const [navMenuEnabled, setNavMenuEnabled] = useState(false);
   const [categories, setCategories] = useState([]);
   const [hoveredCategory, setHoveredCategory] = useState(null);
   const [openMegaIndex, setOpenMegaIndex] = useState(null);
+  const [openHoverIndex, setOpenHoverIndex] = useState(null);
+  const [hoverAnchorRect, setHoverAnchorRect] = useState(null);
   const [categoriesDropdownOpen, setCategoriesDropdownOpen] = useState(false);
   const [loadedOnce, setLoadedOnce] = useState(false);
   const [menuStyle, setMenuStyle] = useState(defaultMenuStyle);
@@ -259,6 +359,7 @@ export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
 
   const megaTimer = useRef(null);
   const categoryTimer = useRef(null);
+  const hoverTimer = useRef(null);
   const sliderRef = useRef(null);
   const sliderTargetRef = useRef(0);
   const sliderRafRef = useRef(null);
@@ -374,6 +475,7 @@ export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
         const parsedItems = sanitizeMenuItems(nextSettings?.navMenuItems);
         const parsedEnabled = Boolean(nextSettings?.navMenuEnabled);
         const parsedUseParentCategories = Boolean(nextSettings?.navMenuUseParentCategories);
+        const parsedHoverDropdown = nextSettings?.navMenuHoverDropdown !== false;
         const parsedActions = {
           ...defaultActionsVisibility,
           ...(nextSettings?.navActionsVisibility || {}),
@@ -392,6 +494,7 @@ export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
         setNavMenuItems(parsedItems);
         setNavMenuEnabled(parsedEnabled);
         setNavMenuUseParentCategories(parsedUseParentCategories);
+        setNavMenuHoverDropdown(parsedHoverDropdown);
         setMenuStyle(parsedStyle);
 
         window.sessionStorage.setItem(CATEGORIES_CACHE_KEY, JSON.stringify(parsedCategories));
@@ -426,8 +529,26 @@ export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
       clearInterval(intervalId);
       if (megaTimer.current) clearTimeout(megaTimer.current);
       if (categoryTimer.current) clearTimeout(categoryTimer.current);
+      if (hoverTimer.current) clearTimeout(hoverTimer.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (openHoverIndex == null) return undefined;
+    const closeHover = () => {
+      setOpenHoverIndex(null);
+      setHoverAnchorRect(null);
+    };
+    const container = sliderRef.current;
+    container?.addEventListener('scroll', closeHover, { passive: true });
+    window.addEventListener('scroll', closeHover, { passive: true });
+    window.addEventListener('resize', closeHover);
+    return () => {
+      container?.removeEventListener('scroll', closeHover);
+      window.removeEventListener('scroll', closeHover);
+      window.removeEventListener('resize', closeHover);
+    };
+  }, [openHoverIndex]);
 
   useEffect(() => {
     const container = sliderRef.current;
@@ -618,29 +739,46 @@ export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
           {effectiveMenuItems.map((item, index) => {
             const dropdownLinks = Array.isArray(item?.megaMenu?.links) ? item.megaMenu.links : [];
             const featuredImages = Array.isArray(item?.megaMenu?.images) ? item.megaMenu.images.filter((img) => img?.url) : [];
-            const shouldUseCollectionsFlyout = isCollectionsItem(item);
-            const shouldUseMega = hasMegaContent(item);
+            const shouldUseCollectionsFlyout = navMenuHoverDropdown && isCollectionsItem(item);
+            const shouldUseHoverDropdown = navMenuHoverDropdown
+              && !shouldUseCollectionsFlyout
+              && dropdownLinks.length > 0
+              && featuredImages.length === 0;
+            const shouldUseMega = navMenuHoverDropdown && !shouldUseHoverDropdown && hasMegaContent(item);
             const itemHref = item.link || '#';
 
             return (
               <div
                 key={`${item.name}-${index}`}
                 className="static inline-flex items-center"
-                onMouseEnter={() => {
+                onMouseEnter={(event) => {
                   if (megaTimer.current) clearTimeout(megaTimer.current);
                   if (categoryTimer.current) clearTimeout(categoryTimer.current);
+                  if (hoverTimer.current) clearTimeout(hoverTimer.current);
 
                   if (shouldUseCollectionsFlyout) {
                     setCategoriesDropdownOpen(true);
                     setOpenMegaIndex(null);
+                    setOpenHoverIndex(null);
+                    setHoverAnchorRect(null);
                     if (!hoveredCategory && topLevelCategories.length > 0) {
                       setHoveredCategory(topLevelCategories[0]);
                     }
+                  } else if (shouldUseHoverDropdown) {
+                    const trigger = event.currentTarget.querySelector('[data-category-hover-trigger]');
+                    setHoverAnchorRect((trigger || event.currentTarget).getBoundingClientRect());
+                    setOpenHoverIndex(index);
+                    setOpenMegaIndex(null);
+                    setCategoriesDropdownOpen(false);
                   } else if (shouldUseMega) {
                     setOpenMegaIndex(index);
+                    setOpenHoverIndex(null);
+                    setHoverAnchorRect(null);
                     setCategoriesDropdownOpen(false);
                   } else {
                     setOpenMegaIndex(null);
+                    setOpenHoverIndex(null);
+                    setHoverAnchorRect(null);
                     setCategoriesDropdownOpen(false);
                   }
                 }}
@@ -648,6 +786,12 @@ export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
                   if (shouldUseCollectionsFlyout) {
                     categoryTimer.current = setTimeout(() => {
                       setCategoriesDropdownOpen(false);
+                    }, 180);
+                  }
+                  if (shouldUseHoverDropdown) {
+                    hoverTimer.current = setTimeout(() => {
+                      setOpenHoverIndex(null);
+                      setHoverAnchorRect(null);
                     }, 180);
                   }
                   if (shouldUseMega) {
@@ -662,6 +806,7 @@ export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
                 )}
                 <Link
                   href={itemHref}
+                  data-category-hover-trigger=""
                   draggable={false}
                   onClick={(event) => {
                     if (suppressClickRef.current || dragStateRef.current.moved) {
@@ -673,6 +818,7 @@ export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
                 >
                   {item.icon ? <img src={item.icon} alt={item.name} className="h-4 w-4 object-contain" loading="lazy" /> : null}
                   <span>{item.name}</span>
+                  {shouldUseHoverDropdown ? <ChevronDown size={12} className="opacity-70" /> : null}
                 </Link>
 
                 {shouldUseCollectionsFlyout && categoriesDropdownOpen ? (
@@ -726,6 +872,26 @@ export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
                       </div>
                     </div>
                   </div>
+                ) : null}
+
+                {shouldUseHoverDropdown && openHoverIndex === index ? (
+                  <CategoryHoverPanel
+                    links={dropdownLinks}
+                    anchorRect={hoverAnchorRect}
+                    isArabic={storefrontLanguage === 'ar'}
+                    menuStyle={menuStyle}
+                    onKeepOpen={() => {
+                      if (hoverTimer.current) clearTimeout(hoverTimer.current);
+                      setOpenHoverIndex(index);
+                    }}
+                    onClose={() => {
+                      if (hoverTimer.current) clearTimeout(hoverTimer.current);
+                      hoverTimer.current = setTimeout(() => {
+                        setOpenHoverIndex(null);
+                        setHoverAnchorRect(null);
+                      }, 180);
+                    }}
+                  />
                 ) : null}
 
                 {shouldUseMega && openMegaIndex === index ? (

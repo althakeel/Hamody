@@ -17,6 +17,7 @@ import {
   HOME_SECTION_SUBTITLE_CLASS,
 } from '@/lib/storefrontCarousel';
 import { useMemo } from 'react';
+import { filterStorefrontInStockProducts } from '@/lib/productVisibility';
 
 export default function RecommendedProducts() {
   const products = useSelector(state => state.product.list);
@@ -35,10 +36,11 @@ export default function RecommendedProducts() {
     }
 
     const productMap = new Map(products.map((product) => [String(product?._id || product?.id || ''), product]));
-    return manualRecommendedIds
-      .map((id) => productMap.get(String(id || '').trim()))
-      .filter(Boolean)
-      .slice(0, 10);
+    return filterStorefrontInStockProducts(
+      manualRecommendedIds
+        .map((id) => productMap.get(String(id || '').trim()))
+        .filter(Boolean)
+    ).slice(0, 10);
   }, [manualRecommendedIds, products]);
 
   useEffect(() => {
@@ -112,7 +114,9 @@ export default function RecommendedProducts() {
         });
 
         if (!isMounted) return;
-        setManualRecommendedProducts(Array.isArray(response?.data?.products) ? response.data.products.slice(0, 10) : []);
+        setManualRecommendedProducts(
+          filterStorefrontInStockProducts(Array.isArray(response?.data?.products) ? response.data.products : []).slice(0, 10)
+        );
       } catch {
         if (isMounted) {
           setManualRecommendedProducts([]);
@@ -207,7 +211,7 @@ export default function RecommendedProducts() {
 
         // Get recommended products from similar categories
         const viewedIds = new Set(viewed.map(p => p._id || p.id));
-        const recommended = products
+        const recommended = filterStorefrontInStockProducts(products)
           .filter(product => {
             const categoryMatch = product.category && 
               [...viewedCategories].some(cat => 

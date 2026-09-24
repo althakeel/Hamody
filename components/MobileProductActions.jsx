@@ -2,6 +2,7 @@
 
 import { ShoppingCart } from 'lucide-react'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
+import ProductNotifyMeForm from './ProductNotifyMeForm'
 
 export default function MobileProductActions({
   onOrderNow,
@@ -10,14 +11,15 @@ export default function MobileProductActions({
   isOrdering = false,
   quantity = 1,
   formatQuantity = (value) => String(value),
+  notifyProductId = '',
+  notifySku = '',
+  notifyEmail = '',
 }) {
   const { t, isArabic } = useStorefrontI18n()
 
-  const orderLabel = isOutOfStock
-    ? t('common.outOfStock')
-    : isOrdering
-      ? t('common.processing')
-      : t('common.orderNow')
+  const orderLabel = isOrdering
+    ? t('common.processing')
+    : t('common.orderNow')
 
   const showQuantityBadge = !isOutOfStock && quantity > 1
 
@@ -41,24 +43,33 @@ export default function MobileProductActions({
           </button>
         ) : null}
 
-        <button
-          onClick={onOrderNow}
-          disabled={isOutOfStock || isOrdering}
-          className={`flex h-12 flex-1 items-center justify-center rounded-lg text-base font-bold text-white transition-all ${
-            (isOutOfStock || isOrdering)
-              ? 'cursor-not-allowed bg-gray-400 opacity-70'
-              : 'bg-[#E52D27] active:bg-[#CC261F]'
-          }`}
-        >
-          {isOrdering ? (
-            <span className="inline-flex items-center gap-2">
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-t-white" />
-              {orderLabel}
-            </span>
-          ) : (
-            orderLabel
-          )}
-        </button>
+        {isOutOfStock ? (
+          <ProductNotifyMeForm
+            productId={notifyProductId}
+            sku={notifySku}
+            defaultEmail={notifyEmail}
+            buttonClassName="flex h-12 flex-1 items-center justify-center rounded-lg bg-[#E52D27] text-base font-bold text-white active:bg-[#CC261F]"
+          />
+        ) : (
+          <button
+            onClick={onOrderNow}
+            disabled={isOrdering}
+            className={`flex h-12 flex-1 items-center justify-center rounded-lg text-base font-bold text-white transition-all ${
+              isOrdering
+                ? 'cursor-not-allowed bg-gray-400 opacity-70'
+                : 'bg-[#E52D27] active:bg-[#CC261F]'
+            }`}
+          >
+            {isOrdering ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-t-white" />
+                {orderLabel}
+              </span>
+            ) : (
+              orderLabel
+            )}
+          </button>
+        )}
       </div>
     </div>
   )

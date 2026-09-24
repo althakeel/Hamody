@@ -50,6 +50,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, permissions = {}, canViewAct
 
         { name: 'Customize', href: '/store/customize', icon: Palette },
 
+        { name: 'Menu Management', href: '/store/menu-management', icon: LayoutListIcon },
+
         { name: 'Product Badges', href: '/store/badges', icon: Tags },
 
         { name: 'WhatsApp Widget', href: '/store/customize/whatsapp-widget', icon: MessageCircle },
@@ -58,8 +60,6 @@ const StoreSidebar = ({ storeInfo, isOwner = false, permissions = {}, canViewAct
         { name: 'Mobile Features', href: '/store/mobile-features', icon: Smartphone },
 
         { name: 'Blogs', href: '/store/blogs', icon: FileText },
-
-        { name: 'Menu Management', href: '/store/menu-management', icon: LayoutListIcon },
 
         { name: 'Promotional Offers', href: '/store/personalized-offers', icon: Gift },
 
@@ -100,6 +100,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, permissions = {}, canViewAct
         { name: 'Marketing Stack', href: '/store/marketing-stack', icon: Layers },
 
         { name: 'Orders', href: '/store/orders', icon: LayoutListIcon },
+
+        { name: 'Notify list', href: '/store/notify-list', icon: BellIcon },
 
         { name: 'Pickup list', href: '/store/todays-pickup', icon: CalendarClock },
 
@@ -169,6 +171,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, permissions = {}, canViewAct
 
                 '/store/customize',
 
+                '/store/menu-management',
+
                 '/store/badges',
 
                 '/store/customize/whatsapp-widget',
@@ -178,8 +182,6 @@ const StoreSidebar = ({ storeInfo, isOwner = false, permissions = {}, canViewAct
                 '/store/mobile-features',
 
                 '/store/blogs',
-
-                '/store/menu-management',
 
                 '/store/media',
 
@@ -236,6 +238,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, permissions = {}, canViewAct
             links: [
 
                 '/store/orders',
+
+                '/store/notify-list',
 
                 '/store/todays-pickup',
 

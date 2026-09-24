@@ -53,11 +53,38 @@ const NavbarMenuSettingsSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    navMenuHoverDropdown: {
+      type: Boolean,
+      default: true,
+    },
+    bnplTopBar: {
+      enabled: { type: Boolean, default: true },
+      tamaraEnabled: { type: Boolean, default: true },
+      tabbyEnabled: { type: Boolean, default: false },
+      tamaraPayments: { type: Number, default: 4 },
+      tabbyPayments: { type: Number, default: 4 },
+      tamaraText: { type: String, default: '', trim: true },
+      tamaraTextAr: { type: String, default: '', trim: true },
+      tabbyText: { type: String, default: '', trim: true },
+      tabbyTextAr: { type: String, default: '', trim: true },
+    },
     navActionsVisibility: {
       store: { type: Boolean, default: true },
       orders: { type: Boolean, default: true },
       wishlist: { type: Boolean, default: true },
       cart: { type: Boolean, default: true },
+      phone: { type: Boolean, default: true },
+      language: { type: Boolean, default: true },
+    },
+    navbarPhone: {
+      number: { type: String, default: '8007861920', trim: true },
+      shortText: { type: String, default: '', trim: true },
+      label: { type: String, default: 'Toll-free', trim: true },
+      labelAr: { type: String, default: 'مجاني', trim: true },
+    },
+    navbarLanguage: {
+      flagCode: { type: String, default: 'auto', trim: true },
+      iconUrl: { type: String, default: '', trim: true },
     },
     navMenuStyle: {
       barBackgroundColor: { type: String, default: '#000000', trim: true },
@@ -81,10 +108,21 @@ const NavbarMenuSettingsSchema = new mongoose.Schema(
         categoryId: { type: String, default: '' },
         megaMenu: {
           linkColumns: { type: Number, default: 1 },
+          manualLinks: { type: Boolean, default: false },
           links: [
             {
               name: { type: String, default: '' },
               link: { type: String, default: '' },
+              categoryId: { type: String, default: '' },
+              slug: { type: String, default: '' },
+              children: [
+                {
+                  name: { type: String, default: '' },
+                  link: { type: String, default: '' },
+                  categoryId: { type: String, default: '' },
+                  slug: { type: String, default: '' },
+                },
+              ],
             },
           ],
           images: [
@@ -246,6 +284,36 @@ if (!NavbarMenuSettingsModel.schema.path('navActionsVisibility')) {
       orders: { type: Boolean, default: true },
       wishlist: { type: Boolean, default: true },
       cart: { type: Boolean, default: true },
+      phone: { type: Boolean, default: true },
+      language: { type: Boolean, default: true },
+    },
+  });
+}
+
+const navActionsVisibilitySchema = NavbarMenuSettingsModel.schema.path('navActionsVisibility')?.schema;
+if (navActionsVisibilitySchema && !navActionsVisibilitySchema.path('phone')) {
+  navActionsVisibilitySchema.add({
+    phone: { type: Boolean, default: true },
+    language: { type: Boolean, default: true },
+  });
+}
+
+if (!NavbarMenuSettingsModel.schema.path('navbarPhone')) {
+  NavbarMenuSettingsModel.schema.add({
+    navbarPhone: {
+      number: { type: String, default: '8007861920', trim: true },
+      shortText: { type: String, default: '', trim: true },
+      label: { type: String, default: 'Toll-free', trim: true },
+      labelAr: { type: String, default: 'مجاني', trim: true },
+    },
+  });
+}
+
+if (!NavbarMenuSettingsModel.schema.path('navbarLanguage')) {
+  NavbarMenuSettingsModel.schema.add({
+    navbarLanguage: {
+      flagCode: { type: String, default: 'auto', trim: true },
+      iconUrl: { type: String, default: '', trim: true },
     },
   });
 }
@@ -261,10 +329,21 @@ if (!NavbarMenuSettingsModel.schema.path('navMenuItems')) {
         categoryId: { type: String, default: '' },
         megaMenu: {
           linkColumns: { type: Number, default: 1 },
+          manualLinks: { type: Boolean, default: false },
           links: [
             {
               name: { type: String, default: '' },
               link: { type: String, default: '' },
+              categoryId: { type: String, default: '' },
+              slug: { type: String, default: '' },
+              children: [
+                {
+                  name: { type: String, default: '' },
+                  link: { type: String, default: '' },
+                  categoryId: { type: String, default: '' },
+                  slug: { type: String, default: '' },
+                },
+              ],
             },
           ],
           images: [
@@ -318,6 +397,37 @@ if (!NavbarMenuSettingsModel.schema.path('navMenuUseParentCategories')) {
       type: Boolean,
       default: false,
     },
+  });
+}
+
+if (!NavbarMenuSettingsModel.schema.path('navMenuHoverDropdown')) {
+  NavbarMenuSettingsModel.schema.add({
+    navMenuHoverDropdown: {
+      type: Boolean,
+      default: true,
+    },
+  });
+}
+
+if (!NavbarMenuSettingsModel.schema.path('bnplTopBar')) {
+  NavbarMenuSettingsModel.schema.add({
+    bnplTopBar: {
+      enabled: { type: Boolean, default: true },
+      tamaraEnabled: { type: Boolean, default: true },
+      tabbyEnabled: { type: Boolean, default: false },
+      tamaraPayments: { type: Number, default: 4 },
+      tabbyPayments: { type: Number, default: 4 },
+      tamaraText: { type: String, default: '', trim: true },
+      tamaraTextAr: { type: String, default: '', trim: true },
+      tabbyText: { type: String, default: '', trim: true },
+      tabbyTextAr: { type: String, default: '', trim: true },
+    },
+  });
+}
+
+if (!NavbarMenuSettingsModel.schema.path('navMenuItems.megaMenu.manualLinks')) {
+  NavbarMenuSettingsModel.schema.add({
+    'navMenuItems.megaMenu.manualLinks': { type: Boolean, default: false },
   });
 }
 

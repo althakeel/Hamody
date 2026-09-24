@@ -10,7 +10,7 @@ import useNavbarItemReorder from '@/components/store/useNavbarItemReorder';
 
 export default function NavbarItemArrange({
   layout,
-  visibility = { orders: true, wishlist: true, cart: true },
+  visibility = { orders: true, wishlist: true, cart: true, phone: true, language: true },
   onChange,
   onAlignChange,
   onReset,
