@@ -11,24 +11,22 @@ import { GTM_EVENTS, gtmDedupeKey } from '@/lib/gtmEvents';
 
 const GSI_SCRIPT_ID = 'google-gsi-client';
 const GSI_SRC = 'https://accounts.google.com/gsi/client';
-const DISMISS_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+/** Brief pause after logout so One Tap does not race the sign-out. */
+const POST_LOGOUT_PAUSE_MS = 60 * 1000;
 
-/** One prompt attempt per browser tab (avoids Strict Mode remount AbortErrors). */
+/** One prompt attempt per homepage visit in this tab (avoids Strict Mode remount AbortErrors). */
 let oneTapPromptedThisTab = false;
 let gsiConsolePatched = false;
 
-function shouldHideOnPath(pathname = '') {
-  return pathname.startsWith('/store')
-    || pathname.startsWith('/admin')
-    || pathname.startsWith('/checkout')
-    || pathname.startsWith('/api');
+function isStorefrontHome(pathname = '') {
+  return pathname === '/';
 }
 
 function wasRecentlyDismissed() {
   if (typeof window === 'undefined') return true;
   try {
     const at = Number(window.localStorage.getItem(GOOGLE_ONE_TAP_DISMISS_KEY) || 0);
-    return at > 0 && Date.now() - at < DISMISS_COOLDOWN_MS;
+    return at > 0 && Date.now() - at < POST_LOGOUT_PAUSE_MS;
   } catch {
     return false;
   }
@@ -117,7 +115,10 @@ export default function GoogleOneTap() {
 
   useEffect(() => {
     if (!clientId) return undefined;
-    if (shouldHideOnPath(pathname || '')) return undefined;
+    if (!isStorefrontHome(pathname || '')) {
+      oneTapPromptedThisTab = false;
+      return undefined;
+    }
     if (wasRecentlyDismissed()) return undefined;
     if (oneTapPromptedThisTab) return undefined;
     if (typeof window === 'undefined') return undefined;

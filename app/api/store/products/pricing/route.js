@@ -130,6 +130,8 @@ export async function PUT(req) {
 
         product.costPrice = costPrice;
         await product.save();
+        const { queueInventorySheetSync } = await import('@/lib/googleSheetsInventory');
+        queueInventorySheetSync(storeId);
 
         return NextResponse.json({
             success: true,

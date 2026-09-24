@@ -69,3 +69,75 @@ test('shows a fresh product anywhere when the New badge is enabled', () => {
 test('uses the Arabic label on the Arabic storefront', () => {
   assert.equal(getNewTagLabel({ label: 'New', labelAr: 'جديد' }, 'ar'), 'جديد');
 });
+
+test('keeps distinct placements and fills extra badge options', () => {
+  const settings = normalizeNewTagSettings({
+    badges: [
+      { label: 'New', placement: 'bottom-left', size: 'large', shape: 'tag', shadow: 'strong' },
+      { label: 'Hot', placement: 'top-center', size: 'small', opacity: 80, letterSpacing: 'wide' },
+      { label: 'Sale', placement: 'top-center', offset: 'loose' },
+    ],
+  });
+  assert.equal(settings.badges.length, 3);
+  assert.equal(settings.badges[0].placement, 'bottom-left');
+  assert.equal(settings.badges[1].placement, 'top-center');
+  assert.equal(settings.badges[2].placement, 'bottom-right');
+  assert.equal(settings.badges[0].size, 'large');
+  assert.equal(settings.badges[0].shape, 'tag');
+  assert.equal(settings.badges[0].shadow, 'strong');
+  assert.equal(settings.badges[1].opacity, 80);
+  assert.equal(settings.badges[1].letterSpacing, 'wide');
+  assert.equal(settings.badges[2].offset, 'loose');
+});
+
+test('adds a third badge on a free corner', () => {
+  const first = normalizeNewTagSettings({
+    badges: [
+      { label: 'New', placement: 'top-left' },
+      { label: 'Hot', placement: 'top-right' },
+    ],
+  }).badges;
+  const third = createProductImageBadge({ label: 'Sale' }, first);
+  assert.equal(third.placement, 'top-center');
+  assert.equal(third.label, 'Sale');
+});
+
+test('shows a badge only when its condition matches the product', () => {
+  const now = Date.parse('2026-09-11T00:00:00.000Z');
+  const oldProduct = {
+    createdAt: '2026-01-01T00:00:00.000Z',
+    price: 80,
+    AED: 100,
+    inStock: true,
+    stockQuantity: 12,
+  };
+  const saleSettings = {
+    enabled: true,
+    displayDays: 7,
+    badges: [{ label: 'Sale', condition: 'on-sale' }],
+  };
+  const alwaysSettings = {
+    enabled: true,
+    displayDays: 7,
+    badges: [{ label: 'Store', condition: 'always' }],
+  };
+
+  assert.equal(shouldShowNewProductTag(oldProduct, saleSettings, now), true);
+  assert.equal(shouldShowNewProductTag({ ...oldProduct, price: 100 }, saleSettings, now), false);
+  assert.equal(shouldShowNewProductTag(oldProduct, alwaysSettings, now), true);
+  assert.equal(normalizeNewTagSettings({}).badges[0].condition, 'new');
+});
+
+test('keeps a transparent background and custom border width', () => {
+  const settings = normalizeNewTagSettings({
+    badges: [{
+      label: 'Sale',
+      backgroundColor: 'transparent',
+      borderColor: 'transparent',
+      borderWidth: 6,
+    }],
+  });
+  assert.equal(settings.badges[0].backgroundColor, 'transparent');
+  assert.equal(settings.badges[0].borderColor, 'transparent');
+  assert.equal(settings.badges[0].borderWidth, 6);
+});

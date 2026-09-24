@@ -16,6 +16,7 @@ import WalletIcon from '@/assets/icons/wallet.png';
 import { isStorefrontWalletEnabled } from '@/lib/storefrontWallet';
 import SignInModal from './SignInModal';
 import NavbarMenuBar from './NavbarMenuBar';
+import StorefrontLanguageMarketSwitch from './StorefrontLanguageMarketSwitch';
 import AddressModal from './AddressModal';
 import ImageSearchModal from './ImageSearchModal';
 import { clearCart, fetchCart, uploadCart } from '@/lib/features/cart/cartSlice';
@@ -2102,6 +2103,10 @@ const Navbar = () => {
           </form>
 
           <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+          <StorefrontLanguageMarketSwitch
+            initialLanguage={storefrontLanguage}
+            tone={mobileNavbarUsesBrandColor ? 'onDark' : 'onLight'}
+          />
           {!isHomePage && (
             firebaseUser ? (
               renderAccountMenuTrigger({
@@ -2191,6 +2196,12 @@ const Navbar = () => {
                     </div>
                   );
                 })}
+                {side === 'right' ? (
+                  <StorefrontLanguageMarketSwitch
+                    initialLanguage={storefrontLanguage}
+                    tone="onDark"
+                  />
+                ) : null}
               </div>
             );
             return (

@@ -181,7 +181,7 @@ export default function SalesReport() {
                             Marketing Expenses
                         </Link>
                         <Link 
-                            href="/store/sales-report/product-pricing"
+                            href="/store/product-cost"
                             className="px-4 py-2 bg-white border-2 border-emerald-500 text-emerald-600 rounded-lg hover:bg-emerald-50 transition-all flex items-center gap-2 font-medium"
                         >
                             <Settings size={18} />

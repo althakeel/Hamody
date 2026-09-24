@@ -5,6 +5,7 @@ import authSeller from '@/middlewares/authSeller';
 import { getAuth } from '@/lib/firebase-admin';
 import { normalizeSupplier, toStoreSupplier } from '@/lib/supplierHelpers';
 import { storeIdMatch } from '@/lib/supplierServer';
+import { queueInventorySheetSync } from '@/lib/googleSheetsInventory';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,6 +64,8 @@ export async function POST(request) {
       ...parsed,
       createdBy: auth.uid || '',
     });
+
+    queueInventorySheetSync(auth.storeId);
 
     return NextResponse.json({
       success: true,

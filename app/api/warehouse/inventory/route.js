@@ -7,6 +7,7 @@ import {
   getCurrentStock,
 } from '@/lib/storeInventory';
 import { recordInventoryHistory } from '@/lib/inventoryHistory';
+import { queueInventorySheetSync } from '@/lib/googleSheetsInventory';
 
 export const dynamic = 'force-dynamic';
 
@@ -167,6 +168,8 @@ export async function PATCH(request) {
         ? { variants: variantUpdates.filter((entry) => Number(entry?.stockToAdd ?? entry?.stock ?? 0) > 0) }
         : {},
     });
+
+    queueInventorySheetSync(storeId);
 
     return NextResponse.json({
       success: true,

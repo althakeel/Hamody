@@ -9,6 +9,7 @@ import { resolveDashboardAccess } from '@/lib/storeAccessControl'
 import { canBulkEditProducts, canChangeProductPricing } from '@/lib/productSaveGuards'
 import { setProductsSupplierId } from '@/lib/supplierServer'
 import { assignProductSkus, findStoreProductsBySkus, parseSkuList } from '@/lib/productBulkSku'
+import { queueInventorySheetSync } from '@/lib/googleSheetsInventory'
 
 export const runtime = 'nodejs'
 
@@ -149,6 +150,8 @@ export async function PATCH(request) {
         })
       }))
     }
+
+    queueInventorySheetSync(storeId)
 
     return NextResponse.json({
       success: true,

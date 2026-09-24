@@ -179,7 +179,7 @@ English LTR only. Sidebar + Customize hub.
 | Returns | `/store/return-requests` |
 | Balance | `/store/balance` |
 | Sales report | `/store/sales-report` |
-| Product pricing report | `/store/sales-report/product-pricing` |
+| Product Cost | `/store/product-cost` |
 | Exports | `/store/exports` |
 | Reviews | `/store/reviews` |
 | Support tickets | `/store/tickets` |

@@ -5,7 +5,6 @@ import { cookies, headers } from "next/headers";
 import { Montserrat, Poppins, Shadows_Into_Light } from "next/font/google";
 import ClientLayout from "./ClientLayout";
 import StorefrontLanguageInitScript from "@/components/StorefrontLanguageInitScript";
-import { getStripExtensionHydrationAttrsScript } from "@/lib/stripExtensionHydrationAttrs";
 import EarlyHeadScripts from "@/components/EarlyHeadScripts";
 import {
   STOREFRONT_LANGUAGE_COOKIE,
@@ -135,10 +134,6 @@ export default async function RootLayout({ children }) {
         <link rel="dns-prefetch" href="https://analytics.tiktok.com" />
         <link rel="preconnect" href="https://analytics.tiktok.com" crossOrigin="anonymous" />
         <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
-        <script
-          id="strip-extension-hydration-attrs"
-          dangerouslySetInnerHTML={{ __html: getStripExtensionHydrationAttrsScript() }}
-        />
       </head>
       <body className={`${poppins.className} overflow-x-clip antialiased`} suppressHydrationWarning>
         <div id="store1920-root" suppressHydrationWarning>

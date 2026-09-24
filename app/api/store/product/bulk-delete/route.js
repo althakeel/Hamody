@@ -38,6 +38,9 @@ export async function POST(request) {
       storeId: String(storeId),
     })
 
+    const { queueInventorySheetSync } = await import('@/lib/googleSheetsInventory')
+    queueInventorySheetSync(storeId)
+
     return NextResponse.json({
       success: true,
       deletedCount: Number(result?.deletedCount || 0),

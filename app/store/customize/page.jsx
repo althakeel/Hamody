@@ -78,8 +78,14 @@ const designPages = [
     icon: Search,
   },
   {
-    title: 'Badges',
-    description: 'Edit product badges plus delivery, returns, VAT, and rush-delivery texts for the product page.',
+    title: 'Product Image Badges',
+    description: 'Choose when New, Sale, and other image badges show, then style each one.',
+    href: '/store/badges',
+    icon: Tag,
+  },
+  {
+    title: 'Product page labels',
+    description: 'Edit delivery, returns, VAT, and rush-delivery texts for the product page.',
     href: '/store/customize/product-page',
     icon: Truck,
   },

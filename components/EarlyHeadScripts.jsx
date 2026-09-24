@@ -1,13 +1,18 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 import { META_PIXEL_ID, getMetaPurchaseGuardInlineScript } from '@/lib/metaPixelConfig';
+import { startStripExtensionHydrationAttrs } from '@/lib/stripExtensionHydrationAttrs';
 
 /**
- * Injects early scripts via the DOM (never as React <script> children).
+ * Runs early client work without rendering React <script> children.
  * Avoids React 19 "Encountered a script tag while rendering" errors.
  */
 export default function EarlyHeadScripts() {
+  useLayoutEffect(() => {
+    startStripExtensionHydrationAttrs();
+  }, []);
+
   useEffect(() => {
     if (typeof document === 'undefined') return;
 

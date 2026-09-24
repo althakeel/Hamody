@@ -16,6 +16,7 @@ export default function StoreDropdown({
   searchable = false,
   disabled = false,
   className = '',
+  triggerClassName = '',
 }) {
   const listId = useId();
   const rootRef = useRef(null);
@@ -100,9 +101,11 @@ export default function StoreDropdown({
         onClick={() => {
           if (!disabled) setOpen((prev) => !prev);
         }}
-        className={`flex w-full items-center justify-between gap-2 rounded-lg border bg-white px-3 py-2 text-left text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
+        className={`flex w-full items-center justify-between gap-2 border text-left text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
+          triggerClassName || 'rounded-lg bg-white px-3 py-2'
+        } ${
           open
-            ? 'border-indigo-400 ring-2 ring-indigo-100'
+            ? 'border-indigo-400 bg-white ring-2 ring-indigo-500/15'
             : 'border-slate-200 hover:border-slate-300'
         }`}
       >

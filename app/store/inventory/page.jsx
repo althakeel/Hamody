@@ -12,6 +12,8 @@ import {
   Boxes,
   CalendarDays,
   Download,
+  ExternalLink,
+  FileSpreadsheet,
   RefreshCw,
   Save,
   Search,
@@ -265,6 +267,8 @@ export default function StoreInventoryPage() {
   const [bulkSkuPreviewing, setBulkSkuPreviewing] = useState(false);
   const [bulkSkuPreview, setBulkSkuPreview] = useState(null);
   const [bulkSkuResult, setBulkSkuResult] = useState(null);
+  const [sheetStatus, setSheetStatus] = useState(null);
+  const [sheetSyncing, setSheetSyncing] = useState(false);
   const searchBoxRef = useRef(null);
   const suggestTimerRef = useRef(null);
 
@@ -633,6 +637,42 @@ export default function StoreInventoryPage() {
     setShowExportModal(true);
   };
 
+  const fetchSheetStatus = useCallback(async () => {
+    try {
+      const token = await getToken();
+      const { data } = await axios.get('/api/store/inventory/google-sheet', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSheetStatus(data);
+    } catch {
+      setSheetStatus({ configured: false });
+    }
+  }, [getToken]);
+
+  useEffect(() => { fetchSheetStatus(); }, [fetchSheetStatus]);
+
+  const syncGoogleSheet = async () => {
+    try {
+      setSheetSyncing(true);
+      const token = await getToken();
+      const { data } = await axios.post('/api/store/inventory/google-sheet', {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSheetStatus((current) => ({
+        ...(current || {}),
+        configured: true,
+        spreadsheetUrl: data?.spreadsheetUrl || current?.spreadsheetUrl,
+        lastSyncedAt: data?.syncedAt,
+        rowCount: data?.rowCount,
+      }));
+      toast.success(data?.message || 'Google Sheet updated');
+    } catch (error) {
+      toast.error(error?.response?.data?.error || error.message || 'Failed to sync Google Sheet');
+    } finally {
+      setSheetSyncing(false);
+    }
+  };
+
   const clearHistoryFilters = useCallback(() => {
     setHistoryTodayOnly(false);
     setHistoryFromDate('');
@@ -722,6 +762,25 @@ export default function StoreInventoryPage() {
               <p className="text-base font-bold text-slate-900">{historyPagination.total}</p>
             </div>
           </div>
+          {sheetStatus?.configured && sheetStatus?.spreadsheetUrl ? (
+            <a
+              href={sheetStatus.spreadsheetUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-800 hover:bg-emerald-100"
+            >
+              <ExternalLink size={16} /> View Google Sheet
+            </a>
+          ) : null}
+          <button
+            type="button"
+            onClick={syncGoogleSheet}
+            disabled={sheetSyncing}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <FileSpreadsheet size={16} />
+            {sheetSyncing ? 'Syncing...' : 'Sync Google Sheet'}
+          </button>
           <button type="button" onClick={openExportModal} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800">
             <Download size={16} /> Excel
           </button>
@@ -737,6 +796,20 @@ export default function StoreInventoryPage() {
           </button>
         </div>
       </div>
+
+      {sheetStatus && !sheetStatus.configured ? (
+        <p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          Google Sheet view is not connected yet. Add GOOGLE_SHEETS_SPREADSHEET_ID in .env and share the sheet with
+          {' '}{sheetStatus.clientEmail || 'the service account email'} as Editor. Share staff as Viewer.
+          The sheet updates automatically a few seconds after you change stock, cost, products, or suppliers. Extra tabs: Product Cost, Nexso, and Suppliers. You can still Sync now.
+        </p>
+      ) : sheetStatus?.clientEmail ? (
+        <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          If Sync says the caller does not have permission, open the Google Sheet, click Share, add
+          {' '}<span className="font-mono text-slate-800">{sheetStatus.clientEmail}</span>{' '}
+          as Editor, then click Sync Google Sheet again. Staff can stay as Viewer.
+        </p>
+      ) : null}
 
       <StockQuickAddBar
         item={selectedProduct}

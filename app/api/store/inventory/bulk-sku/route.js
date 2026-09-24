@@ -7,6 +7,7 @@ import { getCurrentStock } from '@/lib/storeInventory';
 import { applyStockUpdateToProduct, describeMainStockChange } from '@/lib/applyMainStock';
 import { recordInventoryHistory, resolveInventoryActor } from '@/lib/inventoryHistory';
 import { parseSkuList } from '@/lib/parseSkuList';
+import { queueInventorySheetSync } from '@/lib/googleSheetsInventory';
 import { escapeRegex } from '@/lib/productSearch';
 
 export const dynamic = 'force-dynamic';
@@ -184,6 +185,8 @@ export async function POST(request) {
         details: `Set main stock to ${update.stockQuantity} from SKU list (${skus.length} SKU(s))`,
       });
     }
+
+    queueInventorySheetSync(storeId);
 
     return NextResponse.json({
       success: true,

@@ -13,24 +13,12 @@ import {
   History,
   Mail,
   RefreshCcw,
-  Plus,
   Save,
   Shield,
   Sparkles,
-  Tag,
   Trash2,
   UserRound,
 } from "lucide-react";
-import {
-  BADGE_FONT_OPTIONS,
-  DEFAULT_NEW_TAG_SETTINGS,
-  MAX_PRODUCT_IMAGE_BADGES,
-  createProductImageBadge,
-  getBadgeFontFamily,
-  getNewBadgeStyle,
-  normalizeNewTagSettings,
-  oppositeBadgePosition,
-} from "@/lib/newProductTag";
 import { useAuth } from "@/lib/useAuth";
 import { auth } from "@/lib/firebase";
 import { updateProfile } from "firebase/auth";
@@ -63,11 +51,6 @@ const TAB_META = {
     label: "Payments",
     icon: CreditCard,
     description: "Show or hide checkout methods",
-  },
-  newTag: {
-    label: "New tag",
-    icon: Tag,
-    description: "Label and days shown on new products",
   },
   dashboardAccess: {
     label: "Team Access",
@@ -107,10 +90,10 @@ function SettingsCard({ title, description, children, className = "" }) {
 
 function Field({ label, children, className = "" }) {
   return (
-    <label className={`flex flex-col gap-1.5 ${className}`}>
+    <div className={`flex flex-col gap-1.5 ${className}`}>
       <span className="text-sm font-medium text-slate-700">{label}</span>
       {children}
-    </label>
+    </div>
   );
 }
 
@@ -208,7 +191,6 @@ export default function SettingsPage() {
     enableTabby: true,
     enableTamara: true,
   });
-  const [newTagSettings, setNewTagSettings] = useState(DEFAULT_NEW_TAG_SETTINGS);
   const [paymentMethodsLoaded, setPaymentMethodsLoaded] = useState(false);
   const [loadingPayments, setLoadingPayments] = useState(false);
 
@@ -225,14 +207,14 @@ export default function SettingsPage() {
   const isSuperAdmin = isAdminEmail(user?.email);
 
   const settingsTabs = useMemo(() => {
-    const tabs = ["profile", "store", "preferences", "payments", "newTag", "dataImport"];
+    const tabs = ["profile", "store", "preferences", "payments", "dataImport"];
     if (canManageTeamAccess) tabs.splice(4, 0, "dashboardAccess");
     if (canViewActivityHistory) tabs.push("history");
     if (isSuperAdmin || isStoreOwner || canManageTeamAccess) tabs.push("cache");
     return tabs;
   }, [canManageTeamAccess, canViewActivityHistory, isSuperAdmin, isStoreOwner]);
 
-  const isFormTab = ["profile", "store", "preferences", "payments", "newTag"].includes(activeTab);
+  const isFormTab = ["profile", "store", "preferences", "payments"].includes(activeTab);
   const activeMeta = TAB_META[activeTab] || TAB_META.profile;
 
   const loadSettings = async () => {
@@ -266,7 +248,6 @@ export default function SettingsPage() {
       setStoreDescription(store.storeDescription || "");
       setBusinessType(store.businessType || "");
       setCurrencyPreference(store.currencyPreference || "AED");
-      setNewTagSettings(normalizeNewTagSettings(store.newTagSettings));
       setEmailNotifications(profile.emailNotifications !== false);
       setTwoFactorEnabled(Boolean(profile.twoFactorEnabled));
 
@@ -361,10 +342,15 @@ export default function SettingsPage() {
     if (tab === "team" || tab === "users" || tab === "dashboardAccess") {
       setActiveTab("dashboardAccess");
     }
-    if (tab === "new" || tab === "new-tag" || tab === "newTag") {
-      setActiveTab("newTag");
-    }
   }, [canManageTeamAccess]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    if (tab === "new" || tab === "new-tag" || tab === "newTag") {
+      window.location.replace("/store/badges");
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || !canViewActivityHistory) return;
@@ -564,13 +550,6 @@ export default function SettingsPage() {
       const badges = [...(prev.badges || [])];
       if (!badges[index]) return prev;
       badges[index] = { ...badges[index], ...patch };
-      if (patch.position && badges.length === 2) {
-        const otherIndex = index === 0 ? 1 : 0;
-        badges[otherIndex] = {
-          ...badges[otherIndex],
-          position: oppositeBadgePosition(patch.position),
-        };
-      }
       return { ...prev, badges };
     });
   };
@@ -988,7 +967,7 @@ export default function SettingsPage() {
         <div className="space-y-5">
           <SettingsCard
             title="Product New badge"
-            description="When enabled, newly added products show this badge anywhere they appear — homepage, shop, search, wishlist, cart, and the product page. Hidden after the number of days you set. Maximum 2 badges."
+            description="When enabled, each badge can use its own condition — new products, on sale, stock, fast delivery, or always. Hidden after the number of days you set for New product badges. Add up to 3 badges."
           >
             <div className="space-y-3">
               <ToggleRow
@@ -1029,6 +1008,18 @@ export default function SettingsPage() {
                   Products older than this many days stop showing the badges. Range: 1–365.
                 </span>
               </Field>
+              <div className="relative h-40 overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200">
+                <div className="absolute inset-x-10 inset-y-6 rounded-lg bg-white shadow-inner" />
+                {(newTagSettings.badges || []).filter((item) => item.enabled).map((item) => (
+                  <span
+                    key={item.id}
+                    className={`pointer-events-none absolute z-10 leading-none ${getBadgePlacementClass(item, "detail")} ${getBadgeSizeClass(item, "detail")} ${getBadgeShadowClass(item)}`}
+                    style={getNewBadgeStyle(item, false)}
+                  >
+                    {item.label || "New"}
+                  </span>
+                ))}
+              </div>
             </div>
           </SettingsCard>
 
@@ -1036,16 +1027,14 @@ export default function SettingsPage() {
             <SettingsCard
               key={badge.id || index}
               title={`Badge ${index + 1}`}
-              description={index === 0 ? "Primary badge on the product image." : "Second badge sits on the opposite side."}
+              description={index === 0 ? "Primary badge on the product image." : "Place this badge anywhere on the product image."}
             >
               <div className="space-y-4">
-                <div className="relative h-28 overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200">
+                <div className="relative h-36 overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200">
                   <div className="absolute inset-x-8 inset-y-6 rounded-lg bg-white shadow-inner" />
                   <span
-                    className={`absolute top-4 px-2 py-0.5 text-[11px] leading-none shadow-sm ${
-                      badge.position === "right" ? "right-4" : "left-4"
-                    }`}
-                    style={getNewBadgeStyle(badge, true)}
+                    className={`pointer-events-none absolute z-10 leading-none ${getBadgePlacementClass(badge, "detail")} ${getBadgeSizeClass(badge, "detail")} ${getBadgeShadowClass(badge)}`}
+                    style={getNewBadgeStyle(badge, false)}
                   >
                     {badge.label || "New"}
                   </span>
@@ -1059,6 +1048,31 @@ export default function SettingsPage() {
                 />
 
                 <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Condition" className="md:col-span-2">
+                    <BadgeSelect
+                      value={badge.condition || "new"}
+                      onChange={(value) => updateNewTagBadge(index, { condition: value })}
+                      options={toSelectOptions(BADGE_CONDITION_OPTIONS)}
+                    />
+                    <span className="text-xs text-slate-500">
+                      {BADGE_CONDITION_OPTIONS.find((option) => option.id === (badge.condition || "new"))?.hint}
+                    </span>
+                  </Field>
+                  {badge.condition === "low-stock" ? (
+                    <Field label="Low stock quantity" className="md:col-span-2">
+                      <input
+                        type="number"
+                        min={1}
+                        max={50}
+                        value={badge.conditionValue ?? 5}
+                        onChange={(e) => updateNewTagBadge(index, { conditionValue: Number(e.target.value) })}
+                        className={inputClass}
+                      />
+                      <span className="text-xs text-slate-500">
+                        Show this badge when remaining stock is this number or lower.
+                      </span>
+                    </Field>
+                  ) : null}
                   <Field label="English label">
                     <input
                       type="text"
@@ -1082,72 +1096,91 @@ export default function SettingsPage() {
                     />
                   </Field>
                   <Field label="Position on image">
-                    <select
-                      value={badge.position}
-                      onChange={(e) => updateNewTagBadge(index, { position: e.target.value })}
-                      className={inputClass}
-                    >
-                      <option value="left">Left</option>
-                      <option value="right">Right</option>
-                    </select>
+                    <BadgeSelect
+                      value={badge.placement || (badge.position === "right" ? "top-right" : "top-left")}
+                      onChange={(value) => updateNewTagBadge(index, {
+                        placement: value,
+                        position: value.includes("right") ? "right" : "left",
+                      })}
+                      options={toSelectOptions(BADGE_PLACEMENT_OPTIONS)}
+                    />
                   </Field>
                   <Field label="Shape">
-                    <select
+                    <BadgeSelect
                       value={badge.shape}
-                      onChange={(e) => updateNewTagBadge(index, { shape: e.target.value })}
-                      className={inputClass}
-                    >
-                      <option value="pill">Pill</option>
-                      <option value="rounded">Rounded</option>
-                    </select>
+                      onChange={(value) => updateNewTagBadge(index, { shape: value })}
+                      options={toSelectOptions(BADGE_SHAPE_OPTIONS)}
+                    />
+                  </Field>
+                  <Field label="Size">
+                    <BadgeSelect
+                      value={badge.size || "medium"}
+                      onChange={(value) => updateNewTagBadge(index, { size: value })}
+                      options={toSelectOptions(BADGE_SIZE_OPTIONS)}
+                    />
+                  </Field>
+                  <Field label="Distance from edge">
+                    <BadgeSelect
+                      value={badge.offset || "normal"}
+                      onChange={(value) => updateNewTagBadge(index, { offset: value })}
+                      options={toSelectOptions(BADGE_OFFSET_OPTIONS)}
+                    />
+                  </Field>
+                  <Field label="Shadow">
+                    <BadgeSelect
+                      value={badge.shadow || "soft"}
+                      onChange={(value) => updateNewTagBadge(index, { shadow: value })}
+                      options={toSelectOptions(BADGE_SHADOW_OPTIONS)}
+                    />
+                  </Field>
+                  <Field label="Letter spacing">
+                    <BadgeSelect
+                      value={badge.letterSpacing || "normal"}
+                      onChange={(value) => updateNewTagBadge(index, { letterSpacing: value })}
+                      options={toSelectOptions(BADGE_LETTER_SPACING_OPTIONS)}
+                    />
+                  </Field>
+                  <Field label="Opacity" className="md:col-span-2">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={50}
+                        max={100}
+                        step={5}
+                        value={badge.opacity ?? 100}
+                        onChange={(e) => updateNewTagBadge(index, { opacity: Number(e.target.value) })}
+                        className="h-2 w-full accent-indigo-600"
+                      />
+                      <span className="w-12 text-sm font-medium text-slate-600">{badge.opacity ?? 100}%</span>
+                    </div>
                   </Field>
                   <Field label="Font">
-                    <select
+                    <BadgeSelect
                       value={badge.fontFamily}
-                      onChange={(e) => updateNewTagBadge(index, { fontFamily: e.target.value })}
-                      className={inputClass}
-                      style={{ fontFamily: getBadgeFontFamily(badge.fontFamily) }}
-                    >
-                      {BADGE_FONT_OPTIONS.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(value) => updateNewTagBadge(index, { fontFamily: value })}
+                      options={toSelectOptions(BADGE_FONT_OPTIONS)}
+                    />
                   </Field>
                   <Field label="Font weight">
-                    <select
+                    <BadgeSelect
                       value={badge.fontWeight}
-                      onChange={(e) => updateNewTagBadge(index, { fontWeight: e.target.value })}
-                      className={inputClass}
-                    >
-                      <option value="500">Medium</option>
-                      <option value="600">Semibold</option>
-                      <option value="700">Bold</option>
-                      <option value="800">Extra bold</option>
-                    </select>
+                      onChange={(value) => updateNewTagBadge(index, { fontWeight: value })}
+                      options={BADGE_WEIGHT_OPTIONS}
+                    />
                   </Field>
                   <Field label="Letters">
-                    <select
+                    <BadgeSelect
                       value={badge.textTransform}
-                      onChange={(e) => updateNewTagBadge(index, { textTransform: e.target.value })}
-                      className={inputClass}
-                    >
-                      <option value="uppercase">UPPERCASE</option>
-                      <option value="none">As typed</option>
-                    </select>
+                      onChange={(value) => updateNewTagBadge(index, { textTransform: value })}
+                      options={toSelectOptions(BADGE_TEXT_TRANSFORM_OPTIONS)}
+                    />
                   </Field>
                   <Field label="Border width">
-                    <select
+                    <BadgeSelect
                       value={String(badge.borderWidth)}
-                      onChange={(e) => updateNewTagBadge(index, { borderWidth: Number(e.target.value) })}
-                      className={inputClass}
-                    >
-                      <option value="0">None</option>
-                      <option value="1">Thin</option>
-                      <option value="2">Medium</option>
-                      <option value="3">Thick</option>
-                    </select>
+                      onChange={(value) => updateNewTagBadge(index, { borderWidth: Number(value) })}
+                      options={BADGE_BORDER_OPTIONS}
+                    />
                   </Field>
                   <Field label="Background">
                     <div className="flex items-center gap-2">

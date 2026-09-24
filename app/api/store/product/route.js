@@ -1060,6 +1060,8 @@ export async function DELETE(request) {
         const { default: ProductVisualIndex } = await import('@/models/ProductVisualIndex');
         await removeProductVisualIndex(productId, ProductVisualIndex);
         invalidateStorefrontProductCaches();
+        const { queueInventorySheetSync } = await import('@/lib/googleSheetsInventory');
+        queueInventorySheetSync(storeId);
 
         return NextResponse.json({ message: "Product deleted successfully" });
     } catch (error) {

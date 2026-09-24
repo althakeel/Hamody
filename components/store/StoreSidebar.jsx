@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation"
 
-import { HomeIcon, LayoutListIcon, SquarePenIcon, SquarePlusIcon, StarIcon, FolderIcon, TicketIcon, TruckIcon, RefreshCw, Users as UsersIcon, MessageSquare, Sparkles, BellIcon, MailIcon, Image as ImageIcon, ShoppingCart, Wallet, BarChart3, Target, Gift, Palette, CircleDashed, PackagePlus, Package, Activity, Layers, LineChart, Warehouse, MousePointerClick, ShieldAlert, Zap, Trash2, Smartphone, FileText, CalendarClock, MessageCircle, AlertTriangle, Download, Tag as TagIcon, ArrowUp, Search, Factory } from "lucide-react"
+import { HomeIcon, LayoutListIcon, SquarePenIcon, SquarePlusIcon, StarIcon, FolderIcon, TicketIcon, TruckIcon, RefreshCw, Users as UsersIcon, MessageSquare, Sparkles, BellIcon, MailIcon, Image as ImageIcon, ShoppingCart, Wallet, BarChart3, Target, Gift, Palette, CircleDashed, PackagePlus, Package, Activity, Layers, LineChart, Warehouse, MousePointerClick, ShieldAlert, Zap, Trash2, Smartphone, FileText, CalendarClock, MessageCircle, AlertTriangle, Download, Tag as TagIcon, Tags, ArrowUp, Search, Factory, CircleDollarSign } from "lucide-react"
 
 import StoreNavLink from "@/components/store/StoreNavLink"
 
@@ -42,11 +42,15 @@ const StoreSidebar = ({ storeInfo, isOwner = false, permissions = {}, canViewAct
 
         { name: 'Manage Product', href: '/store/manage-product', icon: SquarePenIcon },
 
+        { name: 'Product Cost', href: '/store/product-cost', icon: CircleDollarSign },
+
         { name: 'Inventory', href: '/store/inventory', icon: Warehouse },
 
         { name: 'Database Import', href: '/store/settings/database-import', icon: RefreshCw },
 
         { name: 'Customize', href: '/store/customize', icon: Palette },
+
+        { name: 'Product Badges', href: '/store/badges', icon: Tags },
 
         { name: 'WhatsApp Widget', href: '/store/customize/whatsapp-widget', icon: MessageCircle },
         { name: 'Scroll to Top', href: '/store/customize/scroll-to-top', icon: ArrowUp },
@@ -149,6 +153,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, permissions = {}, canViewAct
 
                 '/store/manage-product',
 
+                '/store/product-cost',
+
                 '/store/settings/database-import',
 
             ]
@@ -162,6 +168,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, permissions = {}, canViewAct
             links: [
 
                 '/store/customize',
+
+                '/store/badges',
 
                 '/store/customize/whatsapp-widget',
 

@@ -7,6 +7,7 @@ import authSeller from '@/middlewares/authSeller';
 import { getAuth } from '@/lib/firebase-admin';
 import { normalizeSupplier, toStoreSupplier } from '@/lib/supplierHelpers';
 import { storeIdMatch } from '@/lib/supplierServer';
+import { queueInventorySheetSync } from '@/lib/googleSheetsInventory';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,6 +55,8 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: 'Supplier not found' }, { status: 404 });
     }
 
+    queueInventorySheetSync(auth.storeId);
+
     return NextResponse.json({ success: true, supplier: toStoreSupplier(supplier) });
   } catch (error) {
     console.error('[suppliers PATCH]', error);
@@ -89,6 +92,8 @@ export async function DELETE(request, { params }) {
         $pull: { supplierIds: id, supplierNames: deleted.name },
       },
     );
+
+    queueInventorySheetSync(auth.storeId);
 
     return NextResponse.json({ success: true });
   } catch (error) {
