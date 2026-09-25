@@ -14,7 +14,7 @@ import {
 export default function CampaignLandingPage() {
   const params = useParams();
   const slug = String(params?.slug || '').trim();
-  const { language, isArabic } = useStorefrontI18n();
+  const { t, language, isArabic } = useStorefrontI18n();
   const [page, setPage] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -115,11 +115,27 @@ export default function CampaignLandingPage() {
     );
   }
 
+  const pageWidthClass = 'mx-auto w-full px-4 sm:px-6';
+  const pageWidthStyle = { maxWidth: EMAIL_CAMPAIGN_BANNER_MAX_WIDTH };
+
   return (
     <div className="min-h-screen" style={{ background }} dir={isArabic ? 'rtl' : 'ltr'} lang={language}>
+      <div className={`${pageWidthClass} pt-4 sm:pt-5`} style={pageWidthStyle}>
+        <nav
+          aria-label="Breadcrumb"
+          className={`mb-3 flex flex-wrap items-center gap-1 text-sm text-gray-500 ${isArabic ? 'flex-row-reverse justify-end' : ''}`}
+        >
+          <Link href="/" className="hover:text-orange-600 transition-colors">
+            {t('category.home')}
+          </Link>
+          <span className="text-gray-300">/</span>
+          <span className="font-medium text-gray-800">{title}</span>
+        </nav>
+      </div>
+
       {hasBanner && bannerSources.fallback ? (
         <div className="w-full">
-          <div className="mx-auto w-full px-4 sm:px-6" style={{ maxWidth: EMAIL_CAMPAIGN_BANNER_MAX_WIDTH }}>
+          <div className={pageWidthClass} style={pageWidthStyle}>
             <picture>
               {bannerSources.desktop ? (
                 <source media="(min-width: 1024px)" srcSet={bannerSources.desktop} />
@@ -131,20 +147,20 @@ export default function CampaignLandingPage() {
               <img
                 src={bannerSources.fallback}
                 alt=""
-                className="block h-auto w-full max-w-full object-contain"
+                className="block h-auto w-full max-w-full rounded-xl object-contain"
               />
             </picture>
           </div>
-          <div className="border-b border-slate-200/80 bg-white/70 px-4 py-6 sm:px-6">
-            <div className="mx-auto max-w-6xl">
+          <div className="mt-4 border-b border-slate-200/80 bg-white/70">
+            <div className={`${pageWidthClass} py-6`} style={pageWidthStyle}>
               <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">{title}</h1>
               {subtitle ? <p className="mt-1 max-w-2xl text-sm text-slate-600 sm:text-base">{subtitle}</p> : null}
             </div>
           </div>
         </div>
       ) : (
-        <div className="border-b border-slate-200/80 bg-white/70 px-4 py-8 sm:px-6">
-          <div className="mx-auto max-w-6xl">
+        <div className="border-b border-slate-200/80 bg-white/70">
+          <div className={`${pageWidthClass} py-8`} style={pageWidthStyle}>
             <p className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: accent }}>
               {isArabic ? 'عروض مختارة' : 'Selected for you'}
             </p>
@@ -154,7 +170,7 @@ export default function CampaignLandingPage() {
         </div>
       )}
 
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <div className={`${pageWidthClass} py-8`} style={pageWidthStyle}>
         {page.ctaLabel && page.ctaUrl ? (
           <div className="mb-6">
             <a

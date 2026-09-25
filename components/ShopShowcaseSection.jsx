@@ -824,7 +824,7 @@ export default function ShopShowcaseSection({
   return (
     <div className={HOME_SECTION_CLASS}>
       {fullWidthBanner || lowerFullWidthBanner ? (
-        <div className="mb-3 w-full" onMouseEnter={closeCategoryFlyout}>
+        <div className="relative left-1/2 mb-3 w-screen max-w-[100vw] -translate-x-1/2" onMouseEnter={closeCategoryFlyout}>
           {fullWidthBanner ? (
             <div
               className="w-full"

@@ -2263,7 +2263,7 @@ export default function MenuManagementPage() {
                 <div>
                   <p className="text-sm font-semibold text-slate-900">Show top bar</p>
                   <p className="mt-1 text-xs text-slate-500">
-                    The thin Tamara / Tabby strip above the navbar. Turn this off to hide the whole section.
+                    The Tamara / Tabby strip above the navbar. Turn this off to hide the whole section.
                   </p>
                 </div>
                 <label className="relative inline-flex shrink-0 cursor-pointer items-center">
@@ -2282,6 +2282,68 @@ export default function MenuManagementPage() {
             </div>
 
             <div className={`space-y-4 ${form.bnplTopBar?.enabled !== false ? '' : 'pointer-events-none opacity-50'}`}>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+                <p className="text-sm font-semibold text-slate-900">Size</p>
+                <p className="mt-1 text-xs text-slate-500">Increase the top bar text and the minimum height of the strip.</p>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <label className="block space-y-1">
+                    <span className="mb-1 flex items-center justify-between text-xs font-medium text-slate-600">
+                      Font size
+                      <span className="tabular-nums text-slate-700">{Number(form.bnplTopBar?.fontSize) || 14}px</span>
+                    </span>
+                    <input
+                      type="range"
+                      min={10}
+                      max={24}
+                      value={Number(form.bnplTopBar?.fontSize) || 14}
+                      onChange={(event) => setForm((prev) => ({
+                        ...prev,
+                        bnplTopBar: {
+                          ...normalizeBnplTopBar(prev.bnplTopBar),
+                          fontSize: Number(event.target.value),
+                        },
+                      }))}
+                      onMouseUp={(event) => persistBnplTopBar(
+                        { fontSize: Number(event.currentTarget.value) },
+                        'Top bar font size updated',
+                      )}
+                      onTouchEnd={(event) => persistBnplTopBar(
+                        { fontSize: Number(event.currentTarget.value) },
+                        'Top bar font size updated',
+                      )}
+                      className="w-full accent-indigo-600"
+                    />
+                  </label>
+                  <label className="block space-y-1">
+                    <span className="mb-1 flex items-center justify-between text-xs font-medium text-slate-600">
+                      Minimum height
+                      <span className="tabular-nums text-slate-700">{Number(form.bnplTopBar?.minHeight) || 40}px</span>
+                    </span>
+                    <input
+                      type="range"
+                      min={28}
+                      max={72}
+                      value={Number(form.bnplTopBar?.minHeight) || 40}
+                      onChange={(event) => setForm((prev) => ({
+                        ...prev,
+                        bnplTopBar: {
+                          ...normalizeBnplTopBar(prev.bnplTopBar),
+                          minHeight: Number(event.target.value),
+                        },
+                      }))}
+                      onMouseUp={(event) => persistBnplTopBar(
+                        { minHeight: Number(event.currentTarget.value) },
+                        'Top bar height updated',
+                      )}
+                      onTouchEnd={(event) => persistBnplTopBar(
+                        { minHeight: Number(event.currentTarget.value) },
+                        'Top bar height updated',
+                      )}
+                      className="w-full accent-indigo-600"
+                    />
+                  </label>
+                </div>
+              </div>
               {BNPL_PARTNER_DEFS.map((partner) => {
                 const partnerEnabled = Boolean(form.bnplTopBar?.[partner.enabledKey]);
                 const payments = Number(form.bnplTopBar?.[partner.paymentsKey]) || 4;

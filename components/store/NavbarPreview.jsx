@@ -6,7 +6,7 @@ import { DEFAULT_NAVBAR_PHONE, resolveNavbarPhone } from '@/lib/storeContact';
 import { DEFAULT_NAVBAR_LANGUAGE, resolveNavbarLanguageTrigger } from '@/lib/storefrontMarket';
 import OffersNavLabel from '@/components/OffersNavLabel';
 import { resolveStoreNavMenuItems } from '@/lib/categoryNavigation';
-import { DEFAULT_BNPL_TOP_BAR, resolveBnplPartners } from '@/lib/bnplTopBar';
+import { DEFAULT_BNPL_TOP_BAR, resolveBnplPartners, resolveBnplTopBarMetrics } from '@/lib/bnplTopBar';
 import { STORE1920_LOGO_PATH } from '@/lib/brandLogo';
 import {
   DEFAULT_OFFERS_NAV_LABEL,
@@ -87,6 +87,7 @@ export default function NavbarPreview({
   }, [navMenuUseParentCategories, categoryOptions, navMenuItems]);
   const bnplPartners = useMemo(() => resolveBnplPartners(bnplTopBar, 'en'), [bnplTopBar]);
   const bnplPreview = bnplPartners[0] || null;
+  const bnplMetrics = useMemo(() => resolveBnplTopBarMetrics(bnplTopBar), [bnplTopBar]);
   const resolvedLogoUrl = String(logoUrl || '').trim() || STORE1920_LOGO_PATH;
   const logoW = Number(logoWidth) > 0 ? Number(logoWidth) : 120;
   const logoH = Number(logoHeight) > 0 ? Number(logoHeight) : 40;
@@ -339,9 +340,12 @@ export default function NavbarPreview({
             <span className="h-1 w-16 rounded-full bg-slate-400/70" />
           </div>
           {bnplPreview ? (
-            <div className="flex items-center justify-center gap-1.5 border-b border-[#e7e7e7] bg-white px-2 py-1.5">
-              <img src={bnplPreview.logoUrl} alt={bnplPreview.name} className="h-3.5 w-auto" />
-              <span className="truncate text-[9px] font-medium text-gray-700">{bnplPreview.mobileText}</span>
+            <div
+              className="flex items-center justify-center gap-2 border-b border-[#e7e7e7] bg-white px-2"
+              style={{ minHeight: bnplMetrics.minHeight, fontSize: bnplMetrics.fontSize }}
+            >
+              <img src={bnplPreview.logoUrl} alt={bnplPreview.name} className="w-auto" style={{ height: bnplMetrics.logoHeight }} />
+              <span className="truncate font-medium leading-snug text-gray-700">{bnplPreview.mobileText}</span>
             </div>
           ) : null}
           <nav
@@ -430,9 +434,12 @@ export default function NavbarPreview({
   return (
     <div className="relative w-full overflow-hidden rounded-xl border border-slate-200/80 shadow-sm">
         {bnplPreview ? (
-          <div className="flex items-center justify-center gap-1.5 border-b border-[#e7e7e7] bg-white px-3 py-1.5">
-            <img src={bnplPreview.logoUrl} alt={bnplPreview.name} className="h-4 w-auto" />
-            <span className="truncate text-[11px] font-medium text-gray-700">{bnplPreview.desktopText}</span>
+          <div
+            className="flex items-center justify-center gap-2 border-b border-[#e7e7e7] bg-white px-3"
+            style={{ minHeight: bnplMetrics.minHeight, fontSize: bnplMetrics.fontSize }}
+          >
+            <img src={bnplPreview.logoUrl} alt={bnplPreview.name} className="w-auto" style={{ height: bnplMetrics.logoHeight }} />
+            <span className="truncate font-medium leading-snug text-gray-700">{bnplPreview.desktopText}</span>
           </div>
         ) : null}
         <div

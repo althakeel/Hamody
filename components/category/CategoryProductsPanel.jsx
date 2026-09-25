@@ -82,7 +82,9 @@ export default function CategoryProductsPanel({
   const [total, setTotal] = useState(Number(totalCount) || products.length);
   const [loadingPage, setLoadingPage] = useState(false);
   const [loadError, setLoadError] = useState('');
-  const gridTopRef = useRef(null);
+  const sentinelRef = useRef(null);
+  const loadingMoreLockRef = useRef(false);
+  const requestIdRef = useRef(0);
   const [activeFilters, setActiveFilters] = useState({
     categories: [],
     priceRange: { min: 0, max: 100000 },
@@ -93,32 +95,31 @@ export default function CategoryProductsPanel({
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
+    requestIdRef.current += 1;
+    loadingMoreLockRef.current = false;
     setPageProducts(products);
     setPage(1);
     setTotal(Number(totalCount) || products.length);
     setLoadError('');
+    setLoadingPage(false);
   }, [categoryId, products, totalCount]);
 
   const totalPages = Math.max(1, Math.ceil((total || pageProducts.length) / CATEGORY_PRODUCTS_PAGE_SIZE));
 
-  const goToPage = useCallback(async (nextPage, { force = false } = {}) => {
-    const safePage = Math.max(1, Math.min(nextPage, totalPages));
-    if (!categoryId || loadingPage) return;
-    if (!force && safePage === page) return;
+  const loadNextPage = useCallback(async () => {
+    if (!categoryId || loadingMoreLockRef.current) return;
+    if (page >= totalPages) return;
 
-    if (safePage === 1 && products.length) {
-      setPageProducts(products);
-      setPage(1);
-      gridTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      return;
-    }
-
+    const nextPage = page + 1;
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    loadingMoreLockRef.current = true;
     setLoadingPage(true);
     setLoadError('');
     try {
       const params = new URLSearchParams({
         categoryId,
-        page: String(safePage),
+        page: String(nextPage),
         limit: String(CATEGORY_PRODUCTS_PAGE_SIZE),
       });
       const res = await fetch(`/api/public/category-products?${params.toString()}`);
@@ -126,18 +127,48 @@ export default function CategoryProductsPanel({
       if (!res.ok) {
         throw new Error(data.error || 'Failed to load products');
       }
-      setPageProducts(Array.isArray(data.products) ? data.products : []);
-      setPage(Number(data.page) || safePage);
+      if (requestIdRef.current !== requestId) return;
+      const incoming = Array.isArray(data.products) ? data.products : [];
+      setPageProducts((current) => {
+        const seen = new Set(current.map((product) => String(product?._id || product?.slug || '')));
+        const next = incoming.filter((product) => {
+          const key = String(product?._id || product?.slug || '');
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        return next.length ? [...current, ...next] : current;
+      });
+      setPage(Number(data.page) || nextPage);
       if (Number.isFinite(Number(data.total))) {
         setTotal(Number(data.total));
       }
-      gridTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (error) {
       setLoadError(error?.message || 'Failed to load products');
     } finally {
       setLoadingPage(false);
+      loadingMoreLockRef.current = false;
     }
-  }, [categoryId, loadingPage, page, products, totalPages]);
+  }, [categoryId, page, totalPages]);
+
+  const hasMoreProducts = page < totalPages;
+
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || loadingPage || !hasMoreProducts) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        if (loadingMoreLockRef.current) return;
+        void loadNextPage();
+      },
+      { root: null, rootMargin: '600px 0px', threshold: 0 },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMoreProducts, loadingPage, loadNextPage, pageProducts.length]);
 
   const handleFilterChange = useCallback((filters) => {
     setActiveFilters(filters);
@@ -166,8 +197,8 @@ export default function CategoryProductsPanel({
     });
   };
 
-  const showingFrom = total > 0 ? ((page - 1) * CATEGORY_PRODUCTS_PAGE_SIZE) + 1 : 0;
-  const showingTo = total > 0 ? Math.min(page * CATEGORY_PRODUCTS_PAGE_SIZE, total) : 0;
+  const showingFrom = pageProducts.length > 0 ? 1 : 0;
+  const showingTo = pageProducts.length;
 
   const sidebarProps = {
     products: pageProducts,
@@ -238,48 +269,29 @@ export default function CategoryProductsPanel({
         </div>
 
         <div className="min-w-0 flex-1">
-          <div ref={gridTopRef} />
-          {loadingPage ? (
-            <div className="flex items-center justify-center gap-2 py-16 text-sm text-gray-500">
-              <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
-              {t('category.loadingMore')}
-            </div>
-          ) : (
-            productsGrid
-          )}
+          {productsGrid}
           {loadError ? (
             <div className="mt-4 text-center">
               <p className="text-sm text-red-600">{loadError}</p>
               <button
                 type="button"
-                onClick={() => void goToPage(page, { force: true })}
+                onClick={() => void loadNextPage()}
                 className="mt-2 text-sm font-medium text-orange-600 hover:text-orange-700"
               >
                 {t('category.loadingMore')}
               </button>
             </div>
           ) : null}
-          {totalPages > 1 ? (
-            <div className={`mt-8 flex flex-wrap items-center justify-center gap-2 ${isArabic ? 'flex-row-reverse' : ''}`}>
-              <button
-                type="button"
-                onClick={() => void goToPage(page - 1)}
-                disabled={page <= 1 || loadingPage}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {t('shop.previous')}
-              </button>
-              <span className="px-3 text-sm text-gray-600">
-                {t('shop.pageOf', { page, total: totalPages })}
-              </span>
-              <button
-                type="button"
-                onClick={() => void goToPage(page + 1)}
-                disabled={page >= totalPages || loadingPage}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {t('shop.next')}
-              </button>
+          {hasMoreProducts ? (
+            <div ref={sentinelRef} className="mt-8 flex items-center justify-center gap-2 py-6 text-sm text-gray-500">
+              {loadingPage ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+                  {t('category.loadingMore')}
+                </>
+              ) : (
+                <span className="h-5 w-full" aria-hidden="true" />
+              )}
             </div>
           ) : null}
         </div>

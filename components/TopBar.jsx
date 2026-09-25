@@ -7,7 +7,7 @@ import {
   persistStorefrontLanguage,
   readPersistedStorefrontLanguage,
 } from '@/lib/storefrontLanguage';
-import { DEFAULT_BNPL_TOP_BAR, normalizeBnplTopBar, resolveBnplPartners } from '@/lib/bnplTopBar';
+import { DEFAULT_BNPL_TOP_BAR, normalizeBnplTopBar, resolveBnplPartners, resolveBnplTopBarMetrics } from '@/lib/bnplTopBar';
 
 const BNPL_CACHE_KEY = 'nav:bnpl-topbar:v1';
 
@@ -83,6 +83,7 @@ export default function TopBar({ initialLanguage = 'en' }) {
   }, []);
 
   const partners = resolveBnplPartners(bnplTopBar, storefrontLanguage);
+  const barMetrics = resolveBnplTopBarMetrics(bnplTopBar);
 
   useEffect(() => {
     if (partners.length <= 1) {
@@ -101,24 +102,29 @@ export default function TopBar({ initialLanguage = 'en' }) {
   const isArabic = storefrontLanguage === 'ar';
 
   return (
-    <div data-storefront-topbar className="relative z-[1000] w-full border-b border-[#e7e7e7] bg-white text-xs">
-      <div className="mx-auto flex max-w-[1400px] items-center justify-center px-2 py-1.5 sm:px-5 sm:py-1">
+    <div
+      data-storefront-topbar
+      className="relative z-[1000] flex w-full items-center border-b border-[#e7e7e7] bg-white"
+      style={{ minHeight: barMetrics.minHeight, fontSize: barMetrics.fontSize }}
+    >
+      <div className="mx-auto flex w-full max-w-[1400px] items-center justify-center px-3 sm:px-5">
         <div
           key={activeBnplPartner.key}
-          className="flex min-w-0 items-center justify-center gap-1.5 animate-[bnplFlip_560ms_ease-out] sm:gap-2"
+          className="flex min-w-0 items-center justify-center gap-2 animate-[bnplFlip_560ms_ease-out]"
           dir={isArabic ? 'rtl' : 'ltr'}
         >
           {!bnplLogoError[activeBnplPartner.key] ? (
             <img
               src={activeBnplPartner.logoUrl}
               alt={activeBnplPartner.name}
-              className="h-4 w-auto shrink-0 sm:h-5"
+              className="w-auto shrink-0"
+              style={{ height: barMetrics.logoHeight }}
               onError={() => setBnplLogoError((current) => ({ ...current, [activeBnplPartner.key]: true }))}
             />
           ) : (
-            <span className="shrink-0 text-[9px] font-bold text-gray-900 sm:text-xs">{activeBnplPartner.name}</span>
+            <span className="shrink-0 font-bold text-gray-900">{activeBnplPartner.name}</span>
           )}
-          <span className="min-w-0 truncate text-[9px] font-medium leading-none text-gray-700 sm:text-xs sm:leading-snug">
+          <span className="min-w-0 truncate font-medium leading-snug text-gray-700">
             <span className="hidden sm:inline">{activeBnplPartner.desktopText}</span>
             <span className="sm:hidden">{activeBnplPartner.mobileText}</span>
           </span>

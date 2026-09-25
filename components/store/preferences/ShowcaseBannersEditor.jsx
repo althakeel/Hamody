@@ -1048,7 +1048,6 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
     setForm((prev) => {
       const next = { ...prev, [key]: enabled }
       if (enabled && key === 'fullWidthBannerEnabled') {
-        next.mainBannerEnabled = false
         next.topBannerEnabled = false
         next.bottomBannerEnabled = false
         next.fullWidthBannerSliderEnabled = true
@@ -1059,7 +1058,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
       if (enabled && key === 'lowerFullWidthBannerEnabled') {
         setOpenLayoutGuide(true)
       }
-      if (enabled && (key === 'topBannerEnabled' || key === 'bottomBannerEnabled' || key === 'mainBannerEnabled')) {
+      if (enabled && (key === 'topBannerEnabled' || key === 'bottomBannerEnabled')) {
         next.fullWidthBannerEnabled = false
       }
       formRef.current = next
@@ -1678,7 +1677,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
           </div>
           {form.mainBannerEnabled ? (
             <p className="mt-3 text-xs text-slate-500">
-              Top Large Banner, Bottom Large Banner, and Full Width Banner stay hidden on the storefront while this is enabled.
+              The main banner stays inside the page width. It can stay on together with the Full Width Banner.
             </p>
           ) : null}
         </div>
@@ -1688,7 +1687,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
             <div>
               <h2 className="text-sm font-semibold text-slate-900">Full Width Banner</h2>
               <p className="text-xs text-slate-500">
-                Spans the full screen on all devices, including large monitors. Enabling this turns off the Main Banner and Top and Bottom Large Banners.
+                Spans the full screen edge to edge, not the 1400px content width. The main banner can stay on. Enabling this turns off the Top and Bottom Large Banners.
               </p>
             </div>
             <VisibilitySwitch

@@ -15,6 +15,7 @@ import {
   getCategorySliderProductCardClass,
 } from '@/lib/storefrontCarousel'
 import { normalizeCategorySliderBackground, normalizeCategorySliderSideImagePosition, normalizeCategorySliderAutoSlide, normalizeCategorySliderAutoSlideInterval, filterCategorySliderProducts } from '@/lib/categorySliderTheme'
+import { filterStorefrontInStockProducts } from '@/lib/productVisibility'
 import { HomeSideImageSliderSkeleton } from '@/components/home/HomeSectionSkeletons'
 import BannerSlider from '@/components/BannerSlider'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
@@ -134,8 +135,9 @@ const HorizontalSlider = ({ section }) => {
   const subtitle = getLocalizedCategorySliderSubtitle(section, language)
   const embeddedProducts = useMemo(() => resolveSectionProducts(section), [section.products])
   const [sectionProducts, setSectionProducts] = useState(embeddedProducts)
+  const catalogAlreadyResolved = Array.isArray(section?.products)
   const [loading, setLoading] = useState(
-    () => embeddedProducts.length === 0 && Array.isArray(section.productIds) && section.productIds.length > 0
+    () => !catalogAlreadyResolved && embeddedProducts.length === 0 && Array.isArray(section.productIds) && section.productIds.length > 0
   )
   const productIdsKey = useMemo(
     () => (Array.isArray(section.productIds) ? section.productIds.join(',') : ''),
@@ -143,7 +145,7 @@ const HorizontalSlider = ({ section }) => {
   )
 
   useEffect(() => {
-    if (embeddedProducts.length > 0) {
+    if (catalogAlreadyResolved || embeddedProducts.length > 0) {
       setSectionProducts(embeddedProducts)
       setLoading(false)
       return undefined
@@ -172,7 +174,7 @@ const HorizontalSlider = ({ section }) => {
         if (response.ok) {
           const data = await response.json()
           if (!cancelled) {
-            setSectionProducts(Array.isArray(data?.products) ? data.products : [])
+            setSectionProducts(filterStorefrontInStockProducts(Array.isArray(data?.products) ? data.products : []))
             setLoading(false)
           }
           return
@@ -192,7 +194,7 @@ const HorizontalSlider = ({ section }) => {
     return () => {
       cancelled = true
     }
-  }, [embeddedProducts, productIdsKey, section.productIds])
+  }, [catalogAlreadyResolved, embeddedProducts, productIdsKey, section.productIds])
 
   if (sectionProducts.length === 0 && !loading) return null
 

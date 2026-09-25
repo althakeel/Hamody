@@ -124,7 +124,7 @@ export async function POST(request) {
     }
 
     await connectDB();
-    const facts = await gatherStoreHelpFacts(seller.storeId, question);
+    const facts = await gatherStoreHelpFacts(seller.storeId, question, { includeOrders: true });
     const reply = await polishStoreHelpReply(facts, question);
     const response = NextResponse.json({
       answer: reply.answer,

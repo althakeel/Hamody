@@ -6,12 +6,12 @@ import toast from 'react-hot-toast';
 import { useAuth } from '@/lib/useAuth';
 import { parseHelpLinkTokens } from '@/lib/storeHelpPages';
 
-const HELP_CHAT_STORAGE_KEY = 'store-help-agent-v3';
+const HELP_CHAT_STORAGE_KEY = 'store-help-agent-v5';
 const HELP_IDLE_CLOSE_MS = 2 * 60 * 1000;
 const DEFAULT_MESSAGES = [
   {
     role: 'assistant',
-    text: "Hey — ask me about this website, a dashboard page, an order, a product, or pickups. Sales and customer details need the super-admin PIN. I can't change anything.",
+    text: "Hey — ask me about this website, a dashboard page, an order, a product, or pickups. Any store account can see sales and customer details after the PIN. I can't change anything.",
   },
 ];
 
@@ -190,6 +190,7 @@ export default function StoreHelpAgent() {
       const token = await getToken();
       const response = await fetch('/api/store/help-agent', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -267,6 +268,7 @@ export default function StoreHelpAgent() {
       const token = await getToken();
       const response = await fetch('/api/store/help-agent', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -310,6 +312,7 @@ export default function StoreHelpAgent() {
       const token = await getToken();
       const response = await fetch('/api/store/help-agent/export', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -370,7 +373,7 @@ export default function StoreHelpAgent() {
             <div className="flex items-start justify-between border-b border-slate-200 px-4 py-3">
               <div>
                 <p className="text-sm font-semibold text-slate-900">Store Help</p>
-                <p className="mt-0.5 text-xs text-slate-500">Read-only. Sales and customer details need the super-admin PIN.</p>
+                <p className="mt-0.5 text-xs text-slate-500">Read-only. Any store account gets live numbers after the PIN.</p>
               </div>
               <div className="flex items-center gap-1">
                 {canClearChat ? (

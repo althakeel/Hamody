@@ -19,7 +19,7 @@ export default function StoreLanguageScope({ children }) {
   }, []);
 
   return (
-    <div lang="en" dir="ltr" data-store-language-scope className="flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden">
+    <div lang="en" dir="ltr" data-store-language-scope className="flex h-full max-h-full min-h-0 flex-1 flex-col overflow-hidden bg-slate-50">
       {children}
     </div>
   );

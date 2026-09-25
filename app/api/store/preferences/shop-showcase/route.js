@@ -426,7 +426,6 @@ export async function PUT(request) {
     }
 
     if (shopShowcase.fullWidthBannerEnabled === true) {
-      shopShowcase.mainBannerEnabled = false
       shopShowcase.topBannerEnabled = false
       shopShowcase.bottomBannerEnabled = false
     }

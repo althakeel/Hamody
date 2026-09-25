@@ -42,6 +42,8 @@ export default function ProductCarousel({
   const isHoverPausedRef = useRef(false)
   const isTouchPausedRef = useRef(false)
   const isDraggingRef = useRef(false)
+  const dragSuppressClickRef = useRef(false)
+  const manualDragRef = useRef(null)
   const loopWidthRef = useRef(0)
   const autoSlideOffsetRef = useRef(0)
   const autoSlideStepRef = useRef(0)
@@ -74,7 +76,7 @@ export default function ProductCarousel({
     enableSnap: !autoSlide,
     enableMobileSnap: !isCategorySlider,
     mobileVerticalScrollPriority: isCategorySlider,
-    lockMobileToVerticalTouch: isCategorySlider && autoSlide,
+    lockMobileToVerticalTouch: false,
   })
 
   isDraggingRef.current = isDragging
@@ -169,6 +171,75 @@ export default function ProductCarousel({
     handlePointerDown(event)
   }
 
+  const endManualDrag = (event) => {
+    const drag = manualDragRef.current
+    if (!drag || (event && event.pointerId !== drag.pointerId)) return
+    if (drag.dragging) {
+      dragSuppressClickRef.current = true
+      window.setTimeout(() => {
+        dragSuppressClickRef.current = false
+      }, 140)
+    }
+    manualDragRef.current = null
+    isDraggingRef.current = false
+    window.setTimeout(() => {
+      isTouchPausedRef.current = false
+    }, 400)
+  }
+
+  const handleAutoSlidePointerDown = (event) => {
+    if (!useTransformAutoSlide || event.button !== 0) return
+    const target = event.target
+    if (target?.closest?.('button, input, select, textarea, a[data-carousel-ignore-drag]')) return
+
+    isTouchPausedRef.current = true
+    isDraggingRef.current = false
+    manualDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startOffset: autoSlideOffsetRef.current,
+      dragging: false,
+    }
+  }
+
+  const handleAutoSlidePointerMove = (event) => {
+    const drag = manualDragRef.current
+    if (!drag || event.pointerId !== drag.pointerId) return
+
+    const walkX = event.clientX - drag.startX
+    const walkY = event.clientY - drag.startY
+    const threshold = event.pointerType === 'touch' ? 12 : 6
+
+    if (!drag.dragging) {
+      if (Math.abs(walkX) < threshold && Math.abs(walkY) < threshold) return
+      if (Math.abs(walkY) > Math.abs(walkX)) {
+        manualDragRef.current = null
+        isTouchPausedRef.current = false
+        return
+      }
+      drag.dragging = true
+      isDraggingRef.current = true
+      event.currentTarget.setPointerCapture?.(event.pointerId)
+    }
+
+    event.preventDefault()
+    autoSlideOffsetRef.current = wrapAutoSlideOffset(
+      drag.startOffset - walkX,
+      loopWidthRef.current
+    )
+    applyTransformOffset(autoSlideOffsetRef.current)
+  }
+
+  const handleAutoSlideCardClick = (event) => {
+    if (dragSuppressClickRef.current) {
+      event.preventDefault()
+      event.stopPropagation()
+      return
+    }
+    handleCardClick(event)
+  }
+
   useEffect(() => {
     if (useTransformAutoSlide) return undefined
 
@@ -243,7 +314,7 @@ export default function ProductCarousel({
   const autoSlideViewportClassName = [
     'w-full min-w-0 overflow-hidden',
     compactBottom ? 'pb-0' : 'pb-2',
-    isCategorySlider ? 'max-md:[touch-action:pan-y]' : '',
+    isCategorySlider ? 'cursor-grab touch-pan-y select-none active:cursor-grabbing max-md:[touch-action:pan-y]' : 'cursor-grab select-none active:cursor-grabbing',
   ].filter(Boolean).join(' ')
 
   const resolvedTrackStyle = useTransformAutoSlide
@@ -267,7 +338,7 @@ export default function ProductCarousel({
       key={`${product._id || product.id || product.slug || index}-${index}`}
       product={product}
       className={cardClassName}
-      onCardClick={handleCardClick}
+      onCardClick={useTransformAutoSlide ? handleAutoSlideCardClick : handleCardClick}
       priorityImages={index < priorityCount}
       compact={compact}
       compactDesktopOnly={compactDesktopOnly}
@@ -293,7 +364,13 @@ export default function ProductCarousel({
       ) : null}
 
       {useTransformAutoSlide ? (
-        <div className={autoSlideViewportClassName}>
+        <div
+          className={autoSlideViewportClassName}
+          onPointerDown={handleAutoSlidePointerDown}
+          onPointerMove={handleAutoSlidePointerMove}
+          onPointerUp={endManualDrag}
+          onPointerCancel={endManualDrag}
+        >
         <div
           ref={transformTrackRef}
           role="region"

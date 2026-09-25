@@ -85,6 +85,7 @@ function ShopContent() {
     const [totalPages, setTotalPages] = useState(1);
     const [page, setPage] = useState(1);
     const [productsLoading, setProductsLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [categories, setCategories] = useState([]);
     const [showCategories, setShowCategories] = useState(true);
     const [sortBy, setSortBy] = useState('newest');
@@ -98,6 +99,8 @@ function ShopContent() {
     const [fastSellingIndex, setFastSellingIndex] = useState(0);
     const { user, getToken } = useAuth();
     const fetchAbortRef = useRef(null);
+    const sentinelRef = useRef(null);
+    const loadingMoreLockRef = useRef(false);
 
     useEffect(() => {
         const category = String(searchParams.get('category') || '').trim();
@@ -180,18 +183,29 @@ function ShopContent() {
         fastDeliveryOnly,
     ]);
 
-    useEffect(() => {
-        setPage(1);
-    }, [filterQueryKey]);
+    const loadedFilterKeyRef = useRef(filterQueryKey);
 
     useEffect(() => {
+        const filterChanged = loadedFilterKeyRef.current !== filterQueryKey;
+        if (filterChanged && page !== 1) {
+            loadedFilterKeyRef.current = filterQueryKey;
+            fetchAbortRef.current?.abort();
+            loadingMoreLockRef.current = false;
+            setPage(1);
+            return undefined;
+        }
+        loadedFilterKeyRef.current = filterQueryKey;
+
         if (fetchAbortRef.current) {
             fetchAbortRef.current.abort();
         }
 
         const controller = new AbortController();
         fetchAbortRef.current = controller;
-        setProductsLoading(true);
+        const append = page > 1;
+        loadingMoreLockRef.current = true;
+        if (append) setLoadingMore(true);
+        else setProductsLoading(true);
 
         const url = buildCatalogUrl({
             search,
@@ -213,7 +227,17 @@ function ShopContent() {
                 const list = Array.isArray(data?.products) ? data.products : [];
                 const total = Number(data?.total ?? data?.resultCount) || list.length;
                 const pages = Number(data?.totalPages) || Math.max(1, Math.ceil(total / SHOP_PAGE_SIZE));
-                setProducts(list);
+                setProducts((current) => {
+                    if (!append) return list;
+                    const seen = new Set(current.map((product) => String(product?._id || product?.id || product?.slug || '')));
+                    const next = list.filter((product) => {
+                        const key = String(product?._id || product?.id || product?.slug || '');
+                        if (!key || seen.has(key)) return false;
+                        seen.add(key);
+                        return true;
+                    });
+                    return next.length ? [...current, ...next] : current;
+                });
                 setTotalProducts(total);
                 setTotalPages(pages);
                 if (search?.trim()) {
@@ -226,22 +250,46 @@ function ShopContent() {
             })
             .catch((error) => {
                 if (controller.signal.aborted || error?.name === 'AbortError') return;
-                setProducts([]);
-                setTotalProducts(0);
-                setTotalPages(1);
+                if (!append) {
+                    setProducts([]);
+                    setTotalProducts(0);
+                    setTotalPages(1);
+                }
             })
             .finally(() => {
                 if (controller.signal.aborted) return;
                 setProductsLoading(false);
+                setLoadingMore(false);
+                loadingMoreLockRef.current = false;
             });
 
         return () => controller.abort();
     }, [filterQueryKey, page, language, search, selectedCategories, sortBy, priceFilter, minPrice, maxPrice, stockFilter, bestSellerOnly, fastDeliveryOnly]);
 
+    const hasMoreProducts = page < totalPages;
+
+    useEffect(() => {
+        const node = sentinelRef.current;
+        if (!node || productsLoading || loadingMore || !hasMoreProducts) return undefined;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (!entries.some((entry) => entry.isIntersecting)) return;
+                if (loadingMoreLockRef.current) return;
+                loadingMoreLockRef.current = true;
+                setPage((current) => current + 1);
+            },
+            { root: null, rootMargin: '600px 0px', threshold: 0 },
+        );
+
+        observer.observe(node);
+        return () => observer.disconnect();
+    }, [hasMoreProducts, productsLoading, loadingMore, products.length]);
+
     const fastSellingProducts = useMemo(() => {
-        if (page !== 1 || productsLoading || !products.length) return [];
+        if ((productsLoading && products.length === 0) || !products.length) return [];
         return products.slice(0, 8).filter((product) => product?.slug || product?._id);
-    }, [page, products, productsLoading]);
+    }, [products, productsLoading]);
 
     const getProductPrice = useCallback((product) => {
         if (!product) return 0;
@@ -349,16 +397,8 @@ function ShopContent() {
         ? getProductThumbnailUrl(fastSellingProduct, { fallback: PLACEHOLDER_IMAGE })
         : PLACEHOLDER_IMAGE;
 
-    const showingFrom = totalProducts > 0 ? ((page - 1) * SHOP_PAGE_SIZE) + 1 : 0;
-    const showingTo = totalProducts > 0 ? Math.min(page * SHOP_PAGE_SIZE, totalProducts) : 0;
-
-    const goToPage = useCallback((nextPage) => {
-        const safePage = Math.max(1, Math.min(nextPage, totalPages));
-        setPage(safePage);
-        if (typeof window !== 'undefined') {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    }, [totalPages]);
+    const showingFrom = products.length > 0 ? 1 : 0;
+    const showingTo = products.length;
 
     return (
         <div className="min-h-screen bg-white" dir={isArabic ? 'rtl' : 'ltr'}>
@@ -647,27 +687,13 @@ function ShopContent() {
                                                 <ProductCard key={product._id || product.id} product={product} />
                                             ))}
                                         </div>
-                                        {totalPages > 1 ? (
-                                            <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => goToPage(page - 1)}
-                                                    disabled={page <= 1}
-                                                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                                >
-                                                    {t('shop.previous')}
-                                                </button>
-                                                <span className="px-3 text-sm text-gray-600">
-                                                    {t('shop.pageOf', { page, total: totalPages })}
-                                                </span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => goToPage(page + 1)}
-                                                    disabled={page >= totalPages}
-                                                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                                >
-                                                    {t('shop.next')}
-                                                </button>
+                                        {hasMoreProducts ? (
+                                            <div ref={sentinelRef} className="mt-8 flex justify-center py-6" aria-hidden="true">
+                                                {loadingMore ? (
+                                                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-t-2 border-b-2 border-orange-500" />
+                                                ) : (
+                                                    <span className="h-8 w-full" />
+                                                )}
                                             </div>
                                         ) : null}
                                     </>

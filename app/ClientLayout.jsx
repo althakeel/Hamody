@@ -138,7 +138,7 @@ export default function ClientLayout({ children, initialStorefrontLanguage = 'en
       <AuthSessionGuard />
       {!hideStorefrontChrome ? <GoogleOneTap /> : null}
       <SilentDomErrorBoundary
-        className={hideStorefrontChrome ? 'flex h-dvh min-h-0 min-w-0 flex-col overflow-hidden' : 'min-w-0'}
+        className={hideStorefrontChrome ? 'flex h-dvh max-h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-slate-50' : 'min-w-0'}
       >
         {!hideStorefrontChrome ? (
           <StorefrontChromeErrorBoundary>

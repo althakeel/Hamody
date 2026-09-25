@@ -10,7 +10,7 @@ import { hasShowcaseBannerImage, serializeShowcaseImageFields } from '@/lib/show
 import { resolvePublicStorePreference } from '@/lib/storePreferencePublic'
 import { STOREFRONT_IN_STOCK_FILTER, STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility'
 
-const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v17'
+const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v18'
 
 const DEFAULT_SHOWCASE = {
   enabled: true,
@@ -203,7 +203,7 @@ function normalize(data = {}) {
     topBannerEnabled: fullWidthActive ? false : data.topBannerEnabled === true,
     bottomBannerEnabled: fullWidthActive ? false : data.bottomBannerEnabled === true,
     fullWidthBannerEnabled: fullWidthActive,
-    mainBannerEnabled: fullWidthActive ? false : (typeof data.mainBannerEnabled === 'boolean' ? data.mainBannerEnabled : DEFAULT_SHOWCASE.mainBannerEnabled),
+    mainBannerEnabled: typeof data.mainBannerEnabled === 'boolean' ? data.mainBannerEnabled : DEFAULT_SHOWCASE.mainBannerEnabled,
     lowerFullWidthBannerEnabled: data.lowerFullWidthBannerEnabled === true,
     leftBlockBadgeText: typeof data.leftBlockBadgeText === 'string' ? data.leftBlockBadgeText.trim().slice(0, 12) : DEFAULT_SHOWCASE.leftBlockBadgeText,
     leftBlockSource: data.leftBlockSource === 'product' ? 'product' : 'category',
