@@ -7,7 +7,7 @@ import { Loader2, Save, ShieldAlert } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/lib/useAuth'
 import { serializeShowcaseImageFields } from '@/lib/showcaseBannerImages'
-import { inferShowcaseLinkType } from '@/lib/showcaseBannerLinks'
+import { inferShowcaseLinkType, normalizeShowcaseLinkType } from '@/lib/showcaseBannerLinks'
 import {
   AccordionRow,
   ShowcaseLinkAccordion,
@@ -53,10 +53,9 @@ const BANNER2_IMAGE_SIZES = {
 const createBannerSliderItem = (overrides = {}) => ({
   id: overrides.id || `banner-2-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
   ...serializeShowcaseImageFields(sanitizeImageFields(overrides)),
-  link: overrides.link || '/shop',
-  linkType: ['category', 'product', 'custom'].includes(overrides.linkType)
-    ? overrides.linkType
-    : inferShowcaseLinkType(overrides.link || '/shop').type,
+  link: overrides.linkType === 'none' ? '' : (overrides.link || '/shop'),
+  linkType: normalizeShowcaseLinkType(overrides.linkType)
+    || inferShowcaseLinkType(overrides.link || '/shop').type,
   targetBlank: Boolean(overrides.targetBlank),
   alt: overrides.alt || '',
 })
@@ -251,10 +250,9 @@ export default function Banner2SectionEditor({ embedded = false }) {
         return {
           id: item.id,
           ...images,
-          link: String(item.link || '/shop').trim(),
-          linkType: ['category', 'product', 'custom'].includes(item.linkType)
-            ? item.linkType
-            : inferShowcaseLinkType(item.link).type,
+          link: normalizeShowcaseLinkType(item.linkType) === 'none' ? '' : String(item.link || '/shop').trim(),
+          linkType: normalizeShowcaseLinkType(item.linkType)
+            || inferShowcaseLinkType(item.link).type,
           targetBlank: Boolean(item.targetBlank),
           alt: String(item.alt || `Banner 2 Slide ${index + 1}`).trim(),
         }

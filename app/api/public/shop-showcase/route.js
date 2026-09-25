@@ -7,6 +7,7 @@ import mongoose from 'mongoose'
 import { getCachedData, setCachedData } from '@/lib/cache'
 import { applyLargeBannerSliderDefaults } from '@/lib/shopShowcaseLargeBanners'
 import { hasShowcaseBannerImage, serializeShowcaseImageFields } from '@/lib/showcaseBannerImages'
+import { normalizeShowcaseLinkType } from '@/lib/showcaseBannerLinks'
 import { resolvePublicStorePreference } from '@/lib/storePreferencePublic'
 import { STOREFRONT_IN_STOCK_FILTER, STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility'
 
@@ -159,8 +160,8 @@ function normalizeSecondaryBannerSliderItems(items) {
     .map((item, index) => ({
       id: (item?.id || `secondary-banner-slider-${index + 1}`).toString().trim(),
       ...serializeShowcaseImageFields(item),
-      link: (item?.link || '/shop').toString().trim(),
-      linkType: ['category', 'product', 'custom'].includes(item?.linkType) ? item.linkType : '',
+      link: normalizeShowcaseLinkType(item?.linkType) === 'none' ? '' : (item?.link || '/shop').toString().trim(),
+      linkType: normalizeShowcaseLinkType(item?.linkType),
       targetBlank: Boolean(item?.targetBlank),
       alt: (item?.alt || `Lower Banner ${index + 1}`).toString().trim(),
     }))
@@ -185,8 +186,8 @@ function normalizeProductBanners(items) {
       title: (item?.title || '').toString().trim(),
       subtitle: (item?.subtitle || '').toString().trim(),
       buttonText: (item?.buttonText || '').toString().trim(),
-      link: (item?.link || '').toString().trim(),
-      linkType: ['category', 'product', 'custom'].includes(item?.linkType) ? item.linkType : '',
+      link: normalizeShowcaseLinkType(item?.linkType) === 'none' ? '' : (item?.link || '').toString().trim(),
+      linkType: normalizeShowcaseLinkType(item?.linkType),
       targetBlank: Boolean(item?.targetBlank),
     }))
     .filter((item) => hasShowcaseBannerImage(item))

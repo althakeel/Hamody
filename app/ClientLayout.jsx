@@ -15,12 +15,46 @@ import { Toaster } from "react-hot-toast";
 import SilentDomErrorBoundary from "@/components/SilentDomErrorBoundary";
 import { installDomReconcileGuard } from "@/lib/domReconcileError";
 
-const SpinWheelWidget = dynamic(() => import("@/components/SpinWheelWidget"), { ssr: false });
-const GiveawayCartManager = dynamic(() => import("@/components/GiveawayCartManager"), { ssr: false });
-const TawkToWidget = dynamic(() => import("@/components/TawkToWidget"), { ssr: false });
-const ScrollToTopButton = dynamic(() => import("@/components/ScrollToTopButton"), { ssr: false });
-const AuthSessionGuard = dynamic(() => import("@/components/AuthSessionGuard"), { ssr: false });
-const GoogleOneTap = dynamic(() => import("@/components/GoogleOneTap"), { ssr: false });
+const CHUNK_RELOAD_KEY = 'store1920-chunk-reload';
+
+function EmptyClientModule() {
+  return null;
+}
+
+function loadClientModule(loader) {
+  return loader()
+    .then((mod) => {
+      try {
+        window.sessionStorage.removeItem(CHUNK_RELOAD_KEY);
+      } catch {
+        // Ignore storage failures.
+      }
+      return mod;
+    })
+    .catch((error) => {
+      const message = String(error?.message || error || '');
+      const isStaleChunk = error?.name === 'ChunkLoadError'
+        || /chunk|failed to fetch|dynamically imported module/i.test(message);
+      if (isStaleChunk && typeof window !== 'undefined') {
+        try {
+          if (!window.sessionStorage.getItem(CHUNK_RELOAD_KEY)) {
+            window.sessionStorage.setItem(CHUNK_RELOAD_KEY, '1');
+            window.location.reload();
+          }
+        } catch {
+          // Ignore storage failures.
+        }
+      }
+      return { default: EmptyClientModule };
+    });
+}
+
+const SpinWheelWidget = dynamic(() => loadClientModule(() => import("@/components/SpinWheelWidget")), { ssr: false });
+const GiveawayCartManager = dynamic(() => loadClientModule(() => import("@/components/GiveawayCartManager")), { ssr: false });
+const TawkToWidget = dynamic(() => loadClientModule(() => import("@/components/TawkToWidget")), { ssr: false });
+const ScrollToTopButton = dynamic(() => loadClientModule(() => import("@/components/ScrollToTopButton")), { ssr: false });
+const AuthSessionGuard = dynamic(() => loadClientModule(() => import("@/components/AuthSessionGuard")), { ssr: false });
+const GoogleOneTap = dynamic(() => loadClientModule(() => import("@/components/GoogleOneTap")), { ssr: false });
 
 function DeferredWidgets() {
   const pathname = usePathname();
@@ -80,11 +114,6 @@ export default function ClientLayout({ children, initialStorefrontLanguage = 'en
 
   useEffect(() => {
     installDomReconcileGuard();
-    try {
-      window.sessionStorage.removeItem('store1920-chunk-reload');
-    } catch {
-      // Ignore storage failures.
-    }
   }, [pathname]);
 
   return (

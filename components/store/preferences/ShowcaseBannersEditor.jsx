@@ -15,9 +15,15 @@ import {
   FULL_WIDTH_BANNER_HEIGHT_DEFAULT,
   normalizeLowerFullWidthBannerHeight,
   normalizeLowerFullWidthBannerRadius,
+  normalizeLowerFullWidthBannerBorderWidth,
+  normalizeLowerFullWidthBannerBorderColor,
   LOWER_FULL_WIDTH_BANNER_RADIUS_MIN,
   LOWER_FULL_WIDTH_BANNER_RADIUS_MAX,
   LOWER_FULL_WIDTH_BANNER_RADIUS_DEFAULT,
+  LOWER_FULL_WIDTH_BANNER_BORDER_WIDTH_MIN,
+  LOWER_FULL_WIDTH_BANNER_BORDER_WIDTH_MAX,
+  LOWER_FULL_WIDTH_BANNER_BORDER_WIDTH_DEFAULT,
+  LOWER_FULL_WIDTH_BANNER_BORDER_COLOR_DEFAULT,
   LOWER_FULL_WIDTH_BANNER_HEIGHT_MIN,
   LOWER_FULL_WIDTH_BANNER_HEIGHT_MAX,
   LOWER_FULL_WIDTH_BANNER_HEIGHT_DEFAULT,
@@ -35,6 +41,7 @@ import {
   createShowcaseLinkFromChoice,
   flattenShowcaseCategories,
   inferShowcaseLinkType,
+  normalizeShowcaseLinkType,
   readShowcaseLinkChoice,
 } from '@/lib/showcaseBannerLinks'
 
@@ -75,9 +82,11 @@ const sanitizeImageUrl = (value) => {
 function sanitizeImageFields(item = {}) {
   return {
     image: sanitizeImageUrl(item.image || ''),
+    wideImage: sanitizeImageUrl(item.wideImage || ''),
     tabletImage: sanitizeImageUrl(item.tabletImage || ''),
     mobileImage: sanitizeImageUrl(item.mobileImage || ''),
     imageAr: sanitizeImageUrl(item.imageAr || ''),
+    wideImageAr: sanitizeImageUrl(item.wideImageAr || ''),
     tabletImageAr: sanitizeImageUrl(item.tabletImageAr || ''),
     mobileImageAr: sanitizeImageUrl(item.mobileImageAr || ''),
   }
@@ -90,6 +99,7 @@ const IMAGE_GROUPS = [
     hint: 'Used when the storefront is English. Also used as fallback if an Arabic image is empty.',
     slots: [
       { key: 'image', label: 'Desktop' },
+      { key: 'wideImage', label: 'Wider than 1400' },
       { key: 'tabletImage', label: 'Tablet' },
       { key: 'mobileImage', label: 'Mobile' },
     ],
@@ -100,6 +110,7 @@ const IMAGE_GROUPS = [
     hint: 'Used when the storefront is Arabic. Falls back to the English image for that device if empty.',
     slots: [
       { key: 'imageAr', label: 'Desktop' },
+      { key: 'wideImageAr', label: 'Wider than 1400' },
       { key: 'tabletImageAr', label: 'Tablet' },
       { key: 'mobileImageAr', label: 'Mobile' },
     ],
@@ -107,19 +118,23 @@ const IMAGE_GROUPS = [
 ]
 
 const TOP_BANNER_SIZES = {
-  image: { width: 3054, height: 1080 },
+  image: { width: 1400, height: 1080 },
+  wideImage: { width: 2560, height: 1080 },
   tabletImage: { width: 1536, height: 544 },
   mobileImage: { width: 768, height: 432 },
-  imageAr: { width: 3054, height: 1080 },
+  imageAr: { width: 1400, height: 1080 },
+  wideImageAr: { width: 2560, height: 1080 },
   tabletImageAr: { width: 1536, height: 544 },
   mobileImageAr: { width: 768, height: 432 },
 }
 
 const BOTTOM_BANNER_SIZES = {
-  image: { width: 3054, height: 370 },
+  image: { width: 1400, height: 370 },
+  wideImage: { width: 2560, height: 370 },
   tabletImage: { width: 1536, height: 186 },
   mobileImage: { width: 768, height: 200 },
-  imageAr: { width: 3054, height: 370 },
+  imageAr: { width: 1400, height: 370 },
+  wideImageAr: { width: 2560, height: 370 },
   tabletImageAr: { width: 1536, height: 186 },
   mobileImageAr: { width: 768, height: 200 },
 }
@@ -129,10 +144,12 @@ function getFullWidthBannerSizes(height = FULL_WIDTH_BANNER_HEIGHT_DEFAULT) {
   const tabletHeight = Math.round(desktopHeight * 0.6)
   const mobileHeight = Math.min(260, Math.round(desktopHeight * 0.5))
   return {
-    image: { width: 1920, height: desktopHeight },
+    image: { width: 1400, height: desktopHeight },
+    wideImage: { width: 2560, height: desktopHeight },
     tabletImage: { width: 1024, height: tabletHeight },
     mobileImage: { width: 768, height: mobileHeight },
-    imageAr: { width: 1920, height: desktopHeight },
+    imageAr: { width: 1400, height: desktopHeight },
+    wideImageAr: { width: 2560, height: desktopHeight },
     tabletImageAr: { width: 1024, height: tabletHeight },
     mobileImageAr: { width: 768, height: mobileHeight },
   }
@@ -178,13 +195,15 @@ function formatImageRatio(width, height) {
 function DesignerSizeGuide({ sizes }) {
   const [open, setOpen] = useState(false)
   const desktop = sizes?.image || {}
+  const wide = sizes?.wideImage || {}
   const tablet = sizes?.tabletImage || {}
   const mobile = sizes?.mobileImage || {}
   const rows = [
     { label: 'Desktop', size: desktop },
+    wide.width ? { label: 'Wider than 1400', size: wide } : null,
     { label: 'Tablet', size: tablet },
     { label: 'Mobile', size: mobile },
-  ]
+  ].filter(Boolean)
 
   return (
     <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
@@ -210,7 +229,7 @@ function DesignerSizeGuide({ sizes }) {
       {open ? (
         <div className="mt-3 border-t border-slate-200 pt-3">
           <p className="text-xs text-slate-500">
-            Upload desktop, tablet, and mobile. Add Arabic files only if the Arabic storefront should use different art. Keep the offer in the center — wide screens crop the sides.
+            Upload desktop, the wider-than-1400 image, tablet, and mobile. Add Arabic files only if the Arabic storefront should use different art. The wider image shows only when the screen is more than 1400 px.
           </p>
           <ul className="mt-2 list-disc space-y-1 ps-4 text-xs text-slate-500">
             <li>Full screen on all monitors. Do not design for 1400 px inner width.</li>
@@ -238,8 +257,7 @@ function ShowcaseImageSlot({ label, size, value, onUpload, onClear }) {
         ) : null}
       </div>
       <div
-        className="relative mb-2 overflow-hidden rounded-md border border-dashed border-slate-300 bg-slate-50"
-        style={{ aspectRatio: width && height ? `${width} / ${height}` : '16 / 9' }}
+        className="relative mb-2 h-24 overflow-hidden rounded-md border border-dashed border-slate-300 bg-slate-50"
       >
         {value ? (
           <Image src={value} alt={label} fill unoptimized className="object-cover" />
@@ -277,6 +295,7 @@ function countFilledSlots(item, slots) {
 
 function getLinkSummary(link, linkType) {
   const choice = readShowcaseLinkChoice(link, linkType)
+  if (choice.type === 'none') return 'Disabled · not clickable'
   if (choice.type === 'category') return choice.value ? `Category · ${choice.value}` : 'Category · not selected'
   if (choice.type === 'product') return choice.value ? `Product · ${choice.value}` : 'Product · not selected'
   return choice.value ? `Custom URL · ${choice.value}` : 'Custom URL · not set'
@@ -286,10 +305,10 @@ function SmoothPanel({ open, children }) {
   return (
     <div
       className={`grid min-w-0 transition-[grid-template-rows] duration-300 ease-out ${
-        open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+        open ? 'grid-rows-[auto]' : 'grid-rows-[0fr]'
       }`}
     >
-      <div className={`min-h-0 min-w-0 ${open ? 'overflow-visible' : 'overflow-hidden'}`}>
+      <div className={`min-h-0 min-w-0 overflow-hidden`}>
         <div className={`min-w-0 border-t border-slate-200 px-3 pb-3 pt-3 transition-opacity duration-300 ${
           open ? 'opacity-100' : 'opacity-0'
         }`}>
@@ -297,6 +316,41 @@ function SmoothPanel({ open, children }) {
         </div>
       </div>
     </div>
+  )
+}
+
+function HeightNumberField({ value, min, max, onCommit }) {
+  const [draft, setDraft] = useState(String(value))
+
+  useEffect(() => {
+    setDraft(String(value))
+  }, [value])
+
+  const commit = (raw) => {
+    const committed = normalizeLowerFullWidthBannerHeight(raw)
+    setDraft(String(committed))
+    onCommit(committed)
+  }
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      className="mt-2 w-28 rounded-lg border border-slate-300 px-3 py-2"
+      value={draft}
+      onChange={(event) => {
+        const digits = event.target.value.replace(/[^\d]/g, '').slice(0, 3)
+        setDraft(digits)
+        const numeric = Number(digits)
+        if (digits && numeric >= min && numeric <= max) {
+          onCommit(numeric)
+        }
+      }}
+      onBlur={() => commit(draft)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') event.currentTarget.blur()
+      }}
+    />
   )
 }
 
@@ -317,7 +371,7 @@ function VisibilitySwitch({ enabled, onChange }) {
 
 function AccordionRow({ title, summary, preview, open, onToggle, headerToggles = true, children, actions, className = '' }) {
   return (
-    <div className={`min-w-0 rounded-xl border border-slate-200 bg-white ${className}`.trim()}>
+    <div className={`h-fit min-w-0 self-start rounded-xl border border-slate-200 bg-white ${className}`.trim()}>
       <div className="flex items-center gap-2 px-3 py-2.5">
         <button
           type="button"
@@ -349,6 +403,7 @@ function AccordionRow({ title, summary, preview, open, onToggle, headerToggles =
 }
 
 const LINK_TYPE_OPTIONS = [
+  { value: 'none', label: 'Disabled' },
   { value: 'category', label: 'Category' },
   { value: 'product', label: 'Product' },
   { value: 'custom', label: 'Custom URL' },
@@ -377,7 +432,7 @@ function ShowcaseSelect({ label, value, options, onChange }) {
   const selected = options.find((option) => option.value === value) || options[0]
 
   return (
-    <div ref={rootRef} className="relative z-30 min-w-0 w-full max-w-full">
+    <div ref={rootRef} className={`relative min-w-0 w-full max-w-full ${open ? 'z-50' : 'z-0'}`}>
       <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
       <button
         type="button"
@@ -389,7 +444,7 @@ function ShowcaseSelect({ label, value, options, onChange }) {
         <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open ? (
-        <div className="relative z-50 mt-2 w-full max-w-full overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-xl">
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 w-full max-w-full overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-xl">
           {options.map((option) => {
             const isSelected = option.value === value
             return (
@@ -431,7 +486,7 @@ function ShowcaseSearchDropdown({
   const rootRef = useClickOutside(open, () => setOpen(false))
 
   return (
-    <div ref={rootRef} className="relative z-20 min-w-0 w-full max-w-full">
+    <div ref={rootRef} className={`relative min-w-0 w-full max-w-full ${open ? 'z-50' : 'z-0'}`}>
       <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
       <button
         type="button"
@@ -445,7 +500,7 @@ function ShowcaseSearchDropdown({
         <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open ? (
-        <div className="relative z-50 mt-2 w-full max-w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 w-full max-w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
           <div className="border-b border-slate-100 p-2">
             <div className="relative min-w-0">
               <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -549,9 +604,14 @@ function ShowcaseLinkFields({
 
   const selectType = (type) => {
     onLinkTypeChange(type)
-    const inferred = inferShowcaseLinkType(link)
-    if (type !== 'custom' && inferred.type !== type) {
+    if (type === 'none') {
       onLinkChange('')
+      onTargetBlankChange?.(false)
+    } else {
+      const inferred = inferShowcaseLinkType(link)
+      if (type !== 'custom' && inferred.type !== type) {
+        onLinkChange('')
+      }
     }
     if (type !== 'product') setProductQuery('')
     if (type !== 'category') setCategoryQuery('')
@@ -630,6 +690,7 @@ function ShowcaseLinkFields({
         </label>
       ) : null}
 
+      {choice.type !== 'none' ? (
       <label className="inline-flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2">
         <span className="text-sm text-slate-700">Open in new window</span>
         <input
@@ -638,6 +699,9 @@ function ShowcaseLinkFields({
           onChange={(event) => onTargetBlankChange(event.target.checked)}
         />
       </label>
+      ) : (
+        <p className="text-xs text-slate-500">This slide is not clickable on the storefront.</p>
+      )}
     </div>
   )
 }
@@ -648,21 +712,22 @@ function ShowcaseLocaleImageGroups({ item, recommendedSizes, onUpload, onChange 
   return (
     <div className="space-y-3">
       {IMAGE_GROUPS.map((group) => {
-        const filled = countFilledSlots(item, group.slots)
+        const slots = group.slots.filter((slot) => recommendedSizes?.[slot.key])
+        const filled = countFilledSlots(item, slots)
         const isOpen = !!openGroups[group.id]
 
         return (
           <AccordionRow
             key={group.id}
             title={group.title}
-            summary={`${filled} of ${group.slots.length} uploaded · click to ${isOpen ? 'hide' : 'edit'}`}
+            summary={`${filled} of ${slots.length} uploaded · click to ${isOpen ? 'hide' : 'edit'}`}
             open={isOpen}
             onToggle={() => setOpenGroups((prev) => ({ ...prev, [group.id]: !prev[group.id] }))}
             className="bg-slate-50/70"
           >
             <p className="mb-3 text-xs text-slate-500">{group.hint}</p>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {group.slots.map((slot) => (
+            <div className={`grid gap-3 ${slots.length > 3 ? 'sm:grid-cols-2 xl:grid-cols-4' : 'sm:grid-cols-3'}`}>
+              {slots.map((slot) => (
                 <ShowcaseImageSlot
                   key={slot.key}
                   label={slot.label}
@@ -755,7 +820,6 @@ function LargeBannerSlideCard({
           onChange={onChange}
         />
         <ShowcaseLinkAccordion
-          flat
           link={slide.link}
           linkType={slide.linkType}
           targetBlank={slide.targetBlank}
@@ -830,6 +894,8 @@ const DEFAULT_FORM = {
   lowerFullWidthBannerSliderInterval: 4000,
   lowerFullWidthBannerDesktopHeight: LOWER_FULL_WIDTH_BANNER_HEIGHT_DEFAULT,
   lowerFullWidthBannerRadius: LOWER_FULL_WIDTH_BANNER_RADIUS_DEFAULT,
+  lowerFullWidthBannerBorderWidth: LOWER_FULL_WIDTH_BANNER_BORDER_WIDTH_DEFAULT,
+  lowerFullWidthBannerBorderColor: LOWER_FULL_WIDTH_BANNER_BORDER_COLOR_DEFAULT,
   fullWidthBannerTopSpace: FULL_WIDTH_BANNER_TOP_SPACE_DEFAULT,
   fullWidthBannerGap: FULL_WIDTH_BANNER_GAP_DEFAULT,
   lowerFullWidthBannerSliderItems: [createLargeBannerSlide({ alt: 'Lower full-width banner 1' })],
@@ -853,9 +919,8 @@ function mapSliderItemsForEditor(showcase, itemsKey, legacyImageKey, legacyLinkK
     ...slide,
     file: null,
     ...sanitizeImageFields(slide),
-    linkType: ['category', 'product', 'custom'].includes(slide.linkType)
-      ? slide.linkType
-      : inferShowcaseLinkType(slide.link).type,
+    linkType: normalizeShowcaseLinkType(slide.linkType)
+      || inferShowcaseLinkType(slide.link).type,
   }))
 }
 
@@ -984,6 +1049,8 @@ function buildShowcaseFormState(showcase = {}, previousForm = null) {
     lowerFullWidthBannerSliderInterval: Number(showcase?.lowerFullWidthBannerSliderInterval) || 4000,
     lowerFullWidthBannerDesktopHeight: normalizeLowerFullWidthBannerHeight(showcase?.lowerFullWidthBannerDesktopHeight),
     lowerFullWidthBannerRadius: normalizeLowerFullWidthBannerRadius(showcase?.lowerFullWidthBannerRadius),
+    lowerFullWidthBannerBorderWidth: normalizeLowerFullWidthBannerBorderWidth(showcase?.lowerFullWidthBannerBorderWidth),
+    lowerFullWidthBannerBorderColor: normalizeLowerFullWidthBannerBorderColor(showcase?.lowerFullWidthBannerBorderColor),
     fullWidthBannerTopSpace: normalizeFullWidthBannerTopSpace(showcase?.fullWidthBannerTopSpace),
     fullWidthBannerGap: normalizeFullWidthBannerGap(showcase?.fullWidthBannerGap),
     lowerFullWidthBannerSliderItems: (() => {
@@ -1011,9 +1078,8 @@ function buildShowcaseFormState(showcase = {}, previousForm = null) {
           subtitle: normalizedSubtitle && normalizedSubtitle !== 'Order now' ? normalizedSubtitle : '',
           buttonText: normalizedButtonText && normalizedButtonText !== 'Order now' ? normalizedButtonText : '',
           link: normalizedLink && normalizedLink !== '/shop' ? normalizedLink : '',
-          linkType: ['category', 'product', 'custom'].includes(current.linkType)
-            ? current.linkType
-            : inferShowcaseLinkType(normalizedLink).type,
+          linkType: normalizeShowcaseLinkType(current.linkType)
+            || inferShowcaseLinkType(normalizedLink).type,
           targetBlank: Boolean(current.targetBlank),
           file: null,
           previewUrl: sanitizeImageUrl(current.image || ''),
@@ -1053,6 +1119,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
   const [openBottomSlideId, setOpenBottomSlideId] = useState(null)
   const [openFullWidthSlideId, setOpenFullWidthSlideId] = useState(null)
   const [openLowerFullWidthSlideId, setOpenLowerFullWidthSlideId] = useState(null)
+  const [openLowerFullWidthStyle, setOpenLowerFullWidthStyle] = useState(false)
   const [openProductIndex, setOpenProductIndex] = useState(null)
   const [openLayoutGuide, setOpenLayoutGuide] = useState(false)
   const [openTopText, setOpenTopText] = useState(false)
@@ -1306,9 +1373,11 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
         const images = serializeShowcaseImageFields({
           ...banner,
           image: sanitizeImageUrl(banner.image || persistedPreview),
+          wideImage: sanitizeImageUrl(banner.wideImage),
           tabletImage: sanitizeImageUrl(banner.tabletImage),
           mobileImage: sanitizeImageUrl(banner.mobileImage),
           imageAr: sanitizeImageUrl(banner.imageAr),
+          wideImageAr: sanitizeImageUrl(banner.wideImageAr),
           tabletImageAr: sanitizeImageUrl(banner.tabletImageAr),
           mobileImageAr: sanitizeImageUrl(banner.mobileImageAr),
         })
@@ -1323,9 +1392,8 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
           subtitle: String(banner.subtitle || '').trim(),
           buttonText: String(banner.buttonText || '').trim(),
           link: String(banner.link || '').trim(),
-          linkType: ['category', 'product', 'custom'].includes(banner.linkType)
-            ? banner.linkType
-            : inferShowcaseLinkType(banner.link).type,
+          linkType: normalizeShowcaseLinkType(banner.linkType)
+            || inferShowcaseLinkType(banner.link).type,
           targetBlank: Boolean(banner.targetBlank),
         })
       }
@@ -1336,9 +1404,11 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
       const serializeSlideForSave = async (slide, fallbackLink) => {
         const images = serializeShowcaseImageFields({
           image: sanitizeImageUrl(slide.image),
+          wideImage: sanitizeImageUrl(slide.wideImage),
           tabletImage: sanitizeImageUrl(slide.tabletImage),
           mobileImage: sanitizeImageUrl(slide.mobileImage),
           imageAr: sanitizeImageUrl(slide.imageAr),
+          wideImageAr: sanitizeImageUrl(slide.wideImageAr),
           tabletImageAr: sanitizeImageUrl(slide.tabletImageAr),
           mobileImageAr: sanitizeImageUrl(slide.mobileImageAr),
         })
@@ -1348,10 +1418,11 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
         return {
           id: slide.id,
           ...images,
-          link: String(slide.link || fallbackLink || '/shop').trim(),
-          linkType: ['category', 'product', 'custom'].includes(slide.linkType)
-            ? slide.linkType
-            : inferShowcaseLinkType(slide.link).type,
+          link: normalizeShowcaseLinkType(slide.linkType) === 'none'
+            ? ''
+            : String(slide.link || fallbackLink || '/shop').trim(),
+          linkType: normalizeShowcaseLinkType(slide.linkType)
+            || inferShowcaseLinkType(slide.link).type,
           targetBlank: Boolean(slide.targetBlank),
           alt: String(slide.alt || '').trim(),
         }
@@ -1460,6 +1531,8 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
         lowerFullWidthBannerSliderInterval: Number(currentForm.lowerFullWidthBannerSliderInterval) || 4000,
         lowerFullWidthBannerDesktopHeight: normalizeLowerFullWidthBannerHeight(currentForm.lowerFullWidthBannerDesktopHeight),
         lowerFullWidthBannerRadius: normalizeLowerFullWidthBannerRadius(currentForm.lowerFullWidthBannerRadius),
+        lowerFullWidthBannerBorderWidth: normalizeLowerFullWidthBannerBorderWidth(currentForm.lowerFullWidthBannerBorderWidth),
+        lowerFullWidthBannerBorderColor: normalizeLowerFullWidthBannerBorderColor(currentForm.lowerFullWidthBannerBorderColor),
         fullWidthBannerGap: normalizeFullWidthBannerGap(currentForm.fullWidthBannerGap),
         lowerFullWidthBannerSliderItems,
       }, {
@@ -1937,8 +2010,9 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
             </label>
             <label className="mb-4 block max-w-md">
               <span className="mb-1 block text-sm font-medium text-slate-700">
-                Desktop height ({normalizeLowerFullWidthBannerHeight(form.lowerFullWidthBannerDesktopHeight)} px)
+                Height ({normalizeLowerFullWidthBannerHeight(form.lowerFullWidthBannerDesktopHeight)} px)
               </span>
+              <p className="mb-2 text-xs text-slate-500">From 80 px to 600 px. Publish to storefront to update the homepage.</p>
               <input
                 type="range"
                 min={LOWER_FULL_WIDTH_BANNER_HEIGHT_MIN}
@@ -1946,24 +2020,119 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
                 step="10"
                 className="w-full"
                 value={normalizeLowerFullWidthBannerHeight(form.lowerFullWidthBannerDesktopHeight)}
-                onChange={(event) => setForm((prev) => ({
-                  ...prev,
-                  lowerFullWidthBannerDesktopHeight: normalizeLowerFullWidthBannerHeight(event.target.value),
-                }))}
+                onChange={(event) => setForm((prev) => {
+                  const next = {
+                    ...prev,
+                    lowerFullWidthBannerDesktopHeight: normalizeLowerFullWidthBannerHeight(event.target.value),
+                  }
+                  formRef.current = next
+                  return next
+                })}
               />
-              <input
-                type="number"
+              <HeightNumberField
+                value={normalizeLowerFullWidthBannerHeight(form.lowerFullWidthBannerDesktopHeight)}
                 min={LOWER_FULL_WIDTH_BANNER_HEIGHT_MIN}
                 max={LOWER_FULL_WIDTH_BANNER_HEIGHT_MAX}
-                step="10"
-                className="mt-2 w-28 rounded-lg border border-slate-300 px-3 py-2"
-                value={normalizeLowerFullWidthBannerHeight(form.lowerFullWidthBannerDesktopHeight)}
-                onChange={(event) => setForm((prev) => ({
-                  ...prev,
-                  lowerFullWidthBannerDesktopHeight: normalizeLowerFullWidthBannerHeight(event.target.value),
-                }))}
+                onCommit={(height) => setForm((prev) => {
+                  const next = { ...prev, lowerFullWidthBannerDesktopHeight: height }
+                  formRef.current = next
+                  return next
+                })}
               />
             </label>
+
+            <AccordionRow
+              title="Corners & border"
+              summary={`Radius ${normalizeLowerFullWidthBannerRadius(form.lowerFullWidthBannerRadius)} px · Border ${normalizeLowerFullWidthBannerBorderWidth(form.lowerFullWidthBannerBorderWidth) ? `${normalizeLowerFullWidthBannerBorderWidth(form.lowerFullWidthBannerBorderWidth)} px` : 'off'} · click to ${openLowerFullWidthStyle ? 'hide' : 'edit'}`}
+              open={openLowerFullWidthStyle}
+              onToggle={() => setOpenLowerFullWidthStyle((current) => !current)}
+              className="mb-4 bg-slate-50/70"
+            >
+              <label className="mb-4 block max-w-md">
+                <span className="mb-1 block text-sm font-medium text-slate-700">
+                  Corner radius ({normalizeLowerFullWidthBannerRadius(form.lowerFullWidthBannerRadius)} px)
+                </span>
+                <input
+                  type="range"
+                  min={LOWER_FULL_WIDTH_BANNER_RADIUS_MIN}
+                  max={LOWER_FULL_WIDTH_BANNER_RADIUS_MAX}
+                  step="1"
+                  className="w-full"
+                  value={normalizeLowerFullWidthBannerRadius(form.lowerFullWidthBannerRadius)}
+                  onChange={(event) => setForm((prev) => ({
+                    ...prev,
+                    lowerFullWidthBannerRadius: normalizeLowerFullWidthBannerRadius(event.target.value),
+                  }))}
+                />
+                <input
+                  type="number"
+                  min={LOWER_FULL_WIDTH_BANNER_RADIUS_MIN}
+                  max={LOWER_FULL_WIDTH_BANNER_RADIUS_MAX}
+                  className="mt-2 w-28 rounded-lg border border-slate-300 px-3 py-2"
+                  value={normalizeLowerFullWidthBannerRadius(form.lowerFullWidthBannerRadius)}
+                  onChange={(event) => setForm((prev) => ({
+                    ...prev,
+                    lowerFullWidthBannerRadius: normalizeLowerFullWidthBannerRadius(event.target.value),
+                  }))}
+                />
+              </label>
+              <label className="mb-3 inline-flex w-full max-w-md items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2">
+                <span className="text-sm text-slate-700">Enable border</span>
+                <input
+                  type="checkbox"
+                  checked={normalizeLowerFullWidthBannerBorderWidth(form.lowerFullWidthBannerBorderWidth) > 0}
+                  onChange={(event) => setForm((prev) => ({
+                    ...prev,
+                    lowerFullWidthBannerBorderWidth: event.target.checked
+                      ? Math.max(1, normalizeLowerFullWidthBannerBorderWidth(prev.lowerFullWidthBannerBorderWidth) || 1)
+                      : 0,
+                  }))}
+                />
+              </label>
+              {normalizeLowerFullWidthBannerBorderWidth(form.lowerFullWidthBannerBorderWidth) > 0 ? (
+                <div className="grid max-w-md gap-3">
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-medium text-slate-700">
+                      Border width ({normalizeLowerFullWidthBannerBorderWidth(form.lowerFullWidthBannerBorderWidth)} px)
+                    </span>
+                    <input
+                      type="range"
+                      min={1}
+                      max={LOWER_FULL_WIDTH_BANNER_BORDER_WIDTH_MAX}
+                      step="1"
+                      className="w-full"
+                      value={normalizeLowerFullWidthBannerBorderWidth(form.lowerFullWidthBannerBorderWidth)}
+                      onChange={(event) => setForm((prev) => ({
+                        ...prev,
+                        lowerFullWidthBannerBorderWidth: normalizeLowerFullWidthBannerBorderWidth(event.target.value),
+                      }))}
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-medium text-slate-700">Border color</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        className="h-9 w-12 rounded border border-slate-300"
+                        value={normalizeLowerFullWidthBannerBorderColor(form.lowerFullWidthBannerBorderColor)}
+                        onChange={(event) => setForm((prev) => ({
+                          ...prev,
+                          lowerFullWidthBannerBorderColor: normalizeLowerFullWidthBannerBorderColor(event.target.value),
+                        }))}
+                      />
+                      <input
+                        className="w-28 rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm"
+                        value={normalizeLowerFullWidthBannerBorderColor(form.lowerFullWidthBannerBorderColor)}
+                        onChange={(event) => setForm((prev) => ({
+                          ...prev,
+                          lowerFullWidthBannerBorderColor: event.target.value,
+                        }))}
+                      />
+                    </div>
+                  </label>
+                </div>
+              ) : null}
+            </AccordionRow>
 
             <label className="mb-4 block max-w-xs">
               <span className="mb-1 block text-sm font-medium text-slate-700">Slide interval (ms)</span>
@@ -2106,7 +2275,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
           ) : null}
         </div>
 
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div className="mt-4 grid items-start gap-4 lg:grid-cols-2">
           <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -2170,7 +2339,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
               Add top banner slide
             </button>
             <p className="mt-2 text-xs text-slate-500">
-              Desktop: width 3054 px · height 1080 px · ratio {formatImageRatio(3054, 1080)}. Tablet and mobile sizes are shown on each upload.
+              Desktop up to 1400 px: 1400 × 1080. Screens wider than 1400 px: 2560 × 1080. Tablet and mobile sizes are shown on each upload.
             </p>
 
             <AccordionRow
@@ -2321,7 +2490,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
               Add bottom banner slide
             </button>
             <p className="mt-2 text-xs text-slate-500">
-              Desktop: width 3054 px · height 370 px · ratio {formatImageRatio(3054, 370)}. Tablet and mobile sizes are shown on each upload.
+              Desktop up to 1400 px: 1400 × 370. Screens wider than 1400 px: 2560 × 370. Tablet and mobile sizes are shown on each upload.
             </p>
 
             <AccordionRow
@@ -2411,7 +2580,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid items-start gap-4 lg:grid-cols-2">
         <div className="lg:col-span-2 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Product banner cards</h2>

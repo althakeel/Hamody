@@ -11,9 +11,8 @@ const MOBILE_AUTO_SCROLL_MS = 3500
 
 function ProductBannerCard({ banner, className = '' }) {
   const { isArabic } = useStorefrontI18n()
-  const link = String(banner?.link || '').trim()
-  const Card = link ? Link : 'div'
-  const linkProps = link ? getShowcaseLinkProps(banner) : {}
+  const linkProps = getShowcaseLinkProps(banner, '')
+  const Card = linkProps?.href ? Link : 'div'
   const sources = pickShowcaseBannerSources(banner, isArabic)
   const images = [
     { key: 'mobile', src: sources.mobile, className: 'block md:hidden', width: 360 },

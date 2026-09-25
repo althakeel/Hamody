@@ -176,6 +176,8 @@ const StorePreferenceSchema = new mongoose.Schema(
       lowerFullWidthBannerSliderInterval: { type: Number, default: 4000 },
       lowerFullWidthBannerDesktopHeight: { type: Number, default: 200 },
       lowerFullWidthBannerRadius: { type: Number, default: 0 },
+      lowerFullWidthBannerBorderWidth: { type: Number, default: 0 },
+      lowerFullWidthBannerBorderColor: { type: String, trim: true, default: '#e5e7eb' },
       fullWidthBannerTopSpace: { type: Number, default: 0 },
       fullWidthBannerGap: { type: Number, default: 12 },
       lowerFullWidthBannerSliderItems: {
@@ -546,6 +548,12 @@ if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerDesktopH
 }
 if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerRadius')) {
   missingShopShowcasePaths.lowerFullWidthBannerRadius = { type: Number, default: 0 }
+}
+if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerBorderWidth')) {
+  missingShopShowcasePaths.lowerFullWidthBannerBorderWidth = { type: Number, default: 0 }
+}
+if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerBorderColor')) {
+  missingShopShowcasePaths.lowerFullWidthBannerBorderColor = { type: String, trim: true, default: '#e5e7eb' }
 }
 
 if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerTopSpace')) {

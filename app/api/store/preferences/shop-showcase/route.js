@@ -8,6 +8,7 @@ import { deleteCacheKey, invalidateCachePattern } from '@/lib/cache'
 import { HOMEPAGE_CACHE_KEY } from '@/lib/categorySliderCache'
 import { applyLargeBannerSliderDefaults, serializeLargeBannerSliderItems } from '@/lib/shopShowcaseLargeBanners'
 import { hasShowcaseBannerImage, serializeShowcaseImageFields } from '@/lib/showcaseBannerImages'
+import { normalizeShowcaseLinkType } from '@/lib/showcaseBannerLinks'
 
 function resolveStoreObjectId(storeId) {
   const value = String(storeId || '').trim()
@@ -180,8 +181,8 @@ function normalizeSecondaryBannerSliderItems(items) {
     .map((item, index) => ({
       id: (item?.id || `secondary-banner-slider-${index + 1}`).toString().trim(),
       ...serializeShowcaseImageFields(item),
-      link: (item?.link || '/shop').toString().trim(),
-      linkType: ['category', 'product', 'custom'].includes(item?.linkType) ? item.linkType : '',
+      link: normalizeShowcaseLinkType(item?.linkType) === 'none' ? '' : (item?.link || '/shop').toString().trim(),
+      linkType: normalizeShowcaseLinkType(item?.linkType),
       targetBlank: Boolean(item?.targetBlank),
       alt: (item?.alt || `Lower Banner ${index + 1}`).toString().trim(),
     }))
@@ -199,8 +200,8 @@ function normalizeProductBanners(items) {
       title: (item?.title || '').toString().trim(),
       subtitle: (item?.subtitle || '').toString().trim(),
       buttonText: (item?.buttonText || '').toString().trim(),
-      link: (item?.link || '').toString().trim(),
-      linkType: ['category', 'product', 'custom'].includes(item?.linkType) ? item.linkType : '',
+      link: normalizeShowcaseLinkType(item?.linkType) === 'none' ? '' : (item?.link || '').toString().trim(),
+      linkType: normalizeShowcaseLinkType(item?.linkType),
       targetBlank: Boolean(item?.targetBlank),
     }))
     .filter((item) => hasShowcaseBannerImage(item))

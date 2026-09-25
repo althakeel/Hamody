@@ -749,7 +749,7 @@ const Navbar = () => {
           console.log('[Navbar] Fetch cancelled (cleanup)');
           return;
         }
-        console.error('[Navbar] Failed to load appearance:', error?.message || error);
+        if (String(error?.message || '').includes('Failed to fetch')) return;
       } finally {
         setNavbarAppearanceLoading(false);
       }

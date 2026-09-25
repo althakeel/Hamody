@@ -63,8 +63,7 @@ export function ShowcaseImageSlot({ label, size, value, onUpload, onClear }) {
         ) : null}
       </div>
       <div
-        className="relative mb-2 overflow-hidden rounded-md border border-dashed border-slate-300 bg-slate-50"
-        style={{ aspectRatio: width && height ? `${width} / ${height}` : '16 / 9' }}
+        className="relative mb-2 h-24 overflow-hidden rounded-md border border-dashed border-slate-300 bg-slate-50"
       >
         {value ? (
           <Image src={value} alt={label} fill unoptimized className="object-cover" />
@@ -104,10 +103,10 @@ export function SmoothPanel({ open, children }) {
   return (
     <div
       className={`grid min-w-0 transition-[grid-template-rows] duration-300 ease-out ${
-        open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+        open ? 'grid-rows-[auto]' : 'grid-rows-[0fr]'
       }`}
     >
-      <div className={`min-h-0 min-w-0 ${open ? 'overflow-visible' : 'overflow-hidden'}`}>
+      <div className="min-h-0 min-w-0 overflow-hidden">
         <div className={`min-w-0 border-t border-slate-200 px-3 pb-3 pt-3 transition-opacity duration-300 ${
           open ? 'opacity-100' : 'opacity-0'
         }`}>
@@ -120,7 +119,7 @@ export function SmoothPanel({ open, children }) {
 
 export function AccordionRow({ title, summary, open, onToggle, children, actions, className = '' }) {
   return (
-    <div className={`min-w-0 rounded-xl border border-slate-200 bg-white ${className}`.trim()}>
+    <div className={`h-fit min-w-0 self-start rounded-xl border border-slate-200 bg-white ${className}`.trim()}>
       <div className="flex items-center gap-2 px-3 py-2.5">
         <button
           type="button"
@@ -184,12 +183,14 @@ export function ShowcaseLocaleImageGroups({ item, recommendedSizes, onUpload, on
 
 function getLinkSummary(link, linkType) {
   const choice = readShowcaseLinkChoice(link, linkType)
+  if (choice.type === 'none') return 'Disabled · not clickable'
   if (choice.type === 'category') return choice.value ? `Category · ${choice.value}` : 'Category · not selected'
   if (choice.type === 'product') return choice.value ? `Product · ${choice.value}` : 'Product · not selected'
   return choice.value ? `Custom URL · ${choice.value}` : 'Custom URL · not set'
 }
 
 const LINK_TYPE_OPTIONS = [
+  { value: 'none', label: 'Disabled' },
   { value: 'category', label: 'Category' },
   { value: 'product', label: 'Product' },
   { value: 'custom', label: 'Custom URL' },
@@ -218,7 +219,7 @@ function ShowcaseSelect({ label, value, options, onChange }) {
   const selected = options.find((option) => option.value === value) || options[0]
 
   return (
-    <div ref={rootRef} className="relative z-30 min-w-0 w-full max-w-full">
+    <div ref={rootRef} className={`relative min-w-0 w-full max-w-full ${open ? 'z-50' : 'z-0'}`}>
       <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
       <button
         type="button"
@@ -230,7 +231,7 @@ function ShowcaseSelect({ label, value, options, onChange }) {
         <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open ? (
-        <div className="relative z-50 mt-2 w-full max-w-full overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-xl">
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 w-full max-w-full overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-xl">
           {options.map((option) => {
             const isSelected = option.value === value
             return (
@@ -272,7 +273,7 @@ function ShowcaseSearchDropdown({
   const rootRef = useClickOutside(open, () => setOpen(false))
 
   return (
-    <div ref={rootRef} className="relative z-20 min-w-0 w-full max-w-full">
+    <div ref={rootRef} className={`relative min-w-0 w-full max-w-full ${open ? 'z-50' : 'z-0'}`}>
       <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
       <button
         type="button"
@@ -286,7 +287,7 @@ function ShowcaseSearchDropdown({
         <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open ? (
-        <div className="relative z-50 mt-2 w-full max-w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 w-full max-w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
           <div className="border-b border-slate-100 p-2">
             <div className="relative min-w-0">
               <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -363,9 +364,14 @@ export function ShowcaseLinkFields({
 
   const selectType = (type) => {
     onLinkTypeChange(type)
-    const inferred = inferShowcaseLinkType(link)
-    if (type !== 'custom' && inferred.type !== type) {
+    if (type === 'none') {
       onLinkChange('')
+      onTargetBlankChange?.(false)
+    } else {
+      const inferred = inferShowcaseLinkType(link)
+      if (type !== 'custom' && inferred.type !== type) {
+        onLinkChange('')
+      }
     }
     if (type !== 'product') setProductQuery('')
     if (type !== 'category') setCategoryQuery('')
@@ -444,6 +450,7 @@ export function ShowcaseLinkFields({
         </label>
       ) : null}
 
+      {choice.type !== 'none' ? (
       <label className="inline-flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2">
         <span className="text-sm text-slate-700">Open in new window</span>
         <input
@@ -452,6 +459,9 @@ export function ShowcaseLinkFields({
           onChange={(event) => onTargetBlankChange(event.target.checked)}
         />
       </label>
+      ) : (
+        <p className="text-xs text-slate-500">This slide is not clickable on the storefront.</p>
+      )}
     </div>
   )
 }

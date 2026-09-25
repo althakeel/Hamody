@@ -12,7 +12,7 @@ import {
 import ShowcaseProductBanners from './ShowcaseProductBanners'
 import ShowcaseLargeBannerSlider from './ShowcaseLargeBannerSlider'
 import { HOME_SECTION_CLASS } from '@/lib/storefrontCarousel'
-import { getLargeBannerSlides, isFullWidthBannerActive, normalizeFullWidthBannerHeight, normalizeLowerFullWidthBannerHeight, normalizeLowerFullWidthBannerRadius, normalizeFullWidthBannerGap, normalizeFullWidthBannerTopSpace } from '@/lib/shopShowcaseLargeBanners'
+import { getLargeBannerSlides, isFullWidthBannerActive, normalizeFullWidthBannerHeight, normalizeLowerFullWidthBannerHeight, normalizeLowerFullWidthBannerRadius, normalizeLowerFullWidthBannerBorderWidth, normalizeLowerFullWidthBannerBorderColor, normalizeFullWidthBannerGap, normalizeFullWidthBannerTopSpace } from '@/lib/shopShowcaseLargeBanners'
 import { cleanDisplayText } from '@/lib/displayText'
 import { getProductPath } from '@/lib/productUrl'
 import {
@@ -705,6 +705,8 @@ export default function ShopShowcaseSection({
       sliderInterval: Number(config?.lowerFullWidthBannerSliderInterval) || 4000,
       desktopHeight: normalizeLowerFullWidthBannerHeight(config?.lowerFullWidthBannerDesktopHeight),
       borderRadius: normalizeLowerFullWidthBannerRadius(config?.lowerFullWidthBannerRadius),
+      borderWidth: normalizeLowerFullWidthBannerBorderWidth(config?.lowerFullWidthBannerBorderWidth),
+      borderColor: normalizeLowerFullWidthBannerBorderColor(config?.lowerFullWidthBannerBorderColor),
       title,
       showTitle,
       subtitle,
@@ -825,7 +827,7 @@ export default function ShopShowcaseSection({
     : 0
 
   return (
-    <div className={`${HOME_SECTION_CLASS} overflow-visible`}>
+    <div className={`${HOME_SECTION_CLASS} overflow-visible`} style={{ overflow: 'visible' }}>
       {fullWidthBanner || lowerFullWidthBanner ? (
         <div
           className="relative mb-3 w-full max-w-none"
@@ -833,10 +835,7 @@ export default function ShopShowcaseSection({
           onMouseEnter={closeCategoryFlyout}
         >
           {fullWidthBanner ? (
-            <div
-              className="w-full"
-              style={{ '--full-banner-height': fullWidthHeight }}
-            >
+            <div className="w-full overflow-hidden">
               {renderShowcaseBanner(fullWidthBanner, 'full')}
             </div>
           ) : null}
@@ -844,12 +843,19 @@ export default function ShopShowcaseSection({
             <div
               className="mx-auto w-full max-w-[1400px] overflow-hidden px-4 sm:px-6"
               style={{
-                '--full-banner-height': lowerFullWidthHeight,
+                width: '100%',
+                maxWidth: 1400,
+                height: lowerFullWidthHeight,
+                minHeight: lowerFullWidthHeight,
                 marginTop: fullWidthGap,
                 borderRadius: lowerFullWidthBanner.borderRadius || 0,
+                border: lowerFullWidthBanner.borderWidth
+                  ? `${lowerFullWidthBanner.borderWidth}px solid ${lowerFullWidthBanner.borderColor || '#e5e7eb'}`
+                  : undefined,
+                boxSizing: 'border-box',
               }}
             >
-              {renderShowcaseBanner(lowerFullWidthBanner, 'full')}
+              {renderShowcaseBanner(lowerFullWidthBanner, 'lower')}
             </div>
           ) : null}
         </div>
@@ -857,7 +863,7 @@ export default function ShopShowcaseSection({
       <section className="max-w-[1400px] mx-auto px-4 sm:px-6">
       <div className={`grid grid-cols-1 gap-3 overflow-visible lg:items-stretch ${hideCategorySidebar ? '' : 'lg:grid-cols-[280px_minmax(0,1fr)]'}`}>
         {hideCategorySidebar ? null : (
-        <div className="relative z-30 hidden min-h-[420px] lg:col-start-1 lg:row-start-1 lg:block">
+        <div className={`relative z-30 hidden lg:col-start-1 lg:row-start-1 lg:block ${bannerBlocks.length ? 'h-full min-h-0' : ''}`}>
           <div
             ref={menuContainerRef}
             className="relative h-full min-h-0 overflow-visible"
