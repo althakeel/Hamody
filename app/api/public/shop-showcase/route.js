@@ -10,20 +10,20 @@ import { hasShowcaseBannerImage, serializeShowcaseImageFields } from '@/lib/show
 import { resolvePublicStorePreference } from '@/lib/storePreferencePublic'
 import { STOREFRONT_IN_STOCK_FILTER, STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility'
 
-const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v18'
+const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v19'
 
 const DEFAULT_SHOWCASE = {
   enabled: true,
   featuredSectionTitle: 'Craziest sale of the year!',
   featuredSectionDescription: "Grab the best deals before they're gone!",
-  mainBannerEnabled: true,
+  mainBannerEnabled: false,
   topBannerEnabled: true,
   bottomBannerEnabled: true,
   fullWidthBannerEnabled: false,
   mainBannerImage: '',
-  mainBannerTitle: 'Power up instantly no battery needed',
-  mainBannerSubtitle: 'Never stress over a dead battery again',
-  mainBannerCtaText: 'Order Now',
+  mainBannerTitle: '',
+  mainBannerSubtitle: '',
+  mainBannerCtaText: '',
   mainBannerLink: '/shop',
   mainBannerLeftColor: '#00112b',
   mainBannerRightColor: '#00112b',
@@ -203,7 +203,9 @@ function normalize(data = {}) {
     topBannerEnabled: fullWidthActive ? false : data.topBannerEnabled === true,
     bottomBannerEnabled: fullWidthActive ? false : data.bottomBannerEnabled === true,
     fullWidthBannerEnabled: fullWidthActive,
-    mainBannerEnabled: typeof data.mainBannerEnabled === 'boolean' ? data.mainBannerEnabled : DEFAULT_SHOWCASE.mainBannerEnabled,
+    mainBannerEnabled: fullWidthActive || data.fullWidthBannerEnabled === true
+      ? false
+      : data.mainBannerEnabled === true,
     lowerFullWidthBannerEnabled: data.lowerFullWidthBannerEnabled === true,
     leftBlockBadgeText: typeof data.leftBlockBadgeText === 'string' ? data.leftBlockBadgeText.trim().slice(0, 12) : DEFAULT_SHOWCASE.leftBlockBadgeText,
     leftBlockSource: data.leftBlockSource === 'product' ? 'product' : 'category',

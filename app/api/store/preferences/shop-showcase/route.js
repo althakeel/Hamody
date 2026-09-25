@@ -114,6 +114,7 @@ const DEFAULT_SHOWCASE = {
   lowerFullWidthBannerSliderEnabled: true,
   lowerFullWidthBannerSliderInterval: 4000,
   lowerFullWidthBannerDesktopHeight: 200,
+  fullWidthBannerTopSpace: 0,
   fullWidthBannerGap: 12,
   lowerFullWidthBannerSliderItems: [],
   productBanners: [
@@ -426,6 +427,7 @@ export async function PUT(request) {
     }
 
     if (shopShowcase.fullWidthBannerEnabled === true) {
+      shopShowcase.mainBannerEnabled = false
       shopShowcase.topBannerEnabled = false
       shopShowcase.bottomBannerEnabled = false
     }

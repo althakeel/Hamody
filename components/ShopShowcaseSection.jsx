@@ -12,7 +12,7 @@ import {
 import ShowcaseProductBanners from './ShowcaseProductBanners'
 import ShowcaseLargeBannerSlider from './ShowcaseLargeBannerSlider'
 import { HOME_SECTION_CLASS } from '@/lib/storefrontCarousel'
-import { getLargeBannerSlides, isFullWidthBannerActive, normalizeFullWidthBannerHeight, normalizeLowerFullWidthBannerHeight, normalizeFullWidthBannerGap } from '@/lib/shopShowcaseLargeBanners'
+import { getLargeBannerSlides, isFullWidthBannerActive, normalizeFullWidthBannerHeight, normalizeLowerFullWidthBannerHeight, normalizeFullWidthBannerGap, normalizeFullWidthBannerTopSpace } from '@/lib/shopShowcaseLargeBanners'
 import { cleanDisplayText } from '@/lib/displayText'
 import { getProductPath } from '@/lib/productUrl'
 import {
@@ -815,6 +815,9 @@ export default function ShopShowcaseSection({
     />
   )
 
+  const fullWidthTopSpace = fullWidthBanner
+    ? normalizeFullWidthBannerTopSpace(config?.fullWidthBannerTopSpace)
+    : 0
   const fullWidthHeight = fullWidthBanner?.desktopHeight || 400
   const lowerFullWidthHeight = lowerFullWidthBanner?.desktopHeight || 200
   const fullWidthGap = fullWidthBanner && lowerFullWidthBanner
@@ -824,7 +827,11 @@ export default function ShopShowcaseSection({
   return (
     <div className={HOME_SECTION_CLASS}>
       {fullWidthBanner || lowerFullWidthBanner ? (
-        <div className="relative left-1/2 mb-3 w-screen max-w-[100vw] -translate-x-1/2" onMouseEnter={closeCategoryFlyout}>
+        <div
+          className="relative left-1/2 mb-3 w-screen max-w-[100vw] -translate-x-1/2"
+          style={{ marginTop: fullWidthTopSpace }}
+          onMouseEnter={closeCategoryFlyout}
+        >
           {fullWidthBanner ? (
             <div
               className="w-full"

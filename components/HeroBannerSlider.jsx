@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { isFullWidthBannerActive } from '@/lib/shopShowcaseLargeBanners';
 const DEFAULT_DESKTOP_HEIGHT = 320;
 const DEFAULT_MOBILE_HEIGHT = 100;
 const SLIDE_INTERVAL = 5000;
@@ -27,16 +28,17 @@ export default function HeroBannerSlider({ showcaseConfig: showcaseConfigProp = 
       return [];
     }
 
-    if (showcaseConfig?.mainBannerEnabled) {
+    const mainBannerImage = String(showcaseConfig?.mainBannerImage || '').trim();
+    if (showcaseConfig?.mainBannerEnabled && mainBannerImage) {
       const dynamicSlide = {
         type: 'config',
-        image: showcaseConfig.mainBannerImage || '',
-        title: showcaseConfig.mainBannerTitle ?? 'Power up instantly no battery needed',
-        titleEnabled: typeof showcaseConfig.mainBannerTitleEnabled === 'boolean' ? showcaseConfig.mainBannerTitleEnabled : true,
-        subtitle: showcaseConfig.mainBannerSubtitle ?? 'Never stress over a dead battery again',
-        subtitleEnabled: typeof showcaseConfig.mainBannerSubtitleEnabled === 'boolean' ? showcaseConfig.mainBannerSubtitleEnabled : true,
-        ctaText: showcaseConfig.mainBannerCtaText ?? 'Order Now',
-        ctaEnabled: typeof showcaseConfig.mainBannerCtaEnabled === 'boolean' ? showcaseConfig.mainBannerCtaEnabled : true,
+        image: mainBannerImage,
+        title: showcaseConfig.mainBannerTitle || '',
+        titleEnabled: showcaseConfig.mainBannerTitleEnabled === true && Boolean(String(showcaseConfig.mainBannerTitle || '').trim()),
+        subtitle: showcaseConfig.mainBannerSubtitle || '',
+        subtitleEnabled: showcaseConfig.mainBannerSubtitleEnabled === true && Boolean(String(showcaseConfig.mainBannerSubtitle || '').trim()),
+        ctaText: showcaseConfig.mainBannerCtaText || '',
+        ctaEnabled: showcaseConfig.mainBannerCtaEnabled === true && Boolean(String(showcaseConfig.mainBannerCtaText || '').trim()),
         link: showcaseConfig.mainBannerLink || '/shop',
         leftColor: showcaseConfig.mainBannerLeftColor || '#00112b',
         rightColor: showcaseConfig.mainBannerRightColor || '#00112b',
@@ -130,7 +132,7 @@ export default function HeroBannerSlider({ showcaseConfig: showcaseConfigProp = 
   const firstSlideHasImage = Boolean(slides[0]?.image);
   const shouldShowSkeleton = !showcaseLoaded || (firstSlideHasImage && !loaded[0]);
 
-  if (showcaseLoaded && slides.length === 0) {
+  if (showcaseLoaded && (slides.length === 0 || isFullWidthBannerActive(showcaseConfig))) {
     return null;
   }
 

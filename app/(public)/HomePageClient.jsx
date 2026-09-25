@@ -93,8 +93,10 @@ export default function HomePageClient({ initialData }) {
     secondaryBannerSlides.length > 0;
 
   return (
-    <div className="pt-5 sm:pt-6">
-      <HeroBannerSlider showcaseConfig={shopShowcaseConfig} showcaseReady />
+    <div className={shopShowcaseConfig?.fullWidthBannerEnabled ? '' : 'pt-5 sm:pt-6'}>
+      {shopShowcaseConfig?.fullWidthBannerEnabled ? null : (
+        <HeroBannerSlider showcaseConfig={shopShowcaseConfig} showcaseReady />
+      )}
       <h1 className="sr-only">
         {isArabic
           ? 'تسوق الإلكترونيات ومنتجات المنزل ونمط الحياة عبر الإنترنت في الإمارات'

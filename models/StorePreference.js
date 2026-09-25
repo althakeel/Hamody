@@ -175,6 +175,7 @@ const StorePreferenceSchema = new mongoose.Schema(
       lowerFullWidthBannerSliderEnabled: { type: Boolean, default: true },
       lowerFullWidthBannerSliderInterval: { type: Number, default: 4000 },
       lowerFullWidthBannerDesktopHeight: { type: Number, default: 200 },
+      fullWidthBannerTopSpace: { type: Number, default: 0 },
       fullWidthBannerGap: { type: Number, default: 12 },
       lowerFullWidthBannerSliderItems: {
         type: [BannerSliderItemSchema],
@@ -541,6 +542,10 @@ if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerSliderIn
 
 if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerDesktopHeight')) {
   missingShopShowcasePaths.lowerFullWidthBannerDesktopHeight = { type: Number, default: 200 }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerTopSpace')) {
+  missingShopShowcasePaths.fullWidthBannerTopSpace = { type: Number, default: 0 }
 }
 
 if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerGap')) {

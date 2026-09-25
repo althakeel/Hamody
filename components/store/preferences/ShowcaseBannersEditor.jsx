@@ -18,6 +18,10 @@ import {
   LOWER_FULL_WIDTH_BANNER_HEIGHT_MAX,
   LOWER_FULL_WIDTH_BANNER_HEIGHT_DEFAULT,
   normalizeFullWidthBannerGap,
+  normalizeFullWidthBannerTopSpace,
+  FULL_WIDTH_BANNER_TOP_SPACE_MIN,
+  FULL_WIDTH_BANNER_TOP_SPACE_MAX,
+  FULL_WIDTH_BANNER_TOP_SPACE_DEFAULT,
   FULL_WIDTH_BANNER_GAP_MIN,
   FULL_WIDTH_BANNER_GAP_MAX,
   FULL_WIDTH_BANNER_GAP_DEFAULT,
@@ -811,6 +815,7 @@ const DEFAULT_FORM = {
   lowerFullWidthBannerSliderEnabled: true,
   lowerFullWidthBannerSliderInterval: 4000,
   lowerFullWidthBannerDesktopHeight: LOWER_FULL_WIDTH_BANNER_HEIGHT_DEFAULT,
+  fullWidthBannerTopSpace: FULL_WIDTH_BANNER_TOP_SPACE_DEFAULT,
   fullWidthBannerGap: FULL_WIDTH_BANNER_GAP_DEFAULT,
   lowerFullWidthBannerSliderItems: [createLargeBannerSlide({ alt: 'Lower full-width banner 1' })],
   productBanners: [
@@ -963,6 +968,7 @@ function buildShowcaseFormState(showcase = {}, previousForm = null) {
     lowerFullWidthBannerSliderEnabled: showcase?.lowerFullWidthBannerSliderEnabled !== false,
     lowerFullWidthBannerSliderInterval: Number(showcase?.lowerFullWidthBannerSliderInterval) || 4000,
     lowerFullWidthBannerDesktopHeight: normalizeLowerFullWidthBannerHeight(showcase?.lowerFullWidthBannerDesktopHeight),
+    fullWidthBannerTopSpace: normalizeFullWidthBannerTopSpace(showcase?.fullWidthBannerTopSpace),
     fullWidthBannerGap: normalizeFullWidthBannerGap(showcase?.fullWidthBannerGap),
     lowerFullWidthBannerSliderItems: (() => {
       const items = mapSliderItemsForEditor(showcase, 'lowerFullWidthBannerSliderItems', 'lowerFullWidthBannerImage', 'lowerFullWidthBannerLink', 'lower-full-width-large-banner', 'Lower full-width banner')
@@ -1048,6 +1054,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
     setForm((prev) => {
       const next = { ...prev, [key]: enabled }
       if (enabled && key === 'fullWidthBannerEnabled') {
+        next.mainBannerEnabled = false
         next.topBannerEnabled = false
         next.bottomBannerEnabled = false
         next.fullWidthBannerSliderEnabled = true
@@ -1057,6 +1064,9 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
       }
       if (enabled && key === 'lowerFullWidthBannerEnabled') {
         setOpenLayoutGuide(true)
+      }
+      if (enabled && key === 'mainBannerEnabled') {
+        next.fullWidthBannerEnabled = false
       }
       if (enabled && (key === 'topBannerEnabled' || key === 'bottomBannerEnabled')) {
         next.fullWidthBannerEnabled = false
@@ -1440,6 +1450,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
         fullWidthBannerSliderEnabled: true,
         fullWidthBannerSliderInterval: Number(currentForm.fullWidthBannerSliderInterval) || 4000,
         fullWidthBannerDesktopHeight: normalizeFullWidthBannerHeight(currentForm.fullWidthBannerDesktopHeight),
+        fullWidthBannerTopSpace: normalizeFullWidthBannerTopSpace(currentForm.fullWidthBannerTopSpace),
         fullWidthBannerSliderItems,
         lowerFullWidthBannerImage,
         lowerFullWidthBannerTitle: String(currentForm.lowerFullWidthBannerTitle || '').trim(),
@@ -1677,7 +1688,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
           </div>
           {form.mainBannerEnabled ? (
             <p className="mt-3 text-xs text-slate-500">
-              The main banner stays inside the page width. It can stay on together with the Full Width Banner.
+              The main banner stays inside the page width. Turning this on hides the Full Width Banner.
             </p>
           ) : null}
         </div>
@@ -1687,7 +1698,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
             <div>
               <h2 className="text-sm font-semibold text-slate-900">Full Width Banner</h2>
               <p className="text-xs text-slate-500">
-                Spans the full screen edge to edge, not the 1400px content width. The main banner can stay on. Enabling this turns off the Top and Bottom Large Banners.
+                Spans the full screen edge to edge, not the 1400px content width. Turning this on hides the old main hero, plus the Top and Bottom Large Banners.
               </p>
             </div>
             <VisibilitySwitch
@@ -1719,6 +1730,25 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
           </div>
 
           <DesignerSizeGuide sizes={fullWidthSizes} />
+
+          <label className="mb-4 block max-w-md">
+            <span className="mb-1 block text-sm font-medium text-slate-700">
+              Space from the top ({normalizeFullWidthBannerTopSpace(form.fullWidthBannerTopSpace)} px)
+            </span>
+            <p className="mb-2 text-xs text-slate-500">0 means no space above the banner. Type any amount up to 200 px.</p>
+            <input
+              type="number"
+              min={FULL_WIDTH_BANNER_TOP_SPACE_MIN}
+              max={FULL_WIDTH_BANNER_TOP_SPACE_MAX}
+              step="1"
+              className="w-28 rounded-lg border border-slate-300 px-3 py-2"
+              value={normalizeFullWidthBannerTopSpace(form.fullWidthBannerTopSpace)}
+              onChange={(event) => setForm((prev) => ({
+                ...prev,
+                fullWidthBannerTopSpace: normalizeFullWidthBannerTopSpace(event.target.value),
+              }))}
+            />
+          </label>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
