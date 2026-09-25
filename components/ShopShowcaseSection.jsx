@@ -12,7 +12,7 @@ import {
 import ShowcaseProductBanners from './ShowcaseProductBanners'
 import ShowcaseLargeBannerSlider from './ShowcaseLargeBannerSlider'
 import { HOME_SECTION_CLASS } from '@/lib/storefrontCarousel'
-import { getLargeBannerSlides, isFullWidthBannerActive, normalizeFullWidthBannerHeight, normalizeLowerFullWidthBannerHeight, normalizeFullWidthBannerGap, normalizeFullWidthBannerTopSpace } from '@/lib/shopShowcaseLargeBanners'
+import { getLargeBannerSlides, isFullWidthBannerActive, normalizeFullWidthBannerHeight, normalizeLowerFullWidthBannerHeight, normalizeLowerFullWidthBannerRadius, normalizeFullWidthBannerGap, normalizeFullWidthBannerTopSpace } from '@/lib/shopShowcaseLargeBanners'
 import { cleanDisplayText } from '@/lib/displayText'
 import { getProductPath } from '@/lib/productUrl'
 import {
@@ -189,18 +189,15 @@ function isIconImageUrl(value) {
   return icon.startsWith('http://') || icon.startsWith('https://') || icon.startsWith('/') || icon.startsWith('data:image/')
 }
 
-function ShopShowcaseSkeleton({ navbarBg = DEFAULT_NAVBAR_BG }) {
+function ShopShowcaseSkeleton() {
   return (
     <section className={`${HOME_SECTION_CLASS} max-w-[1400px] mx-auto px-0 sm:px-6`} aria-label="Loading shop showcase">
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-stretch">
         <div className="relative hidden h-full min-h-0 lg:col-start-1 lg:row-start-1 lg:block">
           <aside className="absolute inset-0 flex min-h-0 flex-col overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between px-4 py-3 text-white" style={{ backgroundColor: navbarBg }}>
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 rounded-[2px] bg-white/25" />
-                <div className="h-3 w-24 rounded-[2px] bg-white/35" />
-              </div>
-              <div className="h-3 w-3 rounded-[2px] bg-white/25" />
+            <div className="flex items-center gap-2 border-b border-slate-200 px-4 py-3">
+              <div className="h-4 w-4 animate-pulse rounded-[2px] bg-slate-200" />
+              <div className="h-3 w-28 animate-pulse rounded-[2px] bg-slate-200" />
             </div>
             <div className="shop-showcase-left-menu-scroll animate-pulse">
               {Array.from({ length: 10 }).map((_, index) => (
@@ -600,9 +597,11 @@ export default function ShopShowcaseSection({
     return navItems.length ? navItems : categoryMenuItems
   }, [catalogCategories, categoryMenuItems, data?.categories, language, navMenuUseParentCategories, settingsNavMenuItems, storeMenuItems])
 
-  const hideSideBanners = isFullWidthBannerActive(config)
-  const showTopBanner = config?.topBannerEnabled === true && !hideSideBanners
-  const showBottomBanner = config?.bottomBannerEnabled === true && !hideSideBanners
+  const fullWidthOn = isFullWidthBannerActive(config)
+    || (config?.fullWidthBannerEnabled === true && getLargeBannerSlides(config, 'fullWidth').length > 0)
+  const hideCategorySidebar = fullWidthOn
+  const showTopBanner = config?.topBannerEnabled === true && !fullWidthOn
+  const showBottomBanner = config?.bottomBannerEnabled === true && !fullWidthOn
 
   const bannerBlocks = useMemo(() => {
     const blocks = []
@@ -651,7 +650,7 @@ export default function ShopShowcaseSection({
   }, [config, showTopBanner, showBottomBanner])
 
   const fullWidthBanner = useMemo(() => {
-    if (!isFullWidthBannerActive(config)) return null
+    if (config?.fullWidthBannerEnabled !== true && !isFullWidthBannerActive(config)) return null
 
     const slides = getLargeBannerSlides(config, 'fullWidth')
     const title = config?.fullWidthBannerTitle || ''
@@ -705,6 +704,7 @@ export default function ShopShowcaseSection({
       sliderEnabled: config?.lowerFullWidthBannerSliderEnabled !== false,
       sliderInterval: Number(config?.lowerFullWidthBannerSliderInterval) || 4000,
       desktopHeight: normalizeLowerFullWidthBannerHeight(config?.lowerFullWidthBannerDesktopHeight),
+      borderRadius: normalizeLowerFullWidthBannerRadius(config?.lowerFullWidthBannerRadius),
       title,
       showTitle,
       subtitle,
@@ -769,7 +769,7 @@ export default function ShopShowcaseSection({
     }
   }, [hoveredMenuIndex, hoveredDropdownLinks, isArabic])
 
-  if (loading) return <ShopShowcaseSkeleton navbarBg={navbarBg} />
+  if (loading) return <ShopShowcaseSkeleton />
   if (!config || config.enabled === false) return null
 
   const showCategoryFlyout = hoveredDropdownLinks.length > 0
@@ -825,27 +825,28 @@ export default function ShopShowcaseSection({
     : 0
 
   return (
-    <div className={HOME_SECTION_CLASS}>
+    <div className={`${HOME_SECTION_CLASS} overflow-visible`}>
       {fullWidthBanner || lowerFullWidthBanner ? (
         <div
-          className="relative left-1/2 mb-3 w-screen max-w-[100vw] -translate-x-1/2"
+          className="relative mb-3 w-full max-w-none"
           style={{ marginTop: fullWidthTopSpace }}
           onMouseEnter={closeCategoryFlyout}
         >
           {fullWidthBanner ? (
             <div
               className="w-full"
-              style={{ '--full-banner-height': `${fullWidthHeight}px` }}
+              style={{ '--full-banner-height': fullWidthHeight }}
             >
               {renderShowcaseBanner(fullWidthBanner, 'full')}
             </div>
           ) : null}
           {lowerFullWidthBanner ? (
             <div
-              className="w-full"
+              className="mx-auto w-full max-w-[1400px] overflow-hidden px-4 sm:px-6"
               style={{
-                '--full-banner-height': `${lowerFullWidthHeight}px`,
+                '--full-banner-height': lowerFullWidthHeight,
                 marginTop: fullWidthGap,
+                borderRadius: lowerFullWidthBanner.borderRadius || 0,
               }}
             >
               {renderShowcaseBanner(lowerFullWidthBanner, 'full')}
@@ -854,11 +855,12 @@ export default function ShopShowcaseSection({
         </div>
       ) : null}
       <section className="max-w-[1400px] mx-auto px-4 sm:px-6">
-      <div className="grid grid-cols-1 gap-3 overflow-visible lg:grid-cols-[280px_minmax(0,1fr)] lg:items-stretch">
-        <div className={`relative z-30 hidden min-h-0 lg:col-start-1 lg:row-start-1 lg:block ${hideSideBanners ? '' : 'h-full'}`}>
+      <div className={`grid grid-cols-1 gap-3 overflow-visible lg:items-stretch ${hideCategorySidebar ? '' : 'lg:grid-cols-[280px_minmax(0,1fr)]'}`}>
+        {hideCategorySidebar ? null : (
+        <div className="relative z-30 hidden min-h-[420px] lg:col-start-1 lg:row-start-1 lg:block">
           <div
             ref={menuContainerRef}
-            className={`relative min-h-0 overflow-visible ${hideSideBanners ? '' : 'h-full'}`}
+            className="relative h-full min-h-0 overflow-visible"
             style={{ width: showCategoryFlyout ? 560 : 280 }}
             onMouseEnter={clearFlyoutCloseTimer}
             onMouseLeave={scheduleFlyoutClose}
@@ -866,7 +868,7 @@ export default function ShopShowcaseSection({
           <aside
             ref={asideRef}
             dir={isArabic ? 'rtl' : 'ltr'}
-            className={`${hideSideBanners ? 'relative min-h-[420px]' : 'absolute inset-0 min-h-0'} flex w-[280px] flex-col overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm`}
+            className="absolute inset-0 flex min-h-0 w-[280px] flex-col overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm"
           >
             <div
               className="flex items-center justify-between px-4 py-3 text-white"
@@ -1093,15 +1095,16 @@ export default function ShopShowcaseSection({
           ) : null}
           </div>
         </div>
+        )}
 
         {bannerBlocks.length ? (
-          <div className="shop-showcase-banner-grid lg:col-start-2 lg:row-start-1" onMouseEnter={closeCategoryFlyout}>
+          <div className={`shop-showcase-banner-grid lg:row-start-1 ${hideCategorySidebar ? '' : 'lg:col-start-2'}`} onMouseEnter={closeCategoryFlyout}>
             {bannerBlocks.map((banner) => renderShowcaseBanner(banner))}
           </div>
         ) : null}
 
         {/* 4-grid product/banner section below main banners */}
-        <div className="lg:col-span-2 lg:row-start-2" onMouseEnter={closeCategoryFlyout}>
+        <div className={hideCategorySidebar ? '' : bannerBlocks.length ? 'lg:col-span-2 lg:row-start-2' : 'lg:col-start-2 lg:row-start-1'} onMouseEnter={closeCategoryFlyout}>
           <ShowcaseProductBanners banners={data.config?.productBanners} />
         </div>
       </div>

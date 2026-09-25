@@ -29,7 +29,8 @@ export default function HeroBannerSlider({ showcaseConfig: showcaseConfigProp = 
     }
 
     const mainBannerImage = String(showcaseConfig?.mainBannerImage || '').trim();
-    if (showcaseConfig?.mainBannerEnabled && mainBannerImage) {
+    const stockHero = String(showcaseConfig?.mainBannerTitle || '').trim().toLowerCase().startsWith('power up instantly');
+    if (showcaseConfig?.mainBannerEnabled && mainBannerImage && !stockHero) {
       const dynamicSlide = {
         type: 'config',
         image: mainBannerImage,

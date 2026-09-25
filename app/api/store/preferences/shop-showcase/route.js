@@ -32,17 +32,17 @@ const DEFAULT_SHOWCASE = {
   enabled: true,
   featuredSectionTitle: 'Craziest sale of the year!',
   featuredSectionDescription: "Grab the best deals before they're gone!",
-  mainBannerEnabled: true,
+  mainBannerEnabled: false,
   topBannerEnabled: true,
   bottomBannerEnabled: true,
   fullWidthBannerEnabled: false,
   mainBannerImage: '',
-  mainBannerTitle: 'Power up instantly no battery needed',
-  mainBannerTitleEnabled: true,
-  mainBannerSubtitle: 'Never stress over a dead battery again',
-  mainBannerSubtitleEnabled: true,
-  mainBannerCtaText: 'Order Now',
-  mainBannerCtaEnabled: true,
+  mainBannerTitle: '',
+  mainBannerTitleEnabled: false,
+  mainBannerSubtitle: '',
+  mainBannerSubtitleEnabled: false,
+  mainBannerCtaText: '',
+  mainBannerCtaEnabled: false,
   mainBannerLink: '/shop',
   mainBannerLeftColor: '#00112b',
   mainBannerRightColor: '#00112b',
@@ -428,8 +428,6 @@ export async function PUT(request) {
 
     if (shopShowcase.fullWidthBannerEnabled === true) {
       shopShowcase.mainBannerEnabled = false
-      shopShowcase.topBannerEnabled = false
-      shopShowcase.bottomBannerEnabled = false
     }
 
     let preference = await StorePreference.findOne({ storeId: storeObjectId })

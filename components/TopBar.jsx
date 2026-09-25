@@ -9,7 +9,7 @@ import {
 } from '@/lib/storefrontLanguage';
 import { DEFAULT_BNPL_TOP_BAR, normalizeBnplTopBar, resolveBnplPartners, resolveBnplTopBarMetrics } from '@/lib/bnplTopBar';
 
-const BNPL_CACHE_KEY = 'nav:bnpl-topbar:v1';
+const BNPL_CACHE_KEY = 'nav:bnpl-topbar:v2';
 
 const safeJsonParse = (value, fallback) => {
   try {
@@ -113,7 +113,7 @@ export default function TopBar({ initialLanguage = 'en' }) {
           className="flex min-w-0 items-center justify-center gap-2 animate-[bnplFlip_560ms_ease-out]"
           dir={isArabic ? 'rtl' : 'ltr'}
         >
-          {!bnplLogoError[activeBnplPartner.key] ? (
+          {activeBnplPartner.logoUrl && !bnplLogoError[activeBnplPartner.key] ? (
             <img
               src={activeBnplPartner.logoUrl}
               alt={activeBnplPartner.name}

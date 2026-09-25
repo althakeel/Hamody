@@ -223,7 +223,7 @@ const StoreLayout = ({ children }) => {
             isOwner={dashboardAccess.isOwner}
             permissions={dashboardAccess.permissions}
         >
-        <div className="flex h-full max-h-full flex-col overflow-hidden bg-slate-50">
+        <div className="flex h-full max-h-full min-h-0 flex-col overflow-hidden bg-slate-50">
             <SellerNavbar storeInfo={storeInfo} />
             <div className="flex min-h-0 flex-1 overflow-hidden">
                 <StoreActivityLogger />
@@ -233,7 +233,7 @@ const StoreLayout = ({ children }) => {
                     permissions={dashboardAccess.permissions}
                     canViewActivityHistory={dashboardAccess.canViewActivityHistory}
                 />
-                <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain p-3 sm:p-4 lg:p-5">
+                <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain bg-slate-50 p-3 sm:p-4 lg:p-5">
                     {canViewCurrentPage ? children : (
                         <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center">
                             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">

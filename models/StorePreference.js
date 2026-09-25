@@ -84,16 +84,16 @@ const StorePreferenceSchema = new mongoose.Schema(
       enabled: { type: Boolean, default: true },
       featuredSectionTitle: { type: String, trim: true, default: 'Craziest sale of the year!' },
       featuredSectionDescription: { type: String, trim: true, default: "Grab the best deals before they're gone!" },
-      mainBannerEnabled: { type: Boolean, default: true },
+      mainBannerEnabled: { type: Boolean, default: false },
       topBannerEnabled: { type: Boolean, default: true },
       bottomBannerEnabled: { type: Boolean, default: true },
       fullWidthBannerEnabled: { type: Boolean, default: false },
       mainBannerImage: { type: String, trim: true, default: '' },
-      mainBannerTitle: { type: String, trim: true, default: 'Power up instantly no battery needed' },
+      mainBannerTitle: { type: String, trim: true, default: '' },
       mainBannerTitleEnabled: { type: Boolean, default: true },
-      mainBannerSubtitle: { type: String, trim: true, default: 'Never stress over a dead battery again' },
+      mainBannerSubtitle: { type: String, trim: true, default: '' },
       mainBannerSubtitleEnabled: { type: Boolean, default: true },
-      mainBannerCtaText: { type: String, trim: true, default: 'Order Now' },
+      mainBannerCtaText: { type: String, trim: true, default: '' },
       mainBannerCtaEnabled: { type: Boolean, default: true },
       mainBannerLink: { type: String, trim: true, default: '/shop' },
       mainBannerLeftColor: { type: String, trim: true, default: '#00112b' },
@@ -175,6 +175,7 @@ const StorePreferenceSchema = new mongoose.Schema(
       lowerFullWidthBannerSliderEnabled: { type: Boolean, default: true },
       lowerFullWidthBannerSliderInterval: { type: Number, default: 4000 },
       lowerFullWidthBannerDesktopHeight: { type: Number, default: 200 },
+      lowerFullWidthBannerRadius: { type: Number, default: 0 },
       fullWidthBannerTopSpace: { type: Number, default: 0 },
       fullWidthBannerGap: { type: Number, default: 12 },
       lowerFullWidthBannerSliderItems: {
@@ -542,6 +543,9 @@ if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerSliderIn
 
 if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerDesktopHeight')) {
   missingShopShowcasePaths.lowerFullWidthBannerDesktopHeight = { type: Number, default: 200 }
+}
+if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerRadius')) {
+  missingShopShowcasePaths.lowerFullWidthBannerRadius = { type: Number, default: 0 }
 }
 
 if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerTopSpace')) {

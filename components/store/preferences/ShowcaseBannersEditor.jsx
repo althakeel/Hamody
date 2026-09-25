@@ -14,6 +14,10 @@ import {
   FULL_WIDTH_BANNER_HEIGHT_MAX,
   FULL_WIDTH_BANNER_HEIGHT_DEFAULT,
   normalizeLowerFullWidthBannerHeight,
+  normalizeLowerFullWidthBannerRadius,
+  LOWER_FULL_WIDTH_BANNER_RADIUS_MIN,
+  LOWER_FULL_WIDTH_BANNER_RADIUS_MAX,
+  LOWER_FULL_WIDTH_BANNER_RADIUS_DEFAULT,
   LOWER_FULL_WIDTH_BANNER_HEIGHT_MIN,
   LOWER_FULL_WIDTH_BANNER_HEIGHT_MAX,
   LOWER_FULL_WIDTH_BANNER_HEIGHT_DEFAULT,
@@ -311,14 +315,14 @@ function VisibilitySwitch({ enabled, onChange }) {
   )
 }
 
-function AccordionRow({ title, summary, preview, open, onToggle, children, actions, className = '' }) {
+function AccordionRow({ title, summary, preview, open, onToggle, headerToggles = true, children, actions, className = '' }) {
   return (
     <div className={`min-w-0 rounded-xl border border-slate-200 bg-white ${className}`.trim()}>
       <div className="flex items-center gap-2 px-3 py-2.5">
         <button
           type="button"
-          onClick={onToggle}
-          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+          onClick={headerToggles ? onToggle : undefined}
+          className={`flex min-w-0 flex-1 items-center gap-3 text-left ${headerToggles ? '' : 'cursor-default'}`}
           aria-expanded={open}
         >
           {preview ? (
@@ -330,10 +334,12 @@ function AccordionRow({ title, summary, preview, open, onToggle, children, actio
             <div className="text-sm font-semibold text-slate-900">{title}</div>
             {summary ? <div className="truncate text-xs text-slate-500">{summary}</div> : null}
           </div>
-          <ChevronDown
-            size={16}
-            className={`shrink-0 text-slate-500 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
-          />
+          {headerToggles ? (
+            <ChevronDown
+              size={16}
+              className={`shrink-0 text-slate-500 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
+            />
+          ) : null}
         </button>
         {actions}
       </div>
@@ -636,8 +642,8 @@ function ShowcaseLinkFields({
   )
 }
 
-function ShowcaseLocaleImageGroups({ item, recommendedSizes, onUpload, onChange, defaultOpen = 'en' }) {
-  const [openGroups, setOpenGroups] = useState({ [defaultOpen]: true })
+function ShowcaseLocaleImageGroups({ item, recommendedSizes, onUpload, onChange }) {
+  const [openGroups, setOpenGroups] = useState({})
 
   return (
     <div className="space-y-3">
@@ -698,12 +704,20 @@ function LargeBannerSlideCard({
   return (
     <AccordionRow
       title={`Slide ${index + 1}`}
-      summary={slide.image || slide.imageAr ? `${slideOrdinalLabel(index)} · click to ${open ? 'hide' : 'edit'}` : 'Upload a desktop image, then add tablet and mobile if you have them'}
+      summary={slide.image || slide.imageAr ? slideOrdinalLabel(index) : 'No image yet'}
       preview={slide.image || slide.imageAr || ''}
       open={open}
       onToggle={onToggle}
+      headerToggles={false}
       actions={(
         <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="inline-flex items-center rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            {open ? 'Close' : 'Edit'}
+          </button>
           <button
             type="button"
             onClick={() => onMove(-1)}
@@ -815,6 +829,7 @@ const DEFAULT_FORM = {
   lowerFullWidthBannerSliderEnabled: true,
   lowerFullWidthBannerSliderInterval: 4000,
   lowerFullWidthBannerDesktopHeight: LOWER_FULL_WIDTH_BANNER_HEIGHT_DEFAULT,
+  lowerFullWidthBannerRadius: LOWER_FULL_WIDTH_BANNER_RADIUS_DEFAULT,
   fullWidthBannerTopSpace: FULL_WIDTH_BANNER_TOP_SPACE_DEFAULT,
   fullWidthBannerGap: FULL_WIDTH_BANNER_GAP_DEFAULT,
   lowerFullWidthBannerSliderItems: [createLargeBannerSlide({ alt: 'Lower full-width banner 1' })],
@@ -968,6 +983,7 @@ function buildShowcaseFormState(showcase = {}, previousForm = null) {
     lowerFullWidthBannerSliderEnabled: showcase?.lowerFullWidthBannerSliderEnabled !== false,
     lowerFullWidthBannerSliderInterval: Number(showcase?.lowerFullWidthBannerSliderInterval) || 4000,
     lowerFullWidthBannerDesktopHeight: normalizeLowerFullWidthBannerHeight(showcase?.lowerFullWidthBannerDesktopHeight),
+    lowerFullWidthBannerRadius: normalizeLowerFullWidthBannerRadius(showcase?.lowerFullWidthBannerRadius),
     fullWidthBannerTopSpace: normalizeFullWidthBannerTopSpace(showcase?.fullWidthBannerTopSpace),
     fullWidthBannerGap: normalizeFullWidthBannerGap(showcase?.fullWidthBannerGap),
     lowerFullWidthBannerSliderItems: (() => {
@@ -1055,12 +1071,8 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
       const next = { ...prev, [key]: enabled }
       if (enabled && key === 'fullWidthBannerEnabled') {
         next.mainBannerEnabled = false
-        next.topBannerEnabled = false
-        next.bottomBannerEnabled = false
         next.fullWidthBannerSliderEnabled = true
         setOpenLayoutGuide(true)
-        const firstSlide = next.fullWidthBannerSliderItems?.[0]
-        if (firstSlide?.id) setOpenFullWidthSlideId(firstSlide.id)
       }
       if (enabled && key === 'lowerFullWidthBannerEnabled') {
         setOpenLayoutGuide(true)
@@ -1074,17 +1086,6 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
       formRef.current = next
       return next
     })
-    if (
-      key === 'fullWidthBannerEnabled'
-      || key === 'mainBannerEnabled'
-      || key === 'topBannerEnabled'
-      || key === 'bottomBannerEnabled'
-      || key === 'lowerFullWidthBannerEnabled'
-    ) {
-      window.setTimeout(() => {
-        void saveRef.current()
-      }, 0)
-    }
   }
 
   const loadData = async () => {
@@ -1098,10 +1099,6 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
       const nextForm = buildShowcaseFormState(res.data?.shopShowcase || {})
       setLoadedShowcase(res.data?.shopShowcase || {})
       setForm(nextForm)
-      const firstFullWidth = nextForm.fullWidthBannerSliderItems?.[0]
-      if (nextForm.fullWidthBannerEnabled && firstFullWidth?.id) {
-        setOpenFullWidthSlideId(firstFullWidth.id)
-      }
     } catch (error) {
       toast.error('Failed to load showcase banners')
       console.error(error)
@@ -1202,9 +1199,6 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
     setForm((prev) => {
       if (prev[itemsKey].length >= 8) return prev
       const nextSlide = createLargeBannerSlide({ alt: `${altPrefix} ${prev[itemsKey].length + 1}`, file: null })
-      if (itemsKey === 'fullWidthBannerSliderItems' && nextSlide.id) {
-        setOpenFullWidthSlideId(nextSlide.id)
-      }
       return {
         ...prev,
         [itemsKey]: [...prev[itemsKey], nextSlide],
@@ -1241,7 +1235,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
           slideIndex === index ? { ...slide, [field]: url, file: null } : slide
         )),
       }))
-      toast.success('Image uploaded')
+      toast.success('Image added. Click Publish to storefront to save.')
     } catch (error) {
       toast.error('Failed to upload image')
       console.error(error)
@@ -1266,7 +1260,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
             : banner
         )),
       }))
-      toast.success('Image uploaded')
+      toast.success('Image added. Click Publish to storefront to save.')
     } catch (error) {
       toast.error('Failed to upload image')
       console.error(error)
@@ -1405,7 +1399,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
 
       const response = await axios.put('/api/store/preferences/shop-showcase', {
         ...latestShowcase,
-        mainBannerEnabled: !!currentForm.mainBannerEnabled,
+        mainBannerEnabled: false,
         topBannerEnabled: !!currentForm.topBannerEnabled,
         bottomBannerEnabled: !!currentForm.bottomBannerEnabled,
         fullWidthBannerEnabled: !!currentForm.fullWidthBannerEnabled,
@@ -1465,6 +1459,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
         lowerFullWidthBannerSliderEnabled: !!currentForm.lowerFullWidthBannerSliderEnabled,
         lowerFullWidthBannerSliderInterval: Number(currentForm.lowerFullWidthBannerSliderInterval) || 4000,
         lowerFullWidthBannerDesktopHeight: normalizeLowerFullWidthBannerHeight(currentForm.lowerFullWidthBannerDesktopHeight),
+        lowerFullWidthBannerRadius: normalizeLowerFullWidthBannerRadius(currentForm.lowerFullWidthBannerRadius),
         fullWidthBannerGap: normalizeFullWidthBannerGap(currentForm.fullWidthBannerGap),
         lowerFullWidthBannerSliderItems,
       }, {
@@ -1582,13 +1577,15 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
             </div>
           ) : null}
 
-          <div className="mt-4 grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
+          <div className={`mt-4 grid gap-3 ${form.fullWidthBannerEnabled ? '' : 'lg:grid-cols-[220px_minmax(0,1fr)]'}`}>
+            {form.fullWidthBannerEnabled ? null : (
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
               <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-600">Left sidebar</div>
               <div className="mt-2 flex h-[240px] items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white text-center text-xs font-medium text-slate-500">
                 Category menu
               </div>
             </div>
+            )}
 
             <div className="grid gap-3">
               {form.topBannerEnabled && !form.fullWidthBannerEnabled ? (
@@ -1623,12 +1620,6 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
                   </div>
                 </div>
               </div>
-              ) : null}
-
-              {form.fullWidthBannerEnabled ? (
-                <div className="flex min-h-[160px] items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 text-center text-xs text-slate-500">
-                  Top and Bottom Large Banners are off while Full Width Banner is enabled.
-                </div>
               ) : null}
 
               <div className={`grid gap-2 ${(() => {
@@ -1667,38 +1658,12 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
           </div>
         </AccordionRow>
 
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-semibold text-slate-900">Main Banner Visibility</h2>
-              <p className="text-xs text-slate-500">Enable or disable the big main banner on storefront.</p>
-            </div>
-            <label className="inline-flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={!!form.mainBannerEnabled}
-                onChange={(event) => setBannerEnabled('mainBannerEnabled', event.target.checked)}
-                className="sr-only peer"
-              />
-              <span className="h-6 w-11 rounded-full bg-slate-300 relative transition peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-5" />
-              <span className="text-xs font-medium text-slate-700">
-                {form.mainBannerEnabled ? 'Enabled' : 'Disabled'}
-              </span>
-            </label>
-          </div>
-          {form.mainBannerEnabled ? (
-            <p className="mt-3 text-xs text-slate-500">
-              The main banner stays inside the page width. Turning this on hides the Full Width Banner.
-            </p>
-          ) : null}
-        </div>
-
         <div className="mt-4 min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-sm font-semibold text-slate-900">Full Width Banner</h2>
               <p className="text-xs text-slate-500">
-                Spans the full screen edge to edge, not the 1400px content width. Turning this on hides the old main hero, plus the Top and Bottom Large Banners.
+                Spans the full screen edge to edge, not the 1400px content width. The categories list and the other homepage banners stay on the page.
               </p>
             </div>
             <VisibilitySwitch

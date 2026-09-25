@@ -5,12 +5,12 @@ import Category from '@/models/Category'
 import Store from '@/models/Store'
 import mongoose from 'mongoose'
 import { getCachedData, setCachedData } from '@/lib/cache'
-import { applyLargeBannerSliderDefaults, isFullWidthBannerActive } from '@/lib/shopShowcaseLargeBanners'
+import { applyLargeBannerSliderDefaults } from '@/lib/shopShowcaseLargeBanners'
 import { hasShowcaseBannerImage, serializeShowcaseImageFields } from '@/lib/showcaseBannerImages'
 import { resolvePublicStorePreference } from '@/lib/storePreferencePublic'
 import { STOREFRONT_IN_STOCK_FILTER, STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility'
 
-const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v19'
+const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v23'
 
 const DEFAULT_SHOWCASE = {
   enabled: true,
@@ -192,20 +192,27 @@ function normalizeProductBanners(items) {
     .filter((item) => hasShowcaseBannerImage(item))
 }
 
+function isStockMainBanner(data = {}) {
+  const title = String(data.mainBannerTitle || '').trim().toLowerCase()
+  return title.startsWith('power up instantly')
+}
+
 function normalize(data = {}) {
-  const fullWidthActive = isFullWidthBannerActive({
-    ...data,
-    ...applyLargeBannerSliderDefaults(data),
-  })
+  const sliderDefaults = applyLargeBannerSliderDefaults(data)
+  const fullWidthActive = data.fullWidthBannerEnabled === true
   return {
     ...DEFAULT_SHOWCASE,
     ...data,
-    topBannerEnabled: fullWidthActive ? false : data.topBannerEnabled === true,
-    bottomBannerEnabled: fullWidthActive ? false : data.bottomBannerEnabled === true,
+    ...sliderDefaults,
+    topBannerEnabled: data.topBannerEnabled === true,
+    bottomBannerEnabled: data.bottomBannerEnabled === true,
     fullWidthBannerEnabled: fullWidthActive,
-    mainBannerEnabled: fullWidthActive || data.fullWidthBannerEnabled === true
+    mainBannerEnabled: fullWidthActive || data.fullWidthBannerEnabled === true || isStockMainBanner(data)
       ? false
       : data.mainBannerEnabled === true,
+    mainBannerTitle: isStockMainBanner(data) ? '' : (data.mainBannerTitle || ''),
+    mainBannerSubtitle: isStockMainBanner(data) ? '' : (data.mainBannerSubtitle || ''),
+    mainBannerCtaText: isStockMainBanner(data) ? '' : (data.mainBannerCtaText || ''),
     lowerFullWidthBannerEnabled: data.lowerFullWidthBannerEnabled === true,
     leftBlockBadgeText: typeof data.leftBlockBadgeText === 'string' ? data.leftBlockBadgeText.trim().slice(0, 12) : DEFAULT_SHOWCASE.leftBlockBadgeText,
     leftBlockSource: data.leftBlockSource === 'product' ? 'product' : 'category',

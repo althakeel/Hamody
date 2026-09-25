@@ -1054,6 +1054,56 @@ export default function MenuManagementPage() {
     }
   };
 
+  const uploadTopBarImage = async (file) => {
+    if (!file) return '';
+    if (!String(file.type || '').startsWith('image/')) {
+      toast.error('Please choose an image file');
+      return '';
+    }
+    const token = await getToken();
+    const { compressImageForUpload } = await import('@/lib/compressImageForUpload');
+    const prepared = await compressImageForUpload(file, {
+      maxWidth: 600,
+      maxHeight: 200,
+      maxBytes: 1024 * 1024,
+      preserveTransparency: true,
+    });
+    const body = new FormData();
+    body.append('image', prepared);
+    body.append('type', 'navbar-logo');
+    const uploadResponse = await fetch('/api/store/upload-image', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body,
+    });
+    const uploadData = await uploadResponse.json().catch(() => ({}));
+    if (!uploadResponse.ok || !uploadData?.url) {
+      throw new Error(uploadData?.error || 'Failed to upload image');
+    }
+    return uploadData.url;
+  };
+
+  const translateTopBarEnglish = async (english, key, applyArabic) => {
+    const source = String(english || '').trim();
+    if (!source) {
+      toast.error('Enter English text first');
+      return;
+    }
+    try {
+      setTranslatingKey(key);
+      const arabic = await translateTextToArabic(source);
+      if (!arabic) {
+        toast.error('Could not translate to Arabic');
+        return;
+      }
+      await applyArabic(arabic);
+    } catch (error) {
+      toast.error(error?.message || 'Failed to translate to Arabic');
+    } finally {
+      setTranslatingKey('');
+    }
+  };
+
   const matchesNavItem = (item, match) => {
     const itemId = String(item?.categoryId || '').trim();
     const itemSlug = String(item?.slug || '').trim().toLowerCase();
@@ -2346,6 +2396,7 @@ export default function MenuManagementPage() {
               </div>
               {BNPL_PARTNER_DEFS.map((partner) => {
                 const partnerEnabled = Boolean(form.bnplTopBar?.[partner.enabledKey]);
+                const partnerLogo = form.bnplTopBar?.[partner.logoKey] || partner.logoUrl;
                 const payments = Number(form.bnplTopBar?.[partner.paymentsKey]) || 4;
                 const text = form.bnplTopBar?.[partner.textKey] || '';
                 const textAr = form.bnplTopBar?.[partner.textArKey] || '';
@@ -2358,7 +2409,7 @@ export default function MenuManagementPage() {
                   <div key={partner.key} className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <img src={partner.logoUrl} alt={partner.name} className="h-5 w-auto" />
+                        <img src={partnerLogo} alt={partner.name} className="h-5 w-auto" />
                         <div>
                           <p className="text-sm font-semibold text-slate-900">{partner.name}</p>
                           <p className="text-xs text-slate-500">Show this partner in the top bar rotation.</p>
@@ -2379,6 +2430,26 @@ export default function MenuManagementPage() {
                     </div>
 
                     <div className={`mt-4 space-y-3 ${partnerEnabled ? '' : 'pointer-events-none opacity-50'}`}>
+                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">
+                        Change image
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (event) => {
+                            const file = event.target.files?.[0];
+                            event.target.value = '';
+                            if (!file) return;
+                            try {
+                              const url = await uploadTopBarImage(file);
+                              if (!url) return;
+                              await persistBnplTopBar({ [partner.logoKey]: url }, `${partner.name} image updated`);
+                            } catch (error) {
+                              toast.error(error?.message || 'Failed to upload image');
+                            }
+                          }}
+                        />
+                      </label>
                       <label className="block space-y-1">
                         <span className="text-xs font-medium text-slate-600">Payments</span>
                         <input
@@ -2421,7 +2492,22 @@ export default function MenuManagementPage() {
                         />
                       </label>
                       <label className="block space-y-1">
-                        <span className="text-xs font-medium text-slate-600">Arabic text</span>
+                        <span className="flex items-center justify-between gap-2 text-xs font-medium text-slate-600">
+                          Arabic text
+                          <button
+                            type="button"
+                            onClick={() => translateTopBarEnglish(
+                              text.trim() || preview.desktop,
+                              `topbar-${partner.key}`,
+                              (arabic) => persistBnplTopBar({ [partner.textArKey]: arabic }, `${partner.name} Arabic text updated`),
+                            )}
+                            disabled={translatingKey === `topbar-${partner.key}`}
+                            className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:border-violet-300 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {translatingKey === `topbar-${partner.key}` ? <Loader2 size={12} className="animate-spin" /> : <Languages size={12} />}
+                            {translatingKey === `topbar-${partner.key}` ? 'Translating...' : 'Translate'}
+                          </button>
+                        </span>
                         <input
                           type="text"
                           dir="rtl"
@@ -2452,6 +2538,147 @@ export default function MenuManagementPage() {
                   </div>
                 );
               })}
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">More items</p>
+                    <p className="mt-1 text-xs text-slate-500">Add extra messages. Enabled items rotate automatically with Tamara and Tabby.</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white"
+                    onClick={() => {
+                      const current = normalizeBnplTopBar(form.bnplTopBar).customItems || [];
+                      if (current.length >= 8) return;
+                      persistBnplTopBar({
+                        customItems: [
+                          ...current,
+                          {
+                            id: `topbar-${Date.now()}`,
+                            enabled: true,
+                            name: `Item ${current.length + 1}`,
+                            imageUrl: '',
+                            text: '',
+                            textAr: '',
+                          },
+                        ],
+                      }, 'Top bar item added');
+                    }}
+                  >
+                    Add item
+                  </button>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {(normalizeBnplTopBar(form.bnplTopBar).customItems || []).map((item, index) => (
+                    <div key={item.id} className="rounded-xl border border-slate-200 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          {item.imageUrl ? <img src={item.imageUrl} alt="" className="h-6 w-auto" /> : null}
+                          <input
+                            value={item.name}
+                            onChange={(event) => {
+                              const customItems = normalizeBnplTopBar(form.bnplTopBar).customItems.map((entry, entryIndex) => (
+                                entryIndex === index ? { ...entry, name: event.target.value } : entry
+                              ));
+                              setForm((prev) => ({
+                                ...prev,
+                                bnplTopBar: { ...normalizeBnplTopBar(prev.bnplTopBar), customItems },
+                              }));
+                            }}
+                            onBlur={() => persistBnplTopBar({ customItems: normalizeBnplTopBar(form.bnplTopBar).customItems }, 'Top bar item updated')}
+                            className="w-40 rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          className="text-xs font-semibold text-red-600"
+                          onClick={() => persistBnplTopBar({
+                            customItems: normalizeBnplTopBar(form.bnplTopBar).customItems.filter((entry) => entry.id !== item.id),
+                          }, 'Top bar item removed')}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div className="mt-3 space-y-2">
+                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">
+                          {item.imageUrl ? 'Change image' : 'Upload image'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (event) => {
+                              const file = event.target.files?.[0];
+                              event.target.value = '';
+                              if (!file) return;
+                              try {
+                                const url = await uploadTopBarImage(file);
+                                if (!url) return;
+                                const customItems = normalizeBnplTopBar(form.bnplTopBar).customItems.map((entry) => (
+                                  entry.id === item.id ? { ...entry, imageUrl: url } : entry
+                                ));
+                                await persistBnplTopBar({ customItems }, 'Top bar image updated');
+                              } catch (error) {
+                                toast.error(error?.message || 'Failed to upload image');
+                              }
+                            }}
+                          />
+                        </label>
+                        <input
+                          value={item.text}
+                          placeholder="English text"
+                          onChange={(event) => {
+                            const customItems = normalizeBnplTopBar(form.bnplTopBar).customItems.map((entry) => (
+                              entry.id === item.id ? { ...entry, text: event.target.value } : entry
+                            ));
+                            setForm((prev) => ({
+                              ...prev,
+                              bnplTopBar: { ...normalizeBnplTopBar(prev.bnplTopBar), customItems },
+                            }));
+                          }}
+                          onBlur={() => persistBnplTopBar({ customItems: normalizeBnplTopBar(form.bnplTopBar).customItems }, 'Top bar text updated')}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        />
+                        <div className="flex items-center justify-end">
+                          <button
+                            type="button"
+                            onClick={() => translateTopBarEnglish(
+                              item.text,
+                              `topbar-item-${item.id}`,
+                              (arabic) => {
+                                const customItems = normalizeBnplTopBar(form.bnplTopBar).customItems.map((entry) => (
+                                  entry.id === item.id ? { ...entry, textAr: arabic } : entry
+                                ));
+                                return persistBnplTopBar({ customItems }, 'Top bar Arabic text updated');
+                              },
+                            )}
+                            disabled={translatingKey === `topbar-item-${item.id}` || !String(item.text || '').trim()}
+                            className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:border-violet-300 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {translatingKey === `topbar-item-${item.id}` ? <Loader2 size={12} className="animate-spin" /> : <Languages size={12} />}
+                            {translatingKey === `topbar-item-${item.id}` ? 'Translating...' : 'Translate'}
+                          </button>
+                        </div>
+                        <input
+                          dir="rtl"
+                          value={item.textAr}
+                          placeholder="Arabic text"
+                          onChange={(event) => {
+                            const customItems = normalizeBnplTopBar(form.bnplTopBar).customItems.map((entry) => (
+                              entry.id === item.id ? { ...entry, textAr: event.target.value } : entry
+                            ));
+                            setForm((prev) => ({
+                              ...prev,
+                              bnplTopBar: { ...normalizeBnplTopBar(prev.bnplTopBar), customItems },
+                            }));
+                          }}
+                          onBlur={() => persistBnplTopBar({ customItems: normalizeBnplTopBar(form.bnplTopBar).customItems }, 'Top bar Arabic text updated')}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
           ) : null}

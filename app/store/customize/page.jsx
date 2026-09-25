@@ -157,7 +157,7 @@ function Section({ title, description, items }) {
 
           return (
             <Link
-              key={item.href}
+              key={item.title}
               href={item.href}
               className="group flex min-w-0 flex-col rounded-xl border border-slate-200 bg-white p-4 transition hover:border-emerald-300 hover:shadow-sm sm:p-5"
             >

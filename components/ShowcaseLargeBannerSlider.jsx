@@ -116,7 +116,7 @@ export default function ShowcaseLargeBannerSlider({
     desktop: desktopWidth,
   };
   const fullBannerStyle = bannerVariant === 'full' && bannerHeight
-    ? { height: `${bannerHeight}px`, maxHeight: `${bannerHeight}px` }
+    ? { height: `${bannerHeight}px`, maxHeight: 'none', width: '100%', maxWidth: 'none', borderRadius: 0 }
     : {};
 
   const activeSlides = useMemo(
@@ -217,7 +217,7 @@ export default function ShowcaseLargeBannerSlider({
       onClick={handleLinkClick}
       onDragStart={(event) => event.preventDefault()}
     >
-      <div className="absolute inset-0 overflow-hidden touch-pan-y" dir="ltr" {...viewportHandlers}>
+      <div className={`${bannerVariant === 'full' ? 'relative h-full w-full' : 'absolute inset-0'} overflow-hidden touch-pan-y`} dir="ltr" {...viewportHandlers}>
         <div
           ref={trackRef}
           className="flex h-full min-h-full will-change-transform select-none"
@@ -231,6 +231,13 @@ export default function ShowcaseLargeBannerSlider({
               className="relative h-full min-h-full shrink-0 grow-0 overflow-hidden"
               style={{ width: `${slideWidthPercent}%` }}
             >
+              {bannerVariant === 'full' ? (
+                <img
+                  src={getDisplayImageUrl(slide.sources.desktop || slide.sources.tablet || slide.sources.mobile, deviceWidths.desktop)}
+                  alt={slide.alt || fallback?.title || 'Showcase banner'}
+                  className="block h-full w-full object-cover object-center"
+                />
+              ) : (
               <ShowcaseDeviceImages
                 sources={slide.sources}
                 alt={slide.alt || fallback?.title || 'Showcase banner'}
@@ -239,6 +246,7 @@ export default function ShowcaseLargeBannerSlider({
                 widths={deviceWidths}
                 onError={handleImageError}
               />
+              )}
             </div>
           ))}
         </div>

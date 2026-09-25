@@ -69,6 +69,9 @@ const NavbarMenuSettingsSchema = new mongoose.Schema(
       tabbyTextAr: { type: String, default: '', trim: true },
       fontSize: { type: Number, default: 14 },
       minHeight: { type: Number, default: 40 },
+      tamaraLogoUrl: { type: String, default: '', trim: true },
+      tabbyLogoUrl: { type: String, default: '', trim: true },
+      customItems: { type: [mongoose.Schema.Types.Mixed], default: [] },
     },
     navActionsVisibility: {
       store: { type: Boolean, default: true },
@@ -425,6 +428,9 @@ if (!NavbarMenuSettingsModel.schema.path('bnplTopBar')) {
       tabbyTextAr: { type: String, default: '', trim: true },
       fontSize: { type: Number, default: 14 },
       minHeight: { type: Number, default: 40 },
+      tamaraLogoUrl: { type: String, default: '', trim: true },
+      tabbyLogoUrl: { type: String, default: '', trim: true },
+      customItems: { type: [mongoose.Schema.Types.Mixed], default: [] },
     },
   });
 }
@@ -434,6 +440,13 @@ if (bnplTopBarPath?.schema && !bnplTopBarPath.schema.path('fontSize')) {
   bnplTopBarPath.schema.add({
     fontSize: { type: Number, default: 14 },
     minHeight: { type: Number, default: 40 },
+  });
+}
+if (bnplTopBarPath?.schema && !bnplTopBarPath.schema.path('customItems')) {
+  bnplTopBarPath.schema.add({
+    tamaraLogoUrl: { type: String, default: '', trim: true },
+    tabbyLogoUrl: { type: String, default: '', trim: true },
+    customItems: { type: [mongoose.Schema.Types.Mixed], default: [] },
   });
 }
 
