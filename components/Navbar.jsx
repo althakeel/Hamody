@@ -58,12 +58,13 @@ import {
   resolveNavbarPhone,
 } from '@/lib/storeContact';
 import { DEFAULT_NAVBAR_LANGUAGE, normalizeNavbarLanguage } from '@/lib/storefrontMarket';
+import { STORE1920_LOGO_PATH } from '@/lib/brandLogo';
 
 const NAVBAR_SELECTED_ADDRESS_KEY = 'navbarSelectedAddressId';
 const NAVBAR_APPEARANCE_CACHE_KEY = 'navbarAppearanceCache';
 
 const STOREFRONT_BRAND_NAME = 'store1920';
-/** Empty until API/cache — never flash a hardcoded logo or brand color. */
+/** Empty colors until API/cache. Logo falls back to the Store1920 mark. */
 const EMPTY_NAVBAR_APPEARANCE = {
   logoUrl: '',
   logoWidth: 120,
@@ -77,7 +78,7 @@ const getNavbarContainerStyle = (maxWidth = 1400) => ({
 });
 const NAVBAR_CONTAINER_CLASS = 'mx-auto w-full px-4 sm:px-6';
 
-const resolveNavbarLogoSrc = (logoUrl) => String(logoUrl || '').trim();
+const resolveNavbarLogoSrc = (logoUrl) => String(logoUrl || '').trim() || STORE1920_LOGO_PATH;
 
 const normalizeNavbarAppearance = (appearance = {}) => {
   try {

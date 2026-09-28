@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Order from '@/models/Order';
 import AbandonedCart from '@/models/AbandonedCart';
+import StockNotifyRequest from '@/models/StockNotifyRequest';
 import {
   TRASHED_RECORD_FILTER,
   buildRestoreMeta,
@@ -19,8 +20,8 @@ export async function POST(request) {
       ? [...new Set(body.ids.map((id) => String(id).trim()).filter(Boolean))]
       : [];
 
-    if (!['order', 'abandonedCart'].includes(type)) {
-      return NextResponse.json({ error: 'type must be order or abandonedCart' }, { status: 400 });
+    if (!['order', 'abandonedCart', 'notifyRequest'].includes(type)) {
+      return NextResponse.json({ error: 'type must be order, abandonedCart, or notifyRequest' }, { status: 400 });
     }
 
     if (!ids.length) {
@@ -41,6 +42,19 @@ export async function POST(request) {
         success: true,
         restoredCount: Number(result?.modifiedCount || 0),
         message: `Restored ${Number(result?.modifiedCount || 0)} order(s).`,
+      });
+    }
+
+    if (type === 'notifyRequest') {
+      const result = await StockNotifyRequest.updateMany(
+        { _id: { $in: ids }, storeId: actor.storeId, ...TRASHED_RECORD_FILTER },
+        { $set: restoreMeta },
+      );
+
+      return NextResponse.json({
+        success: true,
+        restoredCount: Number(result?.modifiedCount || 0),
+        message: `Restored ${Number(result?.modifiedCount || 0)} notify request(s).`,
       });
     }
 

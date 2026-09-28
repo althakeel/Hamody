@@ -16,7 +16,7 @@ export default function StoreNotifyRequestsCard() {
     (async () => {
       try {
         const token = await getToken();
-        const { data } = await axios.get('/api/store/notify-list?limit=6&status=pending', {
+        const { data } = await axios.get('/api/store/notify-list?limit=3&status=pending', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (cancelled) return;
@@ -44,7 +44,7 @@ export default function StoreNotifyRequestsCard() {
           </p>
         </div>
         <Link href="/store/notify-list" className="text-sm font-semibold text-amber-800 hover:text-amber-950">
-          Open notify list
+          {total > 3 ? `More (${total - 3})` : 'Open notify list'}
         </Link>
       </div>
       <ul className="mt-3 space-y-2">

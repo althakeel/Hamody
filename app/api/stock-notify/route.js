@@ -48,6 +48,21 @@ export async function POST(request) {
       });
     } catch (error) {
       if (error?.code !== 11000) throw error;
+      await StockNotifyRequest.updateOne(
+        { storeId, productId: String(product._id), contactKey: contact.contactKey },
+        {
+          $set: {
+            status: 'pending',
+            email: contact.email,
+            phone: contact.phone,
+            productName: String(product.name || '').trim(),
+            sku: String(body?.sku || product.sku || '').trim(),
+            deletedAt: null,
+            deletedBy: null,
+            deletedByName: null,
+          },
+        },
+      );
     }
 
     return NextResponse.json({

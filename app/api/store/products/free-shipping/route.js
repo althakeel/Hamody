@@ -2,6 +2,7 @@ import connectDB from '@/lib/mongodb';
 import Product from '@/models/Product';
 import authSeller from '@/middlewares/authSeller';
 import { NextResponse } from 'next/server';
+import { FREE_DELIVERY_THRESHOLD_AED } from '@/lib/freeDeliveryPolicy';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,9 +36,9 @@ export async function PUT(request) {
             .map((id) => String(id || '').trim())
             .filter(Boolean);
 
-        // Clear free shipping only for this store's products, then set selected
+        // Products under AED 100 follow the seller's list. Products at AED 100 or more stay free.
         await Product.updateMany(
-            { storeId: String(storeId) },
+            { storeId: String(storeId), price: { $lt: FREE_DELIVERY_THRESHOLD_AED } },
             { $set: { freeShippingEligible: false } }
         );
         if (normalizedIds.length > 0) {
@@ -46,6 +47,10 @@ export async function PUT(request) {
                 { $set: { freeShippingEligible: true } }
             );
         }
+        await Product.updateMany(
+            { storeId: String(storeId), price: { $gte: FREE_DELIVERY_THRESHOLD_AED } },
+            { $set: { freeShippingEligible: true } }
+        );
 
         return NextResponse.json({ success: true, updated: normalizedIds.length });
     } catch (error) {

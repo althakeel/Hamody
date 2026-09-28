@@ -4,13 +4,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Search, Truck } from 'lucide-react';
 import { useInfiniteBannerCarousel } from '@/lib/useInfiniteBannerCarousel';
-import { withImageKitDelivery } from '@/lib/imageKitDelivery';
+import { stripImageKitTransforms, withImageKitDelivery } from '@/lib/imageKitDelivery';
 import { hasShowcaseBannerImage, pickShowcaseBannerSources } from '@/lib/showcaseBannerImages';
 import { getShowcaseLinkProps } from '@/lib/showcaseBannerLinks';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 
-function getDisplayImageUrl(value, width = 1400) {
-  return withImageKitDelivery(value, { width, quality: 72 });
+function getDisplayImageUrl(value, width = 1400, quality = 72, keepOriginal = false) {
+  if (keepOriginal) return stripImageKitTransforms(value);
+  return withImageKitDelivery(value, { width, quality });
 }
 
 function buildSlidesSignature(slides = [], language = 'en') {
@@ -69,6 +70,8 @@ function ShowcaseDeviceImages({
   fit = 'cover',
   bleed = false,
   natural = false,
+  displayQuality = 72,
+  keepOriginal = false,
 }) {
   const images = [
     { key: 'mobile', src: sources.mobile, className: 'block md:hidden', width: widths.mobile },
@@ -79,7 +82,7 @@ function ShowcaseDeviceImages({
 
   return images.map((image) => {
     if (!image.src) return null;
-    const displaySrc = getDisplayImageUrl(image.src, image.width);
+    const displaySrc = getDisplayImageUrl(image.src, image.width, displayQuality, keepOriginal);
     return (
       <img
         key={image.key}
@@ -118,12 +121,14 @@ export default function ShowcaseLargeBannerSlider({
     bannerVariant === 'lower' ? 'shop-showcase-banner-row--lower' : '',
   ].filter(Boolean).join(' ');
 
-  const desktopWidth = bannerVariant === 'full' ? 1400 : bannerVariant === 'secondary' ? 1100 : 1400;
+  const isFullBleed = bannerVariant === 'full';
+  const desktopWidth = isFullBleed ? 2560 : bannerVariant === 'secondary' ? 1100 : 1400;
+  const displayQuality = isFullBleed ? 90 : 72;
   const deviceWidths = {
-    mobile: 800,
-    tablet: 1100,
+    mobile: isFullBleed ? 1280 : 800,
+    tablet: isFullBleed ? 1920 : 1100,
     desktop: desktopWidth,
-    wide: 2560,
+    wide: isFullBleed ? 3840 : 2560,
   };
   const fullBannerStyle = bannerVariant === 'full'
     ? { height: 'auto', maxHeight: 'none', width: '100%', maxWidth: 'none', borderRadius: 0 }
@@ -254,6 +259,8 @@ export default function ShowcaseLargeBannerSlider({
                 fillHeight={bannerVariant === 'lower'}
                 fit="cover"
                 natural={bannerVariant === 'full'}
+                displayQuality={displayQuality}
+                keepOriginal={isFullBleed}
               />
             </div>
           ))}

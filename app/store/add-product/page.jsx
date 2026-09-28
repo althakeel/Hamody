@@ -33,6 +33,7 @@ import APlusContentEditor from '@/components/store/APlusContentEditor';
 import { resolveAPlusImageList } from '@/lib/aPlusContent';
 import { sanitizeRichTextMedia } from '@/lib/sanitizeRichTextMedia';
 import { getVariantCardLabel, formatMatrixPackSizeLabel, normalizeSellerVariantOptions } from '@/lib/productVariantOptions';
+import { FREE_DELIVERY_THRESHOLD_AED } from '@/lib/freeDeliveryPolicy';
 
 const MAX_PRODUCT_MEDIA = 16
 
@@ -769,7 +770,7 @@ function FormSection({ id, title, icon, subtitle, children, defaultOpen = true }
     )
 }
 
-export default function ProductForm({ product = null, onClose, onSubmitSuccess, supplierOptions: supplierOptionsProp = [] }) {
+export default function ProductForm({ product = null, onClose, onSubmitSuccess, onDuplicated, supplierOptions: supplierOptionsProp = [] }) {
         // MISSING STATE HOOKS (add these at the top of ProductForm)
         const [dbCategories, setDbCategories] = useState([]);
         const [selectedCategories, setSelectedCategories] = useState([]);
@@ -781,6 +782,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
         const [supplierPickerQuery, setSupplierPickerQuery] = useState('');
         const isDirtyRef = useRef(false);
         const initializedProductIdRef = useRef(null);
+        const freeShippingManualRef = useRef(false);
         const markDirty = () => { isDirtyRef.current = true; };
         const [bulkEnabled, setBulkEnabled] = useState(false);
         const [variants, setVariants] = useState([]);
@@ -796,6 +798,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
         const [seoKeywordInput, setSeoKeywordInput] = useState('');
         const [showArabic, setShowArabic] = useState(true);
         const [loading, setLoading] = useState(false);
+        const [duplicating, setDuplicating] = useState(false);
         const [reviewInput, setReviewInput] = useState({ name: '', rating: 5, comment: '', image: null });
         const aspectRatioOptions = ['1:1', '4:5', '3:4', '16:9'];
         const [hasVariants, setHasVariants] = useState(false);
@@ -1109,6 +1112,9 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
 
         console.log('Initializing form with product:', product._id)
             setIsSkuManuallyEdited(false)
+            const loadedSalePrice = Number(product.price) || 0;
+            freeShippingManualRef.current = Boolean(product.freeShippingEligible)
+                && loadedSalePrice < FREE_DELIVERY_THRESHOLD_AED;
             setProductInfo({
                 name: product.name || "",
                 nameAr: product.nameAr || "",
@@ -1187,7 +1193,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                 colors: product.colors || [],
                 sizes: product.sizes || [],
                 fastDelivery: product.fastDelivery || false,
-                freeShippingEligible: product.freeShippingEligible || false,
+                freeShippingEligible: loadedSalePrice >= FREE_DELIVERY_THRESHOLD_AED || Boolean(product.freeShippingEligible),
                 hsCode: product.hsCode || '',
                 originCountry: product.originCountry || '',
                 shippingWeightKg: product.shippingWeightKg || '',
@@ -1406,6 +1412,16 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
         } else if (name === 'sku') {
             setIsSkuManuallyEdited(true)
             setProductInfo(prev => ({ ...prev, sku: value }))
+        } else if (name === 'price') {
+            const salePrice = Number(value);
+            const autoOn = Number.isFinite(salePrice) && salePrice >= FREE_DELIVERY_THRESHOLD_AED;
+            setProductInfo(prev => ({
+                ...prev,
+                price: value,
+                freeShippingEligible: autoOn
+                    ? true
+                    : (freeShippingManualRef.current ? prev.freeShippingEligible : false),
+            }))
         } else {
             if (name === 'supplierId') markDirty()
             setProductInfo(prev => ({ ...prev, [name]: value }))
@@ -2425,7 +2441,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                 colors: productInfo.colors || [],
                 sizes: productInfo.sizes || [],
                 fastDelivery: Boolean(productInfo.fastDelivery),
-                freeShippingEligible: Boolean(productInfo.freeShippingEligible),
+                freeShippingEligible: Number(productInfo.price) >= FREE_DELIVERY_THRESHOLD_AED || Boolean(productInfo.freeShippingEligible),
                 hsCode: String(productInfo.hsCode || '').trim(),
                 originCountry: String(productInfo.originCountry || '').trim().toUpperCase(),
                 shippingWeightKg: Number(productInfo.shippingWeightKg) || 0,
@@ -2589,6 +2605,29 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
             ...prev,
             badges: (prev.badges || []).filter((_, idx) => idx !== index),
         }))
+    }
+
+    const handleDuplicate = async () => {
+        if (!product?._id || duplicating) return
+        if (!confirm('Create a copy of this product? The new link will end with -copy.')) return
+        try {
+            setDuplicating(true)
+            const token = await getAuthTokenOrThrow()
+            const { data } = await axios.post('/api/store/product/duplicate', {
+                productId: String(product._id),
+            }, {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+            const copy = data?.product
+            toast.success(copy?.slug ? `Copy created. Slug: ${copy.slug}` : 'Product copied')
+            if (onDuplicated && copy) {
+                onDuplicated(copy)
+            }
+        } catch (error) {
+            toast.error(error?.response?.data?.error || error?.message || 'Could not duplicate product')
+        } finally {
+            setDuplicating(false)
+        }
     }
 
     const isEditing = Boolean(product)
@@ -2826,9 +2865,14 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                     </div>
                     <div className="sm:col-span-2 grid grid-cols-2 gap-2 pt-1 border-t border-gray-100">
                         <label className="flex items-center gap-2 text-xs cursor-pointer group"><input type="checkbox" checked={productInfo.fastDelivery} onChange={(e)=> setProductInfo(p=>({...p, fastDelivery: e.target.checked}))} className="accent-green-500 w-3.5 h-3.5" /><span className="text-gray-600 group-hover:text-green-700">Fast Delivery</span></label>
-                        <label className="flex items-center gap-2 text-xs cursor-pointer group"><input type="checkbox" checked={productInfo.freeShippingEligible} onChange={(e)=> setProductInfo(p=>({...p, freeShippingEligible: e.target.checked}))} className="accent-teal-500 w-3.5 h-3.5" /><span className="text-gray-600 group-hover:text-teal-700">Free Shipping</span></label>
+                        <label className="flex items-center gap-2 text-xs cursor-pointer group"><input type="checkbox" checked={Number(productInfo.price) >= FREE_DELIVERY_THRESHOLD_AED || Boolean(productInfo.freeShippingEligible)} onChange={(e)=> {
+                            if (Number(productInfo.price) >= FREE_DELIVERY_THRESHOLD_AED) return;
+                            freeShippingManualRef.current = true;
+                            setProductInfo(p=>({...p, freeShippingEligible: e.target.checked}));
+                        }} className="accent-teal-500 w-3.5 h-3.5" /><span className="text-gray-600 group-hover:text-teal-700">Free Shipping</span></label>
                         <label className="flex items-center gap-2 text-xs cursor-pointer group"><input type="checkbox" checked={productInfo.allowReturn} onChange={(e)=> setProductInfo(p=>({...p, allowReturn: e.target.checked}))} className="accent-purple-500 w-3.5 h-3.5" /><span className="text-gray-600 group-hover:text-purple-700">Return 7d</span></label>
                         <label className="flex items-center gap-2 text-xs cursor-pointer group"><input type="checkbox" checked={productInfo.allowReplacement} onChange={(e)=> setProductInfo(p=>({...p, allowReplacement: e.target.checked}))} className="accent-pink-500 w-3.5 h-3.5" /><span className="text-gray-600 group-hover:text-pink-700">Replace 7d</span></label>
+                        <p className="col-span-2 text-[11px] text-gray-500">Free Shipping turns on by itself when the sale price is AED {FREE_DELIVERY_THRESHOLD_AED} or more. Under AED {FREE_DELIVERY_THRESHOLD_AED}, leave it off to charge AED 15, or turn it on if this product should ship free.</p>
                     </div>
                     <div className="sm:col-span-2 grid grid-cols-1 gap-3 pt-2 sm:grid-cols-3">
                         <div>
@@ -4125,7 +4169,17 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                         >
                             Cancel
                         </button>
-                        <button disabled={loading} className="px-6 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60 transition">
+                        {isEditing ? (
+                            <button
+                                type="button"
+                                onClick={handleDuplicate}
+                                disabled={duplicating || loading}
+                                className="px-6 py-2.5 rounded-lg border border-indigo-300 bg-indigo-50 text-indigo-800 text-sm font-semibold hover:bg-indigo-100 disabled:opacity-60 transition"
+                            >
+                                {duplicating ? 'Duplicating...' : 'Duplicate'}
+                            </button>
+                        ) : null}
+                        <button disabled={loading || duplicating} className="px-6 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60 transition">
                             {loading ? 'Saving...' : (product ? 'Update Product' : 'Add Product')}
                         </button>
                     </div>

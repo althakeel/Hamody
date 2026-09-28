@@ -15,6 +15,9 @@ const StockNotifyRequestSchema = new mongoose.Schema(
       default: 'pending',
       index: true,
     },
+    deletedAt: { type: Date, default: null },
+    deletedBy: { type: String, default: null },
+    deletedByName: { type: String, default: null },
   },
   { timestamps: true },
 );
@@ -22,5 +25,15 @@ const StockNotifyRequestSchema = new mongoose.Schema(
 StockNotifyRequestSchema.index({ storeId: 1, createdAt: -1 });
 StockNotifyRequestSchema.index({ storeId: 1, productId: 1, contactKey: 1 }, { unique: true });
 
-export default mongoose.models.StockNotifyRequest
+const StockNotifyRequestModel = mongoose.models.StockNotifyRequest
   || mongoose.model('StockNotifyRequest', StockNotifyRequestSchema);
+
+if (!StockNotifyRequestModel.schema.path('deletedAt')) {
+  StockNotifyRequestModel.schema.add({
+    deletedAt: { type: Date, default: null },
+    deletedBy: { type: String, default: null },
+    deletedByName: { type: String, default: null },
+  });
+}
+
+export default StockNotifyRequestModel;

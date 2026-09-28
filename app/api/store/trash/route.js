@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Order from '@/models/Order';
 import AbandonedCart from '@/models/AbandonedCart';
+import StockNotifyRequest from '@/models/StockNotifyRequest';
 import User from '@/models/User';
 import { enrichAbandonedCarts, getAbandonedCartTotal } from '@/lib/abandonedCartUtils';
 import { batchPopulateOrderUsers } from '@/lib/storeOrderUsers';
@@ -20,7 +21,7 @@ export async function GET(request) {
 
     await connectDB();
 
-    const [orders, carts] = await Promise.all([
+    const [orders, carts, notifyRequests] = await Promise.all([
       Order.find({ storeId: actor.storeId, ...TRASHED_RECORD_FILTER })
         .populate({
           path: 'orderItems.productId',
@@ -31,6 +32,9 @@ export async function GET(request) {
         .lean(),
       AbandonedCart.find({ storeId: actor.storeId, ...TRASHED_RECORD_FILTER })
         .sort({ deletedAt: -1, lastSeenAt: -1 })
+        .lean(),
+      StockNotifyRequest.find({ storeId: actor.storeId, ...TRASHED_RECORD_FILTER })
+        .sort({ deletedAt: -1, createdAt: -1 })
         .lean(),
     ]);
 
@@ -57,6 +61,16 @@ export async function GET(request) {
       orders: orders.map((order) => ({
         ...order,
         _id: String(order._id),
+      })),
+      notifyRequests: notifyRequests.map((row) => ({
+        _id: String(row._id),
+        productName: row.productName || '',
+        sku: row.sku || '',
+        email: row.email || '',
+        phone: row.phone || '',
+        status: row.status || 'pending',
+        deletedAt: row.deletedAt,
+        deletedByName: row.deletedByName || '',
       })),
       abandonedCarts: enrichedCarts.map((cart) => ({
         ...cart,

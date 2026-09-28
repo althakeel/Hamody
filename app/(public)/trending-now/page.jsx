@@ -4,6 +4,7 @@ import { useMemo, useState, useCallback } from "react";
 import { useSelector } from "react-redux";
 import ProductCard from "@/components/ProductCard";
 import ProductFilterSidebar from "@/components/ProductFilterSidebar";
+import { sortOutOfStockLast } from "@/lib/productVisibility";
 
 const matchesHotDealBadge = (product) => {
   const badges = product?.attributes?.badges || product?.badges || [];
@@ -88,7 +89,7 @@ export default function TrendingNowPage() {
 
   const filteredAndSortedProducts = useMemo(() => {
     const filtered = applyFilters(trendingProducts);
-    return sortProducts(filtered);
+    return sortOutOfStockLast(sortProducts(filtered));
   }, [trendingProducts, applyFilters, sortProducts]);
 
   const handleFilterChange = useCallback((filters) => {

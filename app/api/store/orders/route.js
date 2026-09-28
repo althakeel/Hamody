@@ -250,9 +250,10 @@ export async function GET(request){
             try {
                 const { syncWaslahStatusForOrders } = await import('@/lib/waslahOrderStatusSync');
                 enrichedOrders = await syncWaslahStatusForOrders(enrichedOrders, {
-                    max: 12,
+                    max: 24,
                     persist: true,
-                    concurrency: 4,
+                    concurrency: 6,
+                    staleFirst: true,
                 });
             } catch (waslahSyncError) {
                 debugLog('Waslah status sync failed:', waslahSyncError?.message || waslahSyncError);

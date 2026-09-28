@@ -4,6 +4,7 @@ import { useMemo, useState, useCallback } from "react";
 import { useSelector } from "react-redux";
 import ProductCard from "@/components/ProductCard";
 import ProductFilterSidebar from "@/components/ProductFilterSidebar";
+import { sortOutOfStockLast } from "@/lib/productVisibility";
 
 export default function BestSellersPage() {
   const products = useSelector((state) => state.product.list);
@@ -85,7 +86,7 @@ export default function BestSellersPage() {
 
   const filteredAndSortedProducts = useMemo(() => {
     const filtered = applyFilters(bestSellerProducts);
-    return sortProducts(filtered);
+    return sortOutOfStockLast(sortProducts(filtered));
   }, [bestSellerProducts, applyFilters, sortProducts]);
 
   const handleFilterChange = useCallback((filters) => {

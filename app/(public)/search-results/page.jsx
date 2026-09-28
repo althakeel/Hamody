@@ -13,6 +13,7 @@ import { getProductThumbnailUrl } from '@/lib/productMedia';
 import { getLocalizedProductName } from '@/lib/displayText';
 import ProductCard from '@/components/ProductCard';
 import ImageSearchDisclaimer from '@/components/ImageSearchDisclaimer';
+import { sortOutOfStockLast } from '@/lib/productVisibility';
 
 function sortProducts(list, sortBy) {
   const rows = [...(list || [])];
@@ -118,17 +119,17 @@ function SearchResultsInner() {
   }, [keyword, source, t]);
 
   const exactProduct = products[0] || null;
-  const exactList = useMemo(() => sortProducts(products, sortBy === 'best' ? 'best' : sortBy), [products, sortBy]);
+  const exactList = useMemo(() => sortOutOfStockLast(sortProducts(products, sortBy === 'best' ? 'best' : sortBy)), [products, sortBy]);
   const recommendedList = useMemo(() => {
     const seen = new Set(products.map((product) => String(product._id)));
-    return sortProducts(relatedProducts.filter((product) => {
+    return sortOutOfStockLast(sortProducts(relatedProducts.filter((product) => {
       const id = String(product._id);
       if (seen.has(id)) return false;
       seen.add(id);
       return true;
-    }), sortBy);
+    }), sortBy));
   }, [products, relatedProducts, sortBy]);
-  const keywordGrid = useMemo(() => sortProducts(products, sortBy), [products, sortBy]);
+  const keywordGrid = useMemo(() => sortOutOfStockLast(sortProducts(products, sortBy)), [products, sortBy]);
 
   const isLikelyHash = /^[a-f0-9]{12,}$/i.test(keyword || '');
   const displayKeyword = isLikelyHash || !keyword ? t('searchResults.imageFor') : keyword;

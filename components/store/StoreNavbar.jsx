@@ -4,7 +4,7 @@ import Link from 'next/link';
 import StoreNavLink from '@/components/store/StoreNavLink';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
-import { Bell, LogOut } from 'lucide-react';
+import { Bell, BellOff, LogOut } from 'lucide-react';
 import StoreHelpAgent from './StoreHelpAgent';
 import Logo from '@/assets/logo/Store1920.png';
 import { useAuth } from '@/lib/useAuth';
@@ -29,7 +29,14 @@ function clampSellerLogoDimensions(width, height) {
 
 const StoreNavbar = ({ storeInfo }) => {
     const { user, getToken } = useAuth();
-    const { unreadCount, recentOrders, canViewOrders, markAllRead } = useStoreOrderNotifications();
+    const {
+        unreadCount,
+        recentOrders,
+        canViewOrders,
+        markAllRead,
+        orderAlertsMuted,
+        toggleOrderAlertsMuted,
+    } = useStoreOrderNotifications();
     const [showConfirm, setShowConfirm] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const [navbarLogo, setNavbarLogo] = useState({ url: '', width: 120, height: 40, backgroundColor: '#ffffff' });
@@ -139,6 +146,25 @@ const StoreNavbar = ({ storeInfo }) => {
             </Link>
             <div className="flex items-center gap-2 text-sm text-slate-700">
                 <StoreHelpAgent />
+                {canViewOrders ? (
+                    <button
+                        type="button"
+                        onClick={toggleOrderAlertsMuted}
+                        aria-pressed={orderAlertsMuted}
+                        aria-label={orderAlertsMuted ? 'Unmute order notifications' : 'Mute order notifications'}
+                        title={orderAlertsMuted
+                            ? 'Order alerts are muted for this account'
+                            : 'Mute new order alerts for this account'}
+                        className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-2 text-xs font-semibold transition ${
+                            orderAlertsMuted
+                                ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                                : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                        }`}
+                    >
+                        {orderAlertsMuted ? <BellOff size={16} /> : <Bell size={16} />}
+                        <span>{orderAlertsMuted ? 'Unmute' : 'Mute'}</span>
+                    </button>
+                ) : null}
                 {canViewOrders ? (
                     <div className="relative" ref={notificationRef}>
                         <button

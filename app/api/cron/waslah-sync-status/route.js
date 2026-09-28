@@ -5,7 +5,8 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
 /**
- * Vercel cron: poll Waslah POST /orders/history every 3 hours.
+ * Vercel cron: poll Waslah POST /orders/history every hour.
+ * Each shipment is still skipped for 3 hours after its last check.
  * Batches ~10 shipments per call with a delay between batches (Waslah requirement).
  *
  * Auth: Authorization: Bearer ${CRON_SECRET}

@@ -9,6 +9,7 @@ APIs for the **warehouse / pickup app** to look up EMX tracking, pickup windows,
 |----------|---------|
 | `GET /api/warehouse/tracking?q=` | Scan / look up by EMX AWB, order no, Waslah id |
 | `POST /api/warehouse/tracking` | Same lookup (scanner-friendly POST) |
+| `GET /api/warehouse/orders` | All created orders for the mobile app (paginated) — [warehouse-orders-api.md](./warehouse-orders-api.md) |
 | `GET /api/warehouse/tracking?status=` | List pickup / shipping queue |
 | `GET /api/warehouse/tracking/:orderId` | One order by Mongo id |
 | `POST /api/warehouse/tracking/:orderId` | Force refresh live EMX status |

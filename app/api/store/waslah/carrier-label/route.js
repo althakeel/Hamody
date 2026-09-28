@@ -97,7 +97,22 @@ async function buildEmxCarrierLabelPdfForOrder(order, { persist = true } = {}) {
   const orderId = String(order?._id || '').trim();
   const waslahOrderId = String(order?.waslah?.orderId || '').trim();
   let sourceUrl = String(order?.waslah?.labelUrl || '').trim();
-  const alreadyEmxOnly = /store1920-images|\/uploads\/emx-carrier-/i.test(sourceUrl);
+  let alreadyEmxOnly = /store1920-images|\/uploads\/emx-carrier-/i.test(sourceUrl);
+
+  if (alreadyEmxOnly) {
+    try {
+      const cached = await fetch(sourceUrl);
+      const cachedBytes = cached.ok ? Buffer.from(await cached.arrayBuffer()) : Buffer.alloc(0);
+      // Older downloads saved the tiny Waslah logo page. Reprint those.
+      if (!cached.ok || cachedBytes.length < 8000) {
+        alreadyEmxOnly = false;
+        sourceUrl = '';
+      }
+    } catch {
+      alreadyEmxOnly = false;
+      sourceUrl = '';
+    }
+  }
 
   if (waslahOrderId && !alreadyEmxOnly) {
     try {

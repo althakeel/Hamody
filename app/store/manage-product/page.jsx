@@ -818,6 +818,30 @@ export default function StoreManageProducts() {
         }
     }
 
+    const handleDuplicate = async (product) => {
+        const productId = product?._id
+        const label = String(product?.name || 'this product').trim()
+        if (!productId) return
+        if (!confirm(`Duplicate "${label}"? The new link will end with -copy.`)) return
+        try {
+            const token = await getToken()
+            const { data } = await axios.post('/api/store/product/duplicate', {
+                productId: String(productId),
+            }, {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+            const copy = data?.product
+            toast.success(copy?.slug ? `Copy created. Slug: ${copy.slug}` : 'Product copied')
+            if (copy) {
+                setEditingProduct(copy)
+                setShowEditModal(true)
+            }
+            await fetchStoreProducts({ silent: true })
+        } catch (error) {
+            toast.error(error?.response?.data?.error || error?.message || 'Could not duplicate product')
+        }
+    }
+
     const handleDelete = async (product) => {
         const productId = product?._id
         const label = String(product?.name || 'this product').trim()
@@ -2444,6 +2468,13 @@ export default function StoreManageProducts() {
                                     >
                                         Edit
                                     </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDuplicate(product)}
+                                        className="px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 transition"
+                                    >
+                                        Duplicate
+                                    </button>
                                     {selectedCategory ? (
                                         <button
                                             type="button"
@@ -2536,6 +2567,10 @@ export default function StoreManageProducts() {
                         setEditingProduct(null)
                     }}
                     onSubmitSuccess={handleUpdateSuccess}
+                    onDuplicated={(copy) => {
+                        setEditingProduct(copy)
+                        fetchStoreProducts({ silent: true })
+                    }}
                 />
             )}
 

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
-import { Bell, ExternalLink, Search } from 'lucide-react';
+import { Bell, ExternalLink, Search, Trash2 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 import Loading from '@/components/Loading';
 
@@ -27,6 +27,7 @@ export default function StoreNotifyListPage() {
   const [appliedSearch, setAppliedSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [pagination, setPagination] = useState({ page: 1, limit: 25, total: 0, totalPages: 1 });
+  const [showAll, setShowAll] = useState(false);
 
   const load = useCallback(async (page = 1) => {
     try {
@@ -52,6 +53,7 @@ export default function StoreNotifyListPage() {
   }, [appliedSearch, getToken, pagination.limit, status]);
 
   useEffect(() => {
+    setShowAll(false);
     load(1);
   }, [load]);
 
@@ -72,6 +74,28 @@ export default function StoreNotifyListPage() {
       toast.error(error?.response?.data?.error || error.message || 'Failed to update request');
     }
   };
+
+  const moveToTrash = async (item) => {
+    const confirmed = window.confirm('Move this notify request to trash? You can restore it from Trash.');
+    if (!confirmed) return;
+    try {
+      const token = await getToken();
+      await axios.delete('/api/store/notify-list', {
+        data: { id: item.id },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setItems((current) => current.filter((row) => row.id !== item.id));
+      setPagination((current) => ({
+        ...current,
+        total: Math.max(0, Number(current.total || 0) - 1),
+      }));
+      toast.success('Moved to trash');
+    } catch (error) {
+      toast.error(error?.response?.data?.error || error.message || 'Failed to move request to trash');
+    }
+  };
+
+  const visibleItems = showAll ? items : items.slice(0, 3);
 
   if (loading && items.length === 0) return <Loading />;
 
@@ -149,7 +173,7 @@ export default function StoreNotifyListPage() {
                     No notify requests yet.
                   </td>
                 </tr>
-              ) : items.map((item) => (
+              ) : visibleItems.map((item) => (
                 <tr key={item.id} className="border-t border-slate-100">
                   <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-500">{formatWhen(item.createdAt)}</td>
                   <td className="px-3 py-3">
@@ -208,19 +232,40 @@ export default function StoreNotifyListPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-end">
-                    <button
-                      type="button"
-                      onClick={() => markNotified(item)}
-                      className="text-xs font-semibold text-slate-600 hover:text-slate-900"
-                    >
-                      {item.status === 'notified' ? 'Mark pending' : 'Mark notified'}
-                    </button>
+                    <div className="flex items-center justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => markNotified(item)}
+                        className="text-xs font-semibold text-slate-600 hover:text-slate-900"
+                      >
+                        {item.status === 'notified' ? 'Mark pending' : 'Mark notified'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveToTrash(item)}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 size={12} />
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        {items.length > 3 ? (
+          <div className="border-t border-slate-100 px-4 py-3 text-center">
+            <button
+              type="button"
+              onClick={() => setShowAll((current) => !current)}
+              className="text-sm font-semibold text-slate-700 hover:text-slate-900"
+            >
+              {showAll ? 'Show less' : `More (${items.length - 3})`}
+            </button>
+          </div>
+        ) : null}
         {pagination.totalPages > 1 ? (
           <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-xs text-slate-500">
             <span>Page {pagination.page} of {pagination.totalPages}</span>

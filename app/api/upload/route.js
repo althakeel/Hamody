@@ -3,6 +3,8 @@ import { uploadBannerToImageKit } from '@/lib/bannerStorage';
 import { uploadToS3 } from '@/lib/storage';
 import { optimizeUploadBuffer } from '@/lib/optimizeUploadBuffer';
 
+export const maxDuration = 300;
+
 export const config = {
   api: {
     bodyParser: false,
@@ -44,14 +46,22 @@ export async function POST(request) {
 
     for (const file of files) {
       const buffer = Buffer.from(await file.arrayBuffer());
-      const optimized = await optimizeUploadBuffer(buffer, {
-        contentType: file.type,
-        fileName: file.name,
-      });
+      const optimized = isShowcaseBannerUpload
+        ? { buffer, contentType: file.type, optimized: false }
+        : await optimizeUploadBuffer(buffer, {
+          contentType: file.type,
+          fileName: file.name,
+        });
       const uploadBuffer = optimized.buffer;
       const filePrefix = isShowcaseBannerUpload ? 'showcase' : 'upload';
+      const optimizedExt = optimized.extension
+        || (String(optimized.contentType || '').includes('png')
+          ? 'png'
+          : String(optimized.contentType || '').includes('webp')
+            ? 'webp'
+            : 'jpg');
       const uploadName = optimized.optimized && String(file.name || '').match(/\.(jpe?g|png|webp|avif|heic|heif|tiff?|bmp)$/i)
-        ? String(file.name || 'upload').replace(/\.[^.]+$/, '.jpg')
+        ? String(file.name || 'upload').replace(/\.[^.]+$/, `.${optimizedExt}`)
         : file.name;
       const fileName = `${filePrefix}_${Date.now()}_${Math.random().toString(36).substring(7)}_${uploadName}`;
 

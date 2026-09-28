@@ -490,7 +490,12 @@ function StoreCenterPopupShell({
     );
 }
 
+function isCancelledWaslahReadyToReship(order) {
+    return Boolean(order?.waslah?.cancelledAt) && !String(order?.waslah?.orderId || '').trim();
+}
+
 function isWaslahShipmentProcessed(order) {
+    if (isCancelledWaslahReadyToReship(order)) return false;
     return Boolean(getOrderAwb(order));
 }
 
@@ -504,6 +509,7 @@ function isWaslahUnlinkedDuplicate(order) {
 }
 
 function getOrderAwb(order) {
+    if (isCancelledWaslahReadyToReship(order)) return '';
     const emxCandidates = [
         order?.waslah?.emxTrackingNumber,
         order?.waslah?.trackingNumber,
@@ -729,6 +735,9 @@ export default function StoreOrders() {
     const hiddenExportClicksRef = useRef({ count: 0, timer: null });
     const [showTodayOrdersPdfModal, setShowTodayOrdersPdfModal] = useState(false);
     const [exportingTodayOrdersPdf, setExportingTodayOrdersPdf] = useState(false);
+    const [showPackedOrdersPdfModal, setShowPackedOrdersPdfModal] = useState(false);
+    const [exportingPackedOrdersPdf, setExportingPackedOrdersPdf] = useState(false);
+    const [packedPdfDate, setPackedPdfDate] = useState('');
     const [todayPdfFromDate, setTodayPdfFromDate] = useState('');
     const [todayPdfToDate, setTodayPdfToDate] = useState('');
     const [todayPdfFromTime, setTodayPdfFromTime] = useState(DEFAULT_ORDER_FILTER_TIME);
@@ -2628,6 +2637,62 @@ export default function StoreOrders() {
         }
     };
 
+    const openPackedOrdersPdfModal = () => {
+        setPackedPdfDate(getDubaiDateParts().date);
+        setShowPackedOrdersPdfModal(true);
+    };
+
+    const exportPackedOrdersPdf = async () => {
+        const dateKey = String(packedPdfDate || '').trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+            toast.error('Choose a day first');
+            return;
+        }
+
+        try {
+            setExportingPackedOrdersPdf(true);
+            const token = await getToken(true);
+            if (!token) {
+                toast.error('Please sign in again');
+                return;
+            }
+
+            const response = await fetch(`/api/store/orders/packed/export?date=${encodeURIComponent(dateKey)}`, {
+                headers: { Authorization: `Bearer ${token}` },
+                cache: 'no-store',
+            });
+
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data?.error || 'Failed to export packed orders PDF');
+            }
+
+            const blob = await response.blob();
+            const countHeader = response.headers.get('X-Packed-Count');
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `packed-orders-${dateKey}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+            setShowPackedOrdersPdfModal(false);
+
+            const count = Number(countHeader);
+            toast.success(
+                Number.isFinite(count) && count > 0
+                    ? `Downloaded ${count} packed order(s) for ${dateKey}`
+                    : 'Packed orders PDF downloaded',
+            );
+        } catch (error) {
+            console.error('Packed orders PDF export failed:', error);
+            toast.error(error?.message || 'Failed to export packed orders PDF');
+        } finally {
+            setExportingPackedOrdersPdf(false);
+        }
+    };
+
     const importOrdersFromCsv = async () => {
         if (!orderCsvFile) {
             toast.error('Choose a CSV file first');
@@ -3388,7 +3453,7 @@ export default function StoreOrders() {
     const canSendOrderToEmx = (order) => {
         if (!order) return false;
         if (String(order?.waslah?.orderId || '').trim()) return false;
-        if (isWaslahLiveTerminalOrder(order)) return false;
+        if (isWaslahLiveTerminalOrder(order) && !isCancelledWaslahReadyToReship(order)) return false;
         const status = String(order?.status || '').toUpperCase();
         if (['CANCELLED', 'REFUNDED', 'TRASH', 'DELETED'].includes(status)) return false;
         return Boolean(order?.shippingAddress?.street || order?.shippingAddress?.city);
@@ -4505,6 +4570,14 @@ export default function StoreOrders() {
                     >
                         <FileText size={16} />
                         Export today orders (PDF)
+                    </button>
+                    <button
+                        type="button"
+                        onClick={openPackedOrdersPdfModal}
+                        className="inline-flex items-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-900 transition hover:border-teal-300 hover:bg-teal-100"
+                    >
+                        <FileText size={16} />
+                        Packed orders PDF
                     </button>
                     <button
                         type="button"
@@ -6119,7 +6192,7 @@ export default function StoreOrders() {
                                                 {selectedOrder.waslah.cancelledTrackingNumber
                                                     ? ` (AWB ${selectedOrder.waslah.cancelledTrackingNumber})`
                                                     : ''}.
-                                                Use Ship with EMX to create a new AWB.
+                                                Use Send to EMX to create a new AWB.
                                             </p>
                                         ) : null}
 
@@ -7483,6 +7556,58 @@ export default function StoreOrders() {
                         >
                             <FileText size={16} />
                             {exportingTodayOrdersPdf ? 'Preparing PDF…' : 'Download PDF'}
+                        </button>
+                    </div>
+                </div>
+            </StoreCenterPopupShell>
+
+            <StoreCenterPopupShell
+                open={showPackedOrdersPdfModal}
+                zIndex={128}
+                maxWidthClass="max-w-md"
+                onBackdropClick={() => {
+                    if (!exportingPackedOrdersPdf) setShowPackedOrdersPdfModal(false);
+                }}
+                labelledBy="packed-orders-pdf-title"
+            >
+                <div className="relative p-6">
+                    <h3 id="packed-orders-pdf-title" className="text-lg font-semibold text-slate-900">
+                        Download packed orders PDF
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-600">
+                        Pick the day the orders were packed. You can download today again later, or any earlier day. Arabic customer names are included.
+                    </p>
+                    <div className="mt-4">
+                        <label htmlFor="packed-pdf-date" className="text-xs font-medium text-slate-500">Packed day</label>
+                        <input
+                            id="packed-pdf-date"
+                            type="date"
+                            value={packedPdfDate}
+                            max={getDubaiDateParts().date}
+                            onChange={(event) => setPackedPdfDate(event.target.value)}
+                            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                        />
+                    </div>
+                    <p className="mt-3 text-xs text-slate-500">
+                        Dubai time. Packed orders only. Returns are not included.
+                    </p>
+                    <div className="mt-5 grid grid-cols-2 gap-3">
+                        <button
+                            type="button"
+                            disabled={exportingPackedOrdersPdf}
+                            onClick={() => setShowPackedOrdersPdfModal(false)}
+                            className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            disabled={exportingPackedOrdersPdf}
+                            onClick={exportPackedOrdersPdf}
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-teal-800 disabled:cursor-wait disabled:opacity-60"
+                        >
+                            <FileText size={16} />
+                            {exportingPackedOrdersPdf ? 'Preparing PDF…' : 'Download PDF'}
                         </button>
                     </div>
                 </div>

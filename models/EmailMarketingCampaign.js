@@ -80,6 +80,10 @@ const EmailMarketingCampaignSchema = new mongoose.Schema({
   fontFamily: { type: String, default: 'helvetica' },
   blocks: { type: [mongoose.Schema.Types.Mixed], default: [] },
   sentSlots: [{ type: String }],
+  /** Slots whose recipient list actually finished. sentSlots is only the lock. */
+  finishedSlots: [{ type: String }],
+  sendingSlotKey: { type: String, default: '' },
+  sendingLeaseUntil: { type: Date, default: null },
   totalSent: { type: Number, default: 0 },
   totalFailed: { type: Number, default: 0 },
   lastRunAt: { type: Date, default: null },

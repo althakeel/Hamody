@@ -4,6 +4,7 @@ import { useMemo, useState, useCallback } from "react";
 import { useSelector } from "react-redux";
 import ProductCard from "@/components/ProductCard";
 import ProductFilterSidebar from "@/components/ProductFilterSidebar";
+import { sortOutOfStockLast } from "@/lib/productVisibility";
 
 const MAX_PRICE = 149;
 
@@ -81,7 +82,7 @@ export default function Under149Page() {
 
   const filteredAndSortedProducts = useMemo(() => {
     const filtered = applyFilters(under149Products);
-    return sortProducts(filtered);
+    return sortOutOfStockLast(sortProducts(filtered));
   }, [under149Products, applyFilters, sortProducts]);
 
   const handleFilterChange = useCallback((filters) => {

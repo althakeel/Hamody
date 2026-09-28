@@ -98,6 +98,8 @@ export async function POST(request) {
         'waslah.orderId': null,
         'waslah.cartId': null,
         'waslah.trackingNumber': null,
+        'waslah.emxTrackingNumber': null,
+        'waslah.waslahTrackingNumber': null,
         'waslah.labelUrl': null,
         'waslah.labelPrintedAt': null,
         'waslah.labelDownloadCount': 0,

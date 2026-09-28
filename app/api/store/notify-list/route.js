@@ -5,6 +5,7 @@ import Product from '@/models/Product';
 import StockNotifyRequest from '@/models/StockNotifyRequest';
 import { verifyStoreSeller } from '@/lib/storeSellerAuth';
 import { toStoreNotifyRequest } from '@/lib/stockNotify';
+import { ACTIVE_RECORD_FILTER, buildTrashMeta } from '@/lib/storeTrash';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,7 @@ export async function GET(request) {
     const limit = Math.min(100, Math.max(1, Number(searchParams.get('limit') || 25)));
     const status = String(searchParams.get('status') || '').trim();
 
-    const filter = { storeId: String(auth.storeId) };
+    const filter = { storeId: String(auth.storeId), ...ACTIVE_RECORD_FILTER };
     if (status === 'pending' || status === 'notified') filter.status = status;
     if (q) {
       filter.$or = [
@@ -98,5 +99,34 @@ export async function PATCH(request) {
   } catch (error) {
     console.error('[store/notify-list PATCH]', error);
     return NextResponse.json({ error: 'Failed to update notify request.' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request) {
+  const auth = await verifyStoreSeller(request);
+  if (auth.error) return auth.error;
+
+  try {
+    const body = await request.json().catch(() => ({}));
+    const id = String(body?.id || '').trim();
+    if (!id) {
+      return NextResponse.json({ error: 'Request id is required.' }, { status: 400 });
+    }
+
+    await connectDB();
+    const doc = await StockNotifyRequest.findOneAndUpdate(
+      { _id: id, storeId: String(auth.storeId), ...ACTIVE_RECORD_FILTER },
+      { $set: buildTrashMeta(auth.userId, auth.userName || auth.email) },
+      { new: true },
+    ).lean();
+
+    if (!doc) {
+      return NextResponse.json({ error: 'Notify request not found.' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, id });
+  } catch (error) {
+    console.error('[store/notify-list DELETE]', error);
+    return NextResponse.json({ error: 'Failed to move notify request to trash.' }, { status: 500 });
   }
 }

@@ -38,6 +38,7 @@ import ProductReviewsSection from "./ProductReviewsSection";
 import StorefrontActionToast from "./StorefrontActionToast";
 import FastDeliveryInfoPopup from "./FastDeliveryInfoPopup";
 import { useAuth } from '@/lib/useAuth';
+import { sortOutOfStockLast } from '@/lib/productVisibility';
 import { trackMetaEvent } from "@/lib/metaPixelClient";
 import { trackViewContentDual, trackProductAddToCart } from "@/lib/ecommerceTracking";
 import { productToGa4Item } from "@/lib/ga4Item";
@@ -796,24 +797,22 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
 
   const relatedProducts = useMemo(() => {
     if (Array.isArray(recommendedProducts) && recommendedProducts.length > 0) {
-      return recommendedProducts
-        .filter((candidate) => candidate && candidate.name && candidate.slug && normalizeImages(candidate.images).length > 0)
-        .slice(0, 8);
+      return sortOutOfStockLast(
+        recommendedProducts.filter((candidate) => candidate && candidate.name && candidate.slug && normalizeImages(candidate.images).length > 0),
+      ).slice(0, 8);
     }
 
     const currentProductId = String(product?._id || '');
     const productTags = Array.isArray(product?.tags) ? product.tags : [];
 
-    return allProducts
-      .filter((candidate) => {
-        if (!candidate || String(candidate._id || '') === currentProductId) return false;
-        if (!candidate.name || !candidate.slug || normalizeImages(candidate.images).length === 0) return false;
-        if (product?.category && candidate.category && String(candidate.category) === String(product.category)) return true;
+    return sortOutOfStockLast(allProducts.filter((candidate) => {
+      if (!candidate || String(candidate._id || '') === currentProductId) return false;
+      if (!candidate.name || !candidate.slug || normalizeImages(candidate.images).length === 0) return false;
+      if (product?.category && candidate.category && String(candidate.category) === String(product.category)) return true;
 
-        const candidateTags = Array.isArray(candidate.tags) ? candidate.tags : [];
-        return productTags.length > 0 && candidateTags.length > 0 && productTags.some((tag) => candidateTags.includes(tag));
-      })
-      .slice(0, 8);
+      const candidateTags = Array.isArray(candidate.tags) ? candidate.tags : [];
+      return productTags.length > 0 && candidateTags.length > 0 && productTags.some((tag) => candidateTags.includes(tag));
+    })).slice(0, 8);
   }, [recommendedProducts, allProducts, product?._id, product?.category, product?.tags]);
 
   const pushDataLayerEvent = (event, ecommerce) => {

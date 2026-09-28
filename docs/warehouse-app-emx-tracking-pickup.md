@@ -9,6 +9,7 @@ Related docs:
 | This file | Tracking + pickup + order details for warehouse app |
 | [warehouse-emx-label-scan.md](./warehouse-emx-label-scan.md) | **Door To Door barcode scan** (why scan fails + how to fix) |
 | [warehouse-return-collect-api.md](./warehouse-return-collect-api.md) | **Return collected** scan → dashboard RETURNED / RTO |
+| [warehouse-orders-api.md](./warehouse-orders-api.md) | **All created orders** for the mobile order list |
 | [warehouse-tracking-api.md](./warehouse-tracking-api.md) | Short tracking endpoint reference |
 | [warehouse-order-packing-api.md](./warehouse-order-packing-api.md) | Pack button / packed history |
 | [warehouse-inventory-api.md](./warehouse-inventory-api.md) | Stock / SKU scanner |

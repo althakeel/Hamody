@@ -5,6 +5,7 @@ import axios from 'axios';
 import ProductCard from '@/components/ProductCard';
 import ProductFilterSidebar from '@/components/ProductFilterSidebar';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
+import { sortOutOfStockLast } from '@/lib/productVisibility';
 
 const PAGE_SIZE = 25;
 
@@ -222,7 +223,7 @@ export default function TopSellingPage() {
 
   const filteredAndSortedProducts = useMemo(() => {
     const filtered = applyFilters(products);
-    return sortProducts(filtered);
+    return sortOutOfStockLast(sortProducts(filtered));
   }, [products, applyFilters, sortProducts]);
 
   const handleFilterChange = useCallback((filters) => {

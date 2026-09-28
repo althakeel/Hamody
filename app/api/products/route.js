@@ -16,6 +16,7 @@ import {
   dedupeProductsBySku,
   fetchProductsDedupedBySku,
 } from '@/lib/productSkuDedupe';
+import { sortOutOfStockLast } from '@/lib/productVisibility';
 
 function isMongoConnectionError(error) {
     const message = error?.message || '';
@@ -256,6 +257,8 @@ export async function GET(request){
                 products = dedupeProductsBySku(products);
             }
         }
+
+        products = sortOutOfStockLast(products);
 
         // Normalize category/categories and calculate discount
         products = products.map((product) => {

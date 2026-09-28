@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Order from '@/models/Order';
 import AbandonedCart from '@/models/AbandonedCart';
+import StockNotifyRequest from '@/models/StockNotifyRequest';
 import {
   TRASHED_RECORD_FILTER,
   resolveStoreTrashActor,
@@ -25,8 +26,8 @@ export async function POST(request) {
       ? [...new Set(body.ids.map((id) => String(id).trim()).filter(Boolean))]
       : [];
 
-    if (!['order', 'abandonedCart'].includes(type)) {
-      return NextResponse.json({ error: 'type must be order or abandonedCart' }, { status: 400 });
+    if (!['order', 'abandonedCart', 'notifyRequest'].includes(type)) {
+      return NextResponse.json({ error: 'type must be order, abandonedCart, or notifyRequest' }, { status: 400 });
     }
 
     if (!ids.length) {
@@ -46,6 +47,20 @@ export async function POST(request) {
         success: true,
         deletedCount: Number(result?.deletedCount || 0),
         message: `Permanently deleted ${Number(result?.deletedCount || 0)} order(s).`,
+      });
+    }
+
+    if (type === 'notifyRequest') {
+      const result = await StockNotifyRequest.deleteMany({
+        _id: { $in: ids },
+        storeId: actor.storeId,
+        ...TRASHED_RECORD_FILTER,
+      });
+
+      return NextResponse.json({
+        success: true,
+        deletedCount: Number(result?.deletedCount || 0),
+        message: `Permanently deleted ${Number(result?.deletedCount || 0)} notify request(s).`,
       });
     }
 

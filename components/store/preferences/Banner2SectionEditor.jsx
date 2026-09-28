@@ -7,6 +7,7 @@ import { Loader2, Save, ShieldAlert } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/lib/useAuth'
 import { serializeShowcaseImageFields } from '@/lib/showcaseBannerImages'
+import { uploadShowcaseBannerOriginal } from '@/lib/uploadShowcaseBanner'
 import { inferShowcaseLinkType, normalizeShowcaseLinkType } from '@/lib/showcaseBannerLinks'
 import {
   AccordionRow,
@@ -174,20 +175,7 @@ export default function Banner2SectionEditor({ embedded = false }) {
     }))
   }
 
-  const uploadImage = async (file, token) => {
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('uploadContext', 'showcase-banner')
-
-    const response = await axios.post('/api/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${token}`,
-      },
-    })
-
-    return response.data.url
-  }
+  const uploadImage = async (file, token) => uploadShowcaseBannerOriginal(file, token)
 
   const uploadItemField = async (index, field, file) => {
     if (!file) return

@@ -19,15 +19,19 @@ import {
   dispatchStoreNewOrderEvent,
   getNotifiedOrderIds,
   getOrderNotificationCheckpoint,
+  isOrderNotificationsMuted,
   isOrderNotificationsSuppressed,
   rememberNotifiedOrderIds,
   setOrderNotificationCheckpoint,
+  setOrderNotificationsMuted,
   setOrderNotificationsSuppressed,
+  STORE_ORDER_MUTE_PREFIX,
   STORE_ORDER_TOAST_ID,
   STORE_ORDERS_IMPORT_END_EVENT,
   STORE_ORDERS_IMPORT_START_EVENT,
 } from '@/lib/storeOrderNotifications';
 import { getDisplayOrderNumber } from '@/lib/orderDisplay';
+import { useAuth } from '@/lib/useAuth';
 
 const ALERT_SOUND_SRC = '/sound/alert.mp3';
 const BATCH_TOAST_THRESHOLD = 2;
@@ -62,6 +66,8 @@ const StoreOrderNotificationContext = createContext({
   overduePickupCount: 0,
   markAllRead: () => {},
   refreshNotifications: () => {},
+  orderAlertsMuted: false,
+  toggleOrderAlertsMuted: () => {},
 });
 
 export function useStoreOrderNotifications() {
@@ -247,6 +253,9 @@ export default function StoreOrderNotificationProvider({
   permissions = {},
 }) {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const accountId = user?.uid || '';
+  const [orderAlertsMuted, setOrderAlertsMutedState] = useState(false);
   const canViewOrders = canAccessDashboardArea(permissions, 'orders', { isOwner });
   const canViewPickups = canViewOrders
     || canAccessDashboardArea(permissions, 'todaysPickup', { isOwner });
@@ -256,7 +265,38 @@ export default function StoreOrderNotificationProvider({
   const checkpointRef = useRef('');
   const pollingRef = useRef(null);
   const suppressRef = useRef(false);
+  const mutedRef = useRef(false);
   const lastOverdueToastAtRef = useRef(0);
+
+  useEffect(() => {
+    if (!accountId) {
+      mutedRef.current = false;
+      setOrderAlertsMutedState(false);
+      return undefined;
+    }
+    const muted = isOrderNotificationsMuted(accountId);
+    mutedRef.current = muted;
+    setOrderAlertsMutedState(muted);
+
+    const onStorage = (event) => {
+      if (event.key !== `${STORE_ORDER_MUTE_PREFIX}:${accountId}`) return;
+      const next = event.newValue === '1';
+      mutedRef.current = next;
+      setOrderAlertsMutedState(next);
+      if (next) dismissOrderToasts();
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [accountId]);
+
+  const toggleOrderAlertsMuted = useCallback(() => {
+    if (!accountId) return;
+    const next = !mutedRef.current;
+    mutedRef.current = next;
+    setOrderAlertsMutedState(next);
+    setOrderNotificationsMuted(accountId, next);
+    if (next) dismissOrderToasts();
+  }, [accountId]);
 
   const markAllRead = useCallback(() => {
     if (!storeId) return;
@@ -277,7 +317,7 @@ export default function StoreOrderNotificationProvider({
 
     rememberNotifiedOrderIds(storeId, freshOrders.map((order) => order.orderId));
 
-    if (suppressRef.current || isOrderNotificationsSuppressed() || options.silent) {
+    if (suppressRef.current || isOrderNotificationsSuppressed() || mutedRef.current || options.silent) {
       return;
     }
 
@@ -442,7 +482,18 @@ export default function StoreOrderNotificationProvider({
     overduePickupCount,
     markAllRead,
     refreshNotifications,
-  }), [unreadCount, recentOrders, canViewOrders, overduePickupCount, markAllRead, refreshNotifications]);
+    orderAlertsMuted,
+    toggleOrderAlertsMuted,
+  }), [
+    unreadCount,
+    recentOrders,
+    canViewOrders,
+    overduePickupCount,
+    markAllRead,
+    refreshNotifications,
+    orderAlertsMuted,
+    toggleOrderAlertsMuted,
+  ]);
 
   return (
     <StoreOrderNotificationContext.Provider value={value}>

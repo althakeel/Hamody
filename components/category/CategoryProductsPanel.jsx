@@ -8,6 +8,7 @@ import ProductFilterSidebar from '@/components/ProductFilterSidebar';
 import { decodeHtmlEntities } from '@/lib/displayText';
 import { PRODUCT_CARD_GRID_CLASS_5 } from '@/lib/storefrontCarousel';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
+import { sortOutOfStockLast } from '@/lib/productVisibility';
 
 const CATEGORY_PRODUCTS_PAGE_SIZE = 100;
 function applyProductFilters(products, activeFilters) {
@@ -44,28 +45,36 @@ function applyProductFilters(products, activeFilters) {
 
 function sortProducts(products, sortBy) {
   const sorted = [...products];
+  let ordered = sorted;
 
   switch (sortBy) {
     case 'price-low-high':
-      return sorted.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+      ordered = sorted.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+      break;
     case 'price-high-low':
-      return sorted.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
+      ordered = sorted.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
+      break;
     case 'rating':
-      return sorted.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
+      ordered = sorted.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
+      break;
     case 'discount':
-      return sorted.sort((a, b) => {
+      ordered = sorted.sort((a, b) => {
         const discountA = a.AED > a.price ? ((a.AED - a.price) / a.AED) * 100 : 0;
         const discountB = b.AED > b.price ? ((b.AED - b.price) / b.AED) * 100 : 0;
         return discountB - discountA;
       });
+      break;
     case 'popularity':
-      return sorted.sort((a, b) => (b.ratingCount || 0) - (a.ratingCount || 0));
+      ordered = sorted.sort((a, b) => (b.ratingCount || 0) - (a.ratingCount || 0));
+      break;
     case 'newest':
     default:
-      return sorted.sort(
+      ordered = sorted.sort(
         (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
       );
   }
+
+  return sortOutOfStockLast(ordered);
 }
 
 export default function CategoryProductsPanel({
@@ -176,7 +185,7 @@ export default function CategoryProductsPanel({
 
   const filteredAndSortedProducts = useMemo(() => {
     const filtered = applyProductFilters(pageProducts, activeFilters);
-    return sortProducts(filtered, activeFilters.sortBy);
+    return sortOutOfStockLast(sortProducts(filtered, activeFilters.sortBy));
   }, [pageProducts, activeFilters]);
 
   const hasActiveFilters =

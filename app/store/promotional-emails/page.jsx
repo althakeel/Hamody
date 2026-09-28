@@ -1563,7 +1563,7 @@ export default function PromotionalEmailsPage() {
                 <div>
                   <h3 className="text-sm font-semibold text-slate-900">Active scheduled campaigns</h3>
                   <p className="text-xs text-slate-500">
-                    Sends automatically at the scheduled Asia/Dubai time. If the clock was missed, it still sends the next time the scheduler runs. Refresh only reloads this list.
+                    Sends automatically at the scheduled Asia/Dubai time. If a send stops partway, the next scheduler run continues the rest of the list. Refresh only reloads this list.
                   </p>
                 </div>
                 <button

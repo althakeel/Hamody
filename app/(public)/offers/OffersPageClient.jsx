@@ -8,6 +8,7 @@ import ProductFilterSidebar from '@/components/ProductFilterSidebar';
 import { OFFERS_PAGE_SIZE } from '@/lib/offersPageSettings';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 import { getContentDirection } from '@/lib/storefrontLanguage';
+import { sortOutOfStockLast } from '@/lib/productVisibility';
 
 const DEFAULT_FILTERS = {
   categories: [],
@@ -157,7 +158,7 @@ export default function OffersPageClient({ initialData = null }) {
   }, [activeFilters.sortBy]);
 
   const filteredProducts = useMemo(
-    () => sortProducts(applyFilters(products)),
+    () => sortOutOfStockLast(sortProducts(applyFilters(products))),
     [products, applyFilters, sortProducts],
   );
 

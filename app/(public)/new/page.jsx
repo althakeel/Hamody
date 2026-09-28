@@ -5,6 +5,7 @@ import axios from 'axios'
 import ProductCard from '@/components/ProductCard'
 import ProductFilterSidebar from '@/components/ProductFilterSidebar'
 import { PRODUCT_CARD_GRID_CLASS_5 } from '@/lib/storefrontCarousel'
+import { sortOutOfStockLast } from '@/lib/productVisibility'
 
 const NEW_ARRIVALS_LIMIT = 50
 const PAGE_SIZE = 25
@@ -143,7 +144,7 @@ export default function NewProductsPage() {
 
   const filteredAndSortedProducts = useMemo(() => {
     const filtered = applyFilters(newProducts)
-    return sortProducts(filtered).slice(0, NEW_ARRIVALS_LIMIT)
+    return sortOutOfStockLast(sortProducts(filtered)).slice(0, NEW_ARRIVALS_LIMIT)
   }, [newProducts, applyFilters, sortProducts])
 
   const totalProducts = filteredAndSortedProducts.length

@@ -4,6 +4,7 @@ import { useMemo, useState, useCallback } from "react";
 import { useSelector } from "react-redux";
 import ProductCard from "@/components/ProductCard";
 import ProductFilterSidebar from "@/components/ProductFilterSidebar";
+import { sortOutOfStockLast } from "@/lib/productVisibility";
 
 const matchesClearanceTag = (product) => {
   const tags = product?.tags || product?.attributes?.tags || [];
@@ -88,7 +89,7 @@ export default function ClearanceSalePage() {
 
   const filteredAndSortedProducts = useMemo(() => {
     const filtered = applyFilters(clearanceProducts);
-    return sortProducts(filtered);
+    return sortOutOfStockLast(sortProducts(filtered));
   }, [clearanceProducts, applyFilters, sortProducts]);
 
   const handleFilterChange = useCallback((filters) => {

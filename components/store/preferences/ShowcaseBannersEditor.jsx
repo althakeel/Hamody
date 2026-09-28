@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import Image from 'next/image'
 import { Check, ChevronDown, ChevronUp, Loader2, Plus, Save, Search, Trash2, Upload } from 'lucide-react'
@@ -37,6 +37,7 @@ import {
   FULL_WIDTH_BANNER_GAP_DEFAULT,
 } from '@/lib/shopShowcaseLargeBanners'
 import { hasShowcaseBannerImage, serializeShowcaseImageFields } from '@/lib/showcaseBannerImages'
+import { uploadShowcaseBannerOriginal } from '@/lib/uploadShowcaseBanner'
 import {
   createShowcaseLinkFromChoice,
   flattenShowcaseCategories,
@@ -426,17 +427,56 @@ function useClickOutside(open, onClose) {
   return rootRef
 }
 
+function useFixedMenuStyle(open, anchorRef) {
+  const [style, setStyle] = useState(null)
+
+  useLayoutEffect(() => {
+    if (!open) return undefined
+    const place = () => {
+      const node = anchorRef.current
+      if (!node) return
+      const rect = node.getBoundingClientRect()
+      const spaceBelow = window.innerHeight - rect.bottom
+      const spaceAbove = rect.top
+      const openUp = spaceBelow < 240 && spaceAbove > spaceBelow
+      const maxHeight = Math.max(160, Math.min(320, (openUp ? spaceAbove : spaceBelow) - 16))
+      setStyle({
+        position: 'fixed',
+        left: rect.left,
+        width: rect.width,
+        maxHeight,
+        zIndex: 80,
+        ...(openUp
+          ? { bottom: window.innerHeight - rect.top + 8 }
+          : { top: rect.bottom + 8 }),
+      })
+    }
+    place()
+    window.addEventListener('resize', place)
+    window.addEventListener('scroll', place, true)
+    return () => {
+      window.removeEventListener('resize', place)
+      window.removeEventListener('scroll', place, true)
+    }
+  }, [open, anchorRef])
+
+  return style
+}
+
 function ShowcaseSelect({ label, value, options, onChange }) {
   const [open, setOpen] = useState(false)
   const rootRef = useClickOutside(open, () => setOpen(false))
+  const anchorRef = useRef(null)
+  const menuStyle = useFixedMenuStyle(open, anchorRef)
   const selected = options.find((option) => option.value === value) || options[0]
 
   return (
-    <div ref={rootRef} className={`relative min-w-0 w-full max-w-full ${open ? 'z-50' : 'z-0'}`}>
+    <div ref={rootRef} className={`relative min-w-0 w-full max-w-full ${open ? 'z-[80]' : 'z-0'}`}>
       <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
+        ref={anchorRef}
         className="flex w-full min-w-0 items-center justify-between rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-left text-sm font-medium text-slate-800 shadow-sm outline-none hover:border-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
         aria-expanded={open}
       >
@@ -444,7 +484,7 @@ function ShowcaseSelect({ label, value, options, onChange }) {
         <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open ? (
-        <div className="absolute left-0 right-0 top-full z-50 mt-2 w-full max-w-full overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-xl">
+        <div className="overflow-y-auto overscroll-contain rounded-lg border border-slate-200 bg-white py-1 shadow-xl" style={menuStyle}>
           {options.map((option) => {
             const isSelected = option.value === value
             return (
@@ -484,13 +524,16 @@ function ShowcaseSearchDropdown({
 }) {
   const [open, setOpen] = useState(false)
   const rootRef = useClickOutside(open, () => setOpen(false))
+  const anchorRef = useRef(null)
+  const menuStyle = useFixedMenuStyle(open, anchorRef)
 
   return (
-    <div ref={rootRef} className={`relative min-w-0 w-full max-w-full ${open ? 'z-50' : 'z-0'}`}>
+    <div ref={rootRef} className={`relative min-w-0 w-full max-w-full ${open ? 'z-[80]' : 'z-0'}`}>
       <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
+        ref={anchorRef}
         className="flex w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-left shadow-sm outline-none hover:border-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
         aria-expanded={open}
       >
@@ -500,8 +543,8 @@ function ShowcaseSearchDropdown({
         <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open ? (
-        <div className="absolute left-0 right-0 top-full z-50 mt-2 w-full max-w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
-          <div className="border-b border-slate-100 p-2">
+        <div className="flex max-h-full flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl" style={menuStyle}>
+          <div className="shrink-0 border-b border-slate-100 p-2">
             <div className="relative min-w-0">
               <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -514,7 +557,7 @@ function ShowcaseSearchDropdown({
               />
             </div>
           </div>
-          <div className="max-h-56 overflow-x-hidden overflow-y-auto py-1">
+          <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain py-1">
             {items.length ? items.map((item) => {
               const isSelected = item.value === selectedValue
               return (
@@ -1344,20 +1387,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
     }))
   }
 
-  const uploadImage = async (file, token) => {
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('uploadContext', 'showcase-banner')
-
-    const response = await axios.post('/api/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${token}`
-      }
-    })
-
-    return response.data.url
-  }
+  const uploadImage = async (file, token) => uploadShowcaseBannerOriginal(file, token)
 
   const save = async () => {
     try {

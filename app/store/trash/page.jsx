@@ -36,9 +36,11 @@ export default function StoreTrashPage() {
   const [tab, setTab] = useState('orders');
   const [orders, setOrders] = useState([]);
   const [abandonedCarts, setAbandonedCarts] = useState([]);
+  const [notifyRequests, setNotifyRequests] = useState([]);
   const [canPermanentlyDelete, setCanPermanentlyDelete] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState([]);
   const [selectedCartIds, setSelectedCartIds] = useState([]);
+  const [selectedNotifyIds, setSelectedNotifyIds] = useState([]);
   const [busyAction, setBusyAction] = useState('');
 
   const fetchTrash = useCallback(async () => {
@@ -51,9 +53,11 @@ export default function StoreTrashPage() {
       });
       setOrders(Array.isArray(data?.orders) ? data.orders : []);
       setAbandonedCarts(Array.isArray(data?.abandonedCarts) ? data.abandonedCarts : []);
+      setNotifyRequests(Array.isArray(data?.notifyRequests) ? data.notifyRequests : []);
       setCanPermanentlyDelete(Boolean(data?.canPermanentlyDelete));
       setSelectedOrderIds([]);
       setSelectedCartIds([]);
+      setSelectedNotifyIds([]);
     } catch (err) {
       setError(err?.response?.data?.error || err.message || 'Failed to load trash');
     } finally {
@@ -65,9 +69,9 @@ export default function StoreTrashPage() {
     fetchTrash();
   }, [fetchTrash]);
 
-  const activeItems = tab === 'orders' ? orders : abandonedCarts;
-  const selectedIds = tab === 'orders' ? selectedOrderIds : selectedCartIds;
-  const setSelectedIds = tab === 'orders' ? setSelectedOrderIds : setSelectedCartIds;
+  const activeItems = tab === 'orders' ? orders : tab === 'notify' ? notifyRequests : abandonedCarts;
+  const selectedIds = tab === 'orders' ? selectedOrderIds : tab === 'notify' ? selectedNotifyIds : selectedCartIds;
+  const setSelectedIds = tab === 'orders' ? setSelectedOrderIds : tab === 'notify' ? setSelectedNotifyIds : setSelectedCartIds;
 
   const allSelected = useMemo(() => (
     activeItems.length > 0 && selectedIds.length === activeItems.length
@@ -97,7 +101,7 @@ export default function StoreTrashPage() {
     try {
       const token = await getToken();
       const { data } = await axios.post('/api/store/trash/restore', {
-        type: tab === 'orders' ? 'order' : 'abandonedCart',
+        type: tab === 'orders' ? 'order' : tab === 'notify' ? 'notifyRequest' : 'abandonedCart',
         ids: selectedIds,
       }, {
         headers: { Authorization: `Bearer ${token}` },
@@ -123,7 +127,7 @@ export default function StoreTrashPage() {
     try {
       const token = await getToken();
       const { data } = await axios.post('/api/store/trash/permanent', {
-        type: tab === 'orders' ? 'order' : 'abandonedCart',
+        type: tab === 'orders' ? 'order' : tab === 'notify' ? 'notifyRequest' : 'abandonedCart',
         ids: selectedIds,
       }, {
         headers: { Authorization: `Bearer ${token}` },
@@ -144,7 +148,7 @@ export default function StoreTrashPage() {
       <div>
         <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Trash</h1>
         <p className="mt-1 text-xs text-slate-600 sm:text-sm">
-          Deleted orders and abandoned checkout carts are kept here. Anyone with store access can restore items. Only platform admins can delete permanently.
+          Deleted orders, abandoned checkout carts, and notify requests are kept here. Anyone with store access can restore items. Only platform admins can delete permanently.
         </p>
       </div>
 
@@ -166,6 +170,13 @@ export default function StoreTrashPage() {
           className={`rounded-lg px-3 py-2 text-sm font-semibold ${tab === 'abandoned' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}
         >
           Abandoned checkout ({abandonedCarts.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => { setTab('notify'); setSelectedOrderIds([]); setSelectedCartIds([]); }}
+          className={`rounded-lg px-3 py-2 text-sm font-semibold ${tab === 'notify' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}
+        >
+          Notify requests ({notifyRequests.length})
         </button>
       </div>
 
@@ -195,7 +206,50 @@ export default function StoreTrashPage() {
         </div>
       ) : null}
 
-      {tab === 'orders' ? (
+      {tab === 'notify' ? (
+        notifyRequests.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500">
+            No trashed notify requests.
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+            <table className="min-w-full text-sm">
+              <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-3">
+                    <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} className="h-4 w-4 rounded border-slate-300" />
+                  </th>
+                  <th className="px-4 py-3">Product</th>
+                  <th className="px-4 py-3">Contact</th>
+                  <th className="px-4 py-3">Trashed</th>
+                  <th className="px-4 py-3">By</th>
+                </tr>
+              </thead>
+              <tbody>
+                {notifyRequests.map((row) => {
+                  const id = String(row._id);
+                  return (
+                    <tr key={id} className="border-t border-slate-100">
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedNotifyIds.includes(id)}
+                          onChange={() => toggleSelect(id)}
+                          className="h-4 w-4 rounded border-slate-300"
+                        />
+                      </td>
+                      <td className="px-4 py-3 font-medium text-slate-900">{row.productName || '—'}</td>
+                      <td className="px-4 py-3">{row.email || row.phone || '—'}</td>
+                      <td className="px-4 py-3">{formatDate(row.deletedAt)}</td>
+                      <td className="px-4 py-3">{row.deletedByName || '—'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )
+      ) : tab === 'orders' ? (
         orders.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500">
             No trashed orders.

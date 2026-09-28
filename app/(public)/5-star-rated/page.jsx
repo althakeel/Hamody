@@ -2,6 +2,7 @@
 
 import ProductCard from "@/components/ProductCard";
 import ProductFilterSidebar from "@/components/ProductFilterSidebar";
+import { sortOutOfStockLast } from "@/lib/productVisibility";
 import { StarIcon } from "lucide-react";
 import { useDispatch } from "react-redux";
 import React, { useEffect, useState, useMemo, useCallback } from "react";
@@ -98,7 +99,7 @@ export default function FiveStarRated() {
 
     const filteredAndSorted = useMemo(() => {
         const filtered = applyFilters(ratedProducts);
-        return sortProducts(filtered);
+        return sortOutOfStockLast(sortProducts(filtered));
     }, [ratedProducts, applyFilters, sortProducts]);
 
     const handleFilterChange = useCallback((filters) => {
