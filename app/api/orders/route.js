@@ -29,6 +29,8 @@ import { allocateShortOrderNumber } from '@/lib/orderNumber';
 import { ensurePersistedShortOrderNumber, ensurePersistedShortOrderNumbers } from '@/lib/orderDisplayServer';
 import { fetchNormalizedDelhiveryTracking } from '@/lib/delhivery';
 import { createTamaraSession } from '@/lib/tamara';
+import { createVaultsPayCheckout } from '@/lib/vaultsPay';
+import { buildCustomerSitePath } from '@/lib/appUrl';
 import { buildCheckoutRedirectUrl, resolveCheckoutOrigin, resolveTamaraMerchantBaseUrl } from '@/lib/checkoutOrigin';
 import { getProductAbsoluteUrl } from '@/lib/productUrl';
 import { createTabbySession, buildTabbyBuyerHistory, buildTabbyOrderHistoryEntries } from '@/lib/tabby';
@@ -121,6 +123,7 @@ export async function POST(request) {
             couponCode,
             coupon: couponPayload,
             paymentMethod,
+            vaultsPayMethod,
             isGuest,
             guestInfo,
             coinsToRedeem,
@@ -645,9 +648,15 @@ export async function POST(request) {
         const shippingSettingForLimits = primaryStoreId
             ? await ShippingSetting.findOne({ storeId: primaryStoreId }).lean()
             : null;
+        const requestedVaultsWallet = String(vaultsPayMethod || 'card').trim().toLowerCase();
+        const paymentLimitMethod = String(paymentMethod || '').toUpperCase() === 'VAULTSPAY'
+            ? (requestedVaultsWallet === 'googlepay' || requestedVaultsWallet === 'applepay'
+                ? requestedVaultsWallet
+                : 'vaultspay')
+            : paymentMethod;
         const paymentLimitError = getPaymentMethodLimitError(
             shippingSettingForLimits,
-            paymentMethod,
+            paymentLimitMethod,
             projectedCheckoutTotal,
             { hasPersonalizedOfferItem },
         );
@@ -1212,6 +1221,90 @@ export async function POST(request) {
                 })));
             }
             return NextResponse.json({ session, orderId: primaryOrderId });
+        }
+
+        if (paymentMethod === 'VAULTSPAY') {
+            const clientIp = getClientIpFromRequest(request);
+            const origin = resolveCheckoutOrigin(request);
+            const primaryOrderId = orderIds[0] || '';
+            const primaryOrder = primaryOrderId
+                ? await Order.findById(primaryOrderId).select('storeId shippingAddress addressId shortOrderNumber').lean()
+                : null;
+            const fraudStoreId = primaryOrder?.storeId || '';
+            const fraud = await evaluateCheckoutFraud({
+                email: guestInfo?.email || '',
+                phone: guestInfo?.phone || '',
+                ip: clientIp,
+                userId: userId || '',
+                amount: fullAmount,
+                paymentMethod: 'VAULTSPAY',
+                storeId: fraudStoreId,
+                orderId: primaryOrderId,
+                userAgent: request.headers.get('user-agent') || '',
+            });
+            if (fraud.block) {
+                return NextResponse.json({ error: fraud.message, code: 'FRAUD_BLOCKED', riskScore: fraud.score }, { status: 403 });
+            }
+
+            const addr = primaryOrder?.shippingAddress || {};
+            let checkout;
+            try {
+                const requestedWallet = String(vaultsPayMethod || 'card').trim().toLowerCase();
+                const walletMethod = ['card', 'googlepay', 'applepay'].includes(requestedWallet) ? requestedWallet : 'card';
+                checkout = await createVaultsPayCheckout({
+                    amount: fullAmount,
+                    orderId: primaryOrderId,
+                    redirectUrl: `${origin}/order-success?orderId=${primaryOrderId}&vaultspay=1`,
+                    callbackUrl: buildCustomerSitePath('/api/webhooks/vaultspay'),
+                    method: walletMethod,
+                    customer: {
+                        email: addr.email || guestInfo?.email || '',
+                        phone: addr.phone || guestInfo?.phone || '',
+                    },
+                });
+            } catch (error) {
+                console.error('[vaultspay] checkout failed:', error?.message || error);
+                const raw = String(error?.message || '');
+                const message = /fetch failed|ENOTFOUND|ECONNREFUSED|timeout/i.test(raw)
+                    ? 'Card payment is temporarily unavailable. Please try again.'
+                    : (raw || 'Could not start card payment.');
+                return NextResponse.json({
+                    error: message,
+                }, { status: error?.statusCode && error.statusCode < 500 ? error.statusCode : 502 });
+            }
+
+            if (orderIds.length > 0) {
+                await Order.updateMany(
+                    { _id: { $in: orderIds } },
+                    {
+                        $set: {
+                            vaultsPayTransactionId: checkout.transactionId || '',
+                            vaultsPayPaymentStatus: 'pending',
+                        },
+                    },
+                ).catch((err) => {
+                    console.error('[orders] Failed to save VaultsPay transaction id:', err?.message || err);
+                });
+                await Promise.all(orderIds.map((oid) => logPaymentEvent({
+                    storeId: fraudStoreId,
+                    orderId: oid,
+                    eventType: 'SESSION_CREATED',
+                    provider: 'VAULTSPAY',
+                    providerReference: checkout.transactionId || '',
+                    amount: fullAmount,
+                    status: 'pending',
+                    ip: clientIp,
+                    userAgent: request.headers.get('user-agent') || '',
+                    riskScore: fraud.score,
+                    riskSignals: fraud.signals,
+                    meta: { review: fraud.review },
+                })));
+            }
+
+            return NextResponse.json({
+                checkout_url: checkout.url,
+                orderId: primaryOrderId,
+            });
         }
 
         // Tamara BNPL payment

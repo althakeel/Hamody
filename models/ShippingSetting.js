@@ -47,11 +47,15 @@ const ShippingSettingSchema = new mongoose.Schema({
   enableCard: { type: Boolean, default: true },
   enableTabby: { type: Boolean, default: true },
   enableTamara: { type: Boolean, default: true },
+  enableVaultsPay: { type: Boolean, default: true },
+  enableVaultsPayApplePay: { type: Boolean, default: true },
+  enableVaultsPayGooglePay: { type: Boolean, default: true },
   codFee: { type: Number, default: 0 },
   maxCODAmount: { type: Number, default: 0 },
   maxCardAmount: { type: Number, default: 0 },
   maxTabbyAmount: { type: Number, default: 0 },
   maxTamaraAmount: { type: Number, default: 0 },
+  maxVaultsPayAmount: { type: Number, default: 0 },
   enableExpressShipping: { type: Boolean, default: false },
   expressShippingFee: { type: Number, default: 20 },
   expressEstimatedDays: { type: String, default: "1-2" },
@@ -63,5 +67,9 @@ const ShippingSettingSchema = new mongoose.Schema({
   ],
   shippingOptions: [ShippingOptionSchema],
 }, { timestamps: true });
+
+if (process.env.NODE_ENV === "development" && mongoose.models.ShippingSetting) {
+  delete mongoose.models.ShippingSetting;
+}
 
 export default mongoose.models.ShippingSetting || mongoose.model("ShippingSetting", ShippingSettingSchema);

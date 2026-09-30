@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { ArrowRightIcon, Lock } from "lucide-react"
+import { ArrowRightIcon, Lock, X } from "lucide-react"
+import { STORE1920_LOGO_PATH } from "@/lib/brandLogo"
 import SellerNavbar from "./StoreNavbar"
 import StoreSidebar from "./StoreSidebar"
 import StoreOrderNotificationProvider from "./StoreOrderNotificationProvider"
@@ -23,6 +24,78 @@ import { readSellerCache, writeSellerCache } from "@/lib/storeDashboardCache";
 import StoreActivityLogger from "@/components/store/StoreActivityLogger";
 
 const ACCESS_REFRESH_MS = 5 * 60 * 1000;
+const SELLER_WELCOME_KEY = 'store1920.sellerWelcomeShown';
+
+function sellerWelcomeName(user, accountName = '') {
+    const savedName = String(accountName || '').trim();
+    if (savedName && savedName.toLowerCase() !== 'unknown') return savedName;
+    const name = String(user?.displayName || user?.name || '').trim();
+    if (name && name.toLowerCase() !== 'unknown') return name;
+    const emailName = String(user?.email || '').split('@')[0].trim();
+    return emailName || 'there';
+}
+
+function SellerWelcomeDialog({ user, accountName, storeName, onClose }) {
+    const name = sellerWelcomeName(user, accountName);
+    const storeLabel = String(storeName || '').trim() || 'Store1920';
+    const onCloseRef = useRef(onClose);
+    onCloseRef.current = onClose;
+
+    useEffect(() => {
+        const timeout = window.setTimeout(() => onCloseRef.current(), 5 * 60 * 1000);
+        const onKeyDown = (event) => {
+            if (event.key === 'Escape') onCloseRef.current();
+        };
+        document.addEventListener('keydown', onKeyDown);
+        return () => {
+            window.clearTimeout(timeout);
+            document.removeEventListener('keydown', onKeyDown);
+        };
+    }, []);
+
+    return (
+        <div className="pointer-events-none fixed inset-x-0 top-4 z-[80] flex justify-center px-4 sm:top-6" dir="ltr" lang="en">
+            <style>{`
+                @keyframes seller-welcome-in {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+            `}</style>
+            <div
+                role="dialog"
+                aria-modal="false"
+                aria-labelledby="seller-welcome-title"
+                className="pointer-events-auto flex w-full max-w-3xl items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-[0_16px_40px_rgba(15,23,42,0.16)] sm:px-5"
+                style={{ animation: 'seller-welcome-in 220ms ease-out' }}
+            >
+                <img src={STORE1920_LOGO_PATH} alt="" className="h-11 w-11 shrink-0 rounded-xl object-contain" />
+                <div className="min-w-0 flex-1">
+                    <h2 id="seller-welcome-title" className="truncate text-base font-semibold text-slate-950 sm:text-lg">
+                        Hi, {name}
+                    </h2>
+                    <p className="mt-0.5 text-sm text-slate-600">
+                        Welcome to the Store1920 store. Signed in to {storeLabel}.
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="hidden shrink-0 rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 sm:inline-flex"
+                >
+                    Continue
+                </button>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label="Close"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                >
+                    <X size={18} />
+                </button>
+            </div>
+        </div>
+    );
+}
 
 const StoreLayout = ({ children }) => {
 
@@ -33,6 +106,7 @@ const StoreLayout = ({ children }) => {
     const [isSeller, setIsSeller] = useState(false);
     const [sellerLoading, setSellerLoading] = useState(true);
     const [storeInfo, setStoreInfo] = useState(null);
+    const [accountName, setAccountName] = useState("");
     const [accessIssue, setAccessIssue] = useState(null);
     const [dashboardAccess, setDashboardAccess] = useState({
         isOwner: false,
@@ -40,10 +114,12 @@ const StoreLayout = ({ children }) => {
         accessRole: 'member',
         canManageTeamAccess: false,
         canViewActivityHistory: false,
+        isSuperAdmin: false,
     });
     const sellerCacheHydratedRef = useRef(false);
     const lastAccessFetchRef = useRef(0);
     const [hasCachedSeller, setHasCachedSeller] = useState(false);
+    const [showWelcome, setShowWelcome] = useState(false);
 
     const fetchIsSeller = async (retryCount = 0, { silent = false } = {}) => {
         if (!user) {
@@ -76,17 +152,20 @@ const StoreLayout = ({ children }) => {
             });
             setIsSeller(data.isSeller);
             setStoreInfo(data.storeInfo);
+            setAccountName(String(data.accountName || "").trim());
             const nextAccess = {
                 isOwner: Boolean(data.isOwner),
                 permissions: data.permissions || buildDeniedPermissions(),
                 accessRole: data.accessRole || 'member',
                 canManageTeamAccess: Boolean(data.canManageTeamAccess),
                 canViewActivityHistory: Boolean(data.canViewActivityHistory),
+                isSuperAdmin: Boolean(data.isSuperAdmin),
             };
             setDashboardAccess(nextAccess);
             writeSellerCache({
                 isSeller: data.isSeller,
                 storeInfo: data.storeInfo,
+                accountName: String(data.accountName || "").trim(),
                 dashboardAccess: nextAccess,
             });
             setHasCachedSeller(true);
@@ -139,6 +218,7 @@ const StoreLayout = ({ children }) => {
         setHasCachedSeller(true);
         setIsSeller(Boolean(cached.isSeller));
         setStoreInfo(cached.storeInfo || null);
+        setAccountName(String(cached.accountName || "").trim());
         setDashboardAccess(cached.dashboardAccess || {
             isOwner: false,
             permissions: buildDeniedPermissions(),
@@ -169,6 +249,34 @@ const StoreLayout = ({ children }) => {
         document.addEventListener('visibilitychange', onVisibility);
         return () => document.removeEventListener('visibilitychange', onVisibility);
     }, [user]);
+
+    useEffect(() => {
+        if (loading || user) return;
+        try {
+            sessionStorage.removeItem(SELLER_WELCOME_KEY);
+        } catch {
+            // Ignore storage failures.
+        }
+    }, [loading, user]);
+
+    useEffect(() => {
+        if (loading || sellerLoading || !isSeller || !user?.uid) return;
+        try {
+            if (sessionStorage.getItem(SELLER_WELCOME_KEY) === user.uid) return;
+        } catch {
+            // Show the welcome if storage cannot be read.
+        }
+        setShowWelcome(true);
+    }, [loading, sellerLoading, isSeller, user]);
+
+    const dismissWelcome = () => {
+        try {
+            if (user?.uid) sessionStorage.setItem(SELLER_WELCOME_KEY, user.uid);
+        } catch {
+            // Closing still works if storage is blocked.
+        }
+        setShowWelcome(false);
+    };
 
     const showAuthShell = (loading || sellerLoading) && !hasCachedSeller && !(isSeller && storeInfo);
 
@@ -224,12 +332,28 @@ const StoreLayout = ({ children }) => {
             permissions={dashboardAccess.permissions}
         >
         <div className="flex h-full max-h-full min-h-0 flex-col overflow-hidden bg-slate-50">
-            <SellerNavbar storeInfo={storeInfo} />
+            {showWelcome ? (
+                <SellerWelcomeDialog
+                    user={user}
+                    accountName={accountName}
+                    storeName={storeInfo?.name}
+                    onClose={dismissWelcome}
+                />
+            ) : null}
+            <SellerNavbar
+                storeInfo={storeInfo}
+                accountName={accountName}
+                isOwner={dashboardAccess.isOwner}
+                isSuperAdmin={dashboardAccess.isSuperAdmin}
+                permissions={dashboardAccess.permissions}
+                canViewActivityHistory={dashboardAccess.canViewActivityHistory}
+            />
             <div className="flex min-h-0 flex-1 overflow-hidden">
                 <StoreActivityLogger />
                 <SellerSidebar
                     storeInfo={storeInfo}
                     isOwner={dashboardAccess.isOwner}
+                    isSuperAdmin={dashboardAccess.isSuperAdmin}
                     permissions={dashboardAccess.permissions}
                     canViewActivityHistory={dashboardAccess.canViewActivityHistory}
                 />

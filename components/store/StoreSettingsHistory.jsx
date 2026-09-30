@@ -35,6 +35,19 @@ function roleLabel(role) {
   return 'User';
 }
 
+function profileNameForRow(members, row) {
+  const email = String(row.actorEmail || '').trim().toLowerCase();
+  const match = members.find((member) => (
+    (row.actorUserId && member.userId && String(member.userId) === String(row.actorUserId))
+    || (email && String(member.email || '').toLowerCase() === email)
+  ));
+  const profileName = String(match?.name || '').trim();
+  if (profileName && !profileName.includes('@')) return profileName;
+  const storedName = String(row.actorName || '').trim();
+  if (storedName && !storedName.includes('@')) return storedName;
+  return 'Store user';
+}
+
 export default function StoreSettingsHistory() {
   const { getToken } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -135,11 +148,18 @@ export default function StoreSettingsHistory() {
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-indigo-400 focus:bg-white"
             >
               <option value="">All members</option>
-              {members.map((member) => (
-                <option key={member.id} value={member.userId || member.id}>
-                  {member.name} {member.email ? `(${member.email})` : ''}
-                </option>
-              ))}
+              {members.map((member) => {
+                const name = String(member.name || '').trim();
+                const email = String(member.email || '').trim();
+                const label = name && email && name.toLowerCase() !== email.toLowerCase()
+                  ? `${name} (${email})`
+                  : (name || email);
+                return (
+                  <option key={member.id} value={member.userId || member.id}>
+                    {label}
+                  </option>
+                );
+              })}
             </select>
           </label>
 
@@ -210,7 +230,7 @@ export default function StoreSettingsHistory() {
                   <tr key={row._id} className="border-t border-slate-100 align-top">
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatWhen(row.createdAt)}</td>
                     <td className="px-4 py-3">
-                      <p className="font-medium text-slate-900">{row.actorName || 'Store user'}</p>
+                      <p className="font-medium text-slate-900">{profileNameForRow(members, row)}</p>
                       <p className="text-xs text-slate-500">{row.actorEmail || '—'}</p>
                       <p className="mt-0.5 text-[11px] font-medium text-slate-400">{roleLabel(row.actorRole)}</p>
                     </td>

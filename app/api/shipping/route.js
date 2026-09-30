@@ -30,11 +30,15 @@ function getPublicShippingFallback() {
     enableCard: true,
     enableTabby: true,
     enableTamara: true,
+    enableVaultsPay: true,
+    enableVaultsPayApplePay: true,
+    enableVaultsPayGooglePay: true,
     codFee: 0,
     maxCODAmount: 0,
     maxCardAmount: 0,
     maxTabbyAmount: 0,
     maxTamaraAmount: 0,
+    maxVaultsPayAmount: 0,
     enableExpressShipping: false,
     expressShippingFee: 0,
     expressEstimatedDays: "1-2",
@@ -163,11 +167,14 @@ export async function PUT(request) {
         enableCard: body.enableCard !== false,
         enableTabby: body.enableTabby !== false,
         enableTamara: body.enableTamara !== false,
+        enableVaultsPay: body.enableVaultsPay !== false,
+        enableVaultsPayApplePay: body.enableVaultsPayApplePay !== false,
+        enableVaultsPayGooglePay: body.enableVaultsPayGooglePay !== false,
       };
       const setting = await ShippingSetting.findOneAndUpdate(
         { storeId },
         { $set: { storeId, ...patch } },
-        { upsert: true, new: true },
+        { upsert: true, new: true, strict: false },
       );
       return NextResponse.json({ setting });
     }
@@ -213,11 +220,15 @@ export async function PUT(request) {
       enableCard: body.enableCard !== false,
       enableTabby: body.enableTabby !== false,
       enableTamara: body.enableTamara !== false,
+      enableVaultsPay: body.enableVaultsPay !== false,
+      enableVaultsPayApplePay: body.enableVaultsPayApplePay !== false,
+      enableVaultsPayGooglePay: body.enableVaultsPayGooglePay !== false,
       codFee: Number(body.codFee ?? 0),
       maxCODAmount: Number(body.maxCODAmount ?? 0),
       maxCardAmount: Number(body.maxCardAmount ?? 0),
       maxTabbyAmount: Number(body.maxTabbyAmount ?? 0),
       maxTamaraAmount: Number(body.maxTamaraAmount ?? 0),
+      maxVaultsPayAmount: Number(body.maxVaultsPayAmount ?? 0),
       // Express (legacy sync from options)
       enableExpressShipping: Boolean(
         legacyFromOptions.enableExpressShipping ?? body.enableExpressShipping ?? false,

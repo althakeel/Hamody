@@ -4,6 +4,8 @@ import StoreLanguageScope from "@/components/store/StoreLanguageScope";
 import StoreShellSkeleton from "@/components/store/StoreShellSkeleton";
 import SilentDomErrorBoundary from "@/components/SilentDomErrorBoundary";
 import "@/styles/store-editor.css";
+import "@/styles/store-dashboard-theme.css";
+import StoreDashboardDisplay from "@/components/store/StoreDashboardDisplay";
 
 import { useEffect, useState } from "react"
 import { usePathname, useRouter } from "next/navigation";
@@ -178,6 +180,7 @@ export default function RootAdminLayout({ children }) {
 
     return (
         <StoreLanguageScope>
+          <StoreDashboardDisplay />
           <SilentDomErrorBoundary className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             <StoreLayout>
               {children}

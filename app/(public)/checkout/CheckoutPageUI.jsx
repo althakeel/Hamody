@@ -74,6 +74,7 @@ import PhoneNumberField from "@/components/PhoneNumberField";
 import VisaLogo from '../../../assets/creditcards/visa.png';
 import MastercardLogo from '../../../assets/creditcards/mastercard.png';
 import GooglePayLogo from '../../../assets/creditcards/google-pay.png';
+import ApplePayLogo from '../../../assets/creditcards/apple-pay.png';
 import AmexLogo from '../../../assets/creditcards/11.webp';
 import { STORE_CURRENCY } from '@/lib/storeCurrency';
 import { AedText } from '@/components/CurrencySymbol';
@@ -86,6 +87,10 @@ import toast from 'react-hot-toast';
 const SignInModal = dynamic(() => import("@/components/SignInModal"), { ssr: false });
 const AddressModal = dynamic(() => import("@/components/AddressModal"), { ssr: false });
 const PrepaidUpsellModal = dynamic(() => import("@/components/PrepaidUpsellModal"), { ssr: false });
+
+function isHostedCardWallet(payment) {
+  return payment === 'vaultspay' || payment === 'googlepay' || payment === 'applepay';
+}
 
 function formatDeliveryDays(value, fallback = '2-5') {
   const raw = String(value || fallback).replace(/\s*days?/gi, '').trim();
@@ -892,7 +897,9 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   const needsPaymentSelection = totalAfterWallet > 0;
   const paymentMethodSummary = (() => {
     if (form.payment === 'cod') return t('checkout.cashOnDelivery');
-    if (form.payment === 'card') return t('checkout.creditDebitCard');
+    if (form.payment === 'card' || form.payment === 'vaultspay') return t('checkout.creditDebitCard');
+    if (form.payment === 'googlepay') return t('checkout.googlePay');
+    if (form.payment === 'applepay') return t('checkout.applePay');
     if (form.payment === 'wallet') return t('checkout.walletBalance');
     if (form.payment === 'tamara') return 'Tamara';
     if (form.payment === 'tabby') return 'Tabby';
@@ -936,12 +943,17 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     !isPaymentMethodEnabled(shippingSetting, 'cod') ||
     (maxCODAmount > 0 && totalAfterWallet > maxCODAmount);
   const isCardEnabled = isPaymentMethodEnabled(shippingSetting, 'card');
+  const isVaultsPayEnabled = isPaymentMethodEnabled(shippingSetting, 'vaultspay');
   const isTabbyEnabled = isPaymentMethodEnabled(shippingSetting, 'tabby');
   const isTamaraEnabled = isPaymentMethodEnabled(shippingSetting, 'tamara');
   const isCardOverLimit = isPaymentMethodOverLimit(shippingSetting, 'card', totalAfterWallet);
+  const isVaultsPayOverLimit = isPaymentMethodOverLimit(shippingSetting, 'vaultspay', totalAfterWallet);
   const isTabbyOverLimit = isPaymentMethodOverLimit(shippingSetting, 'tabby', totalAfterWallet);
   const isTamaraOverLimit = isPaymentMethodOverLimit(shippingSetting, 'tamara', totalAfterWallet);
   const showCardPayment = isCardEnabled && !isCardOverLimit;
+  const showVaultsPayPayment = isVaultsPayEnabled && !isVaultsPayOverLimit;
+  const showVaultsPayGooglePay = showVaultsPayPayment && isPaymentMethodEnabled(shippingSetting, 'googlepay');
+  const showVaultsPayApplePay = showVaultsPayPayment && isPaymentMethodEnabled(shippingSetting, 'applepay');
   const showTabbyPayment = isTabbyEnabled && !isTabbyOverLimit;
   const showTamaraPayment = isTamaraEnabled && !isTamaraOverLimit;
   const showCodPayment = !hasPersonalizedOfferItem && isPaymentMethodEnabled(shippingSetting, 'cod');
@@ -950,6 +962,9 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     form.payment !== 'wallet' && (
       (form.payment === 'cod' && isCODDisabledForOrder)
       || (form.payment === 'card' && (!isCardEnabled || isCardOverLimit))
+      || (form.payment === 'vaultspay' && !showVaultsPayPayment)
+      || (form.payment === 'googlepay' && !showVaultsPayGooglePay)
+      || (form.payment === 'applepay' && !showVaultsPayApplePay)
       || (form.payment === 'tabby' && (!isTabbyEnabled || isTabbyOverLimit))
       || (form.payment === 'tamara' && (!isTamaraEnabled || isTamaraOverLimit))
     );
@@ -992,7 +1007,9 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     if (form.payment === 'tamara') return renderPayByMethodLabel('Tamara');
     if (form.payment === 'tabby') return renderPayByMethodLabel('Tabby');
     if (form.payment === 'cod') return renderPayByMethodLabel('Cod');
-    if (form.payment === 'card') return renderPayByMethodLabel('Card');
+    if (form.payment === 'card' || form.payment === 'vaultspay') return renderPayByMethodLabel('Card');
+    if (form.payment === 'googlepay') return renderPayByMethodLabel('GooglePay');
+    if (form.payment === 'applepay') return renderPayByMethodLabel('ApplePay');
     if (form.payment === 'wallet') return renderPayByMethodLabel('Wallet');
     return needsPaymentSelection ? t('checkout.selectPayment') : t('checkout.placeOrder');
   };
@@ -1004,6 +1021,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     !hasValidPhone(selectedAddressForView?.phone) &&
     !hasValidPhone(user?.phoneNumber || user?.phone);
   const isPincodeError = /pincode/i.test(String(formError || ''));
+  const isPaymentStartError = /card payment|could not open card|temporarily unavailable/i.test(String(formError || ''));
   const isRateLimitError = /too many requests|rate limit|slow down/i.test(String(formError || ''));
 
   useEffect(() => {
@@ -1075,6 +1093,9 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     if (!form.payment || form.payment === 'wallet') return;
     const paymentUnavailable =
       (form.payment === 'card' && (!isCardEnabled || isCardOverLimit))
+      || (form.payment === 'vaultspay' && !showVaultsPayPayment)
+      || (form.payment === 'googlepay' && !showVaultsPayGooglePay)
+      || (form.payment === 'applepay' && !showVaultsPayApplePay)
       || (form.payment === 'tabby' && (!isTabbyEnabled || isTabbyOverLimit))
       || (form.payment === 'tamara' && (!isTamaraEnabled || isTamaraOverLimit))
       || (form.payment === 'cod' && isCODDisabledForOrder);
@@ -1084,9 +1105,14 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   }, [
     form.payment,
     isCardEnabled,
+    isVaultsPayEnabled,
+    showVaultsPayPayment,
+    showVaultsPayGooglePay,
+    showVaultsPayApplePay,
     isTabbyEnabled,
     isTamaraEnabled,
     isCardOverLimit,
+    isVaultsPayOverLimit,
     isTabbyOverLimit,
     isTamaraOverLimit,
     isCODDisabledForOrder,
@@ -1603,7 +1629,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   };
 
   const renderPlacingOrderLabel = () => {
-    if (form.payment === 'card' || form.payment === 'tamara' || form.payment === 'tabby') {
+    if (form.payment === 'card' || isHostedCardWallet(form.payment) || form.payment === 'tamara' || form.payment === 'tabby') {
       return 'Redirecting to payment...';
     }
     return t('checkout.placingOrder');
@@ -1647,6 +1673,46 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
       return false;
     } catch (error) {
       setFormError(error.message || 'Stripe payment failed. Please try again.');
+      setPlacingOrder(false);
+      return false;
+    }
+  };
+
+  const handleVaultsPayPayment = async (paymentPayload) => {
+    try {
+      const trackedPayload = withOrderTrackingFields(paymentPayload);
+      const fetchOptions = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(trackedPayload),
+      };
+
+      if (user && getToken) {
+        const token = await getToken();
+        fetchOptions.headers.Authorization = `Bearer ${token}`;
+      }
+
+      const res = await fetchCheckoutOrders(fetchOptions);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        setFormError(errData.message || errData.error || 'Failed to start card payment');
+        setPlacingOrder(false);
+        return false;
+      }
+
+      const data = await res.json();
+      const checkoutUrl = data?.checkout_url;
+      if (checkoutUrl) {
+        if (data?.orderId) rememberPendingCheckoutOrder(data.orderId);
+        window.location.href = checkoutUrl;
+        return true;
+      }
+
+      setFormError('Could not open card payment. Please try again.');
+      setPlacingOrder(false);
+      return false;
+    } catch (error) {
+      setFormError(error.message || 'Card payment failed. Please try again.');
       setPlacingOrder(false);
       return false;
     }
@@ -1783,6 +1849,9 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     const invalidOnlinePaymentSelection =
       effectivePayment !== 'wallet' && (
         (effectivePayment === 'card' && (!isCardEnabled || isCardOverLimit))
+        || (effectivePayment === 'vaultspay' && !showVaultsPayPayment)
+        || (effectivePayment === 'googlepay' && !showVaultsPayGooglePay)
+        || (effectivePayment === 'applepay' && !showVaultsPayApplePay)
         || (effectivePayment === 'tabby' && (!isTabbyEnabled || isTabbyOverLimit))
         || (effectivePayment === 'tamara' && (!isTamaraEnabled || isTamaraOverLimit))
       );
@@ -1884,6 +1953,63 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
 
     setPlacingOrder(true);
     
+    if (isHostedCardWallet(effectivePayment)) {
+      try {
+        const itemsForVaultsPay = buildCheckoutItems();
+        const payload = {
+          items: itemsForVaultsPay,
+          paymentMethod: 'VAULTSPAY',
+          vaultsPayMethod: effectivePayment === 'googlepay' ? 'googlepay' : effectivePayment === 'applepay' ? 'applepay' : 'card',
+          shippingFee: shipping,
+          shippingMethod: shippingMethod,
+          paymentStatus: 'pending',
+        };
+
+        if (appliedCoupon && (couponDiscount > 0 || isFreeShippingCouponApplied)) {
+          payload.coupon = {
+            code: appliedCoupon.code,
+            discountAmount: couponDiscount,
+            freeShipping: isFreeShippingCouponApplied,
+            shippingDiscount,
+            title: appliedCoupon.title,
+            description: appliedCoupon.description,
+          };
+        }
+
+        if (user) {
+          const addressId = form.addressId || (addressList[0] && addressList[0]._id);
+          if (addressId) payload.addressId = addressId;
+        } else {
+          if (!form.name || !form.email || !resolvedPhone || !form.street || !resolveGuestCity(form) || !form.state || !resolvedCountry) {
+            setFormError('Please fill all required shipping details.');
+            setPlacingOrder(false);
+            return;
+          }
+          payload.isGuest = true;
+          payload.guestInfo = {
+            name: form.name,
+            email: form.email,
+            phone: resolvedPhone,
+            phoneCode: form.phoneCode,
+            alternatePhone: cleanedAlternatePhone || '',
+            alternatePhoneCode: form.alternatePhone ? form.alternatePhoneCode || form.phoneCode : '',
+            street: form.street,
+            city: resolveGuestCity(form),
+            state: form.state,
+            district: form.district || '',
+            country: resolvedCountry,
+            pincode: resolvedPincode || '',
+          };
+        }
+
+        await handleVaultsPayPayment(applyWalletToPayload(payload));
+      } catch (error) {
+        setFormError(error.message || 'Payment failed');
+        setPlacingOrder(false);
+      }
+      return;
+    }
+
     // For card payment, use Stripe Checkout
     if (effectivePayment === 'card') {
       if (getPhoneInputError(resolvedPhone, phoneCodeForValidation)) {
@@ -2659,15 +2785,15 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   return (
     <>
       <div className="bg-white pb-24 pt-0 md:min-h-[35dvh] md:pb-14 md:py-10">
-      <div className="mx-auto max-w-[1250px] px-4 pt-4 md:pt-0 md:pb-2" dir={isArabic ? 'rtl' : 'ltr'}>
+      <div className="mx-auto w-full max-w-[1400px] px-4 pt-4 sm:px-6 md:pt-0 md:pb-2" dir={isArabic ? 'rtl' : 'ltr'}>
         <h1 className="text-2xl font-bold tracking-tight text-gray-900 md:text-3xl">{t('checkout.pageTitle')}</h1>
       </div>
       {activeCheckoutAlert ? (
-        <div className="mx-auto max-w-[1250px] px-4 pb-3 pt-3 md:pb-4 md:pt-4" dir={isArabic ? 'rtl' : 'ltr'}>
+        <div className="mx-auto w-full max-w-[1400px] px-4 pb-3 pt-3 sm:px-6 md:pb-4 md:pt-4" dir={isArabic ? 'rtl' : 'ltr'}>
           <CheckoutAlertBanner alert={activeCheckoutAlert} />
         </div>
       ) : null}
-      <div className="mx-auto grid max-w-[1250px] grid-cols-1 gap-0 md:grid-cols-3 md:gap-8 md:px-4" dir={isArabic ? 'rtl' : 'ltr'}>
+      <div className="mx-auto grid w-full max-w-[1400px] grid-cols-1 gap-0 md:grid-cols-3 md:gap-8 md:px-6" dir={isArabic ? 'rtl' : 'ltr'}>
         {/* Left column: address, form, payment */}
         <div className="md:col-span-2">
           <div className="border-y border-gray-100 bg-white px-4 pb-4 pt-2 md:rounded-xl md:border md:p-8 md:shadow-sm">
@@ -2786,7 +2912,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
                   <div>
-                    <div className="font-semibold">{isPincodeError ? 'Address Validation' : 'Validation Error'}</div>
+                    <div className="font-semibold">{isPincodeError ? 'Address Validation' : isPaymentStartError ? 'Payment Error' : 'Validation Error'}</div>
                     <div className="text-sm mt-1">{isPincodeError ? 'Please enter a valid pincode.' : formError}</div>
                   </div>
                 </div>
@@ -3265,6 +3391,63 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                 </label>
                 ) : null}
 
+                {showVaultsPayPayment ? (
+                <>
+                <label className="flex items-center gap-3 p-4 border-2 rounded-lg transition-all cursor-pointer border-gray-200 hover:border-emerald-400 hover:bg-emerald-50/30 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50">
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="vaultspay"
+                    checked={form.payment === 'vaultspay'}
+                    onChange={handleChange}
+                    className="accent-emerald-600 w-5 h-5"
+                  />
+                  <div className="flex-1 flex items-center justify-between gap-3">
+                    <div>
+                      <span className="font-semibold text-gray-900">{t('checkout.creditDebitCard')}</span>
+                      <div className="text-xs text-gray-600">{t('checkout.visaMastercard')}</div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Image src={VisaLogo} alt="Visa" width={52} height={32} className="h-7 w-auto object-contain" />
+                      <Image src={MastercardLogo} alt="Mastercard" width={52} height={32} className="h-7 w-auto object-contain" />
+                    </div>
+                  </div>
+                </label>
+                {showVaultsPayGooglePay ? (
+                <label className="flex items-center gap-3 p-4 border-2 rounded-lg transition-all cursor-pointer border-gray-200 hover:border-emerald-400 hover:bg-emerald-50/30 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50">
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="googlepay"
+                    checked={form.payment === 'googlepay'}
+                    onChange={handleChange}
+                    className="accent-emerald-600 w-5 h-5"
+                  />
+                  <div className="flex items-center gap-2">
+                    <Image src={GooglePayLogo} alt="" width={56} height={32} className="h-7 w-auto object-contain" />
+                    <span className="font-semibold text-gray-900">{t('checkout.googlePay')}</span>
+                  </div>
+                </label>
+                ) : null}
+                {showVaultsPayApplePay ? (
+                <label className="flex items-center gap-3 p-4 border-2 rounded-lg transition-all cursor-pointer border-gray-200 hover:border-emerald-400 hover:bg-emerald-50/30 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50">
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="applepay"
+                    checked={form.payment === 'applepay'}
+                    onChange={handleChange}
+                    className="accent-emerald-600 w-5 h-5"
+                  />
+                  <div className="flex items-center gap-2">
+                    <Image src={ApplePayLogo} alt="" width={56} height={32} className="h-7 w-auto object-contain" />
+                    <span className="font-semibold text-gray-900">{t('checkout.applePay')}</span>
+                  </div>
+                </label>
+                ) : null}
+                </>
+                ) : null}
+
                 {/* Cash on Delivery Option */}
                 {showCodPayment ? (() => {
                   const maxCODAmount = shippingSetting?.maxCODAmount || 0;
@@ -3548,24 +3731,6 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
               <span className="text-xl font-bold text-slate-900">{formatMoney(totalAfterWallet)}</span>
             </div>
             <p className="mt-1 text-xs text-slate-500">{t('checkout.inclVat')}</p>
-            {needsPaymentSelection ? (
-              <p className="mt-2 flex items-center gap-2 text-xs text-slate-600">
-                <span>{t('checkout.payWith')}:</span>
-                {form.payment === 'tamara' ? (
-                  <span className="text-slate-800">{renderPayByMethodLabel('Tamara')}</span>
-                ) : form.payment === 'tabby' ? (
-                  <span className="text-slate-800">{renderPayByMethodLabel('Tabby')}</span>
-                ) : form.payment === 'cod' ? (
-                  <span className="text-slate-800">{renderPayByMethodLabel('Cod')}</span>
-                ) : form.payment === 'card' ? (
-                  <span className="text-slate-800">{renderPayByMethodLabel('Card')}</span>
-                ) : form.payment === 'wallet' ? (
-                  <span className="text-slate-800">{renderPayByMethodLabel('Wallet')}</span>
-                ) : (
-                  <span className="font-medium text-slate-800">{paymentMethodSummary}</span>
-                )}
-              </p>
-            ) : null}
           </div>
           {sidebarPayError ? (
             <p

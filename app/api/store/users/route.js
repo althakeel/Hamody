@@ -8,6 +8,44 @@ import { getAuth } from '@/lib/firebase-admin';
 import { resolveDashboardAccess } from '@/lib/storeAccessControl';
 import { canAccessDashboardArea } from '@/lib/storeDashboardPermissions';
 
+function usableProfileName(value = '') {
+  const name = String(value || '').trim();
+  if (!name || name.toLowerCase() === 'unknown') return '';
+  return name;
+}
+
+async function attachMemberProfileNames(members = []) {
+  const ids = [...new Set(members.map((member) => String(member.userId || '').trim()).filter(Boolean))];
+  const profiles = ids.length
+    ? await User.find({ _id: { $in: ids } }).select('name email').lean()
+    : [];
+  const namesById = new Map(
+    profiles.map((profile) => [String(profile._id), usableProfileName(profile.name)]),
+  );
+
+  const missingIds = ids.filter((id) => !namesById.get(id));
+  if (missingIds.length) {
+    try {
+      const auth = getAuth();
+      for (let index = 0; index < missingIds.length; index += 100) {
+        const chunk = missingIds.slice(index, index + 100);
+        const result = await auth.getUsers(chunk.map((uid) => ({ uid })));
+        (result.users || []).forEach((user) => {
+          const name = usableProfileName(user.displayName);
+          if (name) namesById.set(user.uid, name);
+        });
+      }
+    } catch {
+      // Team list still loads if Firebase profile names are unavailable.
+    }
+  }
+
+  return members.map((member) => ({
+    ...member,
+    name: namesById.get(String(member.userId || '').trim()) || '',
+  }));
+}
+
 function buildDashboardAccessUsers(store, teamMembers = [], ownerProfile = null) {
   const users = [];
 
@@ -32,7 +70,7 @@ function buildDashboardAccessUsers(store, teamMembers = [], ownerProfile = null)
 
     const username = String(member.username || '').trim();
     const email = String(member.email || '').trim();
-    const displayName = username || (email ? email.split('@')[0] : 'Team member');
+    const displayName = usableProfileName(member.name) || username || (email ? email.split('@')[0] : 'Team member');
     const roleLabel = member.role === 'admin' ? 'Admin' : 'Team member';
 
     users.push({
@@ -71,10 +109,10 @@ export async function GET(request) {
     const access = await resolveDashboardAccess(userId, decodedToken);
     const isOwner = Boolean(access.isOwner);
 
-    const teamMembers = await StoreUser.find({
+    const teamMembers = await attachMemberProfileNames(await StoreUser.find({
       storeId: storeId,
       status: 'approved',
-    }).lean();
+    }).lean());
 
     const ownerProfile = store?.userId
       ? await User.findById(store.userId).select('name email').lean()

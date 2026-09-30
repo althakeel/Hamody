@@ -94,7 +94,8 @@ function OrderSuccessContent() {
           const status = String(loadedOrder.status || '').toUpperCase();
           const paidRedirect = params.get('stripe') === '1'
             || params.get('tabby') === '1'
-            || params.get('tamara') === '1';
+            || params.get('tamara') === '1'
+            || params.get('vaultspay') === '1';
 
           // Never bounce to order-failed before verifying provider return params —
           // cancel/expiry can race ahead of the success webhook and leave PAYMENT_FAILED
@@ -153,6 +154,33 @@ function OrderSuccessContent() {
                   const data = await reloadOrders();
                   applyVerifiedOrders(data);
                   return data;
+                }
+                return reloadOrders();
+              })
+              .then((data) => {
+                if (data) applyVerifiedOrders(data);
+                redirectIfStillFailed(data);
+              })
+              .catch(() => {
+                redirectIfStillFailed(null);
+              });
+          } else if (params.get('vaultspay') === '1' && !orderTrulyPaid) {
+            fetch('/api/orders/verify-vaultspay', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId: loadedOrder._id }),
+            })
+              .then((res) => (res.ok ? res.json() : null))
+              .then(async (result) => {
+                if (cancelled) return null;
+                if (result?.success) {
+                  const data = await reloadOrders();
+                  applyVerifiedOrders(data);
+                  return data;
+                }
+                if (result && result.pending !== true) {
+                  router.replace(`/order-failed?orderId=${orderId}&reason=${encodeURIComponent('Payment was not completed')}`);
+                  return null;
                 }
                 return reloadOrders();
               })
@@ -337,6 +365,8 @@ function OrderSuccessContent() {
     ? 'Cash on Delivery'
     : paymentMethod === 'CARD' || paymentMethod === 'STRIPE'
       ? 'Card Payment'
+      : paymentMethod === 'VAULTSPAY'
+        ? 'Card payment'
       : paymentMethod === 'WALLET'
         ? 'Wallet'
         : paymentMethod;

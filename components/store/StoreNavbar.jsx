@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { Bell, BellOff, LogOut } from 'lucide-react';
 import StoreHelpAgent from './StoreHelpAgent';
+import StoreDashboardSearch from './StoreDashboardSearch';
 import Logo from '@/assets/logo/Store1920.png';
 import { useAuth } from '@/lib/useAuth';
 import { signOut } from 'firebase/auth';
@@ -27,7 +28,14 @@ function clampSellerLogoDimensions(width, height) {
     };
 }
 
-const StoreNavbar = ({ storeInfo }) => {
+const StoreNavbar = ({
+    storeInfo,
+    accountName = '',
+    isOwner = false,
+    isSuperAdmin = false,
+    permissions = {},
+    canViewActivityHistory = false,
+}) => {
     const { user, getToken } = useAuth();
     const {
         unreadCount,
@@ -112,6 +120,11 @@ const StoreNavbar = ({ storeInfo }) => {
 
     const handleLogout = async () => {
         try {
+            try {
+                sessionStorage.removeItem('store1920.sellerWelcomeShown');
+            } catch {
+                // Ignore storage failures.
+            }
             await signOut(auth);
             window.location.href = '/';
         } catch (error) {
@@ -144,6 +157,13 @@ const StoreNavbar = ({ storeInfo }) => {
                   />
                 )}
             </Link>
+            <div className="mx-3 hidden min-w-0 flex-1 md:flex lg:mx-8">
+                <StoreDashboardSearch
+                    isOwner={Boolean(isOwner || isSuperAdmin)}
+                    permissions={permissions}
+                    canViewActivityHistory={canViewActivityHistory}
+                />
+            </div>
             <div className="flex items-center gap-2 text-sm text-slate-700">
                 <StoreHelpAgent />
                 {canViewOrders ? (
@@ -242,7 +262,7 @@ const StoreNavbar = ({ storeInfo }) => {
                         ) : null}
                     </div>
                 ) : null}
-                <p className="hidden sm:block">Hi, {storeInfo?.name || user?.displayName || user?.name || user?.email || ''}</p>
+                <p className="hidden sm:block">Hi, {String(accountName || user?.displayName || user?.name || '').trim() || 'there'}</p>
                 <button
                     onClick={() => setShowConfirm(true)}
                     className="px-3 py-1.5 text-sm bg-red-500 text-white rounded-md hover:bg-red-600 transition shadow-sm"

@@ -723,7 +723,6 @@ export default function MenuManagementPage() {
   const [customBarLinkUrl, setCustomBarLinkUrl] = useState('');
   const [customBarLinkParent, setCustomBarLinkParent] = useState('bar');
   const [pendingCustomDrag, setPendingCustomDrag] = useState(false);
-  const navbarLayoutSaveTimerRef = useRef(null);
   const navbarLayoutRef = useRef(navbarLayout);
   const navbarBrandingRef = useRef(navbarBranding);
   const legacyNavbarItemsRef = useRef(legacyNavbarItems);
@@ -741,11 +740,6 @@ export default function MenuManagementPage() {
   useEffect(() => {
     pendingClearLogoRef.current = pendingClearLogo;
   }, [pendingClearLogo]);
-  useEffect(() => () => {
-    if (navbarLayoutSaveTimerRef.current) {
-      window.clearTimeout(navbarLayoutSaveTimerRef.current);
-    }
-  }, []);
 
   const closeConfirmDialog = () => setConfirmDialog(null);
 
@@ -997,20 +991,12 @@ export default function MenuManagementPage() {
     [categoryOptions, form.navMenuItems],
   );
 
-  const persistCategoryBar = async (nextItems, useParents, message) => {
+  const persistCategoryBar = (nextItems, useParents) => {
     setForm((prev) => ({
       ...prev,
       navMenuUseParentCategories: useParents,
       navMenuItems: nextItems,
     }));
-    try {
-      await saveSettings({
-        navMenuUseParentCategories: useParents,
-        navMenuItems: nextItems,
-      }, message);
-    } catch (error) {
-      toast.error(error?.message || 'Failed to update category bar');
-    }
   };
 
   const setCategoryBarSource = async (useParents) => {
@@ -1019,39 +1005,19 @@ export default function MenuManagementPage() {
       : (isLegacyPlaceholderNavItems(form.navMenuItems)
         ? buildParentCategoryNavMenuItems(categoryOptions)
         : form.navMenuItems);
-    await persistCategoryBar(
-      nextItems,
-      useParents,
-      useParents ? 'Category bar uses parent categories' : 'Category bar uses your selected links',
-    );
+    persistCategoryBar(nextItems, useParents);
   };
 
-  const setHoverDropdown = async (enabled) => {
+  const setHoverDropdown = (enabled) => {
     setForm((prev) => ({ ...prev, navMenuHoverDropdown: enabled }));
-    try {
-      await saveSettings(
-        { navMenuHoverDropdown: enabled },
-        enabled ? 'Hover dropdown enabled' : 'Hover dropdown disabled',
-      );
-    } catch (error) {
-      toast.error(error?.message || 'Failed to update hover dropdown');
-    }
   };
 
-  const persistBnplTopBar = async (patch, message) => {
+  const persistBnplTopBar = (patch) => {
     const next = normalizeBnplTopBar({
       ...(form.bnplTopBar || DEFAULT_BNPL_TOP_BAR),
       ...patch,
     });
     setForm((prev) => ({ ...prev, bnplTopBar: next }));
-    try {
-      await saveSettings({ bnplTopBar: next }, message);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('bnplTopBarUpdated'));
-      }
-    } catch (error) {
-      toast.error(error?.message || 'Failed to update top bar');
-    }
   };
 
   const uploadTopBarImage = async (file) => {
@@ -1555,48 +1521,19 @@ export default function MenuManagementPage() {
           detail: payload.navbarLanguage,
         }));
       }
+      if (payload?.bnplTopBar) {
+        window.dispatchEvent(new Event('bnplTopBarUpdated'));
+      }
     }
     if (successMessage) {
       toast.success(successMessage);
     }
   };
 
-  const publishNavbarAppearance = (layout, branding = navbarBrandingRef.current) => {
-    if (typeof window === 'undefined') return;
-    const detail = {
-      logoUrl: pendingClearLogoRef.current ? '' : String(branding?.logoUrl || '').trim(),
-      logoWidth: Number(branding?.logoWidth) || defaultNavbarBranding.logoWidth,
-      logoHeight: Number(branding?.logoHeight) || defaultNavbarBranding.logoHeight,
-      backgroundColor: String(branding?.backgroundColor || defaultNavbarBranding.backgroundColor).trim(),
-      ...layout,
-      layoutUpdatedAt: new Date().toISOString(),
-    };
-    try {
-      const raw = window.localStorage.getItem('navbarAppearanceCache');
-      const cached = raw ? JSON.parse(raw) : {};
-      window.localStorage.setItem('navbarAppearanceCache', JSON.stringify({
-        ...cached,
-        ...detail,
-      }));
-    } catch {
-      // Ignore storage write failures.
-    }
-    window.dispatchEvent(new CustomEvent('navbarAppearanceUpdated', { detail }));
-  };
-
   const applyNavbarLayoutChange = (updater) => {
     setNavbarLayout((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
       navbarLayoutRef.current = next;
-      publishNavbarAppearance(next);
-      if (navbarLayoutSaveTimerRef.current) {
-        window.clearTimeout(navbarLayoutSaveTimerRef.current);
-      }
-      navbarLayoutSaveTimerRef.current = window.setTimeout(() => {
-        void saveNavbarBranding(next).catch((error) => {
-          toast.error(error?.message || 'Failed to save navbar alignment');
-        });
-      }, 400);
       return next;
     });
   };
@@ -1739,10 +1676,9 @@ export default function MenuManagementPage() {
     }
   };
 
-  const persistNavbarLanguage = async (nextLanguage) => {
+  const persistNavbarLanguage = (nextLanguage) => {
     const navbarLanguage = normalizeNavbarLanguage(nextLanguage);
     setForm((prev) => ({ ...prev, navbarLanguage }));
-    await saveSettings({ navbarLanguage }, null);
   };
 
   const uploadLanguageIcon = async (file) => {
@@ -1779,11 +1715,11 @@ export default function MenuManagementPage() {
         throw new Error(uploadData?.error || 'Failed to upload icon');
       }
 
-      await persistNavbarLanguage({
+      persistNavbarLanguage({
         ...form.navbarLanguage,
         iconUrl: uploadData.url,
       });
-      toast.success('Language icon updated');
+      toast.success('Language icon uploaded. Click Save to apply.');
     } catch (error) {
       toast.error(error?.message || 'Failed to upload language icon');
     } finally {
@@ -1905,7 +1841,7 @@ export default function MenuManagementPage() {
       );
 
       setForm((prev) => ({ ...prev, navMenuItems: updatedItems }));
-      await saveSettings({ navMenuItems: updatedItems }, 'Icon saved');
+      toast.success('Icon uploaded. Click Save menu to apply.');
     } catch (error) {
       toast.error(error?.message || 'Failed to upload icon');
     }
@@ -1961,7 +1897,7 @@ export default function MenuManagementPage() {
         return { ...prev, navMenuItems: updatedItems };
       });
 
-      await saveSettings({ navMenuItems: updatedItems }, 'Image uploaded');
+      toast.success('Image uploaded. Click Save menu to apply.');
     } catch (error) {
       toast.error(error?.message || 'Failed to upload image');
     } finally {
@@ -2161,7 +2097,9 @@ export default function MenuManagementPage() {
                   Navbar preview
                 </div>
                 <p className="mt-1 text-[11px] font-normal normal-case tracking-normal text-slate-400">
-                  Same layout as the website. Click Save settings to update the live store.
+                  {previewDevice === 'mobile'
+                    ? 'Phone navbar and side menu. Edits stay on this page until you click Save settings.'
+                    : 'Same layout as the website. Click Save settings to update the live store.'}
                 </p>
               </div>
               <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
@@ -2229,6 +2167,90 @@ export default function MenuManagementPage() {
               />
             </div>
           </div>
+
+          {previewDevice === 'mobile' ? (
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+                <h2 className="text-sm font-semibold text-slate-900">Mobile navbar</h2>
+                <p className="mt-1 text-xs text-slate-500">Icons on the phone bar. Language stays in the side menu.</p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  {[
+                    { key: 'phone', label: 'Phone', icon: Phone },
+                    { key: 'wishlist', label: 'Wishlist', icon: Heart },
+                    { key: 'cart', label: 'Cart', icon: ShoppingCart },
+                  ].map(({ key, label, icon: Icon }) => {
+                    const checked = form.navActionsVisibility[key] !== false;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setForm((prev) => ({
+                          ...prev,
+                          navActionsVisibility: {
+                            ...prev.navActionsVisibility,
+                            [key]: !checked,
+                          },
+                        }))}
+                        className={`rounded-xl border p-3 text-left transition ${
+                          checked
+                            ? 'border-indigo-300 bg-indigo-50 ring-2 ring-indigo-200'
+                            : 'border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        <Icon size={16} className={checked ? 'text-indigo-600' : 'text-slate-400'} />
+                        <p className="mt-2 text-sm font-semibold text-slate-900">{label}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+                <label className="mt-4 block space-y-1">
+                  <span className="text-xs font-medium text-slate-600">Item gap ({navbarLayout.mobileItemGap}px)</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="24"
+                    step="1"
+                    className="w-full accent-indigo-600"
+                    value={navbarLayout.mobileItemGap}
+                    onChange={(event) => setNavbarLayout((prev) => ({ ...prev, mobileItemGap: Number(event.target.value) }))}
+                  />
+                </label>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+                <h2 className="text-sm font-semibold text-slate-900">Mobile side menu</h2>
+                <p className="mt-1 text-xs text-slate-500">Shown after the menu icon is tapped. Category names come from Menu links.</p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {[
+                    { key: 'language', label: 'Language', icon: Languages },
+                    { key: 'store', label: 'Seller dashboard', icon: Store },
+                  ].map(({ key, label, icon: Icon }) => {
+                    const checked = form.navActionsVisibility[key] !== false;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setForm((prev) => ({
+                          ...prev,
+                          navActionsVisibility: {
+                            ...prev.navActionsVisibility,
+                            [key]: !checked,
+                          },
+                        }))}
+                        className={`rounded-xl border p-3 text-left transition ${
+                          checked
+                            ? 'border-indigo-300 bg-indigo-50 ring-2 ring-indigo-200'
+                            : 'border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        <Icon size={16} className={checked ? 'text-indigo-600' : 'text-slate-400'} />
+                        <p className="mt-2 text-sm font-semibold text-slate-900">{label}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
             <div className="flex items-center justify-between gap-4">
@@ -2791,11 +2813,6 @@ export default function MenuManagementPage() {
                           ...prev,
                           navActionsVisibility: nextVisibility,
                         }));
-                        try {
-                          await saveSettings({ navActionsVisibility: nextVisibility }, null);
-                        } catch (error) {
-                          toast.error(error?.message || 'Failed to update navbar action');
-                        }
                       }}
                       className={`rounded-xl border p-3 text-left transition ${
                         checked
@@ -2831,13 +2848,6 @@ export default function MenuManagementPage() {
                           },
                         }));
                       }}
-                      onBlur={async () => {
-                        try {
-                          await saveSettings({ navbarPhone: normalizeNavbarPhone(form.navbarPhone) }, null);
-                        } catch (error) {
-                          toast.error(error?.message || 'Failed to save navbar phone');
-                        }
-                      }}
                       className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15"
                       placeholder="8007861920"
                     />
@@ -2857,13 +2867,6 @@ export default function MenuManagementPage() {
                           },
                         }));
                       }}
-                      onBlur={async () => {
-                        try {
-                          await saveSettings({ navbarPhone: normalizeNavbarPhone(form.navbarPhone) }, null);
-                        } catch (error) {
-                          toast.error(error?.message || 'Failed to save navbar phone');
-                        }
-                      }}
                       className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15"
                       placeholder="800"
                     />
@@ -2881,13 +2884,6 @@ export default function MenuManagementPage() {
                             label: event.target.value,
                           },
                         }));
-                      }}
-                      onBlur={async () => {
-                        try {
-                          await saveSettings({ navbarPhone: normalizeNavbarPhone(form.navbarPhone) }, null);
-                        } catch (error) {
-                          toast.error(error?.message || 'Failed to save navbar phone');
-                        }
                       }}
                       className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15"
                       placeholder="Toll-free"
@@ -2907,13 +2903,6 @@ export default function MenuManagementPage() {
                             labelAr: event.target.value,
                           },
                         }));
-                      }}
-                      onBlur={async () => {
-                        try {
-                          await saveSettings({ navbarPhone: normalizeNavbarPhone(form.navbarPhone) }, null);
-                        } catch (error) {
-                          toast.error(error?.message || 'Failed to save navbar phone');
-                        }
                       }}
                       className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15"
                       placeholder="مجاني"
@@ -3723,16 +3712,8 @@ export default function MenuManagementPage() {
               <input
                 type="checkbox"
                 checked={form.navMenuEnabled}
-                onChange={async (event) => {
-                  const enabled = event.target.checked;
-                  setForm((prev) => ({ ...prev, navMenuEnabled: enabled }));
-                  try {
-                    await saveSettings({
-                      navMenuEnabled: enabled,
-                    }, enabled ? 'Category bar shown' : 'Category bar hidden');
-                  } catch (error) {
-                    toast.error(error?.message || 'Failed to update category bar');
-                  }
+                onChange={(event) => {
+                  setForm((prev) => ({ ...prev, navMenuEnabled: event.target.checked }));
                 }}
                 className="peer sr-only"
               />

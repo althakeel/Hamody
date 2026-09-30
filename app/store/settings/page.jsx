@@ -30,6 +30,18 @@ import {
   countEnabledPermissions,
   getDefaultPermissions,
 } from "@/lib/storeDashboardPermissions";
+import {
+  createProductImageBadge,
+  DEFAULT_NEW_TAG_SETTINGS,
+  MAX_PRODUCT_IMAGE_BADGES,
+  normalizeNewTagSettings,
+} from "@/lib/newProductTag";
+import {
+  DASHBOARD_SCALES,
+  normalizeDashboardScale,
+  normalizeDashboardTheme,
+  publishStoreDashboardDisplay,
+} from "@/lib/storeDashboardDisplay";
 
 const TAB_META = {
   profile: {
@@ -45,7 +57,7 @@ const TAB_META = {
   preferences: {
     label: "Preferences",
     icon: Sparkles,
-    description: "Currency, alerts, and SMTP",
+    description: "Your screen size, theme, and store email",
   },
   payments: {
     label: "Payments",
@@ -116,16 +128,16 @@ function readFileAsDataUrl(file) {
   });
 }
 
-function ToggleRow({ title, description, checked, onChange }) {
+function ToggleRow({ title, description, checked, onChange, disabled = false }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3.5">
+    <div className={`flex items-center justify-between gap-4 rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3.5 ${disabled ? "opacity-60" : ""}`}>
       <div>
         <p className="text-sm font-medium text-slate-800">{title}</p>
         {description ? <p className="mt-0.5 text-xs text-slate-500">{description}</p> : null}
       </div>
-      <label className="relative inline-flex shrink-0 cursor-pointer items-center">
-        <input type="checkbox" checked={checked} onChange={onChange} className="peer sr-only" />
-        <div className="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-indigo-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition peer-checked:after:translate-x-5" />
+      <label className={`relative inline-flex shrink-0 items-center ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}>
+        <input type="checkbox" checked={checked} onChange={onChange} disabled={disabled} className="peer sr-only" />
+        <div className="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-indigo-600 peer-disabled:bg-slate-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition peer-checked:after:translate-x-5" />
       </label>
     </div>
   );
@@ -162,6 +174,7 @@ export default function SettingsPage() {
   const [teamMembers, setTeamMembers] = useState([]);
   const [memberPermissions, setMemberPermissions] = useState({});
   const [editingMemberId, setEditingMemberId] = useState(null);
+  const [revealedEmailId, setRevealedEmailId] = useState(null);
   const [deletingMemberId, setDeletingMemberId] = useState(null);
   const [memberPendingDelete, setMemberPendingDelete] = useState(null);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
@@ -190,7 +203,11 @@ export default function SettingsPage() {
     enableCard: true,
     enableTabby: true,
     enableTamara: true,
+    enableVaultsPay: true,
+    enableVaultsPayApplePay: true,
+    enableVaultsPayGooglePay: true,
   });
+  const [newTagSettings, setNewTagSettings] = useState(() => normalizeNewTagSettings(DEFAULT_NEW_TAG_SETTINGS));
   const [paymentMethodsLoaded, setPaymentMethodsLoaded] = useState(false);
   const [loadingPayments, setLoadingPayments] = useState(false);
 
@@ -203,16 +220,20 @@ export default function SettingsPage() {
   const [isStoreOwner, setIsStoreOwner] = useState(false);
   const [canManageTeamAccess, setCanManageTeamAccess] = useState(false);
   const [canViewActivityHistory, setCanViewActivityHistory] = useState(false);
+  const [canEditStoreSettings, setCanEditStoreSettings] = useState(true);
+  const [dashboardTheme, setDashboardTheme] = useState("light");
+  const [dashboardScale, setDashboardScale] = useState(100);
 
   const isSuperAdmin = isAdminEmail(user?.email);
 
   const settingsTabs = useMemo(() => {
+    if (!canEditStoreSettings) return ["preferences"];
     const tabs = ["profile", "store", "preferences", "payments", "dataImport"];
     if (canManageTeamAccess) tabs.splice(4, 0, "dashboardAccess");
     if (canViewActivityHistory) tabs.push("history");
     if (isSuperAdmin || isStoreOwner || canManageTeamAccess) tabs.push("cache");
     return tabs;
-  }, [canManageTeamAccess, canViewActivityHistory, isSuperAdmin, isStoreOwner]);
+  }, [canEditStoreSettings, canManageTeamAccess, canViewActivityHistory, isSuperAdmin, isStoreOwner]);
 
   const isFormTab = ["profile", "store", "preferences", "payments"].includes(activeTab);
   const activeMeta = TAB_META[activeTab] || TAB_META.profile;
@@ -248,8 +269,11 @@ export default function SettingsPage() {
       setStoreDescription(store.storeDescription || "");
       setBusinessType(store.businessType || "");
       setCurrencyPreference(store.currencyPreference || "AED");
+      setNewTagSettings(normalizeNewTagSettings(store.newTagSettings || DEFAULT_NEW_TAG_SETTINGS));
       setEmailNotifications(profile.emailNotifications !== false);
       setTwoFactorEnabled(Boolean(profile.twoFactorEnabled));
+      setDashboardTheme(normalizeDashboardTheme(profile.dashboardTheme));
+      setDashboardScale(normalizeDashboardScale(profile.dashboardScale));
 
       setTransactionalSmtp({
         host: smtp?.transactional?.host || "",
@@ -281,6 +305,12 @@ export default function SettingsPage() {
     if (user?.uid) loadSettings();
   }, [user?.uid]);
 
+  useEffect(() => {
+    if (!settingsTabs.includes(activeTab)) {
+      setActiveTab(settingsTabs[0] || "preferences");
+    }
+  }, [settingsTabs, activeTab]);
+
   const loadPaymentMethods = async () => {
     try {
       setLoadingPayments(true);
@@ -295,6 +325,9 @@ export default function SettingsPage() {
         enableCard: setting.enableCard !== false,
         enableTabby: setting.enableTabby !== false,
         enableTamara: setting.enableTamara !== false,
+        enableVaultsPay: setting.enableVaultsPay !== false,
+        enableVaultsPayApplePay: setting.enableVaultsPayApplePay !== false,
+        enableVaultsPayGooglePay: setting.enableVaultsPayGooglePay !== false,
       });
       setPaymentMethodsLoaded(true);
     } catch {
@@ -321,6 +354,11 @@ export default function SettingsPage() {
         setIsStoreOwner(Boolean(data?.isOwner));
         setCanManageTeamAccess(Boolean(data?.canManageTeamAccess));
         setCanViewActivityHistory(Boolean(data?.canViewActivityHistory));
+        setCanEditStoreSettings(
+          Boolean(data?.isOwner) ||
+          Boolean(data?.isSuperAdmin) ||
+          data?.permissions?.settings === true
+        );
       } catch {
         setIsStoreOwner(false);
         setCanViewActivityHistory(false);
@@ -569,6 +607,34 @@ export default function SettingsPage() {
     });
   };
 
+  const saveDashboardDisplay = async ({ theme, scale }) => {
+    const nextTheme = normalizeDashboardTheme(theme);
+    const nextScale = normalizeDashboardScale(scale);
+    setDashboardTheme(nextTheme);
+    setDashboardScale(nextScale);
+    publishStoreDashboardDisplay(user?.uid, { theme: nextTheme, scale: nextScale });
+    setSaving(true);
+    setMessage("");
+    try {
+      const token = await getToken(true);
+      if (!token) throw new Error("Your session expired. Please sign in again.");
+      await axios.post(
+        "/api/store/profile/update",
+        {
+          dashboardDisplayOnly: true,
+          dashboardTheme: nextTheme,
+          dashboardScale: nextScale,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success("Display settings saved for your account");
+    } catch (error) {
+      toast.error(error?.response?.data?.error || error.message || "Could not save display settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSaveChanges = async (event) => {
     event?.preventDefault();
     setSaving(true);
@@ -580,7 +646,7 @@ export default function SettingsPage() {
       }
 
       if (activeTab === "payments") {
-        await axios.put(
+        const { data } = await axios.put(
           "/api/shipping",
           {
             paymentMethodsOnly: true,
@@ -588,6 +654,16 @@ export default function SettingsPage() {
           },
           { headers: { Authorization: `Bearer ${token}` } }
         );
+        const setting = data?.setting || {};
+        setPaymentMethods({
+          enableCOD: setting.enableCOD !== false,
+          enableCard: setting.enableCard !== false,
+          enableTabby: setting.enableTabby !== false,
+          enableTamara: setting.enableTamara !== false,
+          enableVaultsPay: setting.enableVaultsPay !== false,
+          enableVaultsPayApplePay: setting.enableVaultsPayApplePay !== false,
+          enableVaultsPayGooglePay: setting.enableVaultsPayGooglePay !== false,
+        });
         setMessage("Payment methods updated.");
         toast.success("Checkout payment methods saved");
         return;
@@ -661,6 +737,13 @@ export default function SettingsPage() {
 
       if (savedImage) {
         await syncFirebaseProfilePhoto(savedImage, name);
+      } else if (auth.currentUser && name.trim()) {
+        try {
+          await updateProfile(auth.currentUser, { displayName: name.trim() });
+          await refreshUser?.();
+        } catch (error) {
+          console.warn("[settings] Firebase name sync failed:", error?.message || error);
+        }
       }
     } catch (err) {
       const errorMessage = err?.response?.data?.error || err.message;
@@ -862,6 +945,58 @@ export default function SettingsPage() {
 
       {activeTab === "preferences" && (
         <div className="space-y-5">
+          <SettingsCard
+            title="Your display"
+            description="Saved on your account only. This changes the seller dashboard, not the public website."
+          >
+            <div className="space-y-5">
+              <div>
+                <p className="text-sm font-medium text-slate-800">Appearance</p>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {[
+                    ["light", "Light"],
+                    ["dark", "Black"],
+                  ].map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => saveDashboardDisplay({ theme: value, scale: dashboardScale })}
+                      className={`rounded-xl border px-3 py-3 text-sm font-semibold ${
+                        dashboardTheme === value
+                          ? "border-indigo-600 bg-indigo-600 text-white"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-800">Screen size</p>
+                <p className="mt-1 text-xs text-slate-500">Use a smaller size when the laptop text looks too big.</p>
+                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {DASHBOARD_SCALES.map((scale) => (
+                    <button
+                      key={scale}
+                      type="button"
+                      onClick={() => saveDashboardDisplay({ theme: dashboardTheme, scale })}
+                      className={`rounded-xl border px-3 py-3 text-sm font-semibold ${
+                        dashboardScale === scale
+                          ? "border-indigo-600 bg-indigo-600 text-white"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      {scale === 80 ? "Small" : scale === 90 ? "Compact" : scale === 100 ? "Default" : "Large"}
+                      <span className="mt-0.5 block text-[11px] font-medium opacity-80">{scale}%</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </SettingsCard>
+          {canEditStoreSettings ? (
+          <>
           <SettingsCard title="General preferences">
             <div className="space-y-3">
               <ToggleRow
@@ -905,6 +1040,8 @@ export default function SettingsPage() {
               )}
             </div>
           </SettingsCard>
+          </>
+          ) : null}
         </div>
       )}
 
@@ -934,6 +1071,34 @@ export default function SettingsPage() {
                     setPaymentMethods((prev) => ({ ...prev, enableCard: e.target.checked }))
                   }
                 />
+                <ToggleRow
+                  title="VaultsPay"
+                  description="Credit and debit cards through VaultsPay. Separate from Stripe."
+                  checked={paymentMethods.enableVaultsPay}
+                  onChange={(e) =>
+                    setPaymentMethods((prev) => ({ ...prev, enableVaultsPay: e.target.checked }))
+                  }
+                />
+                <div className="space-y-2 ps-4 sm:ps-6">
+                  <ToggleRow
+                    title="Apple Pay"
+                    description="Show Apple Pay at checkout when VaultsPay is on"
+                    checked={paymentMethods.enableVaultsPayApplePay}
+                    disabled={!paymentMethods.enableVaultsPay}
+                    onChange={(e) =>
+                      setPaymentMethods((prev) => ({ ...prev, enableVaultsPayApplePay: e.target.checked }))
+                    }
+                  />
+                  <ToggleRow
+                    title="Google Pay"
+                    description="Show Google Pay at checkout when VaultsPay is on"
+                    checked={paymentMethods.enableVaultsPayGooglePay}
+                    disabled={!paymentMethods.enableVaultsPay}
+                    onChange={(e) =>
+                      setPaymentMethods((prev) => ({ ...prev, enableVaultsPayGooglePay: e.target.checked }))
+                    }
+                  />
+                </div>
                 <ToggleRow
                   title="Tabby"
                   description="Buy now, pay later with Tabby"
@@ -1330,21 +1495,30 @@ export default function SettingsPage() {
               const memberPerms = memberPermissions[member.id] || {};
               const enabledCount = countEnabledPermissions(memberPerms);
               const isEditing = editingMemberId === member.id;
+              const profileName = String(member.name || member.username || "").trim();
+              const showingEmail = revealedEmailId === member.id;
+              const canRevealEmail = Boolean(profileName && member.email);
 
               return (
                 <div key={member.id} className="rounded-xl border border-slate-200 bg-slate-50/40 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-sm font-bold text-indigo-600 ring-1 ring-slate-200">
-                        {(member.name || member.username || member.email || "?")[0]?.toUpperCase()}
+                        {(profileName || member.email || "?")[0]?.toUpperCase()}
                       </div>
                       <div>
-                        <p className="font-medium text-slate-900">{member.name || member.username || member.email}</p>
-                        <p className="text-xs text-slate-500">
-                          {member.username ? `@${member.username}` : ""}
-                          {member.username && member.email ? " · " : ""}
-                          {member.email}
-                        </p>
+                        {canRevealEmail ? (
+                          <button
+                            type="button"
+                            onClick={() => setRevealedEmailId(showingEmail ? null : member.id)}
+                            className="text-left font-medium text-slate-900 hover:underline"
+                            aria-label={showingEmail ? "Show profile name" : "Show email"}
+                          >
+                            {showingEmail ? member.email : profileName}
+                          </button>
+                        ) : (
+                          <p className="font-medium text-slate-900">{profileName || member.email}</p>
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -1519,6 +1693,7 @@ export default function SettingsPage() {
           {isFormTab ? (
             <form onSubmit={handleSaveChanges} className="space-y-4">
               {formContent}
+              {canEditStoreSettings ? (
               <div className="sticky bottom-0 z-10 rounded-2xl border border-slate-200/80 bg-white/95 p-4 shadow-lg backdrop-blur sm:flex sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   {message ? (
@@ -1544,6 +1719,7 @@ export default function SettingsPage() {
                   {saving ? "Saving..." : "Save changes"}
                 </button>
               </div>
+              ) : null}
             </form>
           ) : null}
 

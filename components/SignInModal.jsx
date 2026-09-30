@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Eye, EyeOff, KeyRound, Mail, MessageCircle, Check, Loader2, ChevronDown } from 'lucide-react';
 import { auth, ensureLocalAuthPersistence } from '../lib/firebase';
 import {
@@ -124,68 +124,63 @@ function isMathCaptchaSolved(question, answer) {
   return Number.isFinite(given) && given === expected;
 }
 
-function CaptchaField({ question, value, onChange, onRefresh, onReady }) {
+function CaptchaField({ question, value, onChange, onRefresh, onReady, inputRef }) {
   const solved = isMathCaptchaSolved(question, value);
   const attempted = String(value || '').trim() !== '';
-  const [phase, setPhase] = useState('idle');
+  const localRef = useRef(null);
+
+  const setInputRef = (node) => {
+    localRef.current = node;
+    if (typeof inputRef === 'function') inputRef(node);
+    else if (inputRef) inputRef.current = node;
+  };
+
+  const focusAnswer = () => {
+    const input = localRef.current;
+    if (!input) return;
+    input.focus();
+    input.select();
+  };
 
   useEffect(() => {
-    if (!solved) {
-      setPhase('idle');
-      onReady?.(false);
-      return undefined;
-    }
-
-    setPhase('loading');
-    onReady?.(false);
-    const timer = setTimeout(() => {
-      setPhase('success');
-      onReady?.(true);
-    }, 700);
-    return () => clearTimeout(timer);
+    onReady?.(solved);
   }, [solved, question, onReady]);
 
-  if (phase === 'loading') {
-    return (
-      <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
-        <Loader2 size={18} className="shrink-0 animate-spin text-slate-600" />
-        <p className="text-sm font-medium text-slate-700">Verifying CAPTCHA…</p>
-      </div>
-    );
-  }
-
-  if (phase === 'success') {
-    return (
-      <div className="flex items-center gap-2 rounded-lg border border-emerald-500 bg-emerald-50 px-3 py-2.5">
-        <Check size={18} className="shrink-0 text-emerald-600" strokeWidth={2.5} />
-        <p className="text-sm font-medium text-emerald-800">CAPTCHA verified successfully</p>
-      </div>
-    );
-  }
-
   return (
-    <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition bg-white ${
-      attempted ? 'border-red-300' : 'border-gray-300'
-    }`}>
-      <div className="flex w-full items-center gap-2">
-        <label className="shrink-0 text-xs font-medium text-gray-600 whitespace-nowrap">{question}</label>
-        <input
-          type="text"
-          inputMode="numeric"
-          className={`min-w-0 flex-1 bg-transparent text-sm outline-none ${
-            attempted ? 'text-red-600' : 'text-gray-900'
-          }`}
-          value={value}
-          onChange={(event) => onChange(event.target.value.replace(/[^\d]/g, '').slice(0, 3))}
-          placeholder="Answer"
-          required
-        />
-        {onRefresh ? (
-          <button type="button" className="shrink-0 text-xs text-blue-600" onClick={onRefresh}>
-            Refresh
-          </button>
-        ) : null}
-      </div>
+    <div
+      className={`flex items-center gap-2 rounded-lg border bg-white px-3 py-2 transition ${
+        solved ? 'border-emerald-500 bg-emerald-50' : attempted ? 'border-red-300' : 'border-gray-300'
+      }`}
+      onMouseDown={(event) => {
+        if (event.target.closest('button, input')) return;
+        event.preventDefault();
+        focusAnswer();
+      }}
+    >
+      <label htmlFor="signin-captcha-answer" className="shrink-0 cursor-text text-xs font-medium text-gray-600 whitespace-nowrap">
+        {question}
+      </label>
+      <input
+        id="signin-captcha-answer"
+        ref={setInputRef}
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        name="captcha-answer"
+        className={`min-w-[4.5rem] flex-1 bg-transparent text-sm outline-none ${
+          solved ? 'text-emerald-800' : attempted ? 'text-red-600' : 'text-gray-900'
+        }`}
+        value={value}
+        onChange={(event) => onChange(event.target.value.replace(/[^\d]/g, '').slice(0, 3))}
+        onFocus={(event) => event.target.select()}
+        placeholder="Answer"
+      />
+      {solved ? <Check size={16} className="shrink-0 text-emerald-600" strokeWidth={2.5} /> : null}
+      {onRefresh ? (
+        <button type="button" className="shrink-0 text-xs text-blue-600" onClick={onRefresh}>
+          Refresh
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -214,6 +209,8 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
   const [captcha, setCaptcha] = useState({ challengeId: '', question: '' });
   const [captchaAnswer, setCaptchaAnswer] = useState('');
   const [captchaConfirmed, setCaptchaConfirmed] = useState(false);
+  const captchaInputRef = useRef(null);
+  const captchaRequestRef = useRef(0);
   const [authMethod, setAuthMethod] = useState('email'); // email | whatsapp | email_otp
   const [otpChannel, setOtpChannel] = useState('whatsapp'); // email | whatsapp
   const [whatsappStep, setWhatsappStep] = useState('phone'); // phone | otp
@@ -318,13 +315,24 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
     });
   }, [isRegister, authMethod]);
 
+  const focusCaptchaAnswer = () => {
+    const input = captchaInputRef.current;
+    if (!input) return;
+    input.focus();
+    input.select();
+  };
+
   const loadCaptcha = useCallback(async () => {
+    const requestId = captchaRequestRef.current + 1;
+    captchaRequestRef.current = requestId;
     try {
       const data = await fetchCaptchaChallenge();
+      if (requestId !== captchaRequestRef.current) return;
       setCaptcha({ challengeId: data.challengeId, question: data.question });
       setCaptchaAnswer('');
       setCaptchaConfirmed(false);
     } catch {
+      if (requestId !== captchaRequestRef.current) return;
       setCaptcha({ challengeId: '', question: '' });
       setCaptchaConfirmed(false);
     }
@@ -630,6 +638,7 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
     );
     if (!isResend && !isMathCaptchaSolved(captcha.question, captchaAnswer)) {
       setError('Please solve the CAPTCHA.');
+      focusCaptchaAnswer();
       return;
     }
     setLoading(true);
@@ -779,6 +788,7 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
     const isResend = whatsappStep === 'otp';
     if (!isResend && !isMathCaptchaSolved(captcha.question, captchaAnswer)) {
       setError('Please solve the CAPTCHA.');
+      focusCaptchaAnswer();
       return;
     }
 
@@ -818,6 +828,7 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
     const isResend = emailOtpStep === 'otp';
     if (!isResend && !isMathCaptchaSolved(captcha.question, captchaAnswer)) {
       setError('Please solve the CAPTCHA.');
+      focusCaptchaAnswer();
       return;
     }
     setLoading(true);
@@ -951,6 +962,7 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
 
     if (!isMathCaptchaSolved(captcha.question, captchaAnswer)) {
       setError('Please solve the CAPTCHA.');
+      focusCaptchaAnswer();
       return;
     }
 
@@ -1304,6 +1316,7 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
                   onChange={setCaptchaAnswer}
                   onRefresh={() => void loadCaptcha()}
                   onReady={setCaptchaConfirmed}
+                  inputRef={captchaInputRef}
                 />
               ) : null}
 
@@ -1313,7 +1326,7 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
               {resetStep === 'identify' ? (
                 <button
                   type="submit"
-                  disabled={loading || !captchaReady}
+                  disabled={loading}
                   className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
                 >
                   {loading ? <><Loader2 size={16} className="animate-spin" /> Sending…</> : (resetChannel === 'whatsapp' ? 'Send WhatsApp code' : 'Send email code')}
@@ -1519,6 +1532,7 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
                 onChange={setCaptchaAnswer}
                 onRefresh={() => void loadCaptcha()}
                 onReady={setCaptchaConfirmed}
+                inputRef={captchaInputRef}
               />
             ) : null}
 
@@ -1527,11 +1541,7 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
 
             <button
               type="submit"
-              disabled={loading || (
-                ((otpChannel === 'email' && emailOtpStep === 'email')
-                  || (otpChannel === 'whatsapp' && whatsappStep === 'phone'))
-                && !captchaReady
-              )}
+              disabled={loading}
               className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-900 text-white font-semibold py-2.5 rounded-lg text-sm disabled:opacity-50"
             >
               {loading ? (
@@ -1722,6 +1732,11 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
                   }}
                   minLength={isRegister ? 8 : 6}
                   required
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Enter' || !captcha.question || isMathCaptchaSolved(captcha.question, captchaAnswer)) return;
+                    event.preventDefault();
+                    focusCaptchaAnswer();
+                  }}
                 />
                 <button
                   type="button"
@@ -1796,6 +1811,7 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
                 onChange={setCaptchaAnswer}
                 onRefresh={() => void loadCaptcha()}
                 onReady={setCaptchaConfirmed}
+                inputRef={captchaInputRef}
               />
             ) : null}
 
@@ -1823,7 +1839,7 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
             <button
               type="submit"
               className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-900 text-white font-semibold py-2 sm:py-2.5 rounded-lg transition text-xs sm:text-sm disabled:opacity-50"
-              disabled={loading || !captchaReady}
+              disabled={loading}
             >
               {loading ? <><Loader2 size={16} className="animate-spin" /> Loading…</> : 'CONTINUE'}
             </button>

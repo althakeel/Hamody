@@ -261,12 +261,12 @@ export default function StoreManageProducts() {
     const hasLoadedOnceRef = useRef(false)
     const [products, setProducts] = useState([])
     const [totalProducts, setTotalProducts] = useState(0)
-    const [debouncedSearch, setDebouncedSearch] = useState('')
+    const [debouncedSearch, setDebouncedSearch] = useState(() => String(searchParams.get('q') || '').trim())
     const searchDebounceRef = useRef(null)
     const [editingProduct, setEditingProduct] = useState(null)
     const [showEditModal, setShowEditModal] = useState(false)
     const [categoryMap, setCategoryMap] = useState({}) // Map of category ID to name
-    const [searchQuery, setSearchQuery] = useState('')
+    const [searchQuery, setSearchQuery] = useState(() => String(searchParams.get('q') || ''))
     const [selectedCategory, setSelectedCategory] = useState('') // Category filter
     const [selectedBrand, setSelectedBrand] = useState('')
     const [brandOptions, setBrandOptions] = useState([])

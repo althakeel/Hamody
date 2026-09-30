@@ -83,7 +83,7 @@ const resolveNavbarLogoSrc = (logoUrl) => String(logoUrl || '').trim() || STORE1
 const normalizeNavbarAppearance = (appearance = {}) => {
   try {
     return {
-      logoUrl: resolveNavbarLogoSrc(appearance.logoUrl),
+      logoUrl: String(appearance.logoUrl || '').trim(),
       logoWidth: Number(appearance.logoWidth) > 0 ? Number(appearance.logoWidth) : 120,
       logoHeight: Number(appearance.logoHeight) > 0 ? Number(appearance.logoHeight) : 40,
       backgroundColor: String(appearance.backgroundColor || '').trim(),
@@ -94,7 +94,7 @@ const normalizeNavbarAppearance = (appearance = {}) => {
     console.error('[Navbar] Failed to normalize appearance:', error);
     return {
       ...EMPTY_NAVBAR_APPEARANCE,
-      logoUrl: resolveNavbarLogoSrc(appearance?.logoUrl),
+      logoUrl: String(appearance?.logoUrl || '').trim(),
       backgroundColor: String(appearance?.backgroundColor || '').trim(),
     };
   }
@@ -103,36 +103,6 @@ const normalizeNavbarAppearance = (appearance = {}) => {
 const appearanceTime = (appearance = {}) => {
   const parsed = Date.parse(appearance?.layoutUpdatedAt || '');
   return Number.isFinite(parsed) ? parsed : 0;
-};
-
-const mergeFresherNavbarLayout = (incoming = {}, cached = null) => {
-  if (!cached || appearanceTime(cached) <= appearanceTime(incoming)) {
-    return incoming;
-  }
-  return normalizeNavbarAppearance({
-    ...incoming,
-    extraButtons: cached.extraButtons,
-    searchAlign: cached.searchAlign,
-    searchMaxWidth: cached.searchMaxWidth,
-    searchPlaceholder: cached.searchPlaceholder,
-    searchPlaceholderAr: cached.searchPlaceholderAr,
-    searchStyle: cached.searchStyle,
-    navbarMaxWidth: cached.navbarMaxWidth,
-    itemGap: cached.itemGap,
-    logoGap: cached.logoGap,
-    mobileItemGap: cached.mobileItemGap,
-    stickyHeader: cached.stickyHeader,
-    showCategoriesButton: cached.showCategoriesButton,
-    categoriesButtonLabel: cached.categoriesButtonLabel,
-    categoriesButtonLabelAr: cached.categoriesButtonLabelAr,
-    categoriesButtonStyle: cached.categoriesButtonStyle,
-    itemOrder: cached.itemOrder,
-    itemAlign: cached.itemAlign,
-    unifyNavbarText: cached.unifyNavbarText,
-    unifiedTextFontFamily: cached.unifiedTextFontFamily,
-    unifiedTextFontSize: cached.unifiedTextFontSize,
-    layoutUpdatedAt: cached.layoutUpdatedAt,
-  });
 };
 
 const readCachedNavbarAppearance = () => {
@@ -154,8 +124,9 @@ const readCachedNavbarAppearance = () => {
 const isCachedAppearanceReady = (appearance) => {
   if (!appearance) return false;
   return Boolean(
-    resolveNavbarLogoSrc(appearance.logoUrl)
-    || String(appearance.backgroundColor || '').trim(),
+    String(appearance.logoUrl || '').trim()
+    || String(appearance.backgroundColor || '').trim()
+    || appearanceTime(appearance) > 0,
   );
 };
 
@@ -191,6 +162,7 @@ const Navbar = () => {
   const categoriesDropdownPanelRef = useRef(null);
   const userDropdownRef = useRef(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileLanguageOpen, setMobileLanguageOpen] = useState(false);
   const [mobileExpandedCategoryId, setMobileExpandedCategoryId] = useState(null);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [imageSearchFile, setImageSearchFile] = useState(null);
@@ -535,6 +507,10 @@ const Navbar = () => {
   }, []);
 
   useEffect(() => {
+    if (!mobileMenuOpen) setMobileLanguageOpen(false);
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const readLanguage = () => {
@@ -674,9 +650,6 @@ const Navbar = () => {
     if (isCachedAppearanceReady(cached)) {
       setNavbarAppearance(cached);
       setNavbarAppearanceLoading(false);
-      window.setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('navbarAppearanceUpdated', { detail: cached }));
-      }, 0);
     }
     try {
       const raw = window.localStorage.getItem('offersNavLabelCache');
@@ -726,10 +699,7 @@ const Navbar = () => {
           backgroundColor: data.backgroundColor || '(empty)',
         });
 
-        const nextAppearance = mergeFresherNavbarLayout(
-          normalizeNavbarAppearance(data),
-          readCachedNavbarAppearance(),
-        );
+        const nextAppearance = normalizeNavbarAppearance(data);
 
         setNavbarAppearance(nextAppearance);
         try {
@@ -2223,13 +2193,6 @@ const Navbar = () => {
               </a>
             );
           })() : null}
-          {navActionsVisibility.language ? (
-            <StorefrontLanguageMarketSwitch
-              initialLanguage={storefrontLanguage}
-              tone={mobileNavbarUsesBrandColor ? 'onDark' : 'onLight'}
-              appearance={navbarLanguage}
-            />
-          ) : null}
           {!isHomePage && (
             firebaseUser ? (
               renderAccountMenuTrigger({
@@ -2614,6 +2577,16 @@ const Navbar = () => {
                     ) : null}
                   </div>
                 </section>
+
+                {navActionsVisibility.language ? (
+                  <StorefrontLanguageMarketSwitch
+                    initialLanguage={storefrontLanguage}
+                    appearance={navbarLanguage}
+                    variant="inline"
+                    open={mobileLanguageOpen}
+                    onOpenChange={setMobileLanguageOpen}
+                  />
+                ) : null}
 
                 <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
                   <p className="border-b border-slate-100 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wide text-slate-400">

@@ -44,9 +44,13 @@ export async function GET(request) {
             );
         }
 
+        const { isAdminEmail } = await import("@/lib/adminEmails");
         const { resolveDashboardAccess } = await import("@/lib/storeAccessControl");
         const { canViewStoreActivityHistory } = await import("@/lib/storeActivityLog");
+        const { default: User } = await import("@/models/User");
         const access = await resolveDashboardAccess(userId, decodedToken);
+        const profile = await User.findById(userId).select("name").lean();
+        const accountName = String(profile?.name || decodedToken.name || "").trim();
 
         if (!access.isSeller) {
             return NextResponse.json(
@@ -58,8 +62,10 @@ export async function GET(request) {
         return NextResponse.json({
             isSeller: true,
             storeInfo: access.store,
+            accountName,
             userId,
             isOwner: access.isOwner,
+            isSuperAdmin: isAdminEmail(decodedToken.email),
             accessRole: access.accessRole,
             permissions: access.permissions,
             canManageTeamAccess: access.isOwner,

@@ -32,6 +32,9 @@ Stored on `ShippingSetting`:
 | `enableCard` | `card` | Hidden when `false` |
 | `enableTabby` | `tabby` | Hidden when `false` |
 | `enableTamara` | `tamara` | Hidden when `false` |
+| `enableVaultsPay` | `vaultspay` | Hidden when `false` |
+| `enableVaultsPayApplePay` | `applepay` | Hidden when `false`. Also hidden when VaultsPay is off |
+| `enableVaultsPayGooglePay` | `googlepay` | Hidden when `false`. Also hidden when VaultsPay is off |
 
 Defaults are **enabled** (`undefined` treated as on). Dashboard toggles live under **Settings → Payments** and also under **Shipping → Online Payment Methods**.
 

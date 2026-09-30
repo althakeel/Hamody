@@ -27,6 +27,8 @@ const UserSchema = new mongoose.Schema({
   image: String,
   emailNotifications: { type: Boolean, default: true },
   twoFactorEnabled: { type: Boolean, default: false },
+  dashboardTheme: { type: String, enum: ['light', 'dark'], default: 'light' },
+  dashboardScale: { type: Number, default: 100 },
   cart: {
     type: Map,
     of: mongoose.Schema.Types.Mixed,

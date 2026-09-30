@@ -7,6 +7,7 @@ import { resolveDashboardAccess } from "@/lib/storeAccessControl";
 import { getAuth } from "@/lib/firebase-admin";
 import { uploadProfilePhoto } from "@/lib/profileImageStorage";
 import { normalizeNewTagSettings } from "@/lib/newProductTag";
+import { normalizeDashboardScale, normalizeDashboardTheme } from "@/lib/storeDashboardDisplay";
 import { clearNewTagSettingsCache } from "@/lib/storeNewTagSettings";
 
 export const runtime = "nodejs";
@@ -155,6 +156,9 @@ export async function POST(request) {
       currencyPreference,
       smtpSettings,
       newTagSettings,
+      dashboardTheme,
+      dashboardScale,
+      dashboardDisplayOnly,
     } = body || {};
 
     const normalizedEmail = asTrimmedString(email).toLowerCase();
@@ -177,7 +181,24 @@ export async function POST(request) {
       ...(normalizedEmail ? { email: normalizedEmail } : {}),
       ...(emailNotifications !== undefined ? { emailNotifications: Boolean(emailNotifications) } : {}),
       ...(twoFactorEnabled !== undefined ? { twoFactorEnabled: Boolean(twoFactorEnabled) } : {}),
+      ...(dashboardTheme !== undefined ? { dashboardTheme: normalizeDashboardTheme(dashboardTheme) } : {}),
+      ...(dashboardScale !== undefined ? { dashboardScale: normalizeDashboardScale(dashboardScale) } : {}),
     };
+
+    if (dashboardDisplayOnly) {
+      const displayUser = await User.findOneAndUpdate(
+        { _id: userId },
+        { $set: userFields, $setOnInsert: { _id: userId } },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      ).lean();
+      return NextResponse.json({
+        message: 'Display settings saved',
+        profile: {
+          dashboardTheme: normalizeDashboardTheme(displayUser?.dashboardTheme),
+          dashboardScale: normalizeDashboardScale(displayUser?.dashboardScale),
+        },
+      });
+    }
 
     const updatedUser = await User.findOneAndUpdate(
       { _id: userId },
@@ -247,6 +268,8 @@ export async function POST(request) {
         image: updatedUser?.image || '',
         emailNotifications: updatedUser?.emailNotifications !== false,
         twoFactorEnabled: Boolean(updatedUser?.twoFactorEnabled),
+        dashboardTheme: normalizeDashboardTheme(updatedUser?.dashboardTheme),
+        dashboardScale: normalizeDashboardScale(updatedUser?.dashboardScale),
       },
     });
   } catch (error) {
@@ -278,6 +301,8 @@ export async function GET(request) {
         image: user?.image || '',
         emailNotifications: user?.emailNotifications !== false,
         twoFactorEnabled: Boolean(user?.twoFactorEnabled),
+        dashboardTheme: normalizeDashboardTheme(user?.dashboardTheme),
+        dashboardScale: normalizeDashboardScale(user?.dashboardScale),
       },
       store: {
         storeName: store?.name || '',

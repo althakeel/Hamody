@@ -1,19 +1,25 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 
-import { HomeIcon, LayoutListIcon, SquarePenIcon, SquarePlusIcon, StarIcon, FolderIcon, TicketIcon, TruckIcon, RefreshCw, Users as UsersIcon, MessageSquare, Sparkles, BellIcon, MailIcon, Image as ImageIcon, ShoppingCart, Wallet, BarChart3, Target, Gift, Palette, CircleDashed, PackagePlus, Package, Activity, Layers, LineChart, Warehouse, MousePointerClick, ShieldAlert, Zap, Trash2, Smartphone, FileText, CalendarClock, MessageCircle, AlertTriangle, Download, Tag as TagIcon, Tags, ArrowUp, Search, Factory, CircleDollarSign } from "lucide-react"
+import { ChevronDown, HomeIcon, LayoutListIcon, SquarePenIcon, SquarePlusIcon, StarIcon, FolderIcon, TicketIcon, TruckIcon, RefreshCw, Users as UsersIcon, MessageSquare, Sparkles, BellIcon, MailIcon, Image as ImageIcon, ShoppingCart, Wallet, BarChart3, Target, Gift, Palette, CircleDashed, PackagePlus, Package, Activity, Layers, LineChart, Warehouse, MousePointerClick, ShieldAlert, Zap, Trash2, Smartphone, FileText, CalendarClock, MessageCircle, AlertTriangle, Download, Tag as TagIcon, Tags, ArrowUp, Search, Factory, CircleDollarSign } from "lucide-react"
 
 import StoreNavLink from "@/components/store/StoreNavLink"
 
 import { canAccessDashboardArea, getPermissionIdForHref } from "@/lib/storeDashboardPermissions"
+import { isAdminEmail } from "@/lib/adminEmails"
+import { useAuth } from "@/lib/useAuth"
 import { useStoreOrderNotifications } from "./StoreOrderNotificationProvider"
 
 
 
-const StoreSidebar = ({ storeInfo, isOwner = false, permissions = {}, canViewActivityHistory = false }) => {
+const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permissions = {}, canViewActivityHistory = false }) => {
 
     const pathname = usePathname()
+    const { user } = useAuth()
+    const showFullMenu = Boolean(isSuperAdmin) || isAdminEmail(user?.email) || isOwner
+    const [openSection, setOpenSection] = useState("")
     const { unreadCount, canViewOrders, overduePickupCount } = useStoreOrderNotifications()
 
 
@@ -563,6 +569,12 @@ const StoreSidebar = ({ storeInfo, isOwner = false, permissions = {}, canViewAct
 
 
 
+    useEffect(() => {
+        if (showFullMenu) return
+        const activeSection = sidebarSections.find((section) => section.links.some((href) => resolveActive(href)))
+        if (activeSection) setOpenSection(activeSection.name)
+    }, [pathname, showFullMenu])
+
     return (
 
         <aside className="sticky top-0 flex h-full min-h-0 w-[60px] shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-gradient-to-br from-slate-50 via-white to-slate-50 shadow-sm md:w-[68px] lg:w-[236px]">
@@ -583,10 +595,13 @@ const StoreSidebar = ({ storeInfo, isOwner = false, permissions = {}, canViewAct
 
 
 
+                        const sectionOpen = showFullMenu || openSection === section.name
+
                         return (
 
                             <div key={section.name} className="mt-2 first:mt-0 lg:mt-3">
 
+                                {showFullMenu ? (
                                 <div className={`hidden items-center gap-1.5 px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wide lg:flex ${theme.headerText}`}>
 
                                     <span className={`rounded-md p-0.5 ${theme.headerIconBg}`}>
@@ -598,10 +613,24 @@ const StoreSidebar = ({ storeInfo, isOwner = false, permissions = {}, canViewAct
                                     <span>{section.name}</span>
 
                                 </div>
+                                ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => setOpenSection((current) => current === section.name ? "" : section.name)}
+                                    className={`hidden w-full items-center gap-1.5 rounded-lg px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide lg:flex ${theme.headerText} ${theme.hoverLink}`}
+                                    aria-expanded={sectionOpen}
+                                >
+                                    <span className={`rounded-md p-0.5 ${theme.headerIconBg}`}>
+                                        <SectionIcon size={12} className={theme.headerIconText} />
+                                    </span>
+                                    <span className="flex-1">{section.name}</span>
+                                    <ChevronDown size={14} className={`shrink-0 transition ${sectionOpen ? "rotate-180" : ""}`} />
+                                </button>
+                                )}
 
 
 
-                                <div className="space-y-0.5 border-t border-slate-200/80 pt-1.5 first:border-t-0 first:pt-0 lg:border-t-0 lg:pt-0">
+                                <div className={`space-y-0.5 border-t border-slate-200/80 pt-1.5 first:border-t-0 first:pt-0 lg:border-t-0 lg:pt-0 ${sectionOpen ? "" : "lg:hidden"}`}>
 
                                     {visibleLinks.map((href) => {
 
@@ -699,9 +728,7 @@ const StoreSidebar = ({ storeInfo, isOwner = false, permissions = {}, canViewAct
 
 
 
-                {canAccessHref('/store/settings') && (
-
-                    <div className="shrink-0 border-t border-slate-200 bg-slate-50/50 px-1.5 py-2 lg:px-2">
+                <div className="shrink-0 border-t border-slate-200 bg-slate-50/50 px-1.5 py-2 lg:px-2">
 
                         {canViewActivityHistory ? (
                             <StoreNavLink
@@ -740,8 +767,6 @@ const StoreSidebar = ({ storeInfo, isOwner = false, permissions = {}, canViewAct
                         </StoreNavLink>
 
                     </div>
-
-                )}
 
         </aside>
 

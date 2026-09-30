@@ -218,6 +218,8 @@ const OrderSchema = new mongoose.Schema({
   razorpaySettlement: RazorpaySettlementSchema,            // Settlement details
   stripeCheckoutSessionId: { type: String, index: true },
   stripePaymentStatus: { type: String, default: null },
+  vaultsPayTransactionId: { type: String, index: true },
+  vaultsPayPaymentStatus: { type: String, default: null },
 
   // Tamara BNPL
   tamaraOrderId: { type: String, index: true },             // Tamara order ID (if BNPL payment)

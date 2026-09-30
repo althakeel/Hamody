@@ -60,11 +60,15 @@ function mapSettingToForm(setting) {
     enableCard: setting.enableCard !== false,
     enableTabby: setting.enableTabby !== false,
     enableTamara: setting.enableTamara !== false,
+    enableVaultsPay: setting.enableVaultsPay !== false,
+    enableVaultsPayApplePay: setting.enableVaultsPayApplePay !== false,
+    enableVaultsPayGooglePay: setting.enableVaultsPayGooglePay !== false,
     codFee: parseSettingNumber(setting.codFee, 0),
     maxCODAmount: parseSettingNumber(setting.maxCODAmount, 0),
     maxCardAmount: parseSettingNumber(setting.maxCardAmount, 0),
     maxTabbyAmount: parseSettingNumber(setting.maxTabbyAmount, 0),
     maxTamaraAmount: parseSettingNumber(setting.maxTamaraAmount, 0),
+    maxVaultsPayAmount: parseSettingNumber(setting.maxVaultsPayAmount, 0),
   }
 }
 
@@ -149,11 +153,15 @@ export default function StoreShippingSettings() {
     enableCard: true,
     enableTabby: true,
     enableTamara: true,
+    enableVaultsPay: true,
+    enableVaultsPayApplePay: true,
+    enableVaultsPayGooglePay: true,
     codFee: 0,
     maxCODAmount: 0,
     maxCardAmount: 0,
     maxTabbyAmount: 0,
     maxTamaraAmount: 0,
+    maxVaultsPayAmount: 0,
   })
 
   const markDirty = () => {
@@ -993,6 +1001,7 @@ export default function StoreShippingSettings() {
               description={
                 [
                   form.enableCard !== false ? 'Card' : null,
+                  form.enableVaultsPay !== false ? 'VaultsPay' : null,
                   form.enableTabby !== false ? 'Tabby' : null,
                   form.enableTamara !== false ? 'Tamara' : null,
                 ].filter(Boolean).join(' · ') || 'All disabled'
@@ -1020,6 +1029,44 @@ export default function StoreShippingSettings() {
                 <label className='flex items-center gap-3 cursor-pointer'>
                   <input
                     type='checkbox'
+                    checked={form.enableVaultsPay !== false}
+                    onChange={(e) => {
+                      markDirty()
+                      setForm((s) => ({ ...s, enableVaultsPay: e.target.checked }))
+                    }}
+                    className='w-5 h-5 accent-slate-700'
+                  />
+                  <span className='text-slate-700'>Enable VaultsPay</span>
+                </label>
+                <label className={`ml-6 flex items-center gap-3 ${form.enableVaultsPay === false ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
+                  <input
+                    type='checkbox'
+                    checked={form.enableVaultsPayApplePay !== false}
+                    disabled={form.enableVaultsPay === false}
+                    onChange={(e) => {
+                      markDirty()
+                      setForm((s) => ({ ...s, enableVaultsPayApplePay: e.target.checked }))
+                    }}
+                    className='w-5 h-5 accent-slate-700'
+                  />
+                  <span className='text-slate-700'>Enable Apple Pay</span>
+                </label>
+                <label className={`ml-6 flex items-center gap-3 ${form.enableVaultsPay === false ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
+                  <input
+                    type='checkbox'
+                    checked={form.enableVaultsPayGooglePay !== false}
+                    disabled={form.enableVaultsPay === false}
+                    onChange={(e) => {
+                      markDirty()
+                      setForm((s) => ({ ...s, enableVaultsPayGooglePay: e.target.checked }))
+                    }}
+                    className='w-5 h-5 accent-slate-700'
+                  />
+                  <span className='text-slate-700'>Enable Google Pay</span>
+                </label>
+                <label className='flex items-center gap-3 cursor-pointer'>
+                  <input
+                    type='checkbox'
                     checked={form.enableTabby !== false}
                     onChange={(e) => {
                       markDirty()
@@ -1042,7 +1089,7 @@ export default function StoreShippingSettings() {
                   <span className='text-slate-700'>Enable Tamara</span>
                 </label>
               </div>
-              <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+              <div className='grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4'>
                 <div>
                   <label className='block text-sm font-medium text-slate-700 mb-2'>Maximum Card Amount</label>
                   <div className='flex items-center gap-2'>
@@ -1054,6 +1101,22 @@ export default function StoreShippingSettings() {
                       onChange={(e) => {
                         markDirty()
                         setForm((s) => ({ ...s, maxCardAmount: parseOptionalFeeInput(e.target.value) }))
+                      }}
+                      className='w-full border border-slate-300 rounded px-3 py-2'
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className='block text-sm font-medium text-slate-700 mb-2'>Maximum VaultsPay Amount</label>
+                  <div className='flex items-center gap-2'>
+                    <span className='text-slate-600'>{currency}</span>
+                    <input
+                      type='number'
+                      step='0.01'
+                      value={form.maxVaultsPayAmount || ''}
+                      onChange={(e) => {
+                        markDirty()
+                        setForm((s) => ({ ...s, maxVaultsPayAmount: parseOptionalFeeInput(e.target.value) }))
                       }}
                       className='w-full border border-slate-300 rounded px-3 py-2'
                     />

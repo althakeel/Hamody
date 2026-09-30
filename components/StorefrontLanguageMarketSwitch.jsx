@@ -26,6 +26,10 @@ export default function StorefrontLanguageMarketSwitch({
   initialLanguage = 'en',
   tone = 'onDark',
   appearance = DEFAULT_NAVBAR_LANGUAGE,
+  variant = 'dropdown',
+  open = false,
+  onOpenChange,
+  onOpenMenu,
 }) {
   const { market: storefrontMarket, setMarketCode } = useStorefrontMarket();
   const [languageAppearance, setLanguageAppearance] = useState(() => normalizeNavbarLanguage(appearance));
@@ -196,12 +200,12 @@ export default function StorefrontLanguageMarketSwitch({
     if (typeof window !== 'undefined') {
       persistStorefrontLanguage(nextLanguage, { userChosen: true });
     }
-    closeDropdown();
+    if (variant !== 'inline') closeDropdown();
   };
 
   const handleMarketChange = (code) => {
     setMarketCode(code);
-    closeDropdown();
+    if (variant !== 'inline') closeDropdown();
   };
 
   const isArabic = storefrontLanguage === 'ar';
@@ -224,6 +228,125 @@ export default function StorefrontLanguageMarketSwitch({
         shoppingIn: `You are shopping in ${activeCountryName}.`,
       };
 
+  const menuBody = (
+    <>
+      <div className="border-b border-gray-100 px-4 py-4">
+        <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
+          {copy.language}
+        </div>
+        <div className="flex flex-col gap-1.5">
+          {[
+            { value: 'ar', label: 'العربية' },
+            { value: 'en', label: 'English' },
+          ].map((option) => {
+            const isActive = storefrontLanguage === option.value;
+            return (
+              <label
+                key={option.value}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  handleLanguageChange(option.value);
+                }}
+                className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2.5 transition ${
+                  isActive
+                    ? 'bg-orange-50 font-semibold text-orange-700 ring-1 ring-orange-200'
+                    : 'text-gray-800 hover:bg-gray-50'
+                }`}
+              >
+                <span className="text-sm">{option.label}</span>
+                <input
+                  type="radio"
+                  name={variant === 'inline' ? 'drawer-lang' : 'lang'}
+                  checked={isActive}
+                  readOnly
+                  className="pointer-events-none h-4 w-4 shrink-0 accent-orange-600"
+                />
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="border-b border-gray-100 px-4 py-4">
+        <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
+          {copy.shopIn}
+        </div>
+        <div className="flex flex-col gap-1.5">
+          {GCC_MARKETS.map((market) => {
+            const isActive = storefrontMarket?.code === market.code;
+            const countryName = isArabic ? market.countryNameAr : market.countryName;
+            return (
+              <button
+                key={market.code}
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  handleMarketChange(market.code);
+                }}
+                className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-start transition ${
+                  isActive
+                    ? 'border-orange-300 bg-orange-50 text-orange-800 ring-1 ring-orange-200'
+                    : 'border-gray-200 bg-white text-gray-800 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <span className="text-lg leading-none">{market.flag}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[11px] font-bold uppercase tracking-wide text-gray-500">
+                    {market.code}
+                  </span>
+                  <span className="block truncate text-sm font-semibold">{countryName}</span>
+                </span>
+                <span className="flex shrink-0 flex-col items-end gap-1">
+                  <span className="text-sm font-semibold">
+                    <CurrencySymbol currency={market.currency} />
+                  </span>
+                  {isActive ? <Check size={16} className="text-orange-600" strokeWidth={2.5} /> : null}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="px-4 py-3.5 text-sm text-gray-600">
+        <div className="font-semibold text-gray-800">
+          {copy.currency}:{' '}
+          <CurrencySymbol currency={storefrontMarket?.currency} />
+        </div>
+        <div className="mt-1 leading-snug">{copy.shoppingIn}</div>
+      </div>
+    </>
+  );
+
+  if (variant === 'inline') {
+    return (
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white" dir={isArabic ? 'rtl' : 'ltr'}>
+        <button
+          type="button"
+          onClick={() => onOpenChange?.(!open)}
+          className="flex w-full items-center justify-between gap-3 px-4 py-3 text-start"
+          aria-expanded={open}
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            {triggerMark.iconUrl ? (
+              <img src={triggerMark.iconUrl} alt="" className="h-5 w-5 shrink-0 rounded-sm object-contain" aria-hidden="true" />
+            ) : (
+              <span className="text-base leading-none" aria-hidden="true">{triggerMark.flag}</span>
+            )}
+            <span className="text-sm font-semibold text-slate-800">{copy.language}</span>
+            <span className="text-xs font-semibold text-slate-500">{languageShort}</span>
+          </span>
+          <ChevronDown size={16} className={`shrink-0 text-slate-500 transition ${open ? 'rotate-180' : ''}`} />
+        </button>
+        {open ? <div className="border-t border-slate-100">{menuBody}</div> : null}
+      </section>
+    );
+  }
+
   return (
     <div
       className="relative"
@@ -234,7 +357,7 @@ export default function StorefrontLanguageMarketSwitch({
       <button
         ref={triggerRef}
         type="button"
-        onClick={toggleDropdown}
+        onClick={onOpenMenu || toggleDropdown}
         className={`inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-semibold leading-none ${
           onDark ? 'text-white hover:bg-white/10' : 'text-slate-800 hover:bg-slate-100'
         }`}
@@ -274,95 +397,7 @@ export default function StorefrontLanguageMarketSwitch({
               className="max-h-[min(72vh,520px)] overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.14)]"
               onMouseDown={(event) => event.stopPropagation()}
             >
-              <div className="border-b border-gray-100 px-4 py-4">
-                <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
-                  {copy.language}
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  {[
-                    { value: 'ar', label: 'العربية' },
-                    { value: 'en', label: 'English' },
-                  ].map((option) => {
-                    const isActive = storefrontLanguage === option.value;
-                    return (
-                      <label
-                        key={option.value}
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          handleLanguageChange(option.value);
-                        }}
-                        className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2.5 transition ${
-                          isActive
-                            ? 'bg-orange-50 font-semibold text-orange-700 ring-1 ring-orange-200'
-                            : 'text-gray-800 hover:bg-gray-50'
-                        }`}
-                      >
-                        <span className="text-sm">{option.label}</span>
-                        <input
-                          type="radio"
-                          name="lang"
-                          checked={isActive}
-                          readOnly
-                          className="pointer-events-none h-4 w-4 shrink-0 accent-orange-600"
-                        />
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="border-b border-gray-100 px-4 py-4">
-                <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
-                  {copy.shopIn}
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  {GCC_MARKETS.map((market) => {
-                    const isActive = storefrontMarket?.code === market.code;
-                    const countryName = isArabic ? market.countryNameAr : market.countryName;
-                    return (
-                      <button
-                        key={market.code}
-                        type="button"
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          handleMarketChange(market.code);
-                        }}
-                        className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-start transition ${
-                          isActive
-                            ? 'border-orange-300 bg-orange-50 text-orange-800 ring-1 ring-orange-200'
-                            : 'border-gray-200 bg-white text-gray-800 hover:border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        <span className="text-lg leading-none">{market.flag}</span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-[11px] font-bold uppercase tracking-wide text-gray-500">
-                            {market.code}
-                          </span>
-                          <span className="block truncate text-sm font-semibold">{countryName}</span>
-                        </span>
-                        <span className="flex shrink-0 flex-col items-end gap-1">
-                          <span className="text-sm font-semibold">
-                            <CurrencySymbol currency={market.currency} />
-                          </span>
-                          {isActive ? <Check size={16} className="text-orange-600" strokeWidth={2.5} /> : null}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="px-4 py-3.5 text-sm text-gray-600">
-                <div className="font-semibold text-gray-800">
-                  {copy.currency}:{' '}
-                  <CurrencySymbol currency={storefrontMarket?.currency} />
-                </div>
-                <div className="mt-1 leading-snug">{copy.shoppingIn}</div>
-              </div>
+              {menuBody}
             </div>
           </div>,
           document.body,
