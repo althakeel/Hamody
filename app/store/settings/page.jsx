@@ -11,6 +11,7 @@ import {
   CreditCard,
   Database,
   History,
+  KeyRound,
   Mail,
   RefreshCcw,
   Save,
@@ -24,6 +25,8 @@ import { auth } from "@/lib/firebase";
 import { updateProfile } from "firebase/auth";
 import PermissionPicker from "@/components/store/PermissionPicker";
 import StoreCacheSettings from "@/components/store/StoreCacheSettings";
+import SuperAdminPasswordReset from "@/components/store/SuperAdminPasswordReset";
+import AccountBlockDialog from "@/components/store/AccountBlockDialog";
 import { isAdminEmail } from "@/lib/adminEmails";
 import {
   SIDEBAR_ACCESS_COMPONENTS,
@@ -83,6 +86,11 @@ const TAB_META = {
     label: "Cache",
     icon: RefreshCcw,
     description: "Clear website cache",
+  },
+  passwords: {
+    label: "Passwords",
+    icon: KeyRound,
+    description: "Reset team and customer passwords",
   },
 };
 
@@ -208,6 +216,8 @@ export default function SettingsPage() {
     enableVaultsPayGooglePay: true,
   });
   const [newTagSettings, setNewTagSettings] = useState(() => normalizeNewTagSettings(DEFAULT_NEW_TAG_SETTINGS));
+  const [dashboardWelcomeEnabled, setDashboardWelcomeEnabled] = useState(true);
+  const [savingWelcomePopup, setSavingWelcomePopup] = useState(false);
   const [paymentMethodsLoaded, setPaymentMethodsLoaded] = useState(false);
   const [loadingPayments, setLoadingPayments] = useState(false);
 
@@ -223,6 +233,9 @@ export default function SettingsPage() {
   const [canEditStoreSettings, setCanEditStoreSettings] = useState(true);
   const [dashboardTheme, setDashboardTheme] = useState("light");
   const [dashboardScale, setDashboardScale] = useState(100);
+  const [passwordResetQuery, setPasswordResetQuery] = useState("");
+  const [memberPendingBlock, setMemberPendingBlock] = useState(null);
+  const [blockingMemberId, setBlockingMemberId] = useState("");
 
   const isSuperAdmin = isAdminEmail(user?.email);
 
@@ -232,6 +245,7 @@ export default function SettingsPage() {
     if (canManageTeamAccess) tabs.splice(4, 0, "dashboardAccess");
     if (canViewActivityHistory) tabs.push("history");
     if (isSuperAdmin || isStoreOwner || canManageTeamAccess) tabs.push("cache");
+    if (isSuperAdmin || isStoreOwner) tabs.push("passwords");
     return tabs;
   }, [canEditStoreSettings, canManageTeamAccess, canViewActivityHistory, isSuperAdmin, isStoreOwner]);
 
@@ -270,6 +284,7 @@ export default function SettingsPage() {
       setBusinessType(store.businessType || "");
       setCurrencyPreference(store.currencyPreference || "AED");
       setNewTagSettings(normalizeNewTagSettings(store.newTagSettings || DEFAULT_NEW_TAG_SETTINGS));
+      setDashboardWelcomeEnabled(store.dashboardWelcomeEnabled !== false);
       setEmailNotifications(profile.emailNotifications !== false);
       setTwoFactorEnabled(Boolean(profile.twoFactorEnabled));
       setDashboardTheme(normalizeDashboardTheme(profile.dashboardTheme));
@@ -635,6 +650,27 @@ export default function SettingsPage() {
     }
   };
 
+  const saveWelcomePopup = async (enabled) => {
+    const previous = dashboardWelcomeEnabled;
+    setDashboardWelcomeEnabled(enabled);
+    setSavingWelcomePopup(true);
+    try {
+      const token = await getToken(true);
+      if (!token) throw new Error("Your session expired. Please sign in again.");
+      await axios.post(
+        "/api/store/profile/update",
+        { dashboardWelcomeEnabled: enabled },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(enabled ? "Welcome popup turned on" : "Welcome popup turned off");
+    } catch (error) {
+      setDashboardWelcomeEnabled(previous);
+      toast.error(error?.response?.data?.error || error.message || "Could not save the welcome popup");
+    } finally {
+      setSavingWelcomePopup(false);
+    }
+  };
+
   const handleSaveChanges = async (event) => {
     event?.preventDefault();
     setSaving(true);
@@ -995,6 +1031,20 @@ export default function SettingsPage() {
               </div>
             </div>
           </SettingsCard>
+          {isSuperAdmin ? (
+            <SettingsCard
+              title="Dashboard welcome popup"
+              description="Only the super admin can change this. When it is on, the popup shows each time someone signs in to the seller dashboard, then it stays hidden for 2 hours."
+            >
+              <ToggleRow
+                title="Show welcome popup"
+                description="Turn off to hide the popup for every dashboard user."
+                checked={dashboardWelcomeEnabled}
+                disabled={savingWelcomePopup}
+                onChange={(event) => saveWelcomePopup(event.target.checked)}
+              />
+            </SettingsCard>
+          ) : null}
           {canEditStoreSettings ? (
           <>
           <SettingsCard title="General preferences">
@@ -1535,6 +1585,32 @@ export default function SettingsPage() {
                       >
                         {isEditing ? "Hide" : "Edit access"}
                       </button>
+                      {(isSuperAdmin || isStoreOwner) && member.email ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPasswordResetQuery(member.email);
+                            setActiveTab("passwords");
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                          <KeyRound size={13} />
+                          Reset password
+                        </button>
+                      ) : null}
+                      {isSuperAdmin && member.email ? (
+                        <button
+                          type="button"
+                          onClick={() => setMemberPendingBlock(member)}
+                          className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold ${
+                            member.status === "blocked"
+                              ? "border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
+                              : "border-red-200 bg-white text-red-700 hover:bg-red-50"
+                          }`}
+                        >
+                          {member.status === "blocked" ? "Unblock" : "Block"}
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => setMemberPendingDelete(member)}
@@ -1726,6 +1802,9 @@ export default function SettingsPage() {
           {activeTab === "dashboardAccess" && canManageTeamAccess ? teamContent : null}
           {activeTab === "dataImport" ? importContent : null}
           {activeTab === "cache" && canManageCache ? <StoreCacheSettings /> : null}
+          {activeTab === "passwords" && (isSuperAdmin || isStoreOwner) ? (
+            <SuperAdminPasswordReset initialQuery={passwordResetQuery} />
+          ) : null}
         </div>
       </div>
 
@@ -1775,6 +1854,35 @@ export default function SettingsPage() {
           </div>
         </div>
       ) : null}
+
+      <AccountBlockDialog
+        email={memberPendingBlock?.email || ""}
+        blocked={memberPendingBlock ? memberPendingBlock.status !== "blocked" : true}
+        busy={Boolean(blockingMemberId)}
+        onCancel={() => { if (!blockingMemberId) setMemberPendingBlock(null); }}
+        onConfirm={async () => {
+          if (!memberPendingBlock) return;
+          const blocked = memberPendingBlock.status !== "blocked";
+          try {
+            setBlockingMemberId(memberPendingBlock.id);
+            const token = await getToken();
+            await axios.post(
+              "/api/store/users/block",
+              { uid: memberPendingBlock.userId || "", email: memberPendingBlock.email, blocked },
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            toast.success(blocked ? "Account blocked" : "Account unblocked");
+            setTeamMembers((current) => current.map((item) => (
+              item.id === memberPendingBlock.id ? { ...item, status: blocked ? "blocked" : "approved" } : item
+            )));
+            setMemberPendingBlock(null);
+          } catch (err) {
+            toast.error(err?.response?.data?.error || "Could not update this account");
+          } finally {
+            setBlockingMemberId("");
+          }
+        }}
+      />
     </div>
   );
 }

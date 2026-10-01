@@ -549,7 +549,7 @@ function getWaslahOrderReference(order) {
     return String(order?.waslah?.reference || order?.shortOrderNumber || '').trim();
 }
 
-/** Waslah status sync runs on server cron only (/api/cron/waslah-sync-status, every 3h). */
+/** Waslah status sync runs on server cron (/api/cron/waslah-sync-status, every 5 minutes). */
 
 function getWaslahLiveAppStatus(order) {
     return getWaslahCourierStatus(order);

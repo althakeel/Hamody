@@ -44,6 +44,7 @@ const ProductSchema = new mongoose.Schema({
   hasVariants: { type: Boolean, default: false },
   variants: { type: Array, default: [] },
   attributes: { type: Object, default: {} },
+  imageBadgeIds: { type: [String], default: [] },
   hasBulkPricing: { type: Boolean, default: false },
   bulkPricing: { type: Array, default: [] },
   fastDelivery: { type: Boolean, default: false },
@@ -100,6 +101,11 @@ ProductSchema.index({ storeId: 1, sku: 1 });                     // Store SKU lo
 ProductSchema.index({ name: 'text', brand: 'text', shortDescription: 'text', sku: 'text', seoTitle: 'text' }); // Full-text search
 
 const Product = mongoose.models.Product || mongoose.model("Product", ProductSchema);
+if (!Product.schema.path('imageBadgeIds')) {
+  Product.schema.add({
+    imageBadgeIds: { type: [String], default: [] },
+  });
+}
 if (!Product.schema.path('supplierId') || !Product.schema.path('supplierIds')) {
   Product.schema.add({
     supplierId: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier', default: null, index: true },

@@ -4,6 +4,7 @@ import { getAuth } from '@/lib/firebase-admin';
 import { resolveDashboardAccess } from '@/lib/storeAccessControl';
 import StoreActivityLog from '@/models/StoreActivityLog';
 import User from '@/models/User';
+import Category from '@/models/Category';
 import {
   buildActivityLogQuery,
   canViewStoreActivityHistory,
@@ -11,6 +12,7 @@ import {
   listActivityActors,
   describeStoreActivity,
   recordStoreActivity,
+  resolveActivityClientIp,
   startOfDubaiDay,
   endOfDubaiDay,
 } from '@/lib/storeActivityLog';
@@ -69,6 +71,7 @@ export async function POST(request) {
       action,
       summary: body.summary,
       status: body.status,
+      ip: await resolveActivityClientIp(request),
       metadata: { details, itemName },
     });
 
@@ -127,8 +130,24 @@ export async function GET(request) {
       listActivityActors(access.storeId),
     ]);
 
+    const categoryIds = new Set();
+    items.forEach((row) => {
+      const lines = Array.isArray(row.metadata?.details) ? row.metadata.details : [];
+      lines.forEach((line) => {
+        const match = String(line || '').match(/[a-f0-9]{24}/ig) || [];
+        match.forEach((id) => categoryIds.add(id));
+      });
+    });
+    const categoryNames = {};
+    if (categoryIds.size) {
+      const categories = await Category.find({ _id: { $in: [...categoryIds] } }).select('name').lean();
+      categories.forEach((category) => {
+        if (category?.name) categoryNames[String(category._id)] = category.name;
+      });
+    }
+
     return NextResponse.json({
-      items: items.map(formatActivityLogRow),
+      items: items.map((row) => formatActivityLogRow(row, categoryNames)),
       members,
       todayCount,
       pagination: {

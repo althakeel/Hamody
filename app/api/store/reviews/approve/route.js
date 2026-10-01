@@ -38,24 +38,24 @@ export async function POST(request) {
             return Response.json({ error: "Missing required fields" }, { status: 400 });
         }
 
-        const review = await Rating.findById(reviewId).lean()
-            .populate({
-                path: 'productId',
-                select: 'storeId'
-            })
-            .lean();
+        const review = await Rating.findById(reviewId).lean();
 
         if (!review) {
             return Response.json({ error: "Review not found" }, { status: 404 });
         }
 
-        if (review.productId.storeId !== storeId) {
+        const product = await Product.findOne({
+            _id: review.productId,
+            storeId,
+        }).select('_id').lean();
+
+        if (!product) {
             return Response.json({ error: "Unauthorized to modify this review" }, { status: 403 });
         }
 
         const updatedReview = await Rating.findByIdAndUpdate(
             reviewId,
-            { approved },
+            { approved, isApproved: approved },
             { new: true }
         );
 

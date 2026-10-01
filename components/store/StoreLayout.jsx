@@ -24,7 +24,16 @@ import { readSellerCache, writeSellerCache } from "@/lib/storeDashboardCache";
 import StoreActivityLogger from "@/components/store/StoreActivityLogger";
 
 const ACCESS_REFRESH_MS = 5 * 60 * 1000;
-const SELLER_WELCOME_KEY = 'store1920.sellerWelcomeShown';
+const SELLER_WELCOME_COOLDOWN_MS = 2 * 60 * 60 * 1000;
+const SELLER_WELCOME_IMAGE = '/seller-welcome-popup.jpg';
+
+function sellerWelcomeNextKey(uid) {
+    return `store1920.sellerWelcomeNextAt.${uid}`;
+}
+
+let sellerWelcomeUid = '';
+let sellerWelcomeDecision = '';
+let sellerWelcomeDismissed = false;
 
 function sellerWelcomeName(user, accountName = '') {
     const savedName = String(accountName || '').trim();
@@ -54,44 +63,90 @@ function SellerWelcomeDialog({ user, accountName, storeName, onClose }) {
     }, []);
 
     return (
-        <div className="pointer-events-none fixed inset-x-0 top-4 z-[80] flex justify-center px-4 sm:top-6" dir="ltr" lang="en">
+        <div dir="ltr" lang="en">
             <style>{`
-                @keyframes seller-welcome-in {
-                    from { opacity: 0; transform: translateY(-10px); }
-                    to { opacity: 1; transform: translateY(0); }
+                @keyframes seller-welcome-image {
+                    from { opacity: 0; transform: scale(1.03); }
+                    to { opacity: 1; transform: scale(1); }
                 }
             `}</style>
-            <div
-                role="dialog"
-                aria-modal="false"
-                aria-labelledby="seller-welcome-title"
-                className="pointer-events-auto flex w-full max-w-3xl items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-[0_16px_40px_rgba(15,23,42,0.16)] sm:px-5"
-                style={{ animation: 'seller-welcome-in 220ms ease-out' }}
-            >
-                <img src={STORE1920_LOGO_PATH} alt="" className="h-11 w-11 shrink-0 rounded-xl object-contain" />
-                <div className="min-w-0 flex-1">
-                    <h2 id="seller-welcome-title" className="truncate text-base font-semibold text-slate-950 sm:text-lg">
-                        Hi, {name}
-                    </h2>
-                    <p className="mt-0.5 text-sm text-slate-600">
-                        Welcome to the Store1920 store. Signed in to {storeLabel}.
-                    </p>
+            <div className="pointer-events-none fixed inset-x-0 top-4 z-[80] flex justify-center px-4 lg:hidden">
+                <div
+                    role="dialog"
+                    aria-modal="false"
+                    aria-labelledby="seller-welcome-title-compact"
+                    className="pointer-events-auto flex w-full max-w-3xl items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-[0_16px_40px_rgba(15,23,42,0.16)]"
+                >
+                    <img src={STORE1920_LOGO_PATH} alt="" className="h-11 w-11 shrink-0 rounded-xl object-contain" />
+                    <div className="min-w-0 flex-1">
+                        <h2 id="seller-welcome-title-compact" className="truncate text-base font-semibold text-slate-950">
+                            Hi, {name}
+                        </h2>
+                        <p className="mt-0.5 text-sm text-slate-600">
+                            Welcome to the Store1920 store. Signed in to {storeLabel}.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Close"
+                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                    >
+                        <X size={18} />
+                    </button>
                 </div>
-                <button
-                    type="button"
-                    onClick={onClose}
-                    className="hidden shrink-0 rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 sm:inline-flex"
+            </div>
+            <div className="fixed inset-0 z-[80] hidden items-center justify-center bg-slate-950/45 p-6 lg:flex">
+                <button type="button" aria-label="Close welcome" className="absolute inset-0" onClick={onClose} />
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="seller-welcome-title"
+                    className="relative aspect-[1024/682] h-[min(90vh,740px)] w-auto max-w-[94vw] overflow-hidden rounded-[28px] text-left shadow-[0_28px_70px_rgba(15,23,42,0.32)]"
+                    style={{ animation: 'seller-welcome-image 700ms ease-out' }}
                 >
-                    Continue
-                </button>
-                <button
-                    type="button"
-                    onClick={onClose}
-                    aria-label="Close"
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-                >
-                    <X size={18} />
-                </button>
+                    <h2 id="seller-welcome-title" className="sr-only">Your store, at a glance</h2>
+                    <img
+                        src={SELLER_WELCOME_IMAGE}
+                        alt="Welcome back. Your store, at a glance. Manage orders, track sales, and keep everything moving."
+                        className="absolute inset-0 h-full w-full object-cover object-center"
+                    />
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Close"
+                        className="absolute rounded-full"
+                        style={{ left: '92.4%', top: '9.6%', width: '4.6%', height: '7%' }}
+                    />
+                    <Link
+                        href="/store/orders"
+                        onClick={onClose}
+                        aria-label="Orders"
+                        className="absolute rounded-2xl"
+                        style={{ left: '63.2%', top: '48.5%', width: '33.8%', height: '8.8%' }}
+                    />
+                    <Link
+                        href="/store/sales-report"
+                        onClick={onClose}
+                        aria-label="Sales overview"
+                        className="absolute rounded-2xl"
+                        style={{ left: '63.2%', top: '59.2%', width: '33.8%', height: '8.8%' }}
+                    />
+                    <Link
+                        href="/store/inventory"
+                        onClick={onClose}
+                        aria-label="Inventory"
+                        className="absolute rounded-2xl"
+                        style={{ left: '63.2%', top: '69.5%', width: '33.8%', height: '8.8%' }}
+                    />
+                    <Link
+                        href="/store"
+                        onClick={onClose}
+                        aria-label="Open dashboard"
+                        className="absolute rounded-full"
+                        style={{ left: '63.2%', top: '80.2%', width: '33.8%', height: '9.2%' }}
+                    />
+                </div>
             </div>
         </div>
     );
@@ -251,30 +306,39 @@ const StoreLayout = ({ children }) => {
     }, [user]);
 
     useEffect(() => {
-        if (loading || user) return;
-        try {
-            sessionStorage.removeItem(SELLER_WELCOME_KEY);
-        } catch {
-            // Ignore storage failures.
+        if (loading || sellerLoading || !isSeller || !user?.uid || !storeInfo) return;
+        if (sellerWelcomeUid !== user.uid) {
+            sellerWelcomeUid = user.uid;
+            sellerWelcomeDecision = '';
+            sellerWelcomeDismissed = false;
         }
-    }, [loading, user]);
-
-    useEffect(() => {
-        if (loading || sellerLoading || !isSeller || !user?.uid) return;
+        if (sellerWelcomeDismissed) return;
+        const welcomeEnabled = storeInfo.dashboardWelcomeEnabled !== false;
+        if (!welcomeEnabled) {
+            sellerWelcomeDecision = 'hide';
+            setShowWelcome(false);
+            return;
+        }
+        if (sellerWelcomeDecision === 'show') {
+            setShowWelcome(true);
+            return;
+        }
         try {
-            if (sessionStorage.getItem(SELLER_WELCOME_KEY) === user.uid) return;
+            const nextAt = Number(localStorage.getItem(sellerWelcomeNextKey(user.uid)) || 0);
+            if (nextAt && Date.now() < nextAt) {
+                sellerWelcomeDecision = 'hide';
+                return;
+            }
+            localStorage.setItem(sellerWelcomeNextKey(user.uid), String(Date.now() + SELLER_WELCOME_COOLDOWN_MS));
         } catch {
             // Show the welcome if storage cannot be read.
         }
+        sellerWelcomeDecision = 'show';
         setShowWelcome(true);
-    }, [loading, sellerLoading, isSeller, user]);
+    }, [loading, sellerLoading, isSeller, user, storeInfo]);
 
     const dismissWelcome = () => {
-        try {
-            if (user?.uid) sessionStorage.setItem(SELLER_WELCOME_KEY, user.uid);
-        } catch {
-            // Closing still works if storage is blocked.
-        }
+        sellerWelcomeDismissed = true;
         setShowWelcome(false);
     };
 

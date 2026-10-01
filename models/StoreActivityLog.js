@@ -17,11 +17,18 @@ const StoreActivityLogSchema = new mongoose.Schema({
   summary: { type: String, default: '' },
   status: { type: Number, default: 200 },
   metadata: { type: Object, default: {} },
+  ip: { type: String, default: '' },
 }, { timestamps: true });
 
 StoreActivityLogSchema.index({ storeId: 1, createdAt: -1 });
 StoreActivityLogSchema.index({ storeId: 1, actorUserId: 1, createdAt: -1 });
 StoreActivityLogSchema.index({ storeId: 1, actorEmail: 1, createdAt: -1 });
 
-export default mongoose.models.StoreActivityLog
+const StoreActivityLog = mongoose.models.StoreActivityLog
   || mongoose.model('StoreActivityLog', StoreActivityLogSchema);
+
+if (!StoreActivityLog.schema.path('ip')) {
+  StoreActivityLog.schema.add({ ip: { type: String, default: '' } });
+}
+
+export default StoreActivityLog;

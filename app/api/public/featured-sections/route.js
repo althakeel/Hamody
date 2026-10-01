@@ -66,7 +66,7 @@ export async function GET() {
             inStock: { $ne: false },
             stockQuantity: { $not: { $lte: 0 } },
           })
-            .select('name nameAr slug price mrp AED images category inStock stockQuantity fastDelivery freeShippingEligible useProductsPath imageAspectRatio legacySourceId createdAt')
+            .select('name nameAr slug price mrp AED images category inStock stockQuantity fastDelivery freeShippingEligible useProductsPath imageAspectRatio imageBadgeIds legacySourceId createdAt')
             .lean()
         )
       : [];

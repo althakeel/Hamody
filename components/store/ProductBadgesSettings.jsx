@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { Check, Loader2, Pencil, Plus, Save, ShoppingCart, Star, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Save, ShoppingCart, Star, Trash2 } from 'lucide-react';
 import { getProductThumbnailUrl } from '@/lib/productMedia';
 import StoreDropdown from '@/components/store/StoreDropdown';
 import { useAuth } from '@/lib/useAuth';
@@ -154,6 +154,239 @@ function toSelectOptions(options) {
   return options.map((option) => ({ value: option.id, label: option.label }));
 }
 
+function audienceSummary(badge) {
+  const parts = [];
+  const products = badge.productNames?.length || badge.productIds?.length || 0;
+  const categories = badge.categoryNames?.length || badge.categoryIds?.length || 0;
+  const tags = badge.tags?.length || 0;
+  if (products) parts.push(products === 1 ? '1 product' : `${products} products`);
+  if (categories) parts.push(categories === 1 ? '1 category' : `${categories} categories`);
+  if (tags) parts.push(tags === 1 ? '1 tag' : `${tags} tags`);
+  if (badge.priceMin != null || badge.priceMax != null) {
+    const min = badge.priceMin != null ? badge.priceMin : '0';
+    const max = badge.priceMax != null ? badge.priceMax : 'any';
+    parts.push(`AED ${min}–${max}`);
+  }
+  return parts.join(' · ');
+}
+
+function ChoiceChips({ items, onRemove }) {
+  if (!items.length) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {items.map((item) => (
+        <span key={item.id} className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700">
+          {item.label}
+          <button type="button" onClick={() => onRemove(item.id)} className="text-slate-400 hover:text-slate-800" aria-label={`Remove ${item.label}`}>
+            ×
+          </button>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function BadgeAudienceFields({ badge, onChange, categories, getToken, mode = 'all' }) {
+  const [productQuery, setProductQuery] = useState('');
+  const [productResults, setProductResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [tagInput, setTagInput] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+
+  useEffect(() => {
+    const query = productQuery.trim();
+    if (query.length < 2) {
+      setProductResults([]);
+      return undefined;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      try {
+        setSearching(true);
+        const token = await getToken();
+        if (!token || cancelled) return;
+        const res = await axios.get('/api/store/product', {
+          params: { picker: 'true', search: query, limit: 8 },
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!cancelled) setProductResults(res.data?.products || []);
+      } catch {
+        if (!cancelled) setProductResults([]);
+      } finally {
+        if (!cancelled) setSearching(false);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [productQuery, getToken]);
+
+  const productIds = badge.productIds || [];
+  const productNames = badge.productNames || [];
+  const categoryIds = badge.categoryIds || [];
+  const categoryNames = badge.categoryNames || [];
+  const tags = badge.tags || [];
+
+  const addProduct = (product) => {
+    const id = String(product._id || product.id || '');
+    if (!id || productIds.includes(id)) return;
+    onChange({
+      productIds: [...productIds, id],
+      productNames: [...productNames, product.name || product.sku || id],
+    });
+    setProductQuery('');
+    setProductResults([]);
+  };
+
+  const addCategory = (id) => {
+    const category = categories.find((item) => String(item._id) === String(id));
+    if (!category || categoryIds.includes(String(category._id))) return;
+    onChange({
+      categoryIds: [...categoryIds, String(category._id)],
+      categoryNames: [...categoryNames, category.name || 'Category'],
+    });
+    setCategoryId('');
+  };
+
+  const addTag = () => {
+    const next = tagInput.split(',').map((item) => item.trim()).filter(Boolean);
+    if (!next.length) return;
+    const merged = [...tags];
+    next.forEach((tag) => {
+      if (!merged.some((item) => item.toLowerCase() === tag.toLowerCase())) merged.push(tag);
+    });
+    onChange({ tags: merged });
+    setTagInput('');
+  };
+
+  return (
+    <div className="space-y-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 md:col-span-2">
+      <div>
+        <p className="text-sm font-semibold text-slate-800">
+          {mode === 'none' ? 'Optional limits' : 'Also limit this badge'}
+        </p>
+        <p className="mt-0.5 text-xs text-slate-500">
+          {mode === 'none'
+            ? 'All of these are optional. Leave them empty and the badge can show on any product.'
+            : 'Leave a row empty to ignore it. Filled rows all have to match.'}
+        </p>
+      </div>
+      {mode === 'all' || mode === 'none' || mode === 'products' ? (
+      <Field label="Only these products">
+        <input
+          type="text"
+          value={productQuery}
+          onChange={(e) => setProductQuery(e.target.value)}
+          className={inputClass}
+          placeholder="Search product name or SKU"
+        />
+        {searching ? <span className="text-xs text-slate-500">Searching…</span> : null}
+        {productResults.length ? (
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+            {productResults.map((product) => (
+              <button
+                key={product._id}
+                type="button"
+                onClick={() => addProduct(product)}
+                className="block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+              >
+                {product.name || 'Product'}
+                {product.sku ? <span className="ml-2 text-xs text-slate-400">{product.sku}</span> : null}
+              </button>
+            ))}
+          </div>
+        ) : null}
+        <ChoiceChips
+          items={productIds.map((id, index) => ({ id, label: productNames[index] || id }))}
+          onRemove={(id) => {
+            const nextIndex = productIds.indexOf(id);
+            onChange({
+              productIds: productIds.filter((item) => item !== id),
+              productNames: productNames.filter((_, index) => index !== nextIndex),
+            });
+          }}
+        />
+      </Field>
+      ) : null}
+      {mode === 'all' || mode === 'none' || mode === 'category' ? (
+      <Field label="Only these categories">
+        <BadgeSelect
+          value={categoryId}
+          onChange={addCategory}
+          options={categories
+            .filter((category) => !categoryIds.includes(String(category._id)))
+            .map((category) => ({ value: String(category._id), label: category.name || 'Category' }))}
+          placeholder="Choose a category"
+        />
+        <ChoiceChips
+          items={categoryIds.map((id, index) => ({ id, label: categoryNames[index] || id }))}
+          onRemove={(id) => {
+            const nextIndex = categoryIds.indexOf(id);
+            onChange({
+              categoryIds: categoryIds.filter((item) => item !== id),
+              categoryNames: categoryNames.filter((_, index) => index !== nextIndex),
+            });
+          }}
+        />
+      </Field>
+      ) : null}
+      {mode === 'all' || mode === 'none' || mode === 'tag' ? (
+      <Field label="Only products with these tags">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                addTag();
+              }
+            }}
+            className={inputClass}
+            placeholder="Type a tag, then Enter"
+          />
+          <button type="button" onClick={addTag} className="shrink-0 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white">
+            Add
+          </button>
+        </div>
+        <ChoiceChips
+          items={tags.map((tag) => ({ id: tag, label: tag }))}
+          onRemove={(id) => onChange({ tags: tags.filter((tag) => tag !== id) })}
+        />
+      </Field>
+      ) : null}
+      {mode === 'all' || mode === 'none' || mode === 'price' ? (
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Price from (AED)">
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            value={badge.priceMin ?? ''}
+            onChange={(e) => onChange({ priceMin: e.target.value === '' ? null : Number(e.target.value) })}
+            className={inputClass}
+            placeholder="Any"
+          />
+        </Field>
+        <Field label="Price to (AED)">
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            value={badge.priceMax ?? ''}
+            onChange={(e) => onChange({ priceMax: e.target.value === '' ? null : Number(e.target.value) })}
+            className={inputClass}
+            placeholder="Any"
+          />
+        </Field>
+      </div>
+      ) : null}
+    </div>
+  );
+}
+
 function BadgeSelect({ value, onChange, options, placeholder = 'Select' }) {
   return (
     <StoreDropdown
@@ -237,8 +470,8 @@ export default function ProductBadgesSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState(DEFAULT_NEW_TAG_SETTINGS);
-  const [editingBadgeId, setEditingBadgeId] = useState('');
   const [previewProduct, setPreviewProduct] = useState(null);
+  const [categories, setCategories] = useState([]);
 
   const loadSettings = useCallback(async () => {
     try {
@@ -258,6 +491,15 @@ export default function ProductBadgesSettings() {
         if (product) setPreviewProduct(product);
       } catch {
         setPreviewProduct(null);
+      }
+      try {
+        const categoriesRes = await axios.get('/api/store/categories', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const list = categoriesRes.data?.categories || categoriesRes.data || [];
+        setCategories(Array.isArray(list) ? list : []);
+      } catch {
+        setCategories([]);
       }
     } catch (error) {
       toast.error(error?.response?.data?.error || 'Failed to load badge settings');
@@ -284,7 +526,6 @@ export default function ProductBadgesSettings() {
     if (badges.length >= MAX_PRODUCT_IMAGE_BADGES) return;
     const nextBadge = createProductImageBadge({}, badges);
     setSettings((prev) => ({ ...prev, badges: [...(prev.badges || []), nextBadge] }));
-    setEditingBadgeId(nextBadge.id);
   };
 
   const removeBadge = (index) => {
@@ -331,7 +572,7 @@ export default function ProductBadgesSettings() {
     <form onSubmit={save} className="space-y-5">
       <SettingsCard
         title="Product image badges"
-        description="Each badge can use its own condition — new products, on sale, stock, fast delivery, or always. New product badges hide after the number of days you set. Add up to 3 badges."
+        description="Each badge has a condition, then you can limit it to products, categories, tags, and a price range. New product badges hide after the number of days you set. Add up to 8 badges."
       >
         <div className="space-y-3">
           <ToggleRow
@@ -403,14 +644,13 @@ export default function ProductBadgesSettings() {
       </SettingsCard>
 
       {(settings.badges || []).map((badge, index) => {
-        const isEditing = editingBadgeId === (badge.id || String(index));
         const conditionLabel = BADGE_CONDITION_OPTIONS.find((option) => option.id === (badge.condition || 'new'))?.label || 'New product';
 
         return (
         <SettingsCard
           key={badge.id || index}
           title={`Badge ${index + 1}`}
-          description={isEditing ? (index === 0 ? 'Primary badge on the product image.' : 'Place this badge anywhere on the product image.') : null}
+          description={index === 0 ? 'Primary badge on the product image.' : 'Place this badge anywhere on the product image.'}
         >
           <div className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -428,35 +668,13 @@ export default function ProductBadgesSettings() {
                   <p className="truncate text-sm font-semibold text-slate-900">{badge.label || 'New'}</p>
                   <p className="truncate text-xs text-slate-500">
                     {conditionLabel}
+                    {audienceSummary(badge) ? ` · ${audienceSummary(badge)}` : ''}
                     {badge.enabled ? '' : ' · Hidden'}
                   </p>
                 </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
-                {isEditing ? (
-                  <button
-                    type="button"
-                    onClick={() => setEditingBadgeId('')}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    <Check size={13} />
-                    Done
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setEditingBadgeId(badge.id || String(index))}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800"
-                  >
-                    <Pencil size={13} />
-                    Edit
-                  </button>
-                )}
-              </div>
             </div>
 
-            {isEditing ? (
-            <>
             <ToggleRow
               title="Show this badge"
               description="Hide this badge without deleting it"
@@ -465,6 +683,28 @@ export default function ProductBadgesSettings() {
             />
 
             <div className="grid gap-4 md:grid-cols-2">
+              <Field label="English label">
+                <input
+                  type="text"
+                  value={badge.label}
+                  onChange={(e) => updateBadge(index, { label: e.target.value })}
+                  className={inputClass}
+                  maxLength={24}
+                  placeholder="New"
+                />
+              </Field>
+              <Field label="Arabic label">
+                <input
+                  type="text"
+                  dir="rtl"
+                  lang="ar"
+                  value={badge.labelAr}
+                  onChange={(e) => updateBadge(index, { labelAr: e.target.value })}
+                  className={inputClass}
+                  maxLength={24}
+                  placeholder="جديد"
+                />
+              </Field>
               <Field label="Condition" className="md:col-span-2">
                 <BadgeSelect
                   value={badge.condition || 'new'}
@@ -490,28 +730,13 @@ export default function ProductBadgesSettings() {
                   </span>
                 </Field>
               ) : null}
-              <Field label="English label">
-                <input
-                  type="text"
-                  value={badge.label}
-                  onChange={(e) => updateBadge(index, { label: e.target.value })}
-                  className={inputClass}
-                  maxLength={24}
-                  placeholder="New"
-                />
-              </Field>
-              <Field label="Arabic label">
-                <input
-                  type="text"
-                  dir="rtl"
-                  lang="ar"
-                  value={badge.labelAr}
-                  onChange={(e) => updateBadge(index, { labelAr: e.target.value })}
-                  className={inputClass}
-                  maxLength={24}
-                  placeholder="جديد"
-                />
-              </Field>
+              <BadgeAudienceFields
+                badge={badge}
+                categories={categories}
+                getToken={getToken}
+                mode={['none', 'products', 'category', 'tag', 'price'].includes(badge.condition) ? badge.condition : 'all'}
+                onChange={(patch) => updateBadge(index, patch)}
+              />
               <Field label="Position on image">
                 <BadgeSelect
                   value={badge.placement || (badge.position === 'right' ? 'top-right' : 'top-left')}
@@ -619,17 +844,12 @@ export default function ProductBadgesSettings() {
             {(settings.badges || []).length > 1 ? (
               <button
                 type="button"
-                onClick={() => {
-                  removeBadge(index);
-                  setEditingBadgeId('');
-                }}
+                onClick={() => removeBadge(index)}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
               >
                 <Trash2 size={13} />
                 Delete badge
               </button>
-            ) : null}
-            </>
             ) : null}
           </div>
         </SettingsCard>
@@ -649,7 +869,7 @@ export default function ProductBadgesSettings() {
 
       <div className="sticky bottom-0 z-10 rounded-2xl border border-slate-200/80 bg-white/95 p-4 shadow-lg backdrop-blur sm:flex sm:items-center sm:justify-between">
         <p className="text-sm text-slate-500">
-          Each badge only appears when its condition matches the product.
+          A badge shows when its condition matches. Product, category, tag, and price limits are optional.
         </p>
         <button
           type="submit"

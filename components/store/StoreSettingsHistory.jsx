@@ -233,6 +233,7 @@ export default function StoreSettingsHistory() {
                       <p className="font-medium text-slate-900">{profileNameForRow(members, row)}</p>
                       <p className="text-xs text-slate-500">{row.actorEmail || '—'}</p>
                       <p className="mt-0.5 text-[11px] font-medium text-slate-400">{roleLabel(row.actorRole)}</p>
+                      <p className="mt-0.5 font-mono text-[11px] text-slate-500">{row.ip || 'No IP saved'}</p>
                     </td>
                     <td className="max-w-md px-4 py-3">
                       <p className="font-medium text-slate-900">{row.action}</p>

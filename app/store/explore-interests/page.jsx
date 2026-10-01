@@ -13,12 +13,15 @@ import {
   Loader,
   Package,
   Search,
-  Sparkles,
   Check,
   Eye,
   Compass,
   ToggleLeft,
   ToggleRight,
+  GripVertical,
+  ChevronUp,
+  ChevronDown,
+  X,
 } from 'lucide-react'
 
 const DEFAULT_PAGE_SIZE = 24
@@ -90,7 +93,14 @@ export default function ExploreInterestsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [sortBy, setSortBy] = useState('name')
+  const [stockFilter, setStockFilter] = useState('all')
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
+  const [orderOpen, setOrderOpen] = useState(false)
+  const [dragIndex, setDragIndex] = useState(null)
+  const [selectedDetails, setSelectedDetails] = useState({})
+  const [homepagePreview, setHomepagePreview] = useState(null)
+  const getTokenRef = useRef(getToken)
+  getTokenRef.current = getToken
   const [pagination, setPagination] = useState({ page: 1, limit: DEFAULT_PAGE_SIZE, total: 0, totalPages: 1 })
   const searchDebounceRef = useRef(null)
   const previewDebounceRef = useRef(null)
@@ -147,6 +157,7 @@ export default function ExploreInterestsPage() {
     search = debouncedSearch,
     sort = sortBy,
     limit = pageSize,
+    stock = stockFilter,
     silent = false,
   } = {}) => {
     productsAbortRef.current?.abort()
@@ -164,6 +175,7 @@ export default function ExploreInterestsPage() {
           limit,
           search: search || undefined,
           sort,
+          inStock: stock === 'in' ? 'true' : stock === 'out' ? 'false' : undefined,
         },
         headers: { Authorization: `Bearer ${token}` },
         signal: controller.signal,
@@ -174,6 +186,14 @@ export default function ExploreInterestsPage() {
       const nextProducts = data.products || []
       setProducts(nextProducts)
       cachePreviewProducts(nextProducts)
+      setSelectedDetails((current) => {
+        const next = { ...current }
+        nextProducts.forEach((product) => {
+          const id = normalizeProductId(product)
+          if (id) next[id] = product
+        })
+        return next
+      })
       setPagination(data.pagination || {
         page: 1,
         limit,
@@ -189,7 +209,7 @@ export default function ExploreInterestsPage() {
         setProductsLoading(false)
       }
     }
-  }, [cachePreviewProducts, debouncedSearch, getToken, sortBy, pageSize])
+  }, [cachePreviewProducts, debouncedSearch, getToken, sortBy, pageSize, stockFilter])
 
   const fetchInitialData = async () => {
     const token = await getToken()
@@ -278,9 +298,10 @@ export default function ExploreInterestsPage() {
       search: debouncedSearch,
       sort: sortBy,
       limit: pageSize,
+      stock: stockFilter,
       silent: pagination.page > 1,
     })
-  }, [loading, pagination.page, debouncedSearch, sortBy, pageSize, fetchProductsPage])
+  }, [loading, pagination.page, debouncedSearch, sortBy, pageSize, stockFilter, fetchProductsPage])
 
   useEffect(() => {
     if (loading || pagination.page <= 1) return
@@ -306,11 +327,58 @@ export default function ExploreInterestsPage() {
     }
   }, [selectedProducts, products, fetchPreviewProducts])
 
+  const moveSelectedProduct = (fromIndex, toIndex) => {
+    setSelectedProducts((prev) => {
+      if (
+        fromIndex < 0
+        || toIndex < 0
+        || fromIndex >= prev.length
+        || toIndex >= prev.length
+        || fromIndex === toIndex
+      ) {
+        return prev
+      }
+      const next = [...prev]
+      const [moved] = next.splice(fromIndex, 1)
+      next.splice(toIndex, 0, moved)
+      return next
+    })
+  }
+
+  const loadSelectedDetails = useCallback(async (ids = selectedProducts) => {
+    const missing = ids.map(normalizeProductId).filter((id) => id && !previewCacheRef.current.has(id))
+    if (!missing.length) return
+    try {
+      const token = await getToken()
+      if (!token) return
+      for (let index = 0; index < missing.length; index += 200) {
+        const chunk = missing.slice(index, index + 200)
+        const { data } = await axios.get('/api/store/product', {
+          params: { ids: chunk.join(',') },
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const loaded = data.products || []
+        cachePreviewProducts(loaded)
+        setSelectedDetails((current) => {
+          const next = { ...current }
+          loaded.forEach((product) => {
+            const id = normalizeProductId(product)
+            if (id) next[id] = product
+          })
+          return next
+        })
+      }
+    } catch {
+      // The order list still shows a placeholder name if details are missing.
+    }
+  }, [cachePreviewProducts, getToken, selectedProducts])
+
   const toggleProduct = (productId) => {
     const id = normalizeProductId(productId)
     const product = products.find((item) => normalizeProductId(item) === id)
     if (product) {
       previewCacheRef.current.set(id, product)
+      setSelectedDetails((current) => (current[id] ? current : { ...current, [id]: product }))
     }
     setSelectedProducts((prev) => (
       prev.includes(id)
@@ -382,9 +450,55 @@ export default function ExploreInterestsPage() {
     [selectedProducts]
   )
 
-  const previewItems = previewProducts.length
-    ? previewProducts
-    : []
+  const selectedRank = useMemo(() => {
+    const ranks = new Map()
+    selectedProducts.forEach((id, index) => {
+      ranks.set(normalizeProductId(id), index + 1)
+    })
+    return ranks
+  }, [selectedProducts])
+
+  const previewKey = selectedProducts.slice(0, 6).map(normalizeProductId).filter(Boolean).join(',')
+
+  useEffect(() => {
+    if (loading) return undefined
+    if (!previewKey) {
+      setHomepagePreview([])
+      return undefined
+    }
+
+    const controller = new AbortController()
+    ;(async () => {
+      try {
+        const token = await getTokenRef.current()
+        if (!token) return
+        const { data } = await axios.get('/api/store/product', {
+          params: { ids: previewKey },
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        })
+        const byId = new Map((data.products || []).map((product) => [normalizeProductId(product), product]))
+        const ordered = previewKey.split(',').map((id) => byId.get(id)).filter(Boolean)
+        cachePreviewProducts(ordered)
+        setHomepagePreview(ordered)
+        if (ordered.length) {
+          setSelectedDetails((current) => {
+            const next = { ...current }
+            ordered.forEach((product) => {
+              next[normalizeProductId(product)] = product
+            })
+            return next
+          })
+        }
+      } catch (error) {
+        if (error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError') return
+        console.warn('[explore-interests] preview products failed', error?.message || error)
+        setHomepagePreview([])
+      }
+    })()
+
+    return () => controller.abort()
+  }, [loading, previewKey, cachePreviewProducts])
 
   const goToPage = (nextPage) => {
     setPagination((current) => ({
@@ -511,103 +625,69 @@ export default function ExploreInterestsPage() {
 
       <div className="w-full px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(280px,340px)_minmax(0,1fr)] xl:gap-8">
-          <div className="space-y-4 xl:sticky xl:top-4 xl:max-h-[calc(100vh-7rem)] xl:self-start xl:overflow-y-auto xl:pr-1">
+          <div className="xl:sticky xl:top-4 xl:self-start">
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
               <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <Eye size={14} />
-                Storefront preview
+                Homepage preview
               </div>
-              <div className="bg-white p-5">
-                <p className="text-lg font-bold text-slate-900">Explore your interests</p>
-                <p className="mt-0.5 text-xs text-slate-500">Category chips + product grid on home page</p>
-
-                <div className="mt-4 flex gap-2 overflow-hidden">
-                  {['Recommended', 'Electronics', 'Fashion'].map((chip, index) => (
-                    <span
-                      key={chip}
-                      className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold ${
-                        index === 0
-                          ? 'bg-violet-600 text-white'
-                          : 'bg-slate-100 text-slate-600'
-                      }`}
-                    >
-                      {chip}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-3">
-                  {(previewItems.length ? previewItems : [1, 2, 3, 4, 5, 6]).map((item, index) => (
-                    <div
-                      key={typeof item === 'object' ? normalizeProductId(item) : index}
-                      className="flex aspect-[3/4] items-center justify-center overflow-hidden rounded-lg bg-slate-50 ring-1 ring-slate-200"
-                    >
-                      {typeof item === 'object' ? (
-                        <ProductThumb product={item} size={56} />
-                      ) : (
-                        <div className="h-full w-full animate-pulse bg-slate-100" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                <p className="mt-3 text-[11px] text-slate-400">
-                  {enabled ? 'Section visible' : 'Section hidden'} · {selectedProducts.length} in Recommended
-                  {selectedProducts.length > 60 ? ' · 60 shown first, then Load More' : ''}
+              <div className="p-4">
+                <p className="text-base font-bold text-slate-900">Recommended</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  First products customers see. The number on a card in the list is this same order.
                 </p>
-                {selectedProducts.length > 60 ? (
-                  <div className="mt-3 flex justify-center">
-                    <span className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-[11px] font-semibold text-slate-600">
-                      Load More
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  {selectedProducts.length === 0 ? (
+                    <p className="col-span-3 rounded-lg bg-slate-50 px-3 py-8 text-center text-xs text-slate-400">
+                      Select products on the right. They show here in homepage order.
+                    </p>
+                  ) : homepagePreview == null ? (
+                    <p className="col-span-3 rounded-lg bg-slate-50 px-3 py-8 text-center text-xs text-slate-400">
+                      Loading the first recommended products…
+                    </p>
+                  ) : homepagePreview.length === 0 ? (
+                    <p className="col-span-3 rounded-lg bg-slate-50 px-3 py-8 text-center text-xs text-slate-400">
+                      These products could not be loaded for the preview.
+                    </p>
+                  ) : (
+                    homepagePreview.map((product, index) => (
+                      <div key={normalizeProductId(product)} className="overflow-hidden rounded-lg bg-white ring-1 ring-slate-200">
+                        <div className="relative">
+                          <span className="absolute left-1 top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-[#7B2BFF] text-[10px] font-bold text-white">
+                            {index + 1}
+                          </span>
+                          <div className="flex aspect-square items-center justify-center bg-slate-50">
+                            <ProductThumb product={product} size={92} />
+                          </div>
+                        </div>
+                        <p className="line-clamp-2 px-1.5 py-1.5 text-[10px] font-semibold leading-snug text-slate-800">
+                          {product.name || 'Product'}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEnabled((current) => !current)}
+                  className={`mt-4 flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left ${
+                    enabled ? 'border-violet-200 bg-violet-50' : 'border-slate-200 bg-slate-50'
+                  }`}
+                >
+                  <span>
+                    <span className={`block text-sm font-semibold ${enabled ? 'text-violet-900' : 'text-slate-700'}`}>
+                      {enabled ? 'Shown on the homepage' : 'Hidden on the homepage'}
                     </span>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
-              <h2 className="mb-1 text-sm font-semibold text-slate-900">Section visibility</h2>
-              <p className="mb-4 text-xs text-slate-500">
-                When off, the entire &quot;Explore your interests&quot; block is hidden on the home page.
-              </p>
-              <button
-                type="button"
-                onClick={() => setEnabled((current) => !current)}
-                className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition ${
-                  enabled
-                    ? 'border-violet-200 bg-violet-50'
-                    : 'border-slate-200 bg-slate-50'
-                }`}
-              >
-                <div>
-                  <p className={`text-sm font-semibold ${enabled ? 'text-violet-900' : 'text-slate-700'}`}>
-                    {enabled ? 'Section is live' : 'Section is hidden'}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-slate-500">
-                    {enabled ? 'Customers see category chips and products' : 'Nothing shown on storefront'}
-                  </p>
-                </div>
-                {enabled ? (
-                  <ToggleRight size={28} className="shrink-0 text-violet-600" />
-                ) : (
-                  <ToggleLeft size={28} className="shrink-0 text-slate-400" />
-                )}
-              </button>
-            </div>
-
-            <div className="rounded-2xl border border-violet-100 bg-violet-50/60 p-4">
-              <div className="flex gap-2">
-                <Sparkles size={16} className="mt-0.5 shrink-0 text-violet-600" />
-                <div>
-                  <p className="text-xs font-semibold text-violet-900">How it works</p>
-                  <ul className="mt-2 space-y-1.5 text-[11px] leading-relaxed text-violet-800/90">
-                    <li>• <strong>Recommended</strong> tab shows products you pick below.</li>
-                    <li>• Other chips are built automatically from your catalog categories.</li>
-                    <li>• Only <strong>published products with images</strong> appear on the homepage (draft or image-less picks are skipped).</li>
-                    <li>• Up to <strong>250</strong> selected products can show in the Recommended grid (60 initially on the home page, then Show More).</li>
-                    <li>• Changes apply live after you save.</li>
-                  </ul>
-                </div>
+                    <span className="mt-0.5 block text-[11px] text-slate-500">
+                      {selectedProducts.length} selected. Save to publish this order.
+                    </span>
+                  </span>
+                  {enabled ? (
+                    <ToggleRight size={28} className="shrink-0 text-violet-600" />
+                  ) : (
+                    <ToggleLeft size={28} className="shrink-0 text-slate-400" />
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -649,7 +729,7 @@ export default function ExploreInterestsPage() {
                   </div>
                 </div>
 
-                <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_140px_160px] lg:grid-cols-[1fr_140px_180px]">
+                <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-[1fr_150px_130px_170px]">
                   <div className="relative">
                     <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
@@ -660,6 +740,18 @@ export default function ExploreInterestsPage() {
                       className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-3 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                     />
                   </div>
+                  <select
+                    value={stockFilter}
+                    onChange={(e) => {
+                      setStockFilter(e.target.value)
+                      setPagination((current) => ({ ...current, page: 1 }))
+                    }}
+                    className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
+                  >
+                    <option value="all">All stock</option>
+                    <option value="in">In stock</option>
+                    <option value="out">Out of stock</option>
+                  </select>
                   <select
                     value={pageSize}
                     onChange={(e) => {
@@ -681,9 +773,26 @@ export default function ExploreInterestsPage() {
                     className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                   >
                     <option value="name">Name A–Z</option>
+                    <option value="name_desc">Name Z–A</option>
                     <option value="price">Price low–high</option>
+                    <option value="price_desc">Price high–low</option>
                     <option value="newest">Newest first</option>
+                    <option value="oldest">Oldest first</option>
                   </select>
+                </div>
+
+                <div className="mt-4 flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-slate-600">
+                    The number on a selected card is its place on the homepage. 1 is the first product customers see.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setOrderOpen(true)}
+                    disabled={!selectedProducts.length}
+                    className="shrink-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Change order ({selectedProducts.length})
+                  </button>
                 </div>
 
                 {pagination.total > 0 ? (
@@ -716,13 +825,18 @@ export default function ExploreInterestsPage() {
                           onClick={() => toggleProduct(productId)}
                           className={`group relative rounded-2xl border p-3 text-left transition ${
                             isSelected
-                              ? 'border-violet-400 bg-violet-50/60 ring-2 ring-violet-200'
+                              ? 'border-[#7B2BFF] bg-[#f6f1ff]'
                               : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
                           }`}
                         >
+                          {isSelected ? (
+                            <span className="absolute left-2 top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#7B2BFF] px-1 text-[10px] font-bold text-white">
+                              {selectedRank.get(productId)}
+                            </span>
+                          ) : null}
                           <span className={`absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border transition ${
                             isSelected
-                              ? 'border-violet-500 bg-violet-500 text-white'
+                              ? 'border-[#7B2BFF] bg-[#7B2BFF] text-white'
                               : 'border-slate-300 bg-white text-transparent group-hover:border-slate-400'
                           }`}>
                             <Check size={12} />
@@ -767,6 +881,94 @@ export default function ExploreInterestsPage() {
           </div>
         </div>
       </div>
+
+      {orderOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-slate-900/50"
+            aria-label="Close homepage order"
+            onClick={() => setOrderOpen(false)}
+          />
+          <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-3 border-b border-violet-100 px-5 py-4">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Homepage order</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  {selectedProducts.length} products. Drag a row or use the arrows. Position 1 is first on the storefront. Save changes when you are done.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOrderOpen(false)}
+                className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+                aria-label="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto bg-violet-50/40 px-5 py-4">
+              <ul className="space-y-2">
+                {selectedProducts.map((id, index) => {
+                  const product = selectedDetails[normalizeProductId(id)] || previewCacheRef.current.get(normalizeProductId(id))
+                  return (
+                    <li
+                      key={id}
+                      draggable
+                      onDragStart={() => setDragIndex(index)}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={() => {
+                        if (dragIndex == null) return
+                        moveSelectedProduct(dragIndex, index)
+                        setDragIndex(null)
+                      }}
+                      onDragEnd={() => setDragIndex(null)}
+                      className={`flex items-center gap-3 rounded-xl border bg-white px-3 py-3 ${
+                        dragIndex === index ? 'border-[#7B2BFF] opacity-60' : 'border-violet-100'
+                      }`}
+                    >
+                      <GripVertical size={16} className="shrink-0 cursor-grab text-slate-400" />
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#7B2BFF] text-sm font-bold text-white">{index + 1}</span>
+                      <ProductThumb product={product} size={52} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-semibold text-slate-800">{product?.name || 'Product'}</span>
+                        {product?.sku ? <span className="block text-xs text-slate-400">{product.sku}</span> : null}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => moveSelectedProduct(index, index - 1)}
+                        disabled={index === 0}
+                        className="rounded p-1 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30"
+                        aria-label="Move earlier"
+                      >
+                        <ChevronUp size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveSelectedProduct(index, index + 1)}
+                        disabled={index === selectedProducts.length - 1}
+                        className="rounded p-1 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30"
+                        aria-label="Move later"
+                      >
+                        <ChevronDown size={18} />
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+            <div className="border-t border-slate-100 px-5 py-3">
+              <button
+                type="button"
+                onClick={() => setOrderOpen(false)}
+                className="w-full rounded-lg bg-[#7B2BFF] px-4 py-2.5 text-sm font-semibold text-white hover:brightness-110"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

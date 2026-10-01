@@ -4,10 +4,11 @@ import Link from 'next/link';
 import StoreNavLink from '@/components/store/StoreNavLink';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
-import { Bell, BellOff, LogOut } from 'lucide-react';
+import { Bell, BellOff } from 'lucide-react';
 import StoreHelpAgent from './StoreHelpAgent';
 import StoreDashboardSearch from './StoreDashboardSearch';
 import Logo from '@/assets/logo/Store1920.png';
+import SellerSignOutArt from '@/assets/seller-sign-out-door.webp';
 import { useAuth } from '@/lib/useAuth';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -274,27 +275,28 @@ const StoreNavbar = ({
             {showConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
                     <div
-                        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+                        className="absolute inset-0 bg-slate-900/45 backdrop-blur-sm"
                         onClick={() => setShowConfirm(false)}
                     />
-                    <div className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl">
-                        <div className="absolute -left-10 -top-14 h-40 w-40 bg-red-400/20 blur-3xl" />
-                        <div className="absolute -right-8 -bottom-12 h-36 w-36 bg-orange-300/20 blur-3xl" />
-                        <div className="relative p-6">
-                            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
-                                <LogOut size={24} />
-                            </div>
-                            <h3 className="text-lg font-semibold text-slate-900 text-center">Sign out of seller mode?</h3>
-                            <p className="mt-2 text-sm text-slate-600 text-center">You can return anytime. We will keep your work safe.</p>
-                            <div className="mt-5 grid grid-cols-2 gap-3">
+                    <div className="relative w-full max-w-[420px] overflow-hidden rounded-[28px] bg-white shadow-[0_24px_70px_rgba(91,33,182,0.22)]">
+                        <Image
+                            src={SellerSignOutArt}
+                            alt=""
+                            className="h-auto w-full"
+                            priority
+                        />
+                        <div className="relative flex flex-col items-center px-6 pb-6 pt-5 text-center">
+                            <h3 className="text-lg font-semibold text-slate-900">Sign out of seller mode?</h3>
+                            <p className="mt-2 max-w-[16rem] text-sm leading-5 text-slate-500">You can return anytime. We will keep your work safe.</p>
+                            <div className="mt-6 grid w-full grid-cols-2 gap-3">
                                 <button
-                                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                                     onClick={() => setShowConfirm(false)}
                                 >
                                     Stay
                                 </button>
                                 <button
-                                    className="w-full rounded-xl bg-gradient-to-r from-red-500 to-orange-400 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200/50 hover:brightness-105 transition"
+                                    className="w-full rounded-xl bg-gradient-to-r from-[#7B2BFF] to-[#A855F7] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-300/50 transition hover:brightness-105"
                                     onClick={handleLogout}
                                 >
                                     Sign Out

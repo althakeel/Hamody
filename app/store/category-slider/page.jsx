@@ -27,6 +27,8 @@ export default function CategorySliderPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingIdx, setEditingIdx] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [dragProductIndex, setDragProductIndex] = useState(null);
+  const [selectedProductsOpen, setSelectedProductsOpen] = useState(false);
   const [showAllSliders, setShowAllSliders] = useState(false);
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
 
@@ -545,6 +547,109 @@ export default function CategorySliderPage() {
         ? prev.productIds.filter((id) => id !== normalizedId)
         : [...prev.productIds, normalizedId],
     }));
+  };
+
+  const findCatalogProduct = (productId) => (
+    products.find((product) => normalizeId(product.id) === normalizeId(productId))
+  );
+
+  const moveSelectedProduct = (fromIndex, toIndex) => {
+    setFormData((prev) => {
+      const ids = [...prev.productIds];
+      if (
+        fromIndex < 0
+        || toIndex < 0
+        || fromIndex >= ids.length
+        || toIndex >= ids.length
+        || fromIndex === toIndex
+      ) {
+        return prev;
+      }
+      const [moved] = ids.splice(fromIndex, 1);
+      ids.splice(toIndex, 0, moved);
+      return { ...prev, productIds: ids };
+    });
+  };
+
+  const renderSelectedProductList = (large = false) => {
+    if (formData.productIds.length === 0) {
+      return (
+        <p className="rounded-lg bg-white px-3 py-4 text-center text-sm text-gray-400">
+          No products selected yet. Tick products in the search list below.
+        </p>
+      );
+    }
+
+    return (
+      <ul className={large ? 'space-y-2' : 'max-h-72 space-y-2 overflow-y-auto'}>
+        {formData.productIds.map((productId, index) => {
+          const product = findCatalogProduct(productId);
+          const image = product?.images?.[0] || product?.image || '';
+          return (
+            <li
+              key={`${productId}-${index}`}
+              draggable
+              onDragStart={() => setDragProductIndex(index)}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={() => {
+                if (dragProductIndex == null) return;
+                moveSelectedProduct(dragProductIndex, index);
+                setDragProductIndex(null);
+              }}
+              onDragEnd={() => setDragProductIndex(null)}
+              className={`flex items-center gap-3 rounded-lg border bg-white ${
+                large ? 'px-3 py-3' : 'gap-2 px-2 py-2'
+              } ${dragProductIndex === index ? 'border-[#7B2BFF] opacity-60' : 'border-violet-100'}`}
+            >
+              <span className="cursor-grab select-none px-1 text-base leading-none text-slate-400" title="Drag to reorder" aria-hidden="true">⋮⋮</span>
+              <span className={`flex shrink-0 items-center justify-center rounded-full bg-[#7B2BFF] font-bold text-white ${large ? 'h-8 w-8 text-sm' : 'h-6 w-6 text-xs'}`}>{index + 1}</span>
+              {image ? (
+                <img src={image} alt="" className={`shrink-0 rounded object-cover ${large ? 'h-14 w-14' : 'h-9 w-9'}`} />
+              ) : (
+                <span className={`shrink-0 rounded bg-slate-100 ${large ? 'h-14 w-14' : 'h-9 w-9'}`} />
+              )}
+              <span className="min-w-0 flex-1">
+                <span className={`block font-semibold text-slate-800 ${large ? 'text-sm' : 'truncate text-xs'}`}>
+                  {product?.name || 'Product'}
+                </span>
+                {product?.sku ? (
+                  <span className={`block text-slate-400 ${large ? 'text-xs' : 'truncate text-[11px]'}`}>{product.sku}</span>
+                ) : null}
+              </span>
+              <button
+                type="button"
+                onClick={() => moveSelectedProduct(index, index - 1)}
+                disabled={index === 0}
+                className="rounded p-1 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30"
+                aria-label="Move earlier"
+                title="Move earlier"
+              >
+                <FiChevronUp size={large ? 18 : 16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => moveSelectedProduct(index, index + 1)}
+                disabled={index === formData.productIds.length - 1}
+                className="rounded p-1 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30"
+                aria-label="Move later"
+                title="Move later"
+              >
+                <FiChevronDown size={large ? 18 : 16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleProductSelection(productId)}
+                className="rounded p-1 text-red-500 hover:bg-red-50"
+                aria-label="Remove product"
+                title="Remove"
+              >
+                <FiX size={large ? 18 : 16} />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    );
   };
 
   const filteredProducts = products.filter(p =>
@@ -1138,11 +1243,67 @@ export default function CategorySliderPage() {
                     </button>
                   </div>
 
-                  {/* Selected Count */}
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-4 text-center">
-                    <p className="text-sm font-semibold text-blue-900">Products Selected</p>
-                    <p className="text-3xl font-bold text-blue-600 mt-2">{formData.productIds.length}</p>
+                  {/* Selected products, in slider order */}
+                  <div className="rounded-lg border-2 border-violet-200 bg-violet-50 p-3">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-violet-950">Selected products</p>
+                      <p className="text-2xl font-bold text-[#7B2BFF]">{formData.productIds.length}</p>
+                    </div>
+                    <p className="mb-3 text-xs text-violet-800">
+                      Position 1 is the first product in the slider. Drag a row, or use the arrows, to change the order.
+                    </p>
+                    {formData.productIds.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedProductsOpen(true)}
+                        className="mb-3 w-full rounded-lg bg-[#7B2BFF] px-3 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+                      >
+                        Open larger view
+                      </button>
+                    ) : null}
+                    {renderSelectedProductList(false)}
                   </div>
+
+                  {selectedProductsOpen ? (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                      <button
+                        type="button"
+                        className="absolute inset-0 bg-slate-900/50"
+                        aria-label="Close selected products"
+                        onClick={() => setSelectedProductsOpen(false)}
+                      />
+                      <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+                        <div className="flex items-start justify-between gap-3 border-b border-violet-100 px-5 py-4">
+                          <div>
+                            <h3 className="text-lg font-semibold text-slate-900">Selected products</h3>
+                            <p className="mt-1 text-sm text-slate-500">
+                              {formData.productIds.length} products. Position 1 shows first. Drag a row or use the arrows.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedProductsOpen(false)}
+                            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+                            aria-label="Close"
+                          >
+                            <FiX size={20} />
+                          </button>
+                        </div>
+                        <div className="min-h-0 flex-1 overflow-y-auto bg-violet-50/40 px-5 py-4">
+                          {renderSelectedProductList(true)}
+                        </div>
+                        <div className="border-t border-slate-100 px-5 py-3">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedProductsOpen(false)}
+                            className="w-full rounded-lg bg-[#7B2BFF] px-4 py-2.5 text-sm font-semibold text-white hover:brightness-110"
+                          >
+                            Done
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
 
                   {/* Search Products */}
                   <div>

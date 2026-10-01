@@ -9,6 +9,7 @@ import { uploadProfilePhoto } from "@/lib/profileImageStorage";
 import { normalizeNewTagSettings } from "@/lib/newProductTag";
 import { normalizeDashboardScale, normalizeDashboardTheme } from "@/lib/storeDashboardDisplay";
 import { clearNewTagSettingsCache } from "@/lib/storeNewTagSettings";
+import { isAdminEmail } from "@/lib/adminEmails";
 
 export const runtime = "nodejs";
 
@@ -156,6 +157,7 @@ export async function POST(request) {
       currencyPreference,
       smtpSettings,
       newTagSettings,
+      dashboardWelcomeEnabled,
       dashboardTheme,
       dashboardScale,
       dashboardDisplayOnly,
@@ -223,9 +225,26 @@ export async function POST(request) {
         currencyPreference,
         smtpSettings,
         newTagSettings,
+        dashboardWelcomeEnabled,
       ].some((value) => value !== undefined);
 
-      if (hasStoreFieldUpdates && !access.isOwner && !canAccessDashboardArea(access.permissions, 'settings', { isOwner: false })) {
+      const welcomeOnly = dashboardWelcomeEnabled !== undefined && [
+        storeName,
+        storePhone,
+        storeWebsite,
+        storeAddress,
+        storeCity,
+        storeState,
+        storeZip,
+        storeDescription,
+        businessType,
+        currencyPreference,
+        smtpSettings,
+        newTagSettings,
+      ].every((value) => value === undefined);
+      const canSaveWelcome = welcomeOnly && isAdminEmail(decodedToken.email);
+
+      if (hasStoreFieldUpdates && !canSaveWelcome && !access.isOwner && !canAccessDashboardArea(access.permissions, 'settings', { isOwner: false })) {
         return NextResponse.json({ error: 'You do not have permission to update store settings' }, { status: 403 });
       }
 
@@ -250,6 +269,13 @@ export async function POST(request) {
 
       if (newTagSettings && typeof newTagSettings === 'object') {
         updateStoreData.newTagSettings = normalizeNewTagSettings(newTagSettings);
+      }
+
+      if (dashboardWelcomeEnabled !== undefined) {
+        if (!isAdminEmail(decodedToken.email)) {
+          return NextResponse.json({ error: 'Only the super admin can change the welcome popup' }, { status: 403 });
+        }
+        updateStoreData.dashboardWelcomeEnabled = Boolean(dashboardWelcomeEnabled);
       }
 
       if (Object.keys(updateStoreData).length > 0) {
@@ -316,6 +342,7 @@ export async function GET(request) {
         businessType: store?.businessType || '',
         currencyPreference: store?.currencyPreference || 'AED',
         newTagSettings: normalizeNewTagSettings(store?.newTagSettings),
+        dashboardWelcomeEnabled: store?.dashboardWelcomeEnabled !== false,
       },
       smtpSettings: {
         transactional: {

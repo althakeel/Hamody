@@ -22,6 +22,7 @@ import { TableCell } from '@tiptap/extension-table-cell'
 import { TableHeader } from '@tiptap/extension-table-header'
 
 import { useAuth } from '@/lib/useAuth';
+import { getBadgePlacementClass, getBadgeShadowClass, getBadgeSizeClass, getNewBadgeStyle } from '@/lib/newProductTag';
 import { readSellerCache } from '@/lib/storeDashboardCache';
 import { canChangeProductPricing } from '@/lib/productSaveGuards';
 import { Trash2, X } from 'lucide-react';
@@ -792,7 +793,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
         const [draggingMediaKey, setDraggingMediaKey] = useState(null);
         const [dragOverMediaKey, setDragOverMediaKey] = useState(null);
         const [productInfo, setProductInfo] = useState({
-            name: '', nameAr: '', slug: '', brand: '', brandAr: '', supplierId: '', supplierIds: [], shortDescription: '', shortDescriptionAr: '', shortDescription2: '', shortDescription2Ar: '', aboutThisItemTitle: 'About this item', aboutThisItemTitleAr: 'عن هذا المنتج', descriptionTabTitle: 'Description', descriptionTabTitleAr: 'الوصف', specificationTabTitle: 'Specification', specificationTabTitleAr: 'المواصفات', specTableEnabled: true, specTableTitle: 'Product information', specTableTitleAr: 'مواصفات المنتج', specTableColumns: ['Property', 'Value'], specTableColumnsAr: ['الخاصية', 'القيمة'], specTableRows: [['', '']], specTableRowsAr: [['', '']], description: '', descriptionAr: '', aPlusDesktop: '', aPlusMobile: '', aPlusDesktopAr: '', aPlusMobileAr: '', aPlusDesktopImages: [], aPlusMobileImages: [], AED: '', price: '', priceAr: '', AEDAr: '', category: '', sku: '', stockQuantity: 50, soldCount: 0, colors: [], sizes: [], fastDelivery: false, freeShippingEligible: false, useProductsPath: false, allowReturn: true, allowReplacement: true, reviews: [], badges: [], imageAspectRatio: '1:1', cardVideoPreviewEnabled: true, cardVideoPreviewDelaySec: 24, tags: [], seoTitle: '', seoH1: '', seoH1Ar: '', seoDescription: '', seoKeywords: [], deliveredBy: '', soldBy: '', paymentInfo: '', hsCode: '', originCountry: '', shippingWeightKg: ''
+            name: '', nameAr: '', slug: '', brand: '', brandAr: '', supplierId: '', supplierIds: [], shortDescription: '', shortDescriptionAr: '', shortDescription2: '', shortDescription2Ar: '', aboutThisItemTitle: 'About this item', aboutThisItemTitleAr: 'عن هذا المنتج', descriptionTabTitle: 'Description', descriptionTabTitleAr: 'الوصف', specificationTabTitle: 'Specification', specificationTabTitleAr: 'المواصفات', specTableEnabled: true, specTableTitle: 'Product information', specTableTitleAr: 'مواصفات المنتج', specTableColumns: ['Property', 'Value'], specTableColumnsAr: ['الخاصية', 'القيمة'], specTableRows: [['', '']], specTableRowsAr: [['', '']], description: '', descriptionAr: '', aPlusDesktop: '', aPlusMobile: '', aPlusDesktopAr: '', aPlusMobileAr: '', aPlusDesktopImages: [], aPlusMobileImages: [], AED: '', price: '', priceAr: '', AEDAr: '', category: '', sku: '', stockQuantity: '', soldCount: 0, colors: [], sizes: [], fastDelivery: false, freeShippingEligible: false, useProductsPath: false, allowReturn: true, allowReplacement: true, reviews: [], badges: [], imageAspectRatio: '1:1', cardVideoPreviewEnabled: true, cardVideoPreviewDelaySec: 24, tags: [], seoTitle: '', seoH1: '', seoH1Ar: '', seoDescription: '', seoKeywords: [], deliveredBy: '', soldBy: '', paymentInfo: '', hsCode: '', originCountry: '', shippingWeightKg: ''
         });
         const [tagInput, setTagInput] = useState('');
         const [seoKeywordInput, setSeoKeywordInput] = useState('');
@@ -862,6 +863,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
     )
     const [badgeInput, setBadgeInput] = useState('')
     const [badgeColor, setBadgeColor] = useState('#565959')
+    const [imageBadgeOptions, setImageBadgeOptions] = useState([])
 
     const { user, loading: authLoading, getToken } = useAuth();
 
@@ -1001,6 +1003,17 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
 
                 if (configuredBadges.length > 0) {
                     setStoreBadgeOptions(configuredBadges)
+                }
+
+                const profileRes = await fetch('/api/store/profile/update', {
+                    headers: { Authorization: `Bearer ${token}` },
+                })
+                if (profileRes.ok) {
+                    const profile = await profileRes.json()
+                    const imageBadges = Array.isArray(profile?.store?.newTagSettings?.badges)
+                        ? profile.store.newTagSettings.badges.filter((badge) => badge && String(badge.label || '').trim())
+                        : []
+                    setImageBadgeOptions(imageBadges)
                 }
             } catch (error) {
                 console.warn('Failed to load store badge options:', error)
@@ -1202,6 +1215,9 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                 allowReplacement: product.allowReplacement !== undefined ? product.allowReplacement : true,
                 reviews: product.reviews || [],
                 badges: mergeProductBadges([], product.attributes?.badges || []),
+                imageBadgeIds: Array.isArray(product.imageBadgeIds) && product.imageBadgeIds.length
+                    ? product.imageBadgeIds.map((id) => String(id))
+                    : (Array.isArray(product.attributes?.imageBadgeIds) ? product.attributes.imageBadgeIds.map((id) => String(id)) : []),
                 imageAspectRatio: product.imageAspectRatio || '1:1',
                 cardVideoPreviewEnabled: product.cardVideoPreviewEnabled !== false,
                 cardVideoPreviewDelaySec: Number(product.cardVideoPreviewDelaySec) || 24,
@@ -2386,6 +2402,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                 specRows: Array.isArray(productInfo.specTableRows) ? productInfo.specTableRows : [],
                 specRowsAr: Array.isArray(productInfo.specTableRowsAr) ? productInfo.specTableRowsAr : [],
                 badges: mergeProductBadges([], productInfo.badges || []),
+                imageBadgeIds: Array.isArray(productInfo.imageBadgeIds) ? productInfo.imageBadgeIds : [],
                 deliveredBy: productInfo.deliveredBy,
                 soldBy: productInfo.soldBy,
                 paymentInfo: productInfo.paymentInfo,
@@ -2545,6 +2562,16 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
         ;(productInfo.badges || []).forEach(addOption)
         return options
     }, [storeBadgeOptions, productInfo.badges, storeBadgeColorMap])
+
+    const toggleImageBadge = (badgeId) => {
+        const id = String(badgeId || '').trim()
+        if (!id) return
+        setProductInfo((prev) => {
+            const current = Array.isArray(prev.imageBadgeIds) ? prev.imageBadgeIds.map(String) : []
+            const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+            return { ...prev, imageBadgeIds: next }
+        })
+    }
 
     const toggleBadge = (option) => {
         const label = getBadgeLabel(option)
@@ -2853,7 +2880,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                     </div>
                     <div>
                         <label className="block text-xs font-semibold mb-1 text-gray-500 uppercase tracking-wide">Stock Qty</label>
-                        <input type="number" name="stockQuantity" value={productInfo.stockQuantity ?? ''} onChange={onChangeHandler} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200" placeholder="e.g. 100" min="0" />
+                        <input type="number" name="stockQuantity" value={productInfo.stockQuantity ?? ''} onChange={onChangeHandler} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200" placeholder="0" min="0" />
                         {bulkEnabled ? (
                           <p className="mt-1 text-[11px] text-slate-500">Units on the shelf. Buy 1 uses 1 unit, Bundle of 3 uses 3 units from this same stock.</p>
                         ) : null}
@@ -3500,6 +3527,80 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                             </div>
                             {Array.isArray(productInfo.seoKeywords) && productInfo.seoKeywords.length > 0 && (<div className="flex flex-wrap gap-1">{productInfo.seoKeywords.map((keyword, idx) => (<span key={`${keyword}-${idx}`} className="inline-flex items-center gap-1 rounded-full bg-cyan-50 border border-cyan-200 px-2 py-0.5 text-xs text-cyan-800">{keyword}<button type="button" onClick={() => setProductInfo((prev) => ({ ...prev, seoKeywords: prev.seoKeywords.filter((_, i) => i !== idx) }))} className="font-bold text-cyan-600 hover:text-cyan-900">×</button></span>))}</div>)}
                         </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 space-y-3">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">Image badges</label>
+                  <p className="text-xs text-gray-500">These are the badges from Product Badges. Click one or more. Badges that share the same spot stack one under another on the product image.</p>
+                  {imageBadgeOptions.length === 0 ? (
+                    <p className="text-xs text-gray-400">No image badges yet. Add them on Product Badges, then they show up here.</p>
+                  ) : (
+                    <>
+                      <div className="flex flex-wrap gap-2">
+                        {imageBadgeOptions.map((badge) => {
+                          const id = String(badge.id || '')
+                          const selected = (productInfo.imageBadgeIds || []).map(String).includes(id)
+                          return (
+                            <button
+                              key={id || badge.label}
+                              type="button"
+                              onClick={() => toggleImageBadge(id)}
+                              className={`rounded-full px-3 py-1 text-xs font-semibold ${selected ? 'ring-2 ring-slate-900 ring-offset-1' : 'opacity-80'}`}
+                              style={{
+                                backgroundColor: badge.backgroundColor || '#111827',
+                                color: badge.textColor || '#ffffff',
+                              }}
+                            >
+                              {badge.label}
+                              {badge.enabled === false ? ' (hidden)' : ''}
+                            </button>
+                          )
+                        })}
+                      </div>
+                      {(productInfo.imageBadgeIds || []).length > 0 && (
+                        <div className="relative h-40 w-32 overflow-hidden rounded-lg bg-slate-100">
+                          {(() => {
+                            const selected = imageBadgeOptions.filter((badge) => (productInfo.imageBadgeIds || []).map(String).includes(String(badge.id)))
+                            const groups = []
+                            const byPlacement = new Map()
+                            selected.forEach((badge) => {
+                              const placement = badge.placement || 'top-left'
+                              if (!byPlacement.has(placement)) {
+                                byPlacement.set(placement, [])
+                                groups.push(placement)
+                              }
+                              byPlacement.get(placement).push(badge)
+                            })
+                            return groups.map((placement) => {
+                              const stack = byPlacement.get(placement)
+                              const isBottom = String(placement).startsWith('bottom')
+                              const align = String(placement).includes('center')
+                                ? 'items-center'
+                                : String(placement).endsWith('right')
+                                  ? 'items-end'
+                                  : 'items-start'
+                              return (
+                                <span
+                                  key={placement}
+                                  className={`pointer-events-none absolute z-10 flex gap-1 ${isBottom ? 'flex-col-reverse' : 'flex-col'} ${align} ${getBadgePlacementClass(stack[0], 'card')}`}
+                                >
+                                  {stack.map((badge) => (
+                                    <span
+                                      key={badge.id}
+                                      className={`leading-none ${getBadgeSizeClass(badge, 'card')} ${getBadgeShadowClass(badge)}`}
+                                      style={getNewBadgeStyle(badge, true)}
+                                    >
+                                      {badge.label}
+                                    </span>
+                                  ))}
+                                </span>
+                              )
+                            })
+                          })()}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
 
                 <div className="pt-4 border-t border-slate-100 space-y-3">

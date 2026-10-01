@@ -1,20 +1,19 @@
 import { NextResponse } from 'next/server';
+import { isAuthorizedCronRequest } from '@/lib/cronAuth';
 import { processWaslahScheduledStatusSync } from '@/lib/waslahScheduledStatusSync';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
 /**
- * Vercel cron: poll Waslah POST /orders/history every hour.
- * Each shipment is still skipped for 3 hours after its last check.
- * Batches ~10 shipments per call with a delay between batches (Waslah requirement).
+ * Vercel cron: poll Waslah POST /orders/history every 5 minutes.
+ * A shipment is checked again 2 minutes after its last successful look-up.
+ * Batches ~10 shipments per call with a delay between batches.
  *
- * Auth: Authorization: Bearer ${CRON_SECRET}
+ * Auth: Authorization: Bearer ${CRON_SECRET}, or Vercel cron headers when the secret is unset.
  */
 export async function GET(request) {
-  const cronSecret = String(process.env.CRON_SECRET || '').trim();
-  const authorization = request.headers.get('authorization') || '';
-  if (!cronSecret || authorization !== `Bearer ${cronSecret}`) {
+  if (!isAuthorizedCronRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

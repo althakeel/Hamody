@@ -211,6 +211,7 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
   const [captchaConfirmed, setCaptchaConfirmed] = useState(false);
   const captchaInputRef = useRef(null);
   const captchaRequestRef = useRef(0);
+  const backdropPressedRef = useRef(false);
   const [authMethod, setAuthMethod] = useState('email'); // email | whatsapp | email_otp
   const [otpChannel, setOtpChannel] = useState('whatsapp'); // email | whatsapp
   const [whatsappStep, setWhatsappStep] = useState('phone'); // phone | otp
@@ -294,9 +295,7 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
 
   React.useEffect(() => {
     if (variant !== 'modal') return undefined;
-    if (open) {
-      resetAuthForm();
-    }
+    resetAuthForm();
     return undefined;
   }, [open, variant, resetAuthForm]);
 
@@ -1026,11 +1025,26 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
         ? 'min-h-screen flex items-center justify-center bg-gray-50 p-4'
         : 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4'
       }
-      onClick={isPage ? undefined : onClose}
+      onMouseDown={isPage ? undefined : (event) => {
+        backdropPressedRef.current = event.target === event.currentTarget;
+      }}
+      onMouseUp={isPage ? undefined : (event) => {
+        const pressedBackdrop = backdropPressedRef.current;
+        backdropPressedRef.current = false;
+        if (pressedBackdrop && event.target === event.currentTarget) onClose();
+      }}
     >
       <div
         className="bg-white w-full max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex relative"
         style={{ maxWidth: modalSettings.sideImage ? '800px' : '448px' }}
+        onMouseDown={(event) => {
+          backdropPressedRef.current = false;
+          event.stopPropagation();
+        }}
+        onMouseUp={(event) => {
+          backdropPressedRef.current = false;
+          event.stopPropagation();
+        }}
         onClick={(event) => event.stopPropagation()}
       >
         {!isPage ? (
@@ -1697,7 +1711,10 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
             <div>
               <div className="relative">
                 <input
+                  key={`login-password-${formNonce}`}
                   type={showPassword ? "text" : "password"}
+                  name={`login-password-${formNonce}`}
+                  autoComplete="new-password"
                   placeholder="Enter your password"
                   className={`border rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 pr-10 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent text-xs sm:text-sm w-full placeholder:text-gray-400 placeholder:opacity-100 ${
                     fieldErrors.password ? 'border-red-500' : 'border-gray-300'

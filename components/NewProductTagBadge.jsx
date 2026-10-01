@@ -28,17 +28,45 @@ export default function NewProductTagBadge({
   const compact = size === 'card' || thumb;
   const layoutSize = thumb ? 'thumb' : compact ? 'card' : 'detail';
 
+  const groups = [];
+  const byPlacement = new Map();
+  badges.forEach((badge) => {
+    const placement = badge.placement || (badge.position === 'right' ? 'top-right' : 'top-left');
+    if (!byPlacement.has(placement)) {
+      byPlacement.set(placement, []);
+      groups.push(placement);
+    }
+    byPlacement.get(placement).push(badge);
+  });
+
   return (
     <>
-      {badges.map((badge) => (
-        <span
-          key={badge.id}
-          className={`pointer-events-none absolute z-20 leading-none ${getBadgePlacementClass(badge, layoutSize)} ${getBadgeSizeClass(badge, layoutSize)} ${getBadgeShadowClass(badge)} ${className}`.trim()}
-          style={getNewBadgeStyle(badge, compact)}
-        >
-          {badge.label}
-        </span>
-      ))}
+      {groups.map((placement) => {
+        const stack = byPlacement.get(placement);
+        const sample = stack[0];
+        const isBottom = String(placement).startsWith('bottom');
+        const align = String(placement).includes('center')
+          ? 'items-center'
+          : String(placement).endsWith('right')
+            ? 'items-end'
+            : 'items-start';
+        return (
+          <span
+            key={placement}
+            className={`pointer-events-none absolute z-20 flex gap-1 ${isBottom ? 'flex-col-reverse' : 'flex-col'} ${align} ${getBadgePlacementClass(sample, layoutSize)} ${className}`.trim()}
+          >
+            {stack.map((badge) => (
+              <span
+                key={badge.id}
+                className={`leading-none ${getBadgeSizeClass(badge, layoutSize)} ${getBadgeShadowClass(badge)}`.trim()}
+                style={getNewBadgeStyle(badge, compact)}
+              >
+                {badge.label}
+              </span>
+            ))}
+          </span>
+        );
+      })}
     </>
   );
 }

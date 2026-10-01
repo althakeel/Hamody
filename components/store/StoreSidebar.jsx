@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 
-import { ChevronDown, HomeIcon, LayoutListIcon, SquarePenIcon, SquarePlusIcon, StarIcon, FolderIcon, TicketIcon, TruckIcon, RefreshCw, Users as UsersIcon, MessageSquare, Sparkles, BellIcon, MailIcon, Image as ImageIcon, ShoppingCart, Wallet, BarChart3, Target, Gift, Palette, CircleDashed, PackagePlus, Package, Activity, Layers, LineChart, Warehouse, MousePointerClick, ShieldAlert, Zap, Trash2, Smartphone, FileText, CalendarClock, MessageCircle, AlertTriangle, Download, Tag as TagIcon, Tags, ArrowUp, Search, Factory, CircleDollarSign } from "lucide-react"
+import { ChevronDown, HomeIcon, LayoutListIcon, SquarePenIcon, SquarePlusIcon, StarIcon, FolderIcon, TicketIcon, TruckIcon, RefreshCw, Users as UsersIcon, MessageSquare, Sparkles, BellIcon, MailIcon, Image as ImageIcon, ShoppingCart, Wallet, BarChart3, Target, Gift, Palette, CircleDashed, PackagePlus, Package, Activity, Layers, LineChart, Warehouse, MousePointerClick, ShieldAlert, Zap, Trash2, Smartphone, FileText, CalendarClock, MessageCircle, AlertTriangle, Download, Tag as TagIcon, Tags, ArrowUp, Search, Factory, CircleDollarSign, Pin, PinOff } from "lucide-react"
 
 import StoreNavLink from "@/components/store/StoreNavLink"
 
@@ -14,12 +14,18 @@ import { useStoreOrderNotifications } from "./StoreOrderNotificationProvider"
 
 
 
+const SIDEBAR_PIN_KEY = 'store1920.sellerSidebarPinned';
+
 const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permissions = {}, canViewActivityHistory = false }) => {
 
     const pathname = usePathname()
     const { user } = useAuth()
     const showFullMenu = Boolean(isSuperAdmin) || isAdminEmail(user?.email) || isOwner
+    const [pinned, setPinned] = useState(false)
+    const [pinReady, setPinReady] = useState(false)
+    const [wide, setWide] = useState(true)
     const [openSection, setOpenSection] = useState("")
+    const expanded = pinned || (showFullMenu && wide)
     const { unreadCount, canViewOrders, overduePickupCount } = useStoreOrderNotifications()
 
 
@@ -50,6 +56,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
         { name: 'Product Cost', href: '/store/product-cost', icon: CircleDollarSign },
 
+        { name: 'Product Badges', href: '/store/badges', icon: Tags },
+
         { name: 'Inventory', href: '/store/inventory', icon: Warehouse },
 
         { name: 'Database Import', href: '/store/settings/database-import', icon: RefreshCw },
@@ -57,8 +65,6 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
         { name: 'Customize', href: '/store/customize', icon: Palette },
 
         { name: 'Menu Management', href: '/store/menu-management', icon: LayoutListIcon },
-
-        { name: 'Product Badges', href: '/store/badges', icon: Tags },
 
         { name: 'WhatsApp Widget', href: '/store/customize/whatsapp-widget', icon: MessageCircle },
         { name: 'Scroll to Top', href: '/store/customize/scroll-to-top', icon: ArrowUp },
@@ -163,6 +169,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
                 '/store/product-cost',
 
+                '/store/badges',
+
                 '/store/settings/database-import',
 
             ]
@@ -178,8 +186,6 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
                 '/store/customize',
 
                 '/store/menu-management',
-
-                '/store/badges',
 
                 '/store/customize/whatsapp-widget',
 
@@ -391,11 +397,11 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
                     headerIconText: 'text-sky-700',
 
-                    activeLink: 'bg-sky-50 text-sky-700 border border-sky-200 shadow-sm font-semibold',
+                    activeLink: 'bg-[#7B2BFF] text-white font-semibold',
 
-                    activeIconBg: 'bg-sky-100',
+                    activeIconBg: 'bg-white/20',
 
-                    activeIconText: 'text-sky-700',
+                    activeIconText: 'text-white',
 
                     hoverLink: 'hover:bg-sky-50/60 hover:text-sky-700',
 
@@ -417,11 +423,11 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
                     headerIconText: 'text-emerald-700',
 
-                    activeLink: 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm font-semibold',
+                    activeLink: 'bg-[#7B2BFF] text-white font-semibold',
 
-                    activeIconBg: 'bg-emerald-100',
+                    activeIconBg: 'bg-white/20',
 
-                    activeIconText: 'text-emerald-700',
+                    activeIconText: 'text-white',
 
                     hoverLink: 'hover:bg-emerald-50/60 hover:text-emerald-700',
 
@@ -443,11 +449,11 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
                     headerIconText: 'text-violet-700',
 
-                    activeLink: 'bg-violet-50 text-violet-700 border border-violet-200 shadow-sm font-semibold',
+                    activeLink: 'bg-[#7B2BFF] text-white font-semibold',
 
-                    activeIconBg: 'bg-violet-100',
+                    activeIconBg: 'bg-white/20',
 
-                    activeIconText: 'text-violet-700',
+                    activeIconText: 'text-white',
 
                     hoverLink: 'hover:bg-violet-50/60 hover:text-violet-700',
 
@@ -469,11 +475,11 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
                     headerIconText: 'text-amber-700',
 
-                    activeLink: 'bg-amber-50 text-amber-700 border border-amber-200 shadow-sm font-semibold',
+                    activeLink: 'bg-[#7B2BFF] text-white font-semibold',
 
-                    activeIconBg: 'bg-amber-100',
+                    activeIconBg: 'bg-white/20',
 
-                    activeIconText: 'text-amber-700',
+                    activeIconText: 'text-white',
 
                     hoverLink: 'hover:bg-amber-50/60 hover:text-amber-700',
 
@@ -495,11 +501,11 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
                     headerIconText: 'text-indigo-700',
 
-                    activeLink: 'bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-sm font-semibold',
+                    activeLink: 'bg-[#7B2BFF] text-white font-semibold',
 
-                    activeIconBg: 'bg-indigo-100',
+                    activeIconBg: 'bg-white/20',
 
-                    activeIconText: 'text-indigo-700',
+                    activeIconText: 'text-white',
 
                     hoverLink: 'hover:bg-indigo-50/60 hover:text-indigo-700',
 
@@ -521,11 +527,11 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
                     headerIconText: 'text-rose-700',
 
-                    activeLink: 'bg-rose-50 text-rose-700 border border-rose-200 shadow-sm font-semibold',
+                    activeLink: 'bg-[#7B2BFF] text-white font-semibold',
 
-                    activeIconBg: 'bg-rose-100',
+                    activeIconBg: 'bg-white/20',
 
-                    activeIconText: 'text-rose-700',
+                    activeIconText: 'text-white',
 
                     hoverLink: 'hover:bg-rose-50/60 hover:text-rose-700',
 
@@ -547,11 +553,11 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
                     headerIconText: 'text-slate-700',
 
-                    activeLink: 'bg-slate-100 text-slate-800 border border-slate-200 shadow-sm font-semibold',
+                    activeLink: 'bg-[#7B2BFF] text-white font-semibold',
 
-                    activeIconBg: 'bg-slate-200',
+                    activeIconBg: 'bg-white/20',
 
-                    activeIconText: 'text-slate-800',
+                    activeIconText: 'text-white',
 
                     hoverLink: 'hover:bg-slate-100 hover:text-slate-700',
 
@@ -570,6 +576,29 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
 
     useEffect(() => {
+        const media = window.matchMedia('(min-width: 1024px)')
+        const sync = () => setWide(media.matches)
+        sync()
+        media.addEventListener('change', sync)
+        try {
+            setPinned(window.localStorage.getItem(SIDEBAR_PIN_KEY) === '1')
+        } catch {
+            setPinned(false)
+        }
+        setPinReady(true)
+        return () => media.removeEventListener('change', sync)
+    }, [])
+
+    useEffect(() => {
+        if (!pinReady) return
+        try {
+            window.localStorage.setItem(SIDEBAR_PIN_KEY, pinned ? '1' : '0')
+        } catch {
+            // Ignore storage failures. The pin still works for this visit.
+        }
+    }, [pinned, pinReady])
+
+    useEffect(() => {
         if (showFullMenu) return
         const activeSection = sidebarSections.find((section) => section.links.some((href) => resolveActive(href)))
         if (activeSection) setOpenSection(activeSection.name)
@@ -577,9 +606,30 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
     return (
 
-        <aside className="sticky top-0 flex h-full min-h-0 w-[60px] shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-gradient-to-br from-slate-50 via-white to-slate-50 shadow-sm md:w-[68px] lg:w-[236px]">
+        <aside className={`sticky top-0 flex h-full min-h-0 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-gradient-to-br from-slate-50 via-white to-slate-50 shadow-sm ${expanded ? 'w-[236px]' : 'w-[60px] md:w-[68px]'}`}>
+                {!showFullMenu || !wide ? (
+                    <div className={`flex shrink-0 border-b border-slate-200 px-1.5 py-2 ${expanded ? 'px-2' : 'justify-center'}`}>
+                        <button
+                            type="button"
+                            onClick={() => setPinned((current) => !current)}
+                            aria-pressed={pinned}
+                            aria-label={pinned ? 'Unpin sidebar' : 'Pin sidebar open'}
+                            title={pinned ? 'Unpin sidebar' : 'Pin sidebar open'}
+                            className={`inline-flex items-center justify-center gap-2 rounded-lg text-sm font-medium transition ${
+                                expanded ? 'h-9 w-full px-2.5' : 'h-8 w-8'
+                            } ${
+                                pinned
+                                    ? 'bg-violet-600 text-white hover:bg-violet-700'
+                                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                            }`}
+                        >
+                            {pinned ? <PinOff size={16} /> : <Pin size={16} />}
+                            {expanded ? <span>{pinned ? 'Unpin' : 'Pin open'}</span> : null}
+                        </button>
+                    </div>
+                ) : null}
 
-                <div className="scrollbar-hide min-h-0 flex-1 overflow-y-auto overscroll-contain px-1.5 py-2 lg:px-2">
+                <div className={`scrollbar-hide min-h-0 flex-1 overflow-y-auto overscroll-contain px-1.5 py-2 ${expanded ? 'px-2' : ''}`}>
 
                     {sidebarSections.map((section) => {
 
@@ -599,10 +649,10 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
                         return (
 
-                            <div key={section.name} className="mt-2 first:mt-0 lg:mt-3">
+                            <div key={section.name} className={`mt-2 first:mt-0 ${expanded ? 'mt-3' : ''}`}>
 
                                 {showFullMenu ? (
-                                <div className={`hidden items-center gap-1.5 px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wide lg:flex ${theme.headerText}`}>
+                                <div className={`${expanded ? 'flex' : 'hidden'} items-center gap-1.5 px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wide ${theme.headerText}`}>
 
                                     <span className={`rounded-md p-0.5 ${theme.headerIconBg}`}>
 
@@ -617,7 +667,7 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
                                 <button
                                     type="button"
                                     onClick={() => setOpenSection((current) => current === section.name ? "" : section.name)}
-                                    className={`hidden w-full items-center gap-1.5 rounded-lg px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide lg:flex ${theme.headerText} ${theme.hoverLink}`}
+                                    className={`${expanded ? 'flex' : 'hidden'} w-full items-center gap-1.5 rounded-lg px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide ${theme.headerText} ${theme.hoverLink}`}
                                     aria-expanded={sectionOpen}
                                 >
                                     <span className={`rounded-md p-0.5 ${theme.headerIconBg}`}>
@@ -630,7 +680,7 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
 
 
-                                <div className={`space-y-0.5 border-t border-slate-200/80 pt-1.5 first:border-t-0 first:pt-0 lg:border-t-0 lg:pt-0 ${sectionOpen ? "" : "lg:hidden"}`}>
+                                <div className={`space-y-0.5 ${expanded ? 'pt-0' : 'border-t border-slate-200/80 pt-1.5 first:border-t-0 first:pt-0'} ${expanded && !sectionOpen ? 'hidden' : ''}`}>
 
                                     {visibleLinks.map((href) => {
 
@@ -658,7 +708,9 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
                                                     aria-label={link.name}
 
-                                                    className={`group flex items-center justify-center gap-2 rounded-lg px-1 py-2 transition-all duration-200 lg:justify-start lg:px-2.5 lg:py-1.5 ${
+                                                    aria-current={isActive ? 'page' : undefined}
+
+                                                    className={`group relative flex items-center gap-2 rounded-lg px-1 py-2 transition-all duration-200 ${expanded ? 'justify-start px-2.5 py-1.5' : 'justify-center'} ${
 
                                                         isActive
 
@@ -670,7 +722,7 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
                                                 >
 
-                                                    <div className={`relative rounded-md p-1.5 transition-colors lg:p-1 ${
+                                                    <div className={`relative rounded-md transition-colors ${expanded ? 'p-1' : 'p-1.5'} ${
 
                                                         isActive 
 
@@ -680,35 +732,30 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
                                                     }`}>
 
-                                                        <Icon size={18} className={`lg:h-[15px] lg:w-[15px] ${isActive ? theme.activeIconText : `text-slate-600 ${theme.hoverIconText}`}`} />
+                                                        <Icon size={expanded ? 15 : 18} className={isActive ? theme.activeIconText : `text-slate-600 ${theme.hoverIconText}`} />
 
-                                                        {link.href === '/store/orders' && canViewOrders && unreadCount > 0 ? (
-                                                            <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-600 lg:hidden" />
+                                                        {link.href === '/store/orders' && canViewOrders && unreadCount > 0 && !expanded ? (
+                                                            <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-600" />
                                                         ) : null}
-                                                        {link.href === '/store/todays-pickup' && overduePickupCount > 0 ? (
-                                                            <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-amber-500 lg:hidden" />
+                                                        {link.href === '/store/todays-pickup' && overduePickupCount > 0 && !expanded ? (
+                                                            <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-amber-500" />
                                                         ) : null}
 
                                                     </div>
 
-                                                    <span className="hidden flex-1 leading-tight lg:inline text-[13px]">{link.name}</span>
+                                                    <span className={`${expanded ? 'inline' : 'hidden'} flex-1 leading-tight text-[13px]`}>{link.name}</span>
 
-                                                    {link.href === '/store/orders' && canViewOrders && unreadCount > 0 ? (
-                                                        <span className="hidden rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white lg:inline">
+                                                    {link.href === '/store/orders' && canViewOrders && unreadCount > 0 && expanded ? (
+                                                        <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white">
                                                             {unreadCount > 9 ? '9+' : unreadCount}
                                                         </span>
                                                     ) : null}
-                                                    {link.href === '/store/todays-pickup' && overduePickupCount > 0 ? (
-                                                        <span className="hidden rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white lg:inline">
+                                                    {link.href === '/store/todays-pickup' && overduePickupCount > 0 && expanded ? (
+                                                        <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">
                                                             {overduePickupCount > 9 ? '9+' : overduePickupCount}
                                                         </span>
                                                     ) : null}
 
-                                                    {isActive && (
-
-                                                        <div className={`hidden h-1.5 w-1.5 rounded-full lg:block ${theme.dot}`}></div>
-
-                                                    )}
 
                                                 </StoreNavLink>
 
@@ -728,17 +775,25 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
 
 
-                <div className="shrink-0 border-t border-slate-200 bg-slate-50/50 px-1.5 py-2 lg:px-2">
+                <div className={`shrink-0 border-t border-slate-200 bg-slate-50/50 px-1.5 py-2 ${expanded ? 'px-2' : ''}`}>
 
                         {canViewActivityHistory ? (
                             <StoreNavLink
                                 href="/store/settings/history"
                                 title="Settings history"
                                 aria-label="Settings history"
-                                className="mb-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-2 text-sm font-medium text-indigo-800 transition hover:bg-indigo-100 lg:px-3"
+                                aria-current={pathname.startsWith('/store/settings/history') ? 'page' : undefined}
+                                className={`relative mb-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-sm font-medium transition ${expanded ? 'px-3' : ''} ${
+                                    pathname.startsWith('/store/settings/history')
+                                        ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+                                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                }`}
                             >
-                                <span className="hidden lg:inline">History</span>
-                                <span className="lg:hidden">Log</span>
+                                {pathname.startsWith('/store/settings/history') ? (
+                                    <span className="absolute inset-y-1 start-0 w-1 rounded-full bg-white" />
+                                ) : null}
+                                <span className={expanded ? 'inline' : 'hidden'}>History</span>
+                                <span className={expanded ? 'hidden' : 'inline'}>Log</span>
                             </StoreNavLink>
                         ) : null}
 
@@ -750,9 +805,19 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
                             aria-label="Settings"
 
-                            className="group flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-slate-700 to-slate-600 px-2 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:from-slate-600 hover:to-slate-500 lg:px-3 lg:py-2"
+                            aria-current={pathname === '/store/settings' ? 'page' : undefined}
+
+                            className={`group relative flex w-full items-center justify-center gap-1.5 rounded-lg border px-2 py-2.5 text-sm font-medium transition-all duration-200 ${expanded ? 'px-3 py-2' : ''} ${
+                                pathname === '/store/settings'
+                                    ? 'border-slate-800 bg-gradient-to-r from-slate-800 to-slate-700 text-white shadow-md'
+                                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                            }`}
 
                         >
+
+                            {pathname === '/store/settings' ? (
+                                <span className="absolute inset-y-1.5 start-0 w-1 rounded-full bg-white" />
+                            ) : null}
 
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0 transition-transform duration-300 group-hover:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
 
@@ -762,7 +827,7 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
                             </svg>
 
-                            <span className="hidden lg:inline">Settings</span>
+                            <span className={expanded ? 'inline' : 'hidden'}>Settings</span>
 
                         </StoreNavLink>
 

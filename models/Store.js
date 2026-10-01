@@ -73,6 +73,13 @@ const StoreSchema = new mongoose.Schema({
       letterSpacing: { type: String, default: 'normal' },
       condition: { type: String, default: 'new' },
       conditionValue: { type: Number, default: 5 },
+      productIds: { type: [String], default: [] },
+      productNames: { type: [String], default: [] },
+      categoryIds: { type: [String], default: [] },
+      categoryNames: { type: [String], default: [] },
+      tags: { type: [String], default: [] },
+      priceMin: { type: Number, default: null },
+      priceMax: { type: Number, default: null },
       backgroundColor: { type: String, default: '#E52D27' },
       textColor: { type: String, default: '#FFFFFF' },
       borderColor: { type: String, default: '#E52D27' },
@@ -83,6 +90,7 @@ const StoreSchema = new mongoose.Schema({
       shape: { type: String, default: 'pill' },
     }],
   },
+  dashboardWelcomeEnabled: { type: Boolean, default: true },
   exploreInterestsEnabled: { type: Boolean, default: true },
   exploreInterestsProductIds: { type: [String], default: [] },
   carouselProductIds: { type: [String], default: [] }, // Array of product IDs for carousel slider
@@ -103,4 +111,23 @@ const StoreSchema = new mongoose.Schema({
 // username already has unique index via schema field definition
 StoreSchema.index({ userId: 1 });
 
-export default mongoose.models.Store || mongoose.model("Store", StoreSchema);
+const Store = mongoose.models.Store || mongoose.model("Store", StoreSchema);
+if (!Store.schema.path('dashboardWelcomeEnabled')) {
+  Store.schema.add({
+    dashboardWelcomeEnabled: { type: Boolean, default: true },
+  });
+}
+const badgeSchema = Store.schema.path('newTagSettings')?.schema?.path('badges')?.schema;
+if (badgeSchema && !badgeSchema.path('productIds')) {
+  badgeSchema.add({
+    productIds: { type: [String], default: [] },
+    productNames: { type: [String], default: [] },
+    categoryIds: { type: [String], default: [] },
+    categoryNames: { type: [String], default: [] },
+    tags: { type: [String], default: [] },
+    priceMin: { type: Number, default: null },
+    priceMax: { type: Number, default: null },
+  });
+}
+
+export default Store;

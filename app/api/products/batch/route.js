@@ -36,7 +36,7 @@ export async function POST(req) {
             _id: { $in: validProductIds },
             published: { $ne: false },
         })
-            .select('name nameAr slug price mrp AED images externalImages brand brandAr category categories inStock stockQuantity fastDelivery freeShippingEligible useProductsPath imageAspectRatio shortDescription shortDescriptionAr shortDescription2 sku hasVariants variants allowReturn allowReplacement published createdAt legacySourceId')
+            .select('name nameAr slug price mrp AED images externalImages brand brandAr category categories inStock stockQuantity fastDelivery freeShippingEligible useProductsPath imageAspectRatio imageBadgeIds shortDescription shortDescriptionAr shortDescription2 sku hasVariants variants allowReturn allowReplacement published createdAt legacySourceId')
             .lean();
 
         const productMap = new Map(products.map((product) => [String(product._id), product]));

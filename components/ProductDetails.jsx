@@ -2545,12 +2545,35 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
     }
   };
 
+  const trackSelectionAddedToCart = (packsAdded) => {
+    const packs = Math.max(1, Number(packsAdded) || 1);
+    let unitPrice = Number(effPrice || product.price || 0);
+    if (isBulkBundleProduct) {
+      const { bundleTier } = resolveBulkBundleCartFromUiQty(quantity, product, bulkBundleTiers);
+      unitPrice = Number(findBulkBundleVariant(product, bundleTier)?.price ?? unitPrice);
+    } else if (isMatrixProduct) {
+      unitPrice = Number(
+        matchMatrixVariant(variants, selectedOptions, activeBundleTier)?.price ?? unitPrice,
+      );
+    }
+
+    trackProductAddToCart({
+      product,
+      productId: product._id || product.id,
+      name: product.name || product.title || 'Product',
+      price: unitPrice,
+      quantity: packs,
+      currency: 'AED',
+      variantOptions: selectedOptions,
+    });
+  };
+
   const handleOrderNow = () => {
     if (isOrderingNow || !isSelectionInStock || maxOrderQty <= 0) return;
     setIsOrderingNow(true);
     try {
-      const qtyToAdd = quantity;
-      upsertProductCartLines(qtyToAdd);
+      const packsAdded = upsertProductCartLines(quantity);
+      if (packsAdded) trackSelectionAddedToCart(packsAdded);
       router.push('/checkout');
     } catch (error) {
       console.error('Order now failed:', error);
@@ -2562,26 +2585,8 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
   const handleAddToCart = async () => {
     if (!isSelectionInStock || maxOrderQty <= 0) return;
 
-    const qtyToAdd = quantity;
-    upsertProductCartLines(qtyToAdd);
-    const gtmQty = isBulkBundleProduct
-      ? (Number(activeBundleTier) || 1)
-      : Math.min(Math.max(1, Number(quantity) || 1), maxOrderQty);
-    const gtmLinePrice = isBulkBundleProduct
-      ? Number(findBulkBundleVariant(product, activeBundleTier)?.price ?? effPrice ?? product.price ?? 0)
-      : (isMatrixProduct
-        ? Number(matchMatrixVariant(variants, selectedOptions, activeBundleTier)?.price ?? effPrice ?? product.price ?? 0)
-        : Number(effPrice || product.price || 0));
-
-    trackProductAddToCart({
-      product,
-      productId: product._id || product.id,
-      name: product.name || product.title || 'Product',
-      price: gtmLinePrice,
-      quantity: gtmQty,
-      currency: 'AED',
-      variantOptions: selectedOptions,
-    });
+    const packsAdded = upsertProductCartLines(quantity);
+    if (packsAdded) trackSelectionAddedToCart(packsAdded);
 
     if (isSignedIn) {
       try {
