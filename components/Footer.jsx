@@ -19,6 +19,7 @@ import {
 } from '@/lib/businessIdentity';
 import { useAuth } from '@/lib/useAuth';
 import { auth } from '@/lib/firebase';
+import { STORE1920_LOGO_PATH } from '@/lib/brandLogo';
 
 const FOOTER_PAYMENT_METHODS = [
     { id: 'visa', label: 'Visa', src: '/payments/visa.png' },
@@ -36,14 +37,17 @@ function resolveFooterLogoFromAppearance(data = {}) {
     const customFooterUrl = String(data?.footerLogoUrl || '').trim();
     const navbarLogoUrl = String(data?.logoUrl || '').trim();
     const resolvedFromApi = String(data?.resolvedFooterLogoUrl || '').trim();
-    const logoUrl = resolvedFromApi
+    const customUrl = resolvedFromApi
         || (sameAsNavbar ? navbarLogoUrl : (customFooterUrl || navbarLogoUrl));
+    const logoUrl = customUrl || STORE1920_LOGO_PATH;
+    const usingBrandMark = !customUrl;
     const widthSource = sameAsNavbar ? data?.logoWidth : (data?.footerLogoWidth ?? data?.logoWidth);
     const heightSource = sameAsNavbar ? data?.logoHeight : (data?.footerLogoHeight ?? data?.logoHeight);
     return {
         logoUrl,
-        logoWidth: Number(widthSource) > 0 ? Number(widthSource) : 160,
-        logoHeight: Number(heightSource) > 0 ? Number(heightSource) : 40,
+        usingBrandMark,
+        logoWidth: usingBrandMark ? 72 : (Number(widthSource) > 0 ? Number(widthSource) : 160),
+        logoHeight: usingBrandMark ? 72 : (Number(heightSource) > 0 ? Number(heightSource) : 40),
     };
 }
 
@@ -54,8 +58,9 @@ const Footer = () => {
 
     const [footerLogo, setFooterLogo] = useState({
         logoUrl: '',
-        logoWidth: 160,
-        logoHeight: 40,
+        usingBrandMark: true,
+        logoWidth: 72,
+        logoHeight: 72,
     });
     const [footerLogoLoading, setFooterLogoLoading] = useState(true);
     const [appComingSoonOpen, setAppComingSoonOpen] = useState(false);
@@ -271,20 +276,18 @@ const Footer = () => {
                                 }}
                                 aria-hidden="true"
                             />
-                        ) : footerLogo.logoUrl ? (
-                            <Link href="/" className="inline-block mb-4">
+                        ) : (
+                            <Link href="/" className="mb-4 inline-block">
                                 <Image
-                                    src={footerLogo.logoUrl}
+                                    src={footerLogo.logoUrl || STORE1920_LOGO_PATH}
                                     alt="Store1920 Logo"
-                                    width={footerLogo.logoWidth || 160}
-                                    height={footerLogo.logoHeight || 40}
-                                    className="object-contain"
+                                    width={footerLogo.logoWidth || 72}
+                                    height={footerLogo.logoHeight || 72}
+                                    className={footerLogo.usingBrandMark
+                                        ? 'h-[72px] w-[72px] rounded-2xl object-contain'
+                                        : 'h-auto max-h-12 w-auto object-contain'}
                                     priority
                                 />
-                            </Link>
-                        ) : (
-                            <Link href="/" className="mb-4 inline-block text-lg font-semibold tracking-tight text-white">
-                                store1920
                             </Link>
                         )}
                         <p className="text-sm text-slate-400 leading-relaxed mb-3 max-w-sm">

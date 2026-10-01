@@ -185,7 +185,7 @@ const HorizontalSlider = ({ section }) => {
 
       if (!cancelled) {
         setSectionProducts([])
-        setLoading(false)
+        setLoading(false)        
       }
     }
 

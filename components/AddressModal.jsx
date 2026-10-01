@@ -437,7 +437,7 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                 <div className="relative border-b border-slate-100 bg-gradient-to-b from-slate-50 to-white px-5 py-5 sm:px-6">
                     <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
-                            <span className="inline-flex items-center rounded-full bg-[#FEECEB] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#E52721]">
+                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600">
                                 Delivery
                             </span>
                             <h2 id="address-modal-title" className="mt-2 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
@@ -490,10 +490,10 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                                                     key={addr._id}
                                                     role="button"
                                                     tabIndex={0}
-                                                    className={`w-full cursor-pointer rounded-2xl border p-4 text-left transition-all ${
+                                                    className={`w-full cursor-pointer rounded-2xl border-2 p-4 text-left transition-all ${
                                                         isSelected
-                                                            ? 'border-[#E52721] bg-[#FFF5F5] shadow-[0_8px_24px_rgba(229,39,33,0.12)]'
-                                                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                                                            ? 'border-slate-900 bg-slate-50'
+                                                            : 'border-slate-200 bg-white hover:border-slate-400'
                                                     }`}
                                                     onClick={() => setPendingAddressId(addr._id)}
                                                     onKeyDown={(event) => {
@@ -505,7 +505,7 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                                                 >
                                                     <div className="flex items-start gap-3">
                                                         <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
-                                                            isSelected ? 'border-[#E52721] bg-[#E52721]' : 'border-slate-300 bg-white'
+                                                            isSelected ? 'border-slate-900 bg-slate-900' : 'border-slate-300 bg-white'
                                                         }`}>
                                                             {isSelected ? <Check className="h-3 w-3 text-white" strokeWidth={3} /> : null}
                                                         </div>
@@ -518,7 +518,7 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                                                                         {addr.name}
                                                                     </span>
                                                                     {isSelected ? (
-                                                                        <span className="rounded-full bg-[#E52721] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                                                                        <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
                                                                             Selected
                                                                         </span>
                                                                     ) : null}
@@ -526,7 +526,7 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                                                                 <div className="flex shrink-0 items-center gap-1.5">
                                                                 <button
                                                                     type="button"
-                                                                    className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:border-[#E52721]/30 hover:text-[#E52721]"
+                                                                    className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
                                                                     onClick={(event) => {
                                                                         event.stopPropagation();
                                                                         setEditingAddress(addr);
@@ -554,7 +554,7 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
 
                                                             <div className="mt-2 space-y-1 text-sm text-slate-600">
                                                                 <p className="flex items-start gap-2">
-                                                                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#E52721]" />
+                                                                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
                                                                     <span>
                                                                         <span className="block font-medium text-slate-800">{addr.street}</span>
                                                                         {locationLine ? <span className="block">{locationLine}</span> : null}
@@ -578,7 +578,7 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
 
                                 <button
                                     type="button"
-                                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#E52721]/40 bg-[#FFF8F8] px-4 py-3.5 text-sm font-semibold text-[#E52721] transition hover:border-[#E52721] hover:bg-[#FEECEB]"
+                                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3.5 text-sm font-semibold text-slate-800 transition hover:border-slate-900 hover:bg-slate-50"
                                     onClick={() => {
                                         setEditingAddress(null);
                                         setMode('form');
@@ -594,7 +594,7 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                                     type="button"
                                     onClick={handleConfirmSelection}
                                     disabled={!pendingAddressId}
-                                    className="w-full rounded-xl bg-[#E52721] py-3.5 text-sm font-bold text-white transition hover:bg-[#C41F1A] disabled:cursor-not-allowed disabled:bg-slate-300"
+                                    className="w-full rounded-xl bg-slate-900 py-3.5 text-sm font-bold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:bg-slate-300"
                                 >
                                     Deliver to this address
                                 </button>

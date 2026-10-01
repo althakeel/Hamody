@@ -53,8 +53,8 @@ export default function StoreDashboardSearch({
   const needle = trimmed.toLowerCase();
 
   const pageResults = useMemo(() => {
-    if (!needle) return pages.slice(0, 8);
-    return pages.filter((page) => pageMatches(page.label, needle)).slice(0, 8);
+    if (needle.length < 2) return [];
+    return pages.filter((page) => pageMatches(page.label, needle)).slice(0, 5);
   }, [pages, needle]);
 
   const results = useMemo(() => {
@@ -170,15 +170,19 @@ export default function StoreDashboardSearch({
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
-          placeholder="Search pages, products, orders"
+          placeholder="Advanced search"
           className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pe-3 ps-9 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:bg-white"
         />
       </label>
       {open ? (
         <div className="absolute start-0 top-[calc(100%+6px)] z-50 max-h-80 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 text-left shadow-xl">
-          {results.length === 0 ? (
+          {needle.length < 2 ? (
             <p className="px-3 py-3 text-sm text-slate-500">
-              {searchingProducts ? 'Searching…' : 'No matches'}
+              Advanced search. Type at least 2 letters to find a page, product, or order.
+            </p>
+          ) : results.length === 0 ? (
+            <p className="px-3 py-3 text-sm text-slate-500">
+              {searchingProducts ? 'Searching products and orders…' : 'No matches'}
             </p>
           ) : (
             results.map((item, index) => (

@@ -15,6 +15,7 @@ export default function StoreSuppliersPage() {
   const [suppliers, setSuppliers] = useState([]);
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState(null);
+  const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_SUPPLIER);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
@@ -63,9 +64,16 @@ export default function StoreSuppliersPage() {
 
   const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
-  const startCreate = () => {
+  const closeForm = () => {
+    if (saving) return;
+    setFormOpen(false);
+    setEditingId(null);
+  };
+
+  const openCreate = () => {
     setEditingId(null);
     setForm({ ...EMPTY_SUPPLIER });
+    setFormOpen(true);
   };
 
   const startEdit = (supplier) => {
@@ -83,7 +91,17 @@ export default function StoreSuppliersPage() {
       notes: supplier.notes || '',
       isActive: supplier.isActive !== false,
     });
+    setFormOpen(true);
   };
+
+  useEffect(() => {
+    if (!formOpen) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') closeForm();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [formOpen, saving]);
 
   const saveSupplier = async () => {
     if (!form.name.trim()) {
@@ -94,14 +112,14 @@ export default function StoreSuppliersPage() {
       setSaving(true);
       const headers = await authHeaders();
       if (editingId) {
-        const { data } = await axios.patch(`/api/store/suppliers/${editingId}`, form, { headers });
+        await axios.patch(`/api/store/suppliers/${editingId}`, form, { headers });
         toast.success('Supplier updated');
-        if (data.supplier) startEdit(data.supplier);
       } else {
-        const { data } = await axios.post('/api/store/suppliers', form, { headers });
+        await axios.post('/api/store/suppliers', form, { headers });
         toast.success('Supplier added');
-        if (data.supplier) startEdit(data.supplier);
       }
+      setFormOpen(false);
+      setEditingId(null);
       await loadSuppliers();
     } catch (error) {
       toast.error(error?.response?.data?.error || error.message || 'Failed to save supplier');
@@ -123,7 +141,7 @@ export default function StoreSuppliersPage() {
       const headers = await authHeaders();
       await axios.delete(`/api/store/suppliers/${deleteTarget.id}`, { headers });
       toast.success('Supplier deleted');
-      if (editingId === deleteTarget.id) startCreate();
+      if (editingId === deleteTarget.id) closeForm();
       setDeleteTarget(null);
       await loadSuppliers();
     } catch (error) {
@@ -148,7 +166,7 @@ export default function StoreSuppliersPage() {
         </div>
         <button
           type="button"
-          onClick={startCreate}
+          onClick={openCreate}
           className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-black"
         >
           <Plus className="h-4 w-4" />
@@ -156,7 +174,7 @@ export default function StoreSuppliersPage() {
         </button>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.2fr)]">
+      <div className="max-w-3xl">
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold text-slate-900">Your suppliers</h2>
@@ -174,7 +192,7 @@ export default function StoreSuppliersPage() {
           {filtered.length === 0 ? (
             <p className="mt-4 text-sm text-slate-500">
               {suppliers.length === 0
-                ? 'No suppliers yet. Add a name and contact details on the right.'
+                ? 'No suppliers yet. Use Add supplier to enter a name and contact details.'
                 : 'No suppliers match this search.'}
             </p>
           ) : (
@@ -182,12 +200,13 @@ export default function StoreSuppliersPage() {
               {filtered.map((supplier) => (
                 <div
                   key={supplier.id}
-                  className={`rounded-xl border px-3 py-3 ${
-                    editingId === supplier.id ? 'border-slate-400 bg-slate-50' : 'border-slate-200 bg-slate-50/60'
+                  onClick={() => startEdit(supplier)}
+                  className={`cursor-pointer rounded-xl border px-3 py-3 ${
+                    editingId === supplier.id ? 'border-slate-900 bg-slate-50' : 'border-slate-200 bg-slate-50/60 hover:border-slate-300'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <button type="button" onClick={() => startEdit(supplier)} className="min-w-0 text-start">
+                    <div className="min-w-0 text-start">
                       <div className="truncate text-sm font-semibold text-slate-900">{supplier.name}</div>
                       <div className="mt-0.5 text-xs text-slate-500">
                         {supplier.isActive ? 'Active' : 'Inactive'}
@@ -195,12 +214,15 @@ export default function StoreSuppliersPage() {
                         {supplier.trn ? ` · TRN ${supplier.trn}` : ''}
                         {supplier.phone ? ` · ${supplier.phone}` : ''}
                       </div>
-                    </button>
+                    </div>
                     <div className="flex shrink-0 items-center gap-1.5">
                       <button
                         type="button"
                         title="Edit"
-                        onClick={() => startEdit(supplier)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          startEdit(supplier);
+                        }}
                         className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -209,7 +231,10 @@ export default function StoreSuppliersPage() {
                       <button
                         type="button"
                         title="Delete"
-                        onClick={() => askDelete(supplier)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          askDelete(supplier);
+                        }}
                         className="rounded-lg border border-red-100 bg-white p-1.5 text-red-600 hover:bg-red-50"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -222,19 +247,42 @@ export default function StoreSuppliersPage() {
           )}
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-4">
+        {formOpen ? (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-[2px]"
+          onClick={closeForm}
+          role="presentation"
+        >
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="supplier-form-title"
+          className="max-h-[min(90vh,820px)] w-full max-w-2xl space-y-4 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl"
+          onClick={(event) => event.stopPropagation()}
+        >
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-slate-900">
+            <h2 id="supplier-form-title" className="text-sm font-semibold text-slate-900">
               {editingId ? 'Edit supplier' : 'Add supplier'}
             </h2>
-            <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-600">
-              <input
-                type="checkbox"
-                checked={form.isActive}
-                onChange={(event) => setField('isActive', event.target.checked)}
-              />
-              Active
-            </label>
+            <div className="flex items-center gap-3">
+              <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={form.isActive}
+                  onChange={(event) => setField('isActive', event.target.checked)}
+                />
+                Active
+              </label>
+              <button
+                type="button"
+                onClick={closeForm}
+                disabled={saving}
+                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -341,22 +389,23 @@ export default function StoreSuppliersPage() {
             >
               {saving ? 'Saving…' : editingId ? 'Save changes' : 'Add supplier'}
             </button>
-            {editingId ? (
-              <button
-                type="button"
-                onClick={startCreate}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
-                Clear form
-              </button>
-            ) : null}
+            <button
+              type="button"
+              onClick={closeForm}
+              disabled={saving}
+              className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            >
+              Close
+            </button>
           </div>
         </section>
+        </div>
+        ) : null}
       </div>
 
       {deleteTarget ? (
         <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-[2px]"
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-[2px]"
           onClick={closeDeletePopup}
           role="presentation"
         >

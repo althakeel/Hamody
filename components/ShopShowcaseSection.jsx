@@ -37,7 +37,7 @@ import {
 } from '@/lib/navbarLayoutSettings'
 
 const NAVBAR_APPEARANCE_CACHE_KEY = 'navbarAppearanceCache'
-const DEFAULT_NAVBAR_BG = '#8f3404'
+const DEFAULT_NAVBAR_BG = ''
 
 function readCachedNavbarBg() {
   if (typeof window === 'undefined') return DEFAULT_NAVBAR_BG

@@ -189,7 +189,7 @@ export async function GET(req) {
           logoUrl: resolvedLogoUrl,
           logoWidth: resolvedWidth ?? 120,
           logoHeight: resolvedHeight ?? 40,
-          backgroundColor: settings?.backgroundColor || '#8f3404',
+          backgroundColor: String(settings?.backgroundColor || '').trim(),
           items: settings?.items || [],
           ...pickNavbarLayout(settings),
           ...pickFooterBranding(settings, resolvedLogoUrl),
@@ -209,46 +209,26 @@ export async function GET(req) {
     }
 
     console.log('[API GET /store/navbar-menu] No auth token - fetching public settings');
-    // Prefer an enabled doc that still has a logo so a newer empty save cannot blank live.
-    let settings = await NavbarMenuSettings.findOne({
-      enabled: true,
-      logoUrl: { $exists: true, $nin: [null, ''] },
-    })
+    // Use the approved store's saved navbar only. Another record's brown default
+    // must not replace the color the seller set.
+    const Store = (await import('@/models/Store')).default;
+    const approvedStore = await Store.findOne({ status: 'approved' })
       .sort({ updatedAt: -1 })
+      .select('userId')
       .lean();
+    const ownerId = String(approvedStore?.userId || '').trim();
+    let settings = ownerId
+      ? await NavbarMenuSettings.findOne({ storeId: ownerId }).sort({ updatedAt: -1, _id: -1 }).lean()
+      : null;
 
-    if (!settings) {
-      settings = await NavbarMenuSettings.findOne({
-        enabled: true,
-      })
-        .sort({ updatedAt: -1 })
+    if (!settings && approvedStore?._id) {
+      settings = await NavbarMenuSettings.findOne({ storeId: String(approvedStore._id) })
+        .sort({ updatedAt: -1, _id: -1 })
         .lean();
     }
 
     let resolvedWidth = toFiniteNumber(settings?.logoWidth);
     let resolvedHeight = toFiniteNumber(settings?.logoHeight);
-
-    const latestLayoutDoc = await NavbarMenuSettings.findOne({})
-      .sort({ updatedAt: -1, _id: -1 })
-      .lean();
-
-    if (latestLayoutDoc) {
-      if (resolvedWidth == null) resolvedWidth = toFiniteNumber(latestLayoutDoc.logoWidth);
-      if (resolvedHeight == null) resolvedHeight = toFiniteNumber(latestLayoutDoc.logoHeight);
-      settings = mergeNavbarLayoutSource(settings || {}, latestLayoutDoc);
-    } else if (settings?.storeId) {
-      const latestStoreDoc = await NavbarMenuSettings.findOne({
-        storeId: settings.storeId,
-      })
-        .sort({ updatedAt: -1, _id: -1 })
-        .lean();
-
-      if (latestStoreDoc) {
-        if (resolvedWidth == null) resolvedWidth = toFiniteNumber(latestStoreDoc.logoWidth);
-        if (resolvedHeight == null) resolvedHeight = toFiniteNumber(latestStoreDoc.logoHeight);
-        settings = mergeNavbarLayoutSource(settings, latestStoreDoc);
-      }
-    }
 
     return NextResponse.json(
       {
@@ -256,7 +236,7 @@ export async function GET(req) {
         logoUrl: settings?.logoUrl || '',
         logoWidth: resolvedWidth ?? 120,
         logoHeight: resolvedHeight ?? 40,
-        backgroundColor: settings?.backgroundColor || '#8f3404',
+        backgroundColor: String(settings?.backgroundColor || '').trim(),
         items: settings?.items || [],
         ...pickNavbarLayout(settings),
         ...pickFooterBranding(settings, settings?.logoUrl || ''),
@@ -274,7 +254,7 @@ export async function GET(req) {
         logoUrl: '',
         logoWidth: 120,
         logoHeight: 40,
-        backgroundColor: '#8f3404',
+        backgroundColor: '',
         items: [],
         footerLogoSameAsNavbar: true,
         footerLogoUrl: '',
@@ -307,7 +287,7 @@ export async function POST(req) {
       logoUrl = '',
       logoWidth,
       logoHeight,
-      backgroundColor = '#8f3404',
+      backgroundColor = '',
       clearLogo = false,
       removeLogo = false,
       extraButtons,
@@ -366,13 +346,16 @@ export async function POST(req) {
 
     const nextLogoWidth = Math.max(20, Math.min(400, parsedLogoWidth));
     const nextLogoHeight = Math.max(10, Math.min(200, parsedLogoHeight));
-    const nextBackgroundColor = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(String(backgroundColor || '').trim())
-      ? String(backgroundColor).trim()
-      : '#8f3404';
 
     const existing = await NavbarMenuSettings.findOne({ storeId: userId })
       .sort({ updatedAt: -1, _id: -1 })
       .lean();
+
+    const incomingBackgroundColor = String(backgroundColor || '').trim();
+    const existingBackgroundColor = String(existing?.backgroundColor || '').trim();
+    const nextBackgroundColor = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(incomingBackgroundColor)
+      ? incomingBackgroundColor
+      : existingBackgroundColor;
 
     // Also check legacy store ObjectId docs so we don't lose a logo saved under Store._id.
     let existingLogoUrl = String(existing?.logoUrl || '').trim();

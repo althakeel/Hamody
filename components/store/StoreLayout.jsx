@@ -75,7 +75,7 @@ function SellerWelcomeDialog({ user, accountName, storeName, onClose }) {
                     role="dialog"
                     aria-modal="false"
                     aria-labelledby="seller-welcome-title-compact"
-                    className="pointer-events-auto flex w-full max-w-[500px] items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-[0_16px_40px_rgba(15,23,42,0.16)]"
+                    className="pointer-events-auto flex w-full max-w-[750px] items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-[0_16px_40px_rgba(15,23,42,0.16)]"
                 >
                     <img src={STORE1920_LOGO_PATH} alt="" className="h-11 w-11 shrink-0 rounded-xl object-contain" />
                     <div className="min-w-0 flex-1">
@@ -102,7 +102,7 @@ function SellerWelcomeDialog({ user, accountName, storeName, onClose }) {
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="seller-welcome-title"
-                    className="relative aspect-[1024/682] w-full max-w-[500px] overflow-hidden rounded-[28px] text-left shadow-[0_28px_70px_rgba(15,23,42,0.32)]"
+                    className="relative aspect-[1024/682] w-full max-w-[750px] overflow-hidden rounded-[28px] text-left shadow-[0_28px_70px_rgba(15,23,42,0.32)]"
                     style={{ animation: 'seller-welcome-image 700ms ease-out' }}
                 >
                     <h2 id="seller-welcome-title" className="sr-only">Your store, at a glance</h2>

@@ -15,7 +15,7 @@ import {
   splitOffersNavLabel,
 } from '@/lib/offersPageSettings'
 
-const DEFAULT_BRAND_COLOR = '#8f3404'
+const DEFAULT_BRAND_COLOR = ''
 const INACTIVE_NAV_COLOR = '#94a3b8'
 const NAVBAR_APPEARANCE_CACHE_KEY = 'navbarAppearanceCache'
 const OFFERS_HREF = '/offers'

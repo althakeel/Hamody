@@ -1247,6 +1247,13 @@ export async function POST(request) {
             }
 
             const addr = primaryOrder?.shippingAddress || {};
+            let customerEmail = addr.email || guestInfo?.email || '';
+            let customerName = addr.name || guestInfo?.name || '';
+            if ((!customerEmail || !customerName) && userId && userId !== 'guest') {
+                const userDoc = await User.findById(userId).select('email name').lean();
+                if (!customerEmail) customerEmail = userDoc?.email || '';
+                if (!customerName) customerName = userDoc?.name || '';
+            }
             let checkout;
             try {
                 const requestedWallet = String(vaultsPayMethod || 'card').trim().toLowerCase();
@@ -1258,8 +1265,10 @@ export async function POST(request) {
                     callbackUrl: buildCustomerSitePath('/api/webhooks/vaultspay'),
                     method: walletMethod,
                     customer: {
-                        email: addr.email || guestInfo?.email || '',
+                        name: customerName,
+                        email: customerEmail,
                         phone: addr.phone || guestInfo?.phone || '',
+                        phoneCode: addr.phoneCode || guestInfo?.phoneCode || '',
                     },
                 });
             } catch (error) {

@@ -664,6 +664,7 @@ export default function StoreCategoryMenu() {
   const [generatingImageKey, setGeneratingImageKey] = useState(null);
   const [backfillingArabic, setBackfillingArabic] = useState(false);
   const [translatingDescription, setTranslatingDescription] = useState(false);
+  const [translatingName, setTranslatingName] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [categoryProductCounts, setCategoryProductCounts] = useState({});
@@ -1278,6 +1279,43 @@ export default function StoreCategoryMenu() {
     }
   };
 
+  const handleTranslateName = async () => {
+    const english = formData.name?.trim();
+    if (!english) {
+      toast.error('Enter the English category name first');
+      return;
+    }
+
+    try {
+      setTranslatingName(true);
+      const token = await getToken();
+      if (!token) {
+        toast.error('Please wait a moment and try again');
+        return;
+      }
+
+      const { data } = await axios.post('/api/store/categories/translate-arabic', {
+        text: english,
+        kind: 'name',
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const translated = String(data?.nameAr || data?.descriptionAr || '').trim();
+      if (!translated) {
+        toast.error('Could not translate the category name');
+        return;
+      }
+
+      setFormData((prev) => ({ ...prev, nameAr: translated }));
+      toast.success('Arabic name filled');
+    } catch (error) {
+      toast.error(error?.response?.data?.error || 'Failed to translate the category name');
+    } finally {
+      setTranslatingName(false);
+    }
+  };
+
   const handleTranslateDescription = async () => {
     const english = formData.description?.trim();
     if (!english) {
@@ -1626,8 +1664,15 @@ export default function StoreCategoryMenu() {
     const directProductCount = categoryDirectProductCounts[categoryId] || 0;
     const showsSubcategoryRollup = productCount > directProductCount;
 
+    const listIndent = !showNestedChildren && depth > 0
+      ? (depth === 1 ? 'ms-5 sm:ms-8' : depth === 2 ? 'ms-10 sm:ms-16' : 'ms-14 sm:ms-24')
+      : '';
+    const levelRail = !showNestedChildren && depth > 0
+      ? (depth === 1 ? 'border-s-[3px] border-s-blue-500' : 'border-s-[3px] border-s-violet-500')
+      : '';
+
     return (
-      <div key={String(category._id)} className={`rounded-xl border shadow-md ${meta.cardClassName} ${isSelected ? 'border-blue-500 ring-2 ring-blue-100' : ''}`}>
+      <div key={String(category._id)} className={`rounded-xl border shadow-md ${meta.cardClassName} ${listIndent} ${levelRail} ${isSelected ? 'border-blue-500 ring-2 ring-blue-100' : ''}`}>
         <div className="p-3 sm:p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
             <div className="flex items-start gap-2.5 sm:gap-3">
@@ -1980,9 +2025,20 @@ export default function StoreCategoryMenu() {
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-700 sm:text-sm">
-                        Arabic Name (UAE)
-                      </label>
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <label className="block text-xs font-bold uppercase tracking-wide text-slate-700 sm:text-sm">
+                          Arabic Name (UAE)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleTranslateName}
+                          disabled={translatingName || !formData.name?.trim()}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <MdAutoAwesome className="text-sm" />
+                          {translatingName ? 'Translating...' : 'Translate'}
+                        </button>
+                      </div>
                       <input
                         type="text"
                         value={formData.nameAr}

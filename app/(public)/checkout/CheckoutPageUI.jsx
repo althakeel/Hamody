@@ -2510,12 +2510,81 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     || Boolean(upsellOrderId);
 
   if (!canShowCheckoutForm) {
+    const cartIsEmpty = checkoutProductsLoaded;
     return (
-      <div className="flex min-h-[40vh] flex-col items-center justify-center px-4 text-center">
-        <h1 className="text-2xl font-bold text-gray-900">{t('checkout.pageTitle')}</h1>
-        <p className="mt-3 text-sm text-gray-500">
-          {checkoutProductsLoaded ? t('checkout.cartEmpty') : t('checkout.loadingCart')}
-        </p>
+      <div className="min-h-[70vh] bg-slate-50 pb-16 pt-6" dir={isArabic ? 'rtl' : 'ltr'}>
+        <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6">
+          <div className="mb-5 flex items-end justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t('checkout.pageTitle')}</h1>
+              <p className="mt-1 text-sm text-slate-500">
+                {cartIsEmpty ? t('checkout.cartEmptyDesc') : t('checkout.loadingCart')}
+              </p>
+            </div>
+          </div>
+
+          {cartIsEmpty ? (
+            <div className="rounded-2xl border border-slate-200 bg-white px-6 py-14 text-center shadow-sm">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                  <path d="M6 6h15l-1.5 9h-12z" strokeLinejoin="round" />
+                  <path d="M6 6 5 3H2" strokeLinecap="round" />
+                  <circle cx="9" cy="20" r="1.4" fill="currentColor" stroke="none" />
+                  <circle cx="18" cy="20" r="1.4" fill="currentColor" stroke="none" />
+                </svg>
+              </div>
+              <h2 className="mt-4 text-lg font-semibold text-slate-900">{t('checkout.cartEmpty')}</h2>
+              <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500">{t('checkout.cartEmptyDesc')}</p>
+              <Link
+                href="/shop"
+                className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-black"
+              >
+                {t('checkout.shopNow')}
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
+              <div className="space-y-4 md:col-span-2">
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="h-5 w-32 animate-pulse rounded bg-slate-200" />
+                  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="flex gap-3 rounded-xl border border-slate-100 p-3">
+                      <div className="h-16 w-16 animate-pulse rounded-lg bg-slate-200" />
+                      <div className="flex-1 space-y-2 pt-1">
+                        <div className="h-3 w-3/4 animate-pulse rounded bg-slate-200" />
+                        <div className="h-3 w-1/2 animate-pulse rounded bg-slate-100" />
+                      </div>
+                    </div>
+                    <div className="flex gap-3 rounded-xl border border-slate-100 p-3">
+                      <div className="h-16 w-16 animate-pulse rounded-lg bg-slate-200" />
+                      <div className="flex-1 space-y-2 pt-1">
+                        <div className="h-3 w-2/3 animate-pulse rounded bg-slate-200" />
+                        <div className="h-3 w-1/3 animate-pulse rounded bg-slate-100" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="h-5 w-40 animate-pulse rounded bg-slate-200" />
+                  <div className="mt-4 space-y-3">
+                    <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
+                    <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
+                    <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
+                  </div>
+                </div>
+              </div>
+              <div className="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="h-5 w-28 animate-pulse rounded bg-slate-200" />
+                <div className="mt-5 space-y-3">
+                  <div className="h-3 w-full animate-pulse rounded bg-slate-100" />
+                  <div className="h-3 w-4/5 animate-pulse rounded bg-slate-100" />
+                  <div className="h-3 w-2/3 animate-pulse rounded bg-slate-100" />
+                </div>
+                <div className="mt-6 h-11 animate-pulse rounded-xl bg-slate-900/80" />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -2826,9 +2895,24 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
             </div>
             {/* Shipping Method Section */}
             <div className="mb-4 md:mb-6">
-              <h2 className="mb-1 text-xl font-bold text-gray-900">{t('checkout.deliveryMethod')}</h2>
-              <p className="mb-2 text-sm text-slate-500">Choose how fast you want your order delivered.</p>
-              <p className="mb-4 text-xs leading-relaxed text-slate-500">{t('checkout.freeDeliveryNote')}</p>
+              <div className="mb-4 flex items-center gap-2">
+                <h2 className="text-xl font-bold text-gray-900">{t('checkout.deliveryMethod')}</h2>
+                <span className="group relative inline-flex">
+                  <button
+                    type="button"
+                    className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 text-[11px] font-semibold text-slate-500 transition hover:border-slate-900 hover:text-slate-900"
+                    aria-label={t('checkout.freeDeliveryNote')}
+                  >
+                    ?
+                  </button>
+                  <span
+                    role="tooltip"
+                    className="pointer-events-none absolute start-0 top-full z-20 mt-2 hidden w-72 rounded-xl bg-slate-900 px-3 py-2 text-xs font-normal leading-relaxed text-white shadow-lg group-hover:block group-focus-within:block"
+                  >
+                    {t('checkout.freeDeliveryNote')}
+                  </span>
+                </span>
+              </div>
               <div className="space-y-3">
                 {availableShippingOptions.map((option) => {
                   const optionFee = calculateShipping({
@@ -2849,8 +2933,8 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                       onClick={() => setShippingMethod(option.id)}
                       className={`w-full rounded-xl border-2 p-4 text-left transition-colors ${
                         isSelected
-                          ? 'border-emerald-300 bg-white'
-                          : 'border-slate-200 bg-white hover:border-slate-300'
+                          ? 'border-slate-900 bg-slate-50'
+                          : 'border-slate-200 bg-white hover:border-slate-400'
                       }`}
                     >
                       <div className="flex items-center gap-4">
@@ -2870,13 +2954,11 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                         </div>
 
                         <div className="flex shrink-0 items-center gap-3">
-                          <span className={`text-sm font-semibold ${
-                            optionFee === 0 ? 'text-emerald-600' : 'text-slate-900'
-                          }`}>
+                          <span className="text-sm font-semibold text-slate-900">
                             {optionFee === 0 ? t('cart.free') : formatMoney(optionFee)}
                           </span>
                           <span className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
-                            isSelected ? 'border-emerald-400 bg-emerald-400' : 'border-slate-300 bg-white'
+                            isSelected ? 'border-slate-900 bg-slate-900' : 'border-slate-300 bg-white'
                           }`}>
                             {isSelected ? <Check className="h-3 w-3 text-white" strokeWidth={3} /> : null}
                           </span>
@@ -3361,14 +3443,14 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
               <div id="checkout-payment" className={`flex flex-col gap-2 mb-4 ${fieldHasError('checkout-payment') ? 'rounded-2xl ring-2 ring-red-100' : ''}`}>
                 {/* Credit Card Option */}
                 {showCardPayment ? (
-                <label className="flex items-center gap-3 p-4 border-2 rounded-lg transition-all cursor-pointer border-gray-200 hover:border-blue-400 hover:bg-blue-50/30 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-4 transition-all hover:border-slate-400 has-[:checked]:border-slate-900 has-[:checked]:bg-slate-50">
                   <input
                     type="radio"
                     name="payment"
                     value="card"
                     checked={form.payment === 'card'}
                     onChange={handleChange}
-                    className="accent-blue-600 w-5 h-5"
+                    className="h-5 w-5 accent-slate-900"
                   />
                   <div className="flex-1 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -3393,14 +3475,14 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
 
                 {showVaultsPayPayment ? (
                 <>
-                <label className="flex items-center gap-3 p-4 border-2 rounded-lg transition-all cursor-pointer border-gray-200 hover:border-emerald-400 hover:bg-emerald-50/30 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50">
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-4 transition-all hover:border-slate-400 has-[:checked]:border-slate-900 has-[:checked]:bg-slate-50">
                   <input
                     type="radio"
                     name="payment"
                     value="vaultspay"
                     checked={form.payment === 'vaultspay'}
                     onChange={handleChange}
-                    className="accent-emerald-600 w-5 h-5"
+                    className="h-5 w-5 accent-slate-900"
                   />
                   <div className="flex-1 flex items-center justify-between gap-3">
                     <div>
@@ -3414,14 +3496,14 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                   </div>
                 </label>
                 {showVaultsPayGooglePay ? (
-                <label className="flex items-center gap-3 p-4 border-2 rounded-lg transition-all cursor-pointer border-gray-200 hover:border-emerald-400 hover:bg-emerald-50/30 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50">
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-4 transition-all hover:border-slate-400 has-[:checked]:border-slate-900 has-[:checked]:bg-slate-50">
                   <input
                     type="radio"
                     name="payment"
                     value="googlepay"
                     checked={form.payment === 'googlepay'}
                     onChange={handleChange}
-                    className="accent-emerald-600 w-5 h-5"
+                    className="h-5 w-5 accent-slate-900"
                   />
                   <div className="flex items-center gap-2">
                     <Image src={GooglePayLogo} alt="" width={56} height={32} className="h-7 w-auto object-contain" />
@@ -3430,14 +3512,14 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                 </label>
                 ) : null}
                 {showVaultsPayApplePay ? (
-                <label className="flex items-center gap-3 p-4 border-2 rounded-lg transition-all cursor-pointer border-gray-200 hover:border-emerald-400 hover:bg-emerald-50/30 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50">
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-4 transition-all hover:border-slate-400 has-[:checked]:border-slate-900 has-[:checked]:bg-slate-50">
                   <input
                     type="radio"
                     name="payment"
                     value="applepay"
                     checked={form.payment === 'applepay'}
                     onChange={handleChange}
-                    className="accent-emerald-600 w-5 h-5"
+                    className="h-5 w-5 accent-slate-900"
                   />
                   <div className="flex items-center gap-2">
                     <Image src={ApplePayLogo} alt="" width={56} height={32} className="h-7 w-auto object-contain" />
@@ -3459,7 +3541,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                     <label className={`flex items-center gap-3 p-4 border-2 rounded-lg transition-all ${
                       isCODDisabled
                         ? 'opacity-50 cursor-not-allowed border-gray-300 bg-gray-50'
-                        : 'cursor-pointer border-gray-200 hover:border-green-400 hover:bg-green-50/30 has-[:checked]:border-green-500 has-[:checked]:bg-green-50'
+                        : 'cursor-pointer border-slate-200 bg-white hover:border-slate-400 has-[:checked]:border-slate-900 has-[:checked]:bg-slate-50'
                     }`}>
                       <input
                         type="radio"
@@ -3468,11 +3550,11 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                         checked={form.payment === 'cod' && !isCODDisabled}
                         onChange={handleChange}
                         disabled={isCODDisabled}
-                        className="accent-green-600 w-5 h-5"
+                        className="h-5 w-5 accent-slate-900"
                       />
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="w-5 h-5 text-slate-700" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
                           </svg>
                           <div>

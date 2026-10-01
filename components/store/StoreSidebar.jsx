@@ -1,9 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import { usePathname } from "next/navigation"
 
-import { ChevronDown, HomeIcon, LayoutListIcon, SquarePenIcon, SquarePlusIcon, StarIcon, FolderIcon, TicketIcon, TruckIcon, RefreshCw, Users as UsersIcon, MessageSquare, Sparkles, BellIcon, MailIcon, Image as ImageIcon, ShoppingCart, Wallet, BarChart3, Target, Gift, Palette, CircleDashed, PackagePlus, Package, Activity, Layers, LineChart, Warehouse, MousePointerClick, ShieldAlert, Zap, Trash2, Smartphone, FileText, CalendarClock, MessageCircle, AlertTriangle, Download, Tag as TagIcon, Tags, ArrowUp, Search, Factory, CircleDollarSign, Pin, PinOff } from "lucide-react"
+import { ChevronDown, HomeIcon, LayoutListIcon, SquarePenIcon, SquarePlusIcon, StarIcon, FolderIcon, TicketIcon, TruckIcon, RefreshCw, Users as UsersIcon, MessageSquare, Sparkles, BellIcon, MailIcon, Image as ImageIcon, ShoppingCart, Wallet, BarChart3, Target, Gift, Palette, CircleDashed, PackagePlus, Package, Activity, Layers, LineChart, Warehouse, MousePointerClick, ShieldAlert, Zap, Trash2, Smartphone, FileText, CalendarClock, MessageCircle, AlertTriangle, Download, Tag as TagIcon, Tags, ArrowUp, Search, Factory, CircleDollarSign, Pin, PanelLeftClose, PanelLeftOpen } from "lucide-react"
 
 import StoreNavLink from "@/components/store/StoreNavLink"
 
@@ -15,6 +16,7 @@ import { useStoreOrderNotifications } from "./StoreOrderNotificationProvider"
 
 
 const SIDEBAR_PIN_KEY = 'store1920.sellerSidebarPinned';
+const SECTION_PINS_KEY = 'store1920.sellerSidebarSectionPins';
 
 const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permissions = {}, canViewActivityHistory = false }) => {
 
@@ -22,10 +24,13 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
     const { user } = useAuth()
     const showFullMenu = Boolean(isSuperAdmin) || isAdminEmail(user?.email) || isOwner
     const [pinned, setPinned] = useState(false)
+    const [iconsOnly, setIconsOnly] = useState(false)
+    const [pinnedSections, setPinnedSections] = useState([])
     const [pinReady, setPinReady] = useState(false)
     const [wide, setWide] = useState(true)
     const [openSection, setOpenSection] = useState("")
-    const expanded = pinned || (showFullMenu && wide)
+    const [iconTip, setIconTip] = useState(null)
+    const expanded = !iconsOnly && (pinned || (showFullMenu && wide))
     const { unreadCount, canViewOrders, overduePickupCount } = useStoreOrderNotifications()
 
 
@@ -581,9 +586,14 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
         sync()
         media.addEventListener('change', sync)
         try {
-            setPinned(window.localStorage.getItem(SIDEBAR_PIN_KEY) === '1')
+            const savedSidebar = window.localStorage.getItem(SIDEBAR_PIN_KEY)
+            setPinned(savedSidebar === '1')
+            setIconsOnly(savedSidebar === 'icon')
+            const savedSections = JSON.parse(window.localStorage.getItem(SECTION_PINS_KEY) || '[]')
+            setPinnedSections(Array.isArray(savedSections) ? savedSections.filter((name) => typeof name === 'string') : [])
         } catch {
             setPinned(false)
+            setPinnedSections([])
         }
         setPinReady(true)
         return () => media.removeEventListener('change', sync)
@@ -592,11 +602,28 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
     useEffect(() => {
         if (!pinReady) return
         try {
-            window.localStorage.setItem(SIDEBAR_PIN_KEY, pinned ? '1' : '0')
+            window.localStorage.setItem(SIDEBAR_PIN_KEY, iconsOnly ? 'icon' : (pinned ? '1' : '0'))
+            window.localStorage.setItem(SECTION_PINS_KEY, JSON.stringify(pinnedSections))
         } catch {
-            // Ignore storage failures. The pin still works for this visit.
+            // Ignore storage failures. The choice still works for this visit.
         }
-    }, [pinned, pinReady])
+    }, [pinned, iconsOnly, pinnedSections, pinReady])
+
+    const showIconTip = (event, label) => {
+        if (expanded) return
+        const rect = event.currentTarget.getBoundingClientRect()
+        setIconTip({
+            label,
+            top: rect.top + (rect.height / 2),
+            left: rect.right + 10,
+        })
+    }
+
+    const hideIconTip = () => setIconTip(null)
+
+    useEffect(() => {
+        if (expanded) setIconTip(null)
+    }, [expanded])
 
     useEffect(() => {
         if (showFullMenu) return
@@ -607,27 +634,26 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
     return (
 
         <aside className={`sticky top-0 flex h-full min-h-0 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-gradient-to-br from-slate-50 via-white to-slate-50 shadow-sm ${expanded ? 'w-[236px]' : 'w-[60px] md:w-[68px]'}`}>
-                {!showFullMenu || !wide ? (
-                    <div className={`flex shrink-0 border-b border-slate-200 px-1.5 py-2 ${expanded ? 'px-2' : 'justify-center'}`}>
-                        <button
-                            type="button"
-                            onClick={() => setPinned((current) => !current)}
-                            aria-pressed={pinned}
-                            aria-label={pinned ? 'Unpin sidebar' : 'Pin sidebar open'}
-                            title={pinned ? 'Unpin sidebar' : 'Pin sidebar open'}
-                            className={`inline-flex items-center justify-center gap-2 rounded-lg text-sm font-medium transition ${
-                                expanded ? 'h-9 w-full px-2.5' : 'h-8 w-8'
-                            } ${
-                                pinned
-                                    ? 'bg-violet-600 text-white hover:bg-violet-700'
-                                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                            }`}
-                        >
-                            {pinned ? <PinOff size={16} /> : <Pin size={16} />}
-                            {expanded ? <span>{pinned ? 'Unpin' : 'Pin open'}</span> : null}
-                        </button>
-                    </div>
-                ) : null}
+                <div className={`flex shrink-0 border-b border-slate-200 px-1.5 py-2 ${expanded ? 'justify-end px-2' : 'justify-center'}`}>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (expanded) {
+                                setIconsOnly(true)
+                                setPinned(false)
+                                return
+                            }
+                            setIconsOnly(false)
+                            setPinned(true)
+                        }}
+                        aria-pressed={expanded}
+                        aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
+                        title={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+                    >
+                        {expanded ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
+                    </button>
+                </div>
 
                 <div className={`scrollbar-hide min-h-0 flex-1 overflow-y-auto overscroll-contain px-1.5 py-2 ${expanded ? 'px-2' : ''}`}>
 
@@ -645,38 +671,50 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
 
 
-                        const sectionOpen = showFullMenu || openSection === section.name
+                        const sectionPinned = pinnedSections.includes(section.name)
+                        const sectionOpen = showFullMenu || sectionPinned || openSection === section.name
 
                         return (
 
                             <div key={section.name} className={`mt-2 first:mt-0 ${expanded ? 'mt-3' : ''}`}>
 
-                                {showFullMenu ? (
-                                <div className={`${expanded ? 'flex' : 'hidden'} items-center gap-1.5 px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wide ${theme.headerText}`}>
-
-                                    <span className={`rounded-md p-0.5 ${theme.headerIconBg}`}>
-
-                                        <SectionIcon size={11} className={theme.headerIconText} />
-
-                                    </span>
-
-                                    <span>{section.name}</span>
-
+                                <div className={`${expanded ? 'flex' : 'hidden'} items-center gap-1 px-1 pb-1.5`}>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (showFullMenu || sectionPinned) return
+                                            setOpenSection((current) => current === section.name ? "" : section.name)
+                                        }}
+                                        className={`flex min-w-0 flex-1 items-center gap-1.5 rounded-lg px-1 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wide ${theme.headerText} ${showFullMenu || sectionPinned ? '' : theme.hoverLink}`}
+                                        aria-expanded={sectionOpen}
+                                    >
+                                        <span className={`rounded-md p-0.5 ${theme.headerIconBg}`}>
+                                            <SectionIcon size={12} className={theme.headerIconText} />
+                                        </span>
+                                        <span className="min-w-0 flex-1 truncate">{section.name}</span>
+                                        {showFullMenu ? null : (
+                                            <ChevronDown size={14} className={`shrink-0 transition ${sectionOpen ? "rotate-180" : ""}`} />
+                                        )}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setPinnedSections((current) => (
+                                            current.includes(section.name)
+                                                ? current.filter((name) => name !== section.name)
+                                                : [...current, section.name]
+                                        ))}
+                                        aria-pressed={sectionPinned}
+                                        aria-label={sectionPinned ? `Unpin ${section.name}` : `Pin ${section.name} open`}
+                                        title={sectionPinned ? 'Unpin section' : 'Keep this section open'}
+                                        className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition ${
+                                            sectionPinned
+                                                ? 'bg-[#7B2BFF] text-white'
+                                                : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700'
+                                        }`}
+                                    >
+                                        <Pin size={12} />
+                                    </button>
                                 </div>
-                                ) : (
-                                <button
-                                    type="button"
-                                    onClick={() => setOpenSection((current) => current === section.name ? "" : section.name)}
-                                    className={`${expanded ? 'flex' : 'hidden'} w-full items-center gap-1.5 rounded-lg px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide ${theme.headerText} ${theme.hoverLink}`}
-                                    aria-expanded={sectionOpen}
-                                >
-                                    <span className={`rounded-md p-0.5 ${theme.headerIconBg}`}>
-                                        <SectionIcon size={12} className={theme.headerIconText} />
-                                    </span>
-                                    <span className="flex-1">{section.name}</span>
-                                    <ChevronDown size={14} className={`shrink-0 transition ${sectionOpen ? "rotate-180" : ""}`} />
-                                </button>
-                                )}
 
 
 
@@ -704,9 +742,11 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
                                                     href={link.href}
 
-                                                    title={link.name}
-
                                                     aria-label={link.name}
+
+                                                    onMouseEnter={(event) => showIconTip(event, link.name)}
+
+                                                    onMouseLeave={hideIconTip}
 
                                                     aria-current={isActive ? 'page' : undefined}
 
@@ -780,8 +820,9 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
                         {canViewActivityHistory ? (
                             <StoreNavLink
                                 href="/store/settings/history"
-                                title="Settings history"
                                 aria-label="Settings history"
+                                onMouseEnter={(event) => showIconTip(event, 'History')}
+                                onMouseLeave={hideIconTip}
                                 aria-current={pathname.startsWith('/store/settings/history') ? 'page' : undefined}
                                 className={`relative mb-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-sm font-medium transition ${expanded ? 'px-3' : ''} ${
                                     pathname.startsWith('/store/settings/history')
@@ -801,9 +842,11 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
                             href="/store/settings"
 
-                            title="Settings"
-
                             aria-label="Settings"
+
+                            onMouseEnter={(event) => showIconTip(event, 'Settings')}
+
+                            onMouseLeave={hideIconTip}
 
                             aria-current={pathname === '/store/settings' ? 'page' : undefined}
 
@@ -832,6 +875,20 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
                         </StoreNavLink>
 
                     </div>
+
+        {!expanded && iconTip && typeof document !== 'undefined' ? createPortal(
+            <span
+                role="tooltip"
+                className="pointer-events-none fixed z-[90] -translate-y-1/2"
+                style={{ top: iconTip.top, left: iconTip.left }}
+            >
+                <span className="relative block whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs font-semibold text-white shadow-[0_10px_24px_rgba(15,23,42,0.28)]">
+                    <span className="absolute right-full top-1/2 -translate-y-1/2 border-y-[5px] border-r-[6px] border-y-transparent border-r-slate-900" />
+                    {iconTip.label}
+                </span>
+            </span>,
+            document.body,
+        ) : null}
 
         </aside>
 

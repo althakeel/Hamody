@@ -45,7 +45,23 @@ function extractGeminiText(payload) {
   return parts.map((part) => String(part?.text || '')).join(' ').trim();
 }
 
-async function translateWithGemini(english) {
+function translationPrompt(english, kind) {
+  if (kind === 'name') {
+    return `Translate this ecommerce category name into a short natural UAE / GCC Arabic label.
+Return the Arabic name only. No description, quotes, markdown, or extra words.
+
+English:
+${english}`;
+  }
+
+  return `Translate this ecommerce category description into natural UAE / GCC Arabic.
+Return Arabic text only. No quotes, markdown, or extra explanation.
+
+English:
+${english}`;
+}
+
+async function translateWithGemini(english, kind) {
   const apiKey = String(process.env.GEMINI_API_KEY || '').trim();
   if (!apiKey) throw new Error('Gemini is not configured');
 
@@ -60,11 +76,7 @@ async function translateWithGemini(english) {
           body: JSON.stringify({
             contents: [{
               parts: [{
-                text: `Translate this ecommerce category description into natural UAE / GCC Arabic.
-Return Arabic text only. No quotes, markdown, or extra explanation.
-
-English:
-${english}`,
+                text: translationPrompt(english, kind),
               }],
             }],
             generationConfig: { temperature: 0.2 },
@@ -89,7 +101,7 @@ ${english}`,
   throw lastError || new Error('Gemini translation failed');
 }
 
-async function translateWithOpenAI(english) {
+async function translateWithOpenAI(english, kind) {
   const client = ensureOpenAI();
   const model = process.env.OPENAI_PRODUCT_AUTOFILL_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini';
   const completion = await client.chat.completions.create({
@@ -98,7 +110,9 @@ async function translateWithOpenAI(english) {
     messages: [
       {
         role: 'system',
-        content: 'Translate ecommerce category descriptions into natural UAE / GCC Arabic. Return Arabic text only.',
+        content: kind === 'name'
+          ? 'Translate ecommerce category names into short natural UAE / GCC Arabic labels. Return the Arabic name only.'
+          : 'Translate ecommerce category descriptions into natural UAE / GCC Arabic. Return Arabic text only.',
       },
       { role: 'user', content: english },
     ],
@@ -116,16 +130,19 @@ export async function POST(request) {
 
     const body = await request.json().catch(() => ({}));
     const english = trimText(body?.text || '');
+    const kind = body?.kind === 'name' ? 'name' : 'description';
     if (!english) {
-      return NextResponse.json({ error: 'Enter an English description first' }, { status: 400 });
+      return NextResponse.json({
+        error: kind === 'name' ? 'Enter the English category name first' : 'Enter an English description first',
+      }, { status: 400 });
     }
 
     const errors = [];
 
     if (isGeminiConfigured()) {
       try {
-        const descriptionAr = await translateWithGemini(english);
-        return NextResponse.json({ descriptionAr });
+        const descriptionAr = await translateWithGemini(english, kind);
+        return NextResponse.json({ descriptionAr, nameAr: kind === 'name' ? descriptionAr : undefined });
       } catch (error) {
         errors.push(getAiErrorMessage(error, 'gemini'));
       }
@@ -133,8 +150,8 @@ export async function POST(request) {
 
     if (isOpenAIConfigured()) {
       try {
-        const descriptionAr = await translateWithOpenAI(english);
-        return NextResponse.json({ descriptionAr });
+        const descriptionAr = await translateWithOpenAI(english, kind);
+        return NextResponse.json({ descriptionAr, nameAr: kind === 'name' ? descriptionAr : undefined });
       } catch (error) {
         errors.push(getAiErrorMessage(error, 'openai'));
       }

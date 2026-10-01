@@ -93,7 +93,7 @@ function SearchFieldPreview({
   return (
     <div
       className="rounded-xl px-3 py-3 sm:px-4"
-      style={{ backgroundColor: backgroundColor || '#8f3404' }}
+      style={{ backgroundColor: backgroundColor || '#111827' }}
     >
       <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-white/70">
         Live search preview
@@ -131,7 +131,7 @@ function CategoriesButtonPreview({
   return (
     <div
       className="rounded-xl px-3 py-3 sm:px-4"
-      style={{ backgroundColor: backgroundColor || '#8f3404' }}
+      style={{ backgroundColor: backgroundColor || '#111827' }}
     >
       <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-white/70">
         Live categories preview
@@ -593,7 +593,7 @@ const defaultNavbarBranding = {
   logoUrl: '',
   logoWidth: 120,
   logoHeight: 40,
-  backgroundColor: '#8f3404',
+  backgroundColor: '',
 };
 
 const SHOW_MANUAL_NAV_EDITOR = false;
