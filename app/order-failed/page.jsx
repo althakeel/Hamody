@@ -20,7 +20,7 @@ function OrderFailedContent() {
 
     const notifyCancellation = async () => {
       try {
-        await fetch('/api/payment-cancelled', {
+        const res = await fetch('/api/payment-cancelled', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -28,6 +28,16 @@ function OrderFailedContent() {
             reason: decodeURIComponent(reason),
           }),
         });
+        const payload = await res.json().catch(() => null);
+        const recoveryReason = payload?.result?.reason;
+        if (
+          recoveryReason === 'provider_payment_succeeded'
+          || recoveryReason === 'order_already_paid'
+        ) {
+          const vaults = payload?.result?.provider === 'VAULTSPAY' ? '&vaultspay=1' : '';
+          router.replace(`/order-success?orderId=${encodeURIComponent(orderId)}${vaults}`);
+          return;
+        }
       } catch (error) {
         console.error('Payment cancellation recovery failed:', error);
       } finally {

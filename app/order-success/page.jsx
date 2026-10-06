@@ -178,7 +178,7 @@ function OrderSuccessContent() {
                   applyVerifiedOrders(data);
                   return data;
                 }
-                if (result && result.pending !== true) {
+                if (result?.failed === true) {
                   router.replace(`/order-failed?orderId=${orderId}&reason=${encodeURIComponent('Payment was not completed')}`);
                   return null;
                 }
