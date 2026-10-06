@@ -3,6 +3,7 @@ import NavbarMenuSettings from '@/models/NavbarMenuSettings';
 import { NextResponse } from 'next/server';
 import { getAuth } from '@/lib/firebase-admin';
 import { DEFAULT_NAVBAR_LAYOUT, normalizeNavbarLayout } from '@/lib/navbarLayoutSettings';
+import { findSharedNavbarSettings, resolveStorefrontOwnerId } from '@/lib/storefrontSettingsOwner';
 
 const MAX_ITEMS = 20;
 
@@ -115,10 +116,9 @@ export async function GET(req) {
     if (token) {
       try {
         const decoded = await getAuth().verifyIdToken(token);
-        console.log('[API GET /store/navbar-menu] Authenticated user:', decoded.uid);
-        const settingsDocs = await NavbarMenuSettings.find({ storeId: decoded.uid })
-          .sort({ updatedAt: -1, _id: -1 })
-          .lean();
+        const ownerId = await resolveStorefrontOwnerId(decoded.uid);
+        const shared = await findSharedNavbarSettings(ownerId);
+        const settingsDocs = shared ? [shared] : [];
 
         console.log('[API GET /store/navbar-menu] Found docs:', settingsDocs.length);
         if (settingsDocs.length > 0) {
@@ -209,23 +209,8 @@ export async function GET(req) {
     }
 
     console.log('[API GET /store/navbar-menu] No auth token - fetching public settings');
-    // Use the approved store's saved navbar only. Another record's brown default
-    // must not replace the color the seller set.
-    const Store = (await import('@/models/Store')).default;
-    const approvedStore = await Store.findOne({ status: 'approved' })
-      .sort({ updatedAt: -1 })
-      .select('userId')
-      .lean();
-    const ownerId = String(approvedStore?.userId || '').trim();
-    let settings = ownerId
-      ? await NavbarMenuSettings.findOne({ storeId: ownerId }).sort({ updatedAt: -1, _id: -1 }).lean()
-      : null;
-
-    if (!settings && approvedStore?._id) {
-      settings = await NavbarMenuSettings.findOne({ storeId: String(approvedStore._id) })
-        .sort({ updatedAt: -1, _id: -1 })
-        .lean();
-    }
+    const ownerId = await resolveStorefrontOwnerId('');
+    const settings = await findSharedNavbarSettings(ownerId);
 
     let resolvedWidth = toFiniteNumber(settings?.logoWidth);
     let resolvedHeight = toFiniteNumber(settings?.logoHeight);
@@ -276,7 +261,7 @@ export async function POST(req) {
     }
 
     const decoded = await getAuth().verifyIdToken(token);
-    const userId = decoded.uid;
+    const userId = await resolveStorefrontOwnerId(decoded.uid);
 
     await dbConnect();
 
@@ -347,9 +332,7 @@ export async function POST(req) {
     const nextLogoWidth = Math.max(20, Math.min(400, parsedLogoWidth));
     const nextLogoHeight = Math.max(10, Math.min(200, parsedLogoHeight));
 
-    const existing = await NavbarMenuSettings.findOne({ storeId: userId })
-      .sort({ updatedAt: -1, _id: -1 })
-      .lean();
+    const existing = await findSharedNavbarSettings(userId);
 
     const incomingBackgroundColor = String(backgroundColor || '').trim();
     const existingBackgroundColor = String(existing?.backgroundColor || '').trim();
@@ -447,59 +430,6 @@ export async function POST(req) {
       },
       { upsert: true, new: true, setDefaultsOnInsert: true, runValidators: true }
     ).lean();
-
-    const relatedStoreIds = new Set([String(userId)]);
-    try {
-      const authSeller = (await import('@/middlewares/authSeller')).default;
-      const storeObjectId = await authSeller(userId);
-      if (storeObjectId) relatedStoreIds.add(String(storeObjectId));
-    } catch {
-      // Ignore seller lookup failures; still backfill the signed-in store.
-    }
-    const publicLogoDoc = await NavbarMenuSettings.findOne({
-      enabled: true,
-      logoUrl: { $exists: true, $nin: [null, ''] },
-    })
-      .sort({ updatedAt: -1 })
-      .lean();
-    if (publicLogoDoc?.storeId) relatedStoreIds.add(String(publicLogoDoc.storeId));
-
-    const layoutBackfill = {
-      navExtraButtons: nextLayout.extraButtons,
-      searchMaxWidth: nextLayout.searchMaxWidth,
-      searchAlign: nextLayout.searchAlign,
-      searchPlaceholder: nextLayout.searchPlaceholder,
-      searchPlaceholderAr: nextLayout.searchPlaceholderAr,
-      searchStyle: nextLayout.searchStyle,
-      navbarMaxWidth: nextLayout.navbarMaxWidth,
-      itemGap: nextLayout.itemGap,
-      logoGap: nextLayout.logoGap,
-      mobileItemGap: nextLayout.mobileItemGap,
-      stickyHeader: nextLayout.stickyHeader,
-      showCategoriesButton: nextLayout.showCategoriesButton,
-      categoriesButtonLabel: nextLayout.categoriesButtonLabel,
-      categoriesButtonLabelAr: nextLayout.categoriesButtonLabelAr,
-      categoriesButtonStyle: nextLayout.categoriesButtonStyle,
-      navbarItemOrder: nextLayout.itemOrder,
-      navbarItemAlign: nextLayout.itemAlign,
-      unifyNavbarText: nextLayout.unifyNavbarText,
-      unifiedTextFontFamily: nextLayout.unifiedTextFontFamily,
-      unifiedTextFontSize: nextLayout.unifiedTextFontSize,
-    };
-
-    // Backfill duplicate/legacy docs so the public storefront cannot pick stale layout.
-    await NavbarMenuSettings.updateMany(
-      { storeId: { $in: [...relatedStoreIds] } },
-      {
-        $set: {
-          logoUrl: nextLogoUrl,
-          logoWidth: nextLogoWidth,
-          logoHeight: nextLogoHeight,
-          backgroundColor: nextBackgroundColor,
-          ...layoutBackfill,
-        },
-      }
-    );
 
     let settings = await NavbarMenuSettings.findOne({ storeId: userId })
       .sort({ updatedAt: -1, _id: -1 })

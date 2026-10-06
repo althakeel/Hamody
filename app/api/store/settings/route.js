@@ -3,10 +3,12 @@ import dbConnect from '@/lib/mongodb';
 import NavbarMenuSettings from '@/models/NavbarMenuSettings';
 import { getAuth } from '@/lib/firebase-admin';
 import { deleteCacheKey } from '@/lib/cache';
+import { HOMEPAGE_CACHE_KEY } from '@/lib/categorySliderCache';
 import { DEFAULT_NAVBAR_BOTTOM_BORDER, normalizeNavbarBottomBorder } from '@/lib/navbarLayoutSettings';
 import { DEFAULT_NAVBAR_PHONE, normalizeNavbarPhone } from '@/lib/storeContact';
 import { DEFAULT_NAVBAR_LANGUAGE, normalizeNavbarLanguage } from '@/lib/storefrontMarket';
 import { DEFAULT_BNPL_TOP_BAR, normalizeBnplTopBar } from '@/lib/bnplTopBar';
+import { findSharedNavbarSettings, resolveStorefrontOwnerId } from '@/lib/storefrontSettingsOwner';
 
 const DEFAULT_SETTINGS = {
   navMenuEnabled: true,
@@ -219,14 +221,9 @@ export async function GET(request) {
     const userId = await getUserIdFromRequest(request).catch(() => null);
     await dbConnect();
 
-    if (userId) {
-      const doc = await NavbarMenuSettings.findOne({ storeId: userId }).lean();
-      const merged = mergeWithDefaults(doc || {});
-      return NextResponse.json(merged, { status: 200, headers: { 'Cache-Control': 'no-store' } });
-    }
-
-    const latest = await NavbarMenuSettings.findOne({}).sort({ updatedAt: -1, _id: -1 }).lean();
-    const merged = mergeWithDefaults(latest || inMemorySettings.public);
+    const ownerId = await resolveStorefrontOwnerId(userId || '');
+    const doc = await findSharedNavbarSettings(ownerId);
+    const merged = mergeWithDefaults(doc || inMemorySettings.public);
     return NextResponse.json(merged, { status: 200, headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('[API /store/settings GET] fallback to in-memory:', error?.message || error);
@@ -252,15 +249,16 @@ export async function PUT(request) {
   }
 
   try {
-    const userId = await getUserIdFromRequest(request);
-    if (!userId) {
+    const actorId = await getUserIdFromRequest(request);
+    if (!actorId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const incoming = parsedBody && typeof parsedBody === 'object' ? parsedBody : {};
 
     await dbConnect();
-    const existing = await NavbarMenuSettings.findOne({ storeId: userId }).lean();
+    const userId = await resolveStorefrontOwnerId(actorId);
+    const existing = await findSharedNavbarSettings(userId);
     const current = mergeWithDefaults(existing || {});
 
     const next = {
@@ -307,11 +305,25 @@ export async function PUT(request) {
       categoryId: item.categoryId || '',
     }));
 
+    const carrySavedLook = existing && String(existing.storeId || '') !== String(userId)
+      ? {
+          logoUrl: existing.logoUrl || '',
+          logoWidth: existing.logoWidth,
+          logoHeight: existing.logoHeight,
+          backgroundColor: existing.backgroundColor || '',
+          footerLogoSameAsNavbar: existing.footerLogoSameAsNavbar,
+          footerLogoUrl: existing.footerLogoUrl || '',
+          footerLogoWidth: existing.footerLogoWidth,
+          footerLogoHeight: existing.footerLogoHeight,
+        }
+      : {};
+
     await NavbarMenuSettings.findOneAndUpdate(
       { storeId: userId },
       {
         $set: {
           storeId: userId,
+          ...carrySavedLook,
           navMenuEnabled: next.navMenuEnabled,
           navMenuUseParentCategories: next.navMenuUseParentCategories,
           navMenuHoverDropdown: next.navMenuHoverDropdown,
@@ -337,7 +349,7 @@ export async function PUT(request) {
       },
     };
 
-    deleteCacheKey('server:homepage:v3');
+    deleteCacheKey(HOMEPAGE_CACHE_KEY);
 
     return NextResponse.json({ success: true, ...next }, { status: 200 });
   } catch (error) {

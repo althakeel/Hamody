@@ -3,9 +3,10 @@ import HomeMenuCategorySettings from '@/models/HomeMenuCategorySettings';
 import { NextResponse } from 'next/server';
 import { getAuth } from '@/lib/firebase-admin';
 import { getCachedData, setCachedData } from '@/lib/cache';
+import { resolveStorefrontOwnerId } from '@/lib/storefrontSettingsOwner';
 
 export const maxDuration = 60;
-const CACHE_KEY = 'public:home-menu-categories:v1';
+const CACHE_KEY = 'public:home-menu-categories:v2';
 const CACHE_TTL = 180;
 
 function parseAuthHeader(req) {
@@ -30,7 +31,13 @@ export async function GET(req) {
 
     await dbConnect();
 
-    const settings = await HomeMenuCategorySettings.findOne({}).sort({ updatedAt: -1 }).lean();
+    const ownerId = await resolveStorefrontOwnerId('');
+    const owned = ownerId
+      ? await HomeMenuCategorySettings.findOne({ storeId: ownerId }).sort({ updatedAt: -1 }).lean()
+      : null;
+    const settings = (Array.isArray(owned?.items) && owned.items.length)
+      ? owned
+      : await HomeMenuCategorySettings.findOne({ 'items.0': { $exists: true } }).sort({ updatedAt: -1 }).lean();
     const payload = {
       count: settings?.count || 6,
       items: settings?.items || [],
@@ -79,7 +86,7 @@ export async function POST(req) {
 
     console.log('Verifying token...');
     const decoded = await getAuth().verifyIdToken(token);
-    const userId = decoded.uid;
+    const userId = await resolveStorefrontOwnerId(decoded.uid);
     console.log('Token verified for user:', userId);
 
     console.log('Connecting to database...');

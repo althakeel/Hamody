@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import { getCachedData, setCachedData, invalidateStorefrontProductCaches } from '@/lib/cache'
-import { buildFeaturedProductsListQuery, isManualFeaturedSelection, resolvePublicFeaturedStore } from '@/lib/featuredProducts'
+import { buildFeaturedProductsListQuery, isManualFeaturedSelection, manualFeaturedWindow, normalizeManualRotateHours, resolvePublicFeaturedStore } from '@/lib/featuredProducts'
 import { getAuth } from '@/lib/firebase-admin'
 import authSeller from '@/middlewares/authSeller'
 import Store from '@/models/Store'
@@ -81,14 +81,6 @@ export async function GET(request) {
         }
 
         const isPublicRequest = !userId
-        const cacheKey = isPublicRequest ? `public:featured-products:api:v6:${includeProducts}:${limit}` : null
-        if (cacheKey) {
-            const cached = getCachedData(cacheKey)
-            if (cached) {
-                return createFeaturedResponse(cached, true)
-            }
-        }
-
         let store = null
         if (userId) {
             try {
@@ -113,6 +105,19 @@ export async function GET(request) {
         const sectionDescription = store?.featuredSectionDescription || "Grab the best deals before they're gone!"
         const sectionTitleAr = store?.featuredSectionTitleAr || ''
         const sectionDescriptionAr = store?.featuredSectionDescriptionAr || ''
+        const manualRotateHours = normalizeManualRotateHours(store?.featuredManualRotateHours)
+        const rotateWindow = manualRotateHours > 0
+            ? Math.floor(Date.now() / (manualRotateHours * 60 * 60 * 1000))
+            : 0
+        const cacheKey = isPublicRequest
+            ? `public:featured-products:api:v8:${includeProducts}:${limit}:${manualRotateHours}:${rotateWindow}`
+            : null
+        if (cacheKey) {
+            const cached = getCachedData(cacheKey)
+            if (cached) {
+                return createFeaturedResponse(cached, true)
+            }
+        }
 
         const resolveProducts = async () => {
             if (isManualFeaturedSelection(sourceMode, productIds)) {
@@ -155,17 +160,24 @@ export async function GET(request) {
                 sectionDescription,
                 sectionTitleAr,
                 sectionDescriptionAr,
+                manualRotateHours,
             }
             if (cacheKey) setCachedData(cacheKey, payload, 120)
             return createFeaturedResponse(payload, isPublicRequest)
         }
 
         let products = await resolveProducts()
-        if (isPublicRequest) {
+        if (isPublicRequest || isManualFeaturedSelection(sourceMode, productIds)) {
             products = filterStorefrontInStockProducts(products)
         }
 
-        if (limit > 0) {
+        if (isManualFeaturedSelection(sourceMode, productIds)) {
+            const slotCount = limit > 0 ? limit : 10
+            products = manualFeaturedWindow(products, {
+                rotateHours: manualRotateHours,
+                slotCount,
+            }).products
+        } else if (limit > 0) {
             products = products.slice(0, limit)
         }
         products = await attachProductRatings(products)
@@ -181,6 +193,7 @@ export async function GET(request) {
             sectionDescription,
             sectionTitleAr,
             sectionDescriptionAr,
+            manualRotateHours,
             products
         }
         if (cacheKey) setCachedData(cacheKey, payload, 120)
@@ -206,7 +219,7 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Store not found for user' }, { status: 404 })
         }
 
-        const { productIds, sourceMode, categoryIds, tags, sectionTitle, sectionDescription, sectionTitleAr, sectionDescriptionAr } = await request.json()
+        const { productIds, sourceMode, categoryIds, tags, sectionTitle, sectionDescription, sectionTitleAr, sectionDescriptionAr, manualRotateHours } = await request.json()
 
         // Validate productIds is an array
         if (!Array.isArray(productIds)) {
@@ -225,6 +238,9 @@ export async function POST(request) {
                 featuredProductsSource: normalizedSourceMode,
                 featuredProductsCategoryIds: normalizedCategoryIds,
                 featuredProductsTags: normalizedTags,
+                ...(manualRotateHours !== undefined
+                    ? { featuredManualRotateHours: normalizeManualRotateHours(manualRotateHours) }
+                    : {}),
                 ...(typeof sectionTitle === 'string' ? { featuredSectionTitle: sectionTitle.trim() } : {}),
                 ...(typeof sectionDescription === 'string' ? { featuredSectionDescription: sectionDescription.trim() } : {}),
                 ...(typeof sectionTitleAr === 'string' ? { featuredSectionTitleAr: sectionTitleAr.trim() } : {}),
@@ -245,6 +261,7 @@ export async function POST(request) {
             sectionDescription: updatedStore.featuredSectionDescription,
             sectionTitleAr: updatedStore.featuredSectionTitleAr || '',
             sectionDescriptionAr: updatedStore.featuredSectionDescriptionAr || '',
+            manualRotateHours: normalizeManualRotateHours(updatedStore.featuredManualRotateHours),
         })
     } catch (error) {
         console.error('Error saving featured products:', error)

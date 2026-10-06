@@ -5,6 +5,7 @@ import { invalidateCategorySliderCaches } from '@/lib/categorySliderCache';
 import { resolveCategorySliderAccess, buildCategorySliderFilter } from '@/lib/categorySliderAccess';
 import { normalizeCategorySliderBackground, normalizeCategorySliderSideImagePosition, normalizeCategorySliderAutoSlide, normalizeCategorySliderAutoSlideInterval, normalizeCategorySliderShowOutOfStock } from '@/lib/categorySliderTheme';
 import { sortCategorySliders, backfillCategorySliderSortOrdersIfNeeded } from '@/lib/categorySliderOrder';
+import { isTestSliderCopy } from '@/lib/categorySliderCopy';
 
 function parseAuthHeader(req) {
   const auth = req.headers.get('authorization') || req.headers.get('Authorization');
@@ -107,7 +108,9 @@ export async function POST(req) {
 
     // Explicitly handle subtitle - ensure it's a string
     const subtitleValue = subtitle !== undefined && subtitle !== null ? String(subtitle).trim() : '';
-    console.log('💾 Processed subtitle value:', JSON.stringify(subtitleValue), 'Length:', subtitleValue.length);
+    if (isTestSliderCopy(subtitleValue) || isTestSliderCopy(title)) {
+      return NextResponse.json({ error: 'Test slider text cannot be saved.' }, { status: 400 });
+    }
 
     const sideImageValue = sideImage !== undefined && sideImage !== null
       ? String(sideImage).trim()

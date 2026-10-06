@@ -1223,26 +1223,6 @@ export default function CategorySliderPage() {
                     )}
                   </div>
 
-                  {/* DEBUG: Show Current Form Data */}
-                  <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-3 text-xs">
-                    <p className="font-bold text-yellow-800 mb-1">🔍 DEBUG INFO:</p>
-                    <p className="text-yellow-700">Title: "{formData.title}"</p>
-                    <p className="text-yellow-700">Subtitle: "{formData.subtitle || ''}"</p>
-                    <p className="text-yellow-700">Subtitle Length: {(formData.subtitle || '').length}</p>
-                    <p className="text-yellow-700">Products: {formData.productIds.length}</p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const testVal = 'TEST SUBTITLE ' + new Date().getTime();
-                        setFormData(prev => ({ ...prev, subtitle: testVal }));
-                        console.log('✅ Test button clicked, set subtitle to:', testVal);
-                      }}
-                      className="mt-2 text-xs bg-yellow-600 text-white px-2 py-1 rounded hover:bg-yellow-700"
-                    >
-                      Test: Fill Subtitle
-                    </button>
-                  </div>
-
                   {/* Selected products, in slider order */}
                   <div className="rounded-lg border-2 border-violet-200 bg-violet-50 p-3">
                     <div className="mb-2 flex items-center justify-between gap-2">
@@ -1378,35 +1358,6 @@ export default function CategorySliderPage() {
                       {editingIdx !== null ? '💾 Update' : '✨ Create'}
                     </button>
                   </div>
-
-                  {/* Test Button - Save with Hardcoded Subtitle */}
-                  <button
-                    onClick={async () => {
-                      try {
-                        const token = await getToken();
-                        const testPayload = {
-                          title: formData.title || 'Test Title',
-                          subtitle: 'TEST SUBTITLE - ' + new Date().toLocaleTimeString(),
-                          productIds: formData.productIds.length > 0 ? formData.productIds : ['test'],
-                        };
-                        console.log('🧪 TEST: Sending payload:', JSON.stringify(testPayload));
-                        
-                        const response = await axios.post('/api/store/category-slider', testPayload, {
-                          headers: { Authorization: `Bearer ${token}` },
-                        });
-                        
-                        console.log('🧪 TEST: Response:', response.data);
-                        toast.success('Test slider created - check console');
-                        await fetchData();
-                      } catch (error) {
-                        console.error('🧪 TEST: Error:', error);
-                        toast.error('Test failed - check console');
-                      }
-                    }}
-                    className="w-full mt-2 text-xs bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 font-semibold transition"
-                  >
-                    🧪 TEST: Create with Hardcoded Subtitle
-                  </button>
                 </div>
               )}
             </div>

@@ -49,6 +49,7 @@ const StoreSchema = new mongoose.Schema({
   featuredProductsSource: { type: String, default: 'manual' },
   featuredProductsCategoryIds: { type: [String], default: [] },
   featuredProductsTags: { type: [String], default: [] },
+  featuredManualRotateHours: { type: Number, default: 0 },
   featuredSectionTitle: { type: String, default: 'Craziest sale of the year!' },
   featuredSectionDescription: { type: String, default: "Grab the best deals before they're gone!" },
   featuredSectionTitleAr: { type: String, default: '' },

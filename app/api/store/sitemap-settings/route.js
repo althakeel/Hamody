@@ -2,6 +2,7 @@ import dbConnect from '@/lib/mongodb';
 import SitemapSettings from '@/models/SitemapSettings';
 import { getAuth } from '@/lib/firebase-admin';
 import { NextResponse } from 'next/server';
+import { resolveStorefrontOwnerId } from '@/lib/storefrontSettingsOwner';
 
 function parseAuthHeader(req) {
   const auth = req.headers.get('authorization') || req.headers.get('Authorization');
@@ -19,7 +20,7 @@ export async function GET(request) {
 
     const firebaseAuth = getAuth();
     const decoded = await firebaseAuth.verifyIdToken(token);
-    const userId = decoded.uid;
+    const userId = await resolveStorefrontOwnerId(decoded.uid);
 
     await dbConnect();
     const settings = await SitemapSettings.findOne({ storeId: userId });
@@ -46,7 +47,7 @@ export async function POST(request) {
 
     const firebaseAuth = getAuth();
     const decoded = await firebaseAuth.verifyIdToken(token);
-    const userId = decoded.uid;
+    const userId = await resolveStorefrontOwnerId(decoded.uid);
 
     await dbConnect();
     const { categories, enabled } = await request.json();

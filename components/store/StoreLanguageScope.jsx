@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useLayoutEffect } from 'react';
+import { useEffect } from 'react';
 import { installDomReconcileGuard } from '@/lib/domReconcileError';
-import { applyStoreDashboardDisplay, readLastDashboardDisplay } from '@/lib/storeDashboardDisplay';
 
 /**
  * Forces English LTR for /store and locks the shell to the viewport
@@ -12,11 +11,6 @@ import { applyStoreDashboardDisplay, readLastDashboardDisplay } from '@/lib/stor
  * React and throws removeChild/insertBefore.
  */
 export default function StoreLanguageScope({ children }) {
-  useLayoutEffect(() => {
-    const stored = readLastDashboardDisplay();
-    if (stored) applyStoreDashboardDisplay(stored);
-  }, []);
-
   useEffect(() => {
     installDomReconcileGuard();
     const root = document.documentElement;

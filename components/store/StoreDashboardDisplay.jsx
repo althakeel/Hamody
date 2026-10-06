@@ -6,7 +6,6 @@ import { useAuth } from '@/lib/useAuth';
 import {
   applyStoreDashboardDisplay,
   publishStoreDashboardDisplay,
-  readLastDashboardDisplay,
   readStoredDashboardDisplay,
 } from '@/lib/storeDashboardDisplay';
 
@@ -14,7 +13,7 @@ export default function StoreDashboardDisplay() {
   const { user, getToken } = useAuth();
 
   useLayoutEffect(() => {
-    const stored = readStoredDashboardDisplay(user?.uid) || readLastDashboardDisplay();
+    const stored = readStoredDashboardDisplay(user?.uid);
     if (stored) applyStoreDashboardDisplay(stored);
   }, [user?.uid]);
 

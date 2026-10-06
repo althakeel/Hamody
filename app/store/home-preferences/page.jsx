@@ -34,7 +34,7 @@ import {
 const FEATURED_SAVE_TOAST_ID = 'featured-section-saved'
 
 const SOURCE_OPTIONS = [
-    { id: 'manual', label: 'Manual', icon: Package, description: 'Pick products yourself' },
+    { id: 'manual', label: 'Manual', icon: Package, description: 'Choose 1st, 2nd, and the rest' },
     { id: 'category', label: 'Category', icon: FolderTree, description: 'Pull from categories' },
     { id: 'tag', label: 'Tags', icon: Tag, description: 'Match product tags' },
     { id: 'latest', label: 'Latest', icon: Clock, description: 'Newest catalog items' },
@@ -141,6 +141,7 @@ export default function HomePreferences() {
     const [categories, setCategories] = useState([])
     const [selectedProducts, setSelectedProducts] = useState([])
     const [sourceMode, setSourceMode] = useState('manual')
+    const [rotateHours, setRotateHours] = useState(0)
     const [selectedCategoryIds, setSelectedCategoryIds] = useState([])
     const [selectedTagsText, setSelectedTagsText] = useState('')
     const [loading, setLoading] = useState(true)
@@ -227,7 +228,7 @@ export default function HomePreferences() {
     }, [cachePreviewProducts, getToken])
 
     const fetchPreviewProducts = useCallback(async (productIds = [], productPool = []) => {
-        const ids = productIds.slice(0, 5).map(normalizeProductId).filter(Boolean)
+        const ids = productIds.slice(0, 40).map(normalizeProductId).filter(Boolean)
         if (!ids.length) {
             setPreviewProducts([])
             return
@@ -334,6 +335,7 @@ export default function HomePreferences() {
                 setPickerView('catalog')
             }
             setSourceMode(featuredData.sourceMode || 'manual')
+            setRotateHours(Number(featuredData.manualRotateHours) > 0 ? Math.round(Number(featuredData.manualRotateHours)) : 0)
             setSelectedCategoryIds(featuredData.categoryIds || [])
             setSelectedTagsText(Array.isArray(featuredData.tags) ? featuredData.tags.join(', ') : '')
             if (featuredData.sectionTitle) setFeaturedSectionTitle(featuredData.sectionTitle)
@@ -466,6 +468,7 @@ export default function HomePreferences() {
                     sectionDescription: featuredSectionSubtitle,
                     sectionTitleAr: featuredSectionTitleAr,
                     sectionDescriptionAr: featuredSectionSubtitleAr,
+                    manualRotateHours: rotateHours,
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
             )
@@ -480,6 +483,7 @@ export default function HomePreferences() {
         featuredSectionTitleAr,
         getToken,
         selectedCategoryIds,
+        rotateHours,
         selectedTagsText,
         sourceMode,
     ])
@@ -687,6 +691,7 @@ export default function HomePreferences() {
                     sectionDescription: featuredSectionSubtitle,
                     sectionTitleAr: featuredSectionTitleAr,
                     sectionDescriptionAr: featuredSectionSubtitleAr,
+                    manualRotateHours: rotateHours,
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
             )
@@ -769,6 +774,39 @@ export default function HomePreferences() {
         return map
     }, [arrangedProducts])
 
+    const layoutSlots = useMemo(() => {
+        const perRow = Number(designSettings.homeMenuCategories?.itemsPerRow || 5)
+        const rows = designSettings.homeMenuCategories?.style === 'carousel'
+            ? 1
+            : Number(designSettings.homeMenuCategories?.rows || 2)
+        return Math.max(1, Math.min(40, perRow * rows))
+    }, [designSettings.homeMenuCategories])
+
+    const catalogById = useMemo(() => {
+        const map = new Map(arrangedById)
+        for (const product of products) {
+            const id = normalizeProductId(product)
+            if (id) map.set(id, product)
+        }
+        for (const product of previewProducts) {
+            const id = normalizeProductId(product)
+            if (id) map.set(id, product)
+        }
+        return map
+    }, [arrangedById, previewProducts, products])
+
+    const customerRankById = useMemo(() => {
+        const ranks = new Map()
+        let position = 0
+        for (const id of selectedProducts) {
+            const product = catalogById.get(id)
+            if (product && product.inStock === false) continue
+            position += 1
+            ranks.set(id, position)
+        }
+        return ranks
+    }, [catalogById, selectedProducts])
+
     const sourceSummary = sourceMode === 'manual'
         ? `${selectedProducts.length} selected`
         : sourceMode === 'category'
@@ -777,9 +815,18 @@ export default function HomePreferences() {
                 ? `${selectedTags.length} tags`
                 : 'Auto from latest'
 
+    const customerProductIds = selectedProducts.filter((id) => customerRankById.has(id))
+    const rotatePageCount = Math.max(1, Math.ceil(customerProductIds.length / layoutSlots) || 1)
+    const rotatePage = sourceMode === 'manual' && rotateHours > 0 && customerProductIds.length > layoutSlots
+        ? Math.floor(Date.now() / (rotateHours * 60 * 60 * 1000)) % rotatePageCount
+        : 0
+    const previewStart = rotatePage * layoutSlots
     const previewItems = sourceMode === 'manual'
-        ? previewProducts
-        : products.slice(0, 5)
+        ? customerProductIds
+            .slice(previewStart, previewStart + layoutSlots)
+            .map((id) => catalogById.get(id))
+            .filter(Boolean)
+        : products.filter((product) => product?.inStock !== false).slice(0, layoutSlots)
 
     if (loading) {
         return <PageSkeleton />
@@ -865,10 +912,15 @@ export default function HomePreferences() {
                                         {(previewItems.length ? previewItems : [1, 2, 3, 4, 5]).map((item, index) => (
                                             <div
                                                 key={typeof item === 'object' ? item._id : index}
-                                                className="flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/20"
+                                                className="relative flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/20"
                                             >
                                                 {typeof item === 'object' ? (
-                                                    <ProductThumb product={item} size={52} />
+                                                    <>
+                                                        <span className="absolute left-1 top-1 z-10 flex h-4 min-w-4 items-center justify-center rounded-full bg-slate-900 px-1 text-[9px] font-semibold text-white">
+                                                            {sourceMode === 'manual' ? previewStart + index + 1 : index + 1}
+                                                        </span>
+                                                        <ProductThumb product={item} size={52} />
+                                                    </>
                                                 ) : (
                                                     <div className="h-full w-full animate-pulse bg-white/10" />
                                                 )}
@@ -876,6 +928,11 @@ export default function HomePreferences() {
                                         ))}
                                     </div>
                                     <p className="mt-3 text-[11px] text-white/50">
+                                        {sourceMode === 'manual'
+                                            ? `Customers see positions ${previewStart + 1}–${previewStart + previewItems.length} now. 1 is first in your list.`
+                                            : 'Customers see this automatic list until you switch to Manual.'}
+                                    </p>
+                                    <p className="mt-1 text-[11px] text-white/50">
                                         {designSettings.homeMenuCategories?.style === 'carousel' ? 'carousel' : 'grid'} ·{' '}
                                         {designSettings.homeMenuCategories?.itemsPerRow || 5}
                                         {designSettings.homeMenuCategories?.style === 'carousel'
@@ -1106,6 +1163,34 @@ export default function HomePreferences() {
                                             </div>
                                         )}
                                     </div>
+                                    {sourceMode === 'manual' ? (
+                                        <div className="rounded-xl border border-violet-100 bg-violet-50 px-3 py-3">
+                                            <label className="mb-1.5 block text-xs font-medium text-violet-900">
+                                                Change to the next {layoutSlots}
+                                            </label>
+                                            <select
+                                                value={rotateHours}
+                                                onChange={(event) => setRotateHours(Number(event.target.value) || 0)}
+                                                className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
+                                            >
+                                                <option value={0}>Stay on the first {layoutSlots}</option>
+                                                <option value={1}>Every 1 hour</option>
+                                                <option value={2}>Every 2 hours</option>
+                                                <option value={4}>Every 4 hours</option>
+                                                <option value={6}>Every 6 hours</option>
+                                                <option value={12}>Every 12 hours</option>
+                                                <option value={24}>Every 24 hours</option>
+                                            </select>
+                                            <p className="mt-2 text-[11px] leading-relaxed text-violet-800">
+                                                {layoutSlots} show at a time ({designSettings.homeMenuCategories?.itemsPerRow || 5} per row
+                                                {designSettings.homeMenuCategories?.style === 'carousel' ? '' : ` × ${designSettings.homeMenuCategories?.rows || 2} rows`}).
+                                                {' '}Position 1 is first, then 2. You selected {selectedProducts.length}.
+                                                {rotateHours > 0 && customerProductIds.length > layoutSlots
+                                                    ? ` After ${rotateHours} hour${rotateHours === 1 ? '' : 's'}, customers see the next ${layoutSlots}.`
+                                                    : ' They keep seeing the first set until you turn on a change time.'}
+                                            </p>
+                                        </div>
+                                    ) : null}
                                 </div>
                             </div>
                         </div>
@@ -1122,7 +1207,7 @@ export default function HomePreferences() {
                                                 </h2>
                                                 <p className="text-xs text-slate-500">
                                                     {selectedProducts.length} selected · {pagination.total} total products
-                                                    {pickerView === 'arrange' ? ' · drag to set homepage order' : ''}
+                                                    {pickerView === 'arrange' ? ' · drag to set 1st, 2nd, and the rest' : ' · the number is the customer position'}
                                                 </p>
                                             </div>
                                             <div className="flex flex-wrap gap-2">
@@ -1211,7 +1296,7 @@ export default function HomePreferences() {
                                             </div>
                                         ) : (
                                             <p className="mt-3 text-xs text-slate-500">
-                                                First item appears first on the home page. Drag to reorder, or use X to remove a product.
+                                                Position 1 is the first product customers see, then 2, then 3. Drag to change that order. Out of stock products are skipped on the home page.
                                             </p>
                                         )}
                                     </div>
@@ -1230,7 +1315,7 @@ export default function HomePreferences() {
                                                 </div>
                                             ) : (
                                                 <div className={`grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 ${dragProductId ? 'select-none' : ''}`}>
-                                                    {selectedProducts.map((id, index) => {
+                                                    {selectedProducts.map((id) => {
                                                         const product = arrangedById.get(id) || previewCacheRef.current.get(id)
                                                         if (!product) return null
                                                         const isDragging = dragProductId === id
@@ -1251,7 +1336,7 @@ export default function HomePreferences() {
                                                                 }`}
                                                             >
                                                                 <span className="absolute left-2 top-2 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-slate-900 px-1 text-[10px] font-semibold text-white">
-                                                                    {index + 1}
+                                                                    {customerRankById.get(id) || '–'}
                                                                 </span>
                                                                 <div
                                                                     className="absolute right-2 top-2 flex items-center gap-1"
@@ -1359,6 +1444,11 @@ export default function HomePreferences() {
                                                                     : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
                                                             }`}
                                                         >
+                                                            {customerRankById.get(productId) ? (
+                                                                <span className="absolute left-2 top-2 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-slate-900 px-1 text-[10px] font-semibold text-white">
+                                                                    {customerRankById.get(productId)}
+                                                                </span>
+                                                            ) : null}
                                                             <span className={`absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border transition ${
                                                                 isSelected
                                                                     ? 'border-violet-500 bg-violet-500 text-white'

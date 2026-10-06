@@ -62,7 +62,7 @@ export async function GET(request) {
 
     const [store, preference, categories, picker] = await Promise.all([
       Store.findById(storeId)
-        .select('featuredProductIds featuredProductsSource featuredProductsCategoryIds featuredProductsTags featuredSectionTitle featuredSectionDescription featuredSectionTitleAr featuredSectionDescriptionAr')
+        .select('featuredProductIds featuredProductsSource featuredProductsCategoryIds featuredProductsTags featuredManualRotateHours featuredSectionTitle featuredSectionDescription featuredSectionTitleAr featuredSectionDescriptionAr')
         .lean(),
       StorePreference.findOne({ storeId }).select('appearanceSections.homeMenuCategories').lean(),
       Category.find({}).select('_id name parentId').sort({ name: 1 }).lean(),
@@ -91,6 +91,9 @@ export async function GET(request) {
         sectionDescription: store?.featuredSectionDescription || DEFAULT_FEATURED.sectionDescription,
         sectionTitleAr: store?.featuredSectionTitleAr || '',
         sectionDescriptionAr: store?.featuredSectionDescriptionAr || '',
+        manualRotateHours: Number(store?.featuredManualRotateHours) > 0
+          ? Math.round(Number(store.featuredManualRotateHours))
+          : 0,
       },
       appearance: {
         homeMenuCategories: pickHomeLayout(preference?.appearanceSections),

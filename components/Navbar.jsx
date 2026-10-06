@@ -700,6 +700,14 @@ const Navbar = () => {
         });
 
         const nextAppearance = normalizeNavbarAppearance(data);
+        const cachedAppearance = readCachedNavbarAppearance();
+        const serverHasSavedLook = Boolean(nextAppearance.logoUrl || nextAppearance.backgroundColor);
+        const cacheHasSavedLook = Boolean(cachedAppearance?.logoUrl || cachedAppearance?.backgroundColor);
+        // An empty account response must not replace the saved navbar with the default logo and colors.
+        if (!serverHasSavedLook && cacheHasSavedLook) {
+          setNavbarAppearance(cachedAppearance);
+          return;
+        }
 
         setNavbarAppearance(nextAppearance);
         try {

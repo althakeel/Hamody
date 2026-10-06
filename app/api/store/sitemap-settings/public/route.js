@@ -1,17 +1,19 @@
 import dbConnect from '@/lib/mongodb';
 import SitemapSettings from '@/models/SitemapSettings';
 import { NextResponse } from 'next/server';
+import { resolveStorefrontOwnerId } from '@/lib/storefrontSettingsOwner';
 
 export async function GET(request) {
   try {
     await dbConnect();
     
-    // Get the first store's sitemap settings (or you can modify this logic)
-    // For now, we'll try to get from the first store that has configured settings
-    const settings = await SitemapSettings.findOne({
-      enabled: true,
-      categories: { $exists: true, $ne: [] }
-    }).lean();
+    const ownerId = await resolveStorefrontOwnerId('');
+    const settings = ownerId
+      ? await SitemapSettings.findOne({ storeId: ownerId }).lean()
+      : await SitemapSettings.findOne({
+          enabled: true,
+          categories: { $exists: true, $ne: [] },
+        }).lean();
 
     if (settings && settings.categories && settings.enabled) {
       return NextResponse.json({
