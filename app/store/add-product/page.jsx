@@ -24,7 +24,7 @@ import { TableHeader } from '@tiptap/extension-table-header'
 import { useAuth } from '@/lib/useAuth';
 import { getBadgePlacementClass, getBadgeShadowClass, getBadgeSizeClass, getNewBadgeStyle } from '@/lib/newProductTag';
 import { readSellerCache } from '@/lib/storeDashboardCache';
-import { canChangeProductPricing } from '@/lib/productSaveGuards';
+import { canChangeProductPricing, stripAutoPackSku } from '@/lib/productSaveGuards';
 import { Trash2, X } from 'lucide-react';
 import { formatStorefrontMoney } from '@/lib/storefrontMarket';
 import { getProductImageAspectRatioClass } from '@/lib/productMedia';
@@ -105,21 +105,6 @@ const uniqueBulkRowsByQty = (rows = []) => {
 };
 
 const bulkRowHasSalePrice = (row = {}) => Number(row?.price) > 0;
-
-const resolveComboSku = (cellSku, packSku, variantSku, productSku, qty) => {
-    const cell = String(cellSku || '').trim();
-    if (cell) return cell;
-    const pack = String(packSku || '').trim();
-    const variant = String(variantSku || '').trim();
-    const product = String(productSku || '').trim();
-    const n = Math.max(1, Number(qty) || 1);
-    if (variant && pack && pack.toLowerCase() !== variant.toLowerCase()) {
-        return n > 1 ? `${variant}-${pack}` : variant;
-    }
-    const base = variant || pack || product;
-    if (!base) return '';
-    return n > 1 ? `${base}-P${n}` : base;
-};
 
 /** Keep price fields as strings while typing; avoid Number('') → 0 jumps. */
 const parseOptionalPriceInput = (value) => {
@@ -1300,8 +1285,12 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                             price: v.price ?? '',
                             AED: v.AED ?? v.price ?? '',
                             stock: rowStock,
-                            sku: v.sku || '',
+                            sku: stripAutoPackSku(v.sku),
                         })
+                    } else if (hasSelection && qty === 1) {
+                        const existing = baseMap.get(key)
+                        const buyOneSku = stripAutoPackSku(v.sku)
+                        if (existing && buyOneSku) existing.sku = buyOneSku
                     }
                     if (!tierMap.has(qty)) {
                         tierMap.set(qty, {
@@ -2263,10 +2252,11 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
             const isMatrixMode = pricingMode === 'matrix' && baseVariantRows.length > 0
 
             const sharedAdminStock = Math.max(0, Number(productInfo.stockQuantity) || 0)
+            const mainSku = String(productInfo.sku || '').trim()
             const mapPackRowsToVariants = (rows) => rows
                 .filter((b) => Number(b.qty) > 0 && Number(b.price) > 0)
                 .map((b) => ({
-                    sku: resolveComboSku('', b.sku, '', productInfo.sku, b.qty),
+                    sku: mainSku,
                     options: resolveVariantImageOptions({
                         bundleQty: Number(b.qty),
                         title: inferBulkRowLabel({ title: b.title, bundleTitle: b.title }, b.qty, { allowAnyTitle: true }),
@@ -2315,7 +2305,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                         // Keep the seller's variant stock. Qty is units per pack, not a second stock.
                         const stock = Math.max(0, Number(v.stock) || productStockFallback || 0)
                         expanded.push({
-                            sku: resolveComboSku(cell.sku, b.sku, v.sku, productInfo.sku, qty),
+                            sku: stripAutoPackSku(v.sku) || mainSku,
                             options: resolveVariantImageOptions({
                                 ...baseOpts,
                                 bundleQty: qty,
@@ -3932,16 +3922,15 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                           <h4 className="text-sm font-semibold text-slate-800">Bundle pricing rows</h4>
                           <p className="text-xs text-slate-500 mt-0.5">
                             {hasVariants && variants.some((v) => VARIANT_MATRIX_SELECTION_FIELDS.some((f) => String(v?.options?.[f] || '').trim()))
-                              ? 'Qty is units in that pack (Bundle of 3 = 3 units). Prices stay as you type them. Stock is the variant stock — all packs share it.'
-                              : 'Qty is units in that pack. Sale (AED) stays as you type it. Stock Qty above is shared by every pack — do not set a second stock per row.'}
+                              ? 'Qty is units in that pack (Bundle of 3 = 3 units). Prices stay as you type them. Each pack uses that variant’s SKU. Stock is the variant stock — all packs share it.'
+                              : 'Qty is units in that pack. Sale (AED) stays as you type it. These packs use the product SKU. Stock Qty above is shared by every pack.'}
                           </p>
                         </div>
                         <div className="p-4 space-y-3 overflow-x-auto">
-                          <div className="min-w-[900px] grid grid-cols-[88px_minmax(120px,1fr)_64px_110px_90px_90px_110px_64px] gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 px-1">
+                          <div className="min-w-[780px] grid grid-cols-[88px_minmax(120px,1fr)_64px_90px_90px_110px_64px] gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 px-1">
                             <div>Image</div>
                             <div>Label</div>
                             <div>Qty</div>
-                            <div>SKU</div>
                             <div>Sale (AED)</div>
                             <div>Regular (AED)</div>
                             <div>Tag</div>
@@ -3953,7 +3942,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                                 || variantImageOptions.find((opt) => opt.slot === b.imageSlot)?.preview
                                 || ''
                               return (
-                              <div key={idx} className="min-w-[900px] grid grid-cols-[88px_minmax(120px,1fr)_64px_110px_90px_90px_110px_64px] gap-2 items-center">
+                              <div key={idx} className="min-w-[780px] grid grid-cols-[88px_minmax(120px,1fr)_64px_90px_90px_110px_64px] gap-2 items-center">
                                 <div className="flex flex-col items-center gap-1">
                                   <div className="h-12 w-12 rounded-lg border border-slate-200 bg-white overflow-hidden flex items-center justify-center">
                                     {bulkImagePreview ? (
@@ -4003,14 +3992,6 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                                     }
                                     const v = [...bulkOptions]
                                     v[idx] = { ...b, qty: nextQty }
-                                    setBulkOptions(v)
-                                  }} />
-                                <input className="border border-slate-200 rounded-lg px-2.5 py-2 text-sm bg-white" placeholder="SKU"
-                                  value={b.sku || ''}
-                                  onChange={(e) => {
-                                    setIsSkuManuallyEdited(true)
-                                    const v = [...bulkOptions]
-                                    v[idx] = { ...b, sku: e.target.value }
                                     setBulkOptions(v)
                                   }} />
                                 <input className="border border-slate-200 rounded-lg px-2.5 py-2 text-sm bg-white disabled:bg-gray-100 disabled:cursor-not-allowed" type="number" step="0.01" placeholder="0.00" value={b.price}
@@ -4221,7 +4202,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                         <div className="rounded-xl border border-violet-200 bg-violet-50/30 overflow-hidden">
                           <div className="px-4 py-3 border-b border-violet-100 bg-white/80">
                             <h4 className="text-sm font-semibold text-slate-800">Bundle pricing per variant</h4>
-                            <p className="text-xs text-slate-500 mt-0.5">Set Sale / Regular only. Stock is the variant stock above — it is not changed here.</p>
+                            <p className="text-xs text-slate-500 mt-0.5">Set Sale / Regular only. Every pack of this option uses that variant’s SKU. Stock is the variant stock above — it is not changed here.</p>
                           </div>
                           <div className="p-4 space-y-3">
                             {baseRows.map((v, vi) => (
@@ -4230,9 +4211,8 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                                   Option: {getVariantCardLabel(v, vi)}
                                 </div>
                                 <div className="p-3 space-y-2">
-                                  <div className="grid grid-cols-[minmax(90px,1fr)_110px_90px_90px] gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                                  <div className="grid grid-cols-[minmax(90px,1fr)_90px_90px] gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                                     <div>Pack size</div>
-                                    <div>SKU</div>
                                     <div>Sale (AED)</div>
                                     <div>Regular (AED)</div>
                                   </div>
@@ -4241,12 +4221,11 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                                     const fallbackPrice = pickMatrixNumber(v.price, b.price)
                                     const fallbackAED = pickMatrixNumber(v.AED, b.AED, fallbackPrice)
                                     return (
-                                      <div key={bi} className="grid grid-cols-[minmax(90px,1fr)_110px_90px_90px] gap-2 items-center">
+                                      <div key={bi} className="grid grid-cols-[minmax(90px,1fr)_90px_90px] gap-2 items-center">
                                         <div className="text-xs font-medium text-slate-600 truncate">
                                           {b.title || (Number(b.qty) === 1 ? 'Buy 1' : `Buy ${b.qty}`)}
                                           <span className="text-slate-400"> ({b.qty} unit{b.qty > 1 ? 's' : ''} each)</span>
                                         </div>
-                                        <input type="text" placeholder={v.sku || 'SKU'} className="border border-slate-200 rounded-md px-2 py-1.5 text-sm bg-white" value={cell.sku ?? ''} onChange={(e) => { setIsSkuManuallyEdited(true); setCell(v.options, b.qty, 'sku', e.target.value) }} />
                                         <input type="number" step="0.01" placeholder="Sale" title={fallbackPrice > 0 ? `Inherits ${fallbackPrice} if blank` : undefined} className="border border-slate-200 rounded-md px-2 py-1.5 text-sm bg-white" value={cell.price ?? ''} onChange={(e) => setCell(v.options, b.qty, 'price', parseOptionalPriceInput(e.target.value))} />
                                         <input type="number" step="0.01" placeholder="Regular" title={fallbackAED > 0 ? `Inherits ${fallbackAED} if blank` : undefined} className="border border-slate-200 rounded-md px-2 py-1.5 text-sm bg-white" value={cell.AED ?? ''} onChange={(e) => setCell(v.options, b.qty, 'AED', parseOptionalPriceInput(e.target.value))} />
                                       </div>
