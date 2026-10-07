@@ -898,73 +898,15 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                 const data = await res.json();
                 const categories = Array.isArray(data?.categories) ? data.categories : [];
 
-                if (categories.length > 0) {
-                    setDbCategories(categories);
-                    return;
-                }
-
-                // Fallback: if only store menu categories exist, auto-sync them into system categories
-                // so they become selectable for products.
-                if (!user) {
-                    setDbCategories([]);
-                    return;
-                }
-
-                const token = await getToken();
-                if (!token) {
-                    setDbCategories([]);
-                    return;
-                }
-
-                const menuRes = await fetch('/api/store/category-menu', {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-
-                if (!menuRes.ok) {
-                    setDbCategories([]);
-                    return;
-                }
-
-                const menuData = await menuRes.json();
-                const menuCategories = Array.isArray(menuData?.categories) ? menuData.categories : [];
-
-                if (menuCategories.length === 0) {
-                    setDbCategories([]);
-                    return;
-                }
-
-                await Promise.all(
-                    menuCategories
-                        .map((category) => category?.name?.trim())
-                        .filter(Boolean)
-                        .map(async (name) => {
-                            try {
-                                await fetch('/api/store/categories', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        Authorization: `Bearer ${token}`,
-                                    },
-                                    body: JSON.stringify({ name }),
-                                });
-                            } catch (syncError) {
-                                console.warn('Category sync skipped for:', name, syncError?.message || syncError);
-                            }
-                        })
-                );
-
-                const refetchRes = await fetch('/api/store/categories');
-                const refetchData = refetchRes.ok ? await refetchRes.json() : {};
-                setDbCategories(Array.isArray(refetchData?.categories) ? refetchData.categories : []);
+                setDbCategories(categories);
             } catch (error) {
                 console.error('Error fetching categories:', error);
                 setDbCategories([]);
             }
         };
 
-        // Fetch categories and auto-sync menu categories if needed
         fetchCategories();
-    }, [user, getToken]);
+    }, []);
     useEffect(() => {
         const fetchBadgeOptions = async () => {
             if (!user) return

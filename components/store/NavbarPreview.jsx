@@ -84,6 +84,8 @@ export default function NavbarPreview({
     return resolveStoreNavMenuItems(
       { navMenuUseParentCategories, navMenuItems },
       categoryOptions,
+      'en',
+      { previewLiveParents: true },
     ).filter((item) => String(item?.name || '').trim());
   }, [navMenuUseParentCategories, categoryOptions, navMenuItems]);
   const bnplPartners = useMemo(() => resolveBnplPartners(bnplTopBar, 'en'), [bnplTopBar]);
@@ -332,6 +334,7 @@ export default function NavbarPreview({
         style={extraAppearance.style}
       >
         {extraButton.displayLabel}
+        {extraButton.kind === 'dropdown' ? <ChevronDown className="ms-1 h-3 w-3 shrink-0 opacity-80" /> : null}
       </span>
     );
   };

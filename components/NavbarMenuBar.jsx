@@ -635,6 +635,12 @@ export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
       document.addEventListener('mouseup', onMouseUp);
     };
 
+    const resizeObserver = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(() => updateSliderState())
+      : null;
+    resizeObserver?.observe(container);
+    if (container.firstElementChild) resizeObserver?.observe(container.firstElementChild);
+
     container.addEventListener('scroll', onScroll, { passive: true });
     container.addEventListener('wheel', onWheel, { passive: false });
     container.addEventListener('mousedown', onMouseDown);
@@ -646,6 +652,7 @@ export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
       container.removeEventListener('mousedown', onMouseDown);
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
+      resizeObserver?.disconnect();
       window.removeEventListener('resize', updateSliderState);
       if (sliderRafRef.current) {
         window.cancelAnimationFrame(sliderRafRef.current);
@@ -692,7 +699,7 @@ export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
 
   return (
     <div
-      className="relative hidden w-full lg:block"
+      className="relative hidden w-full min-w-0 max-w-full lg:block"
       style={{
         ...cssVars,
         backgroundColor: 'var(--menu-bar-bg)',
@@ -732,10 +739,10 @@ export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
       ) : null}
       <div
         ref={sliderRef}
-        className={`${NAVBAR_CONTAINER_CLASS} overflow-x-auto scrollbar-hide select-none ${isSliderDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-        style={{ maxWidth: Math.min(1400, Number(navbarMaxWidth) || 1400) }}
+        className={`${NAVBAR_CONTAINER_CLASS} min-w-0 w-full max-w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-px-4 scrollbar-hide select-none ${isSliderDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        style={{ maxWidth: `min(100%, ${Math.min(1400, Number(navbarMaxWidth) || 1400)}px)` }}
       >
-        <div className="relative flex w-max items-center py-2 whitespace-nowrap">
+        <div className="relative flex w-max min-w-full items-center pb-2 pe-10 pt-3.5 whitespace-nowrap lg:pt-4">
           {effectiveMenuItems.map((item, index) => {
             const dropdownLinks = Array.isArray(item?.megaMenu?.links) ? item.megaMenu.links : [];
             const featuredImages = Array.isArray(item?.megaMenu?.images) ? item.megaMenu.images.filter((img) => img?.url) : [];
@@ -750,7 +757,7 @@ export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
             return (
               <div
                 key={`${item.name}-${index}`}
-                className="static inline-flex items-center"
+                className="static inline-flex shrink-0 snap-start items-center"
                 onMouseEnter={(event) => {
                   if (megaTimer.current) clearTimeout(megaTimer.current);
                   if (categoryTimer.current) clearTimeout(categoryTimer.current);

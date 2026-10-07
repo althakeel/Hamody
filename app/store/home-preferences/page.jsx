@@ -157,14 +157,10 @@ export default function HomePreferences() {
     const productsAbortRef = useRef(null)
     const previewCacheRef = useRef(new Map())
     const skipNextProductsFetchRef = useRef(false)
-    const orderReadyRef = useRef(false)
-    const persistOrderTimerRef = useRef(null)
     const [pickerView, setPickerView] = useState('catalog')
     const [dragProductId, setDragProductId] = useState('')
     const [dragPoint, setDragPoint] = useState({ x: 0, y: 0 })
     const dragOffsetRef = useRef({ x: 0, y: 0 })
-    const selectedProductsRef = useRef(selectedProducts)
-    selectedProductsRef.current = selectedProducts
     const [arrangedProducts, setArrangedProducts] = useState([])
     const [arrangeLoading, setArrangeLoading] = useState(false)
     const [featuredSectionTitle, setFeaturedSectionTitle] = useState('Craziest sale of the year!')
@@ -326,7 +322,6 @@ export default function HomePreferences() {
 
             setCategories(data.categories || [])
             setSelectedProducts(initialSelected)
-            orderReadyRef.current = initialSelected.length > 0
             if (missingSavedCount > 0) {
                 toast.error(
                     `${missingSavedCount} saved product(s) are no longer in the catalog. Select them again from Catalog.`,
@@ -398,9 +393,6 @@ export default function HomePreferences() {
 
     useEffect(() => {
         fetchInitialData()
-        return () => {
-            if (persistOrderTimerRef.current) clearTimeout(persistOrderTimerRef.current)
-        }
     }, [])
 
     useEffect(() => {
@@ -449,60 +441,13 @@ export default function HomePreferences() {
         }
     }, [selectedProducts, sourceMode, products, fetchPreviewProducts])
 
-    const persistSelectedOrder = useCallback(async (nextIds) => {
-        if (!orderReadyRef.current || sourceMode !== 'manual') return
-
-        try {
-            const token = await getToken()
-            const normalizedTags = selectedTagsText
-                .split(',')
-                .map((tag) => tag.trim())
-                .filter(Boolean)
-            await axios.post('/api/store/featured-products',
-                {
-                    productIds: nextIds,
-                    sourceMode,
-                    categoryIds: selectedCategoryIds,
-                    tags: normalizedTags,
-                    sectionTitle: featuredSectionTitle,
-                    sectionDescription: featuredSectionSubtitle,
-                    sectionTitleAr: featuredSectionTitleAr,
-                    sectionDescriptionAr: featuredSectionSubtitleAr,
-                    manualRotateHours: rotateHours,
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
-            )
-        } catch (error) {
-            console.error(error)
-            toast.error('Failed to save product order')
-        }
-    }, [
-        featuredSectionSubtitle,
-        featuredSectionSubtitleAr,
-        featuredSectionTitle,
-        featuredSectionTitleAr,
-        getToken,
-        selectedCategoryIds,
-        rotateHours,
-        selectedTagsText,
-        sourceMode,
-    ])
-
-    const schedulePersistSelectedOrder = useCallback((nextIds) => {
-        if (persistOrderTimerRef.current) clearTimeout(persistOrderTimerRef.current)
-        persistOrderTimerRef.current = setTimeout(() => {
-            persistSelectedOrder(nextIds)
-        }, 400)
-    }, [persistSelectedOrder])
-
-    const moveSelectedProduct = (fromId, toId, persist = true) => {
+    const moveSelectedProduct = (fromId, toId) => {
         const from = normalizeProductId(fromId)
         const to = normalizeProductId(toId)
         if (!from || !to || from === to) return
         setSelectedProducts((prev) => {
             const next = moveIdInList(prev, from, to)
             if (next === prev) return prev
-            if (persist) schedulePersistSelectedOrder(next)
             return next
         })
     }
@@ -532,7 +477,6 @@ export default function HomePreferences() {
 
     const endArrangeDrag = () => {
         if (!dragProductId) return
-        schedulePersistSelectedOrder(selectedProductsRef.current)
         setDragProductId('')
     }
 
@@ -542,7 +486,6 @@ export default function HomePreferences() {
         setSelectedProducts((prev) => {
             if (!prev.includes(id) || prev[0] === id) return prev
             const next = [id, ...prev.filter((existingId) => existingId !== id)]
-            schedulePersistSelectedOrder(next)
             return next
         })
     }
@@ -553,7 +496,6 @@ export default function HomePreferences() {
         setSelectedProducts((prev) => {
             if (!prev.includes(id)) return prev
             const next = prev.filter((existingId) => existingId !== id)
-            schedulePersistSelectedOrder(next)
             return next
         })
     }
@@ -725,11 +667,10 @@ export default function HomePreferences() {
                 window.localStorage.setItem('featuredSectionLive', JSON.stringify(payload))
                 window.dispatchEvent(new CustomEvent('featuredSectionLiveUpdate', { detail: payload }))
             }
-            orderReadyRef.current = true
             if (sourceMode === 'manual' && selectedProducts.length > 0) {
                 setPickerView('arrange')
             }
-            toast.success('Featured section saved. Drag selected items to set homepage order.', { id: FEATURED_SAVE_TOAST_ID })
+            toast.success('Featured section saved.', { id: FEATURED_SAVE_TOAST_ID })
         } catch (error) {
             toast.error('Failed to save featured products', { id: FEATURED_SAVE_TOAST_ID })
             console.error(error)
@@ -1296,7 +1237,7 @@ export default function HomePreferences() {
                                             </div>
                                         ) : (
                                             <p className="mt-3 text-xs text-slate-500">
-                                                Position 1 is the first product customers see, then 2, then 3. Drag to change that order. Out of stock products are skipped on the home page.
+                                                Position 1 is the first product customers see, then 2, then 3. Drag to change that order, then click Save changes. Out of stock products are skipped on the home page.
                                             </p>
                                         )}
                                     </div>

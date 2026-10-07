@@ -73,6 +73,7 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
         { name: 'WhatsApp Widget', href: '/store/customize/whatsapp-widget', icon: MessageCircle },
         { name: 'Scroll to Top', href: '/store/customize/scroll-to-top', icon: ArrowUp },
+        { name: 'Homepage popup', href: '/store/customize/home-popup', icon: Gift },
 
         { name: 'Mobile Features', href: '/store/mobile-features', icon: Smartphone },
 
@@ -195,6 +196,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
                 '/store/customize/whatsapp-widget',
 
                 '/store/customize/scroll-to-top',
+
+                '/store/customize/home-popup',
 
                 '/store/mobile-features',
 

@@ -146,6 +146,15 @@ const NavbarMenuSettingsSchema = new mongoose.Schema(
         label: { type: String, default: '' },
         labelAr: { type: String, default: '' },
         link: { type: String, default: '/offers' },
+        kind: { type: String, default: 'link' },
+        items: [
+          {
+            id: { type: String, default: '' },
+            label: { type: String, default: '' },
+            labelAr: { type: String, default: '' },
+            link: { type: String, default: '' },
+          },
+        ],
         enabled: { type: Boolean, default: true },
         style: { type: mongoose.Schema.Types.Mixed, default: {} },
       },
@@ -464,6 +473,15 @@ if (!NavbarMenuSettingsModel.schema.path('navExtraButtons')) {
         label: { type: String, default: '' },
         labelAr: { type: String, default: '' },
         link: { type: String, default: '/offers' },
+        kind: { type: String, default: 'link' },
+        items: [
+          {
+            id: { type: String, default: '' },
+            label: { type: String, default: '' },
+            labelAr: { type: String, default: '' },
+            link: { type: String, default: '' },
+          },
+        ],
         enabled: { type: Boolean, default: true },
         style: { type: mongoose.Schema.Types.Mixed, default: {} },
       },
@@ -483,6 +501,20 @@ const extraButtonsPath = NavbarMenuSettingsModel.schema.path('navExtraButtons');
 if (extraButtonsPath?.schema && !extraButtonsPath.schema.path('style')) {
   extraButtonsPath.schema.add({
     style: { type: mongoose.Schema.Types.Mixed, default: {} },
+  });
+}
+
+if (extraButtonsPath?.schema && !extraButtonsPath.schema.path('kind')) {
+  extraButtonsPath.schema.add({
+    kind: { type: String, default: 'link' },
+    items: [
+      {
+        id: { type: String, default: '' },
+        label: { type: String, default: '' },
+        labelAr: { type: String, default: '' },
+        link: { type: String, default: '' },
+      },
+    ],
   });
 }
 

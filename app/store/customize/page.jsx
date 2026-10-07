@@ -20,6 +20,7 @@ import {
   Truck,
   MessageCircle,
   Tag,
+  Gift,
 } from 'lucide-react'
 
 const designPages = [
@@ -106,6 +107,12 @@ const designPages = [
     description: 'Show a back-to-top button on the right above Tawk, or on the left bottom.',
     href: '/store/customize/scroll-to-top',
     icon: ArrowUp,
+  },
+  {
+    title: 'Homepage popup',
+    description: 'Welcome offer on the home page: logo, discount text, and email box.',
+    href: '/store/customize/home-popup',
+    icon: Gift,
   },
 ]
 

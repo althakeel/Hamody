@@ -50,11 +50,11 @@ export default function CategoryHeroCard({
   }, [canCollapse, expanded, fullDescription]);
 
   return (
-    <section className="mb-6" aria-label={name}>
-      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white">
-        <div className={`flex flex-col gap-6 p-5 sm:p-7 md:flex-row md:items-start ${isArabic ? 'md:flex-row-reverse' : ''}`}>
+    <section className="mb-4 md:mb-6" aria-label={name}>
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white md:rounded-3xl">
+        <div className={`flex items-center gap-3 p-3 md:items-start md:gap-6 md:p-7 ${isArabic ? 'flex-row-reverse' : ''}`}>
           {!hideImage ? (
-            <div className="mx-auto h-28 w-28 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 sm:h-32 sm:w-32 md:mx-0">
+            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 md:h-32 md:w-32 md:rounded-2xl">
               <img
                 src={imageSrc}
                 alt={name}
@@ -66,23 +66,23 @@ export default function CategoryHeroCard({
             </div>
           ) : null}
 
-          <div className={`min-w-0 flex-1 text-center md:text-start ${isArabic ? 'md:text-end' : ''}`}>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-600">
+          <div className={`min-w-0 flex-1 text-start ${isArabic ? 'text-end' : ''}`}>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-orange-600 md:text-xs md:tracking-[0.18em]">
               {t('category.category')}
             </p>
-            <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+            <h1 className="mt-0.5 text-xl font-bold tracking-tight text-slate-900 md:mt-1 md:text-4xl">
               {name}
             </h1>
 
-            <div className={`mt-4 flex flex-wrap items-center justify-center gap-2 md:justify-start ${isArabic ? 'md:justify-end' : ''}`}>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">
+            <div className={`mt-2 flex flex-wrap items-center gap-1.5 md:mt-4 md:gap-2 ${isArabic ? 'justify-end' : 'justify-start'}`}>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 md:px-3 md:py-1 md:text-sm">
                 {t('category.productsAvailable', {
                   count: productCount.toLocaleString(locale),
                 })}
               </span>
 
               {reviewCount > 0 ? (
-                <span dir="ltr" className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">
+                <span dir="ltr" className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 md:gap-1.5 md:px-3 md:py-1 md:text-sm">
                   <StarRow rating={averageRating} />
                   <span>
                     {t('category.reviewsSummary', {
@@ -94,8 +94,8 @@ export default function CategoryHeroCard({
               ) : null}
 
               {fastDeliveryPercent > 0 ? (
-                <span className={`inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-sm text-orange-700 ${isArabic ? 'flex-row-reverse' : ''}`}>
-                  <Truck size={14} />
+                <span className={`inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-xs text-orange-700 md:gap-1.5 md:px-3 md:py-1 md:text-sm ${isArabic ? 'flex-row-reverse' : ''}`}>
+                  <Truck size={12} className="md:h-3.5 md:w-3.5" />
                   {t('category.fastShippingPercent', { percent: fastDeliveryPercent })}
                 </span>
               ) : null}

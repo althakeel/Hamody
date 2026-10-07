@@ -447,7 +447,6 @@ function buildCategoryUrl(name = '') {
   return toPublicCategoryPath(name);
 }
 
-const LARGE_DATA_URL_MAX = 4096;
 const PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
 
 function getVisiblePageNumbers(currentPage, totalPages) {
@@ -462,74 +461,8 @@ function getVisiblePageNumbers(currentPage, totalPages) {
   return Array.from(pages).sort((a, b) => a - b);
 }
 
-function isLargeDataUrl(value = '') {
-  const trimmed = String(value || '').trim();
-  return trimmed.startsWith('data:') && trimmed.length > LARGE_DATA_URL_MAX;
-}
-
-async function uploadCategoryImageDataUrl(base64Image, fileName, token) {
-  const { data } = await axios.post('/api/store/upload-category-image', {
-    base64Image,
-    fileName: slugify(fileName) || 'category',
-  }, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  return data?.url || '';
-}
-
-async function prepareCategoryMenuForSave(categories = [], token) {
-  return Promise.all(categories.map(async (category) => {
-    let image = String(category?.image || '').trim();
-
-    if (isLargeDataUrl(image)) {
-      image = await uploadCategoryImageDataUrl(image, category?.name || 'category', token);
-    }
-
-    const children = Array.isArray(category?.children)
-      ? await prepareCategoryMenuForSave(category.children, token)
-      : category?.children;
-
-    return {
-      ...category,
-      image,
-      ...(Array.isArray(children) ? { children } : {}),
-    };
-  }));
-}
-
-async function saveCategoryMenu(categories, token) {
-  const preparedCategories = await prepareCategoryMenuForSave(categories, token);
-  return axios.post('/api/store/category-menu', { categories: preparedCategories }, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-}
-
 function flattenSystemCategories(categories = []) {
   return categories.map(({ children, ...rest }) => rest);
-}
-
-function buildMenuFromSystemCategories(categories = []) {
-  const flat = flattenSystemCategories(categories);
-  const byId = new Map(flat.map((category) => [String(category._id), category]));
-
-  return flat.map((category) => {
-    const parent = category.parentId ? byId.get(String(category.parentId)) : null;
-    return {
-      id: String(category._id),
-      systemCategoryId: String(category._id),
-      parentId: category.parentId || null,
-      parentName: parent?.name || '',
-      name: category.name,
-      image: category.image || '',
-      url: buildSystemCategoryMenuUrl(category),
-      children: [],
-    };
-  });
-}
-
-async function syncStoreMenuFromSystemCategories(categories, token) {
-  await saveCategoryMenu(buildMenuFromSystemCategories(categories), token);
 }
 
 function buildSystemCategoryMenuUrl(category = {}) {
@@ -968,21 +901,6 @@ export default function StoreCategoryMenu() {
       } catch (error) {
         console.log('Failed to load category product counts', error);
       }
-
-      try {
-        const menuRes = await axios.get('/api/store/category-menu', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const menuCount = menuRes.data?.categories?.length || 0;
-        const systemCount = flattenSystemCategories(nextCategories).length;
-        if (systemCount > 0 && menuCount !== systemCount) {
-          await syncStoreMenuFromSystemCategories(nextCategories, token);
-        }
-      } catch {
-        if (nextCategories.length) {
-          await syncStoreMenuFromSystemCategories(nextCategories, token);
-        }
-      }
     } catch (error) {
       console.log('Failed to load categories', error);
     } finally {
@@ -1023,8 +941,8 @@ export default function StoreCategoryMenu() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Banner must be 5MB or smaller');
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error('Banner must be 15MB or smaller');
       event.target.value = '';
       return;
     }
@@ -1043,7 +961,7 @@ export default function StoreCategoryMenu() {
     setFormData((prev) => ({ ...prev, [key]: '' }));
   };
 
-  const uploadCategoryImageFile = async (file, token) => {
+  const uploadCategoryImageFile = async (file, token, slot = 'image') => {
     const base64Image = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result);
@@ -1053,7 +971,7 @@ export default function StoreCategoryMenu() {
 
     const { data } = await axios.post('/api/store/upload-category-image', {
       base64Image,
-      fileName: slugify(formData.name || file.name || 'category'),
+      fileName: `${slugify(formData.name || file.name || 'category')}-${slot}`,
     }, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -1193,7 +1111,7 @@ export default function StoreCategoryMenu() {
       const selectedParent = selectedParentId ? categoryById.get(selectedParentId) : null;
 
       if (imageFile) {
-        imageUrl = await uploadCategoryImageFile(imageFile, token);
+        imageUrl = await uploadCategoryImageFile(imageFile, token, 'image');
         if (!imageUrl) {
           toast.error('Image upload failed. Please try again.');
           return;
@@ -1211,7 +1129,7 @@ export default function StoreCategoryMenu() {
 
       for (const field of CATEGORY_BANNER_FIELDS) {
         if (!bannerFiles[field.key]) continue;
-        const uploaded = await uploadCategoryImageFile(bannerFiles[field.key], token);
+        const uploaded = await uploadCategoryImageFile(bannerFiles[field.key], token, field.key);
         if (!uploaded) {
           toast.error(`${field.label} upload failed. Please try again.`);
           return;
@@ -1401,6 +1319,7 @@ export default function StoreCategoryMenu() {
       description: category.description || '',
       descriptionAr: category.descriptionAr || '',
     });
+    setImageFile(null);
     setImagePreview(category.image || '');
     setBannerFiles(EMPTY_BANNER_FILES);
     setBannerPreviews({
@@ -2227,7 +2146,7 @@ export default function StoreCategoryMenu() {
                               <img
                                 src={getCategoryImageSrc(imagePreview)}
                                 alt="Preview"
-                                className="h-28 w-28 rounded-lg border border-blue-200 object-cover shadow-md sm:h-32 sm:w-32"
+                                className="h-28 w-28 rounded-lg border border-blue-200 bg-slate-50 object-contain shadow-md sm:h-32 sm:w-32"
                                 onError={(event) => {
                                   event.currentTarget.src = DEFAULT_CATEGORY_IMAGE;
                                 }}
@@ -2247,7 +2166,7 @@ export default function StoreCategoryMenu() {
                           Category banners <span className="font-normal normal-case text-slate-500">(optional)</span>
                         </label>
                         <p className="mt-1 text-xs text-slate-500">
-                          Upload desktop, tablet, and mobile banners separately (English and Arabic). Shown under the breadcrumb. If any banner is set, the category thumbnail hides automatically.
+                          Upload desktop, tablet, and mobile banners separately (English and Arabic). Shown under the breadcrumb. The category image stays as its own thumbnail.
                         </p>
                       </div>
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -2273,14 +2192,14 @@ export default function StoreCategoryMenu() {
                               <div className="relative cursor-pointer rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 transition hover:border-blue-500">
                                 <input
                                   type="file"
-                                  accept="image/*"
+                                  accept="image/png,image/jpeg,image/jpg,image/webp,image/*"
                                   onChange={(event) => handleBannerChange(field.key, event)}
-                                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                                  className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
                                 />
-                                <div className="flex flex-col items-center justify-center text-center">
+                                <div className="pointer-events-none flex flex-col items-center justify-center text-center">
                                   <FiPlus className="mb-1 text-xl text-slate-400" />
                                   <p className="text-xs font-semibold text-slate-700">Click to upload</p>
-                                  <p className="mt-0.5 text-[11px] text-slate-400">PNG, JPG up to 5MB · {field.sizeHint}</p>
+                                  <p className="mt-0.5 text-[11px] text-slate-400">PNG, JPG, WEBP up to 15MB · {field.sizeHint}</p>
                                 </div>
                               </div>
                               {preview ? (
@@ -2288,7 +2207,7 @@ export default function StoreCategoryMenu() {
                                   <img
                                     src={preview}
                                     alt={`${field.label} preview`}
-                                    className="h-20 w-full object-cover object-center"
+                                    className="h-28 w-full object-contain object-center"
                                   />
                                 </div>
                               ) : null}

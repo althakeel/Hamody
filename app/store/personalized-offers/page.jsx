@@ -18,6 +18,8 @@ export default function PersonalizedOffersAdmin() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedCart, setSelectedCart] = useState(null);
+  const [offerToDelete, setOfferToDelete] = useState(null);
+  const [deletingOffer, setDeletingOffer] = useState(false);
   
   const [newOffer, setNewOffer] = useState({
     customerEmail: '',
@@ -190,16 +192,20 @@ export default function PersonalizedOffersAdmin() {
     }
   };
 
-  // Handle delete offer
-  const handleDeleteOffer = async (offerId) => {
-    if (!window.confirm("Are you sure you want to delete this offer?")) return;
+  const confirmDeleteOffer = async () => {
+    const offerId = offerToDelete?._id;
+    if (!offerId || deletingOffer) return;
 
     try {
+      setDeletingOffer(true);
       await axios.delete(`/api/personalized-offers?offerId=${offerId}`);
       toast.success("Offer deleted successfully");
+      setOfferToDelete(null);
       fetchOffers();
     } catch (error) {
       toast.error("Failed to delete offer");
+    } finally {
+      setDeletingOffer(false);
     }
   };
 
@@ -547,7 +553,7 @@ export default function PersonalizedOffersAdmin() {
                     <Eye size={18} />
                   </button>
                   <button
-                    onClick={() => handleDeleteOffer(offer._id)}
+                    onClick={() => setOfferToDelete(offer)}
                     className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
                     title="Delete offer"
                   >
@@ -559,6 +565,64 @@ export default function PersonalizedOffersAdmin() {
           ))}
         </div>
       )}
+
+      {offerToDelete ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+          lang="en"
+          dir="ltr"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-offer-title"
+          onClick={() => {
+            if (!deletingOffer) setOfferToDelete(null);
+          }}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+                <Trash2 size={18} />
+              </span>
+              <div className="min-w-0">
+                <h3 id="delete-offer-title" className="text-lg font-semibold text-slate-900">
+                  Delete this offer?
+                </h3>
+                <p className="mt-2 text-sm text-slate-600">
+                  <span className="font-semibold text-slate-900">
+                    {offerToDelete.product?.name || 'This offer'}
+                  </span>
+                  {offerToDelete.customerName || offerToDelete.customerEmail
+                    ? ` for ${offerToDelete.customerName || offerToDelete.customerEmail}`
+                    : ''}{' '}
+                  will be removed. This cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setOfferToDelete(null)}
+                disabled={deletingOffer}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteOffer}
+                disabled={deletingOffer}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+              >
+                <Trash2 size={15} />
+                {deletingOffer ? 'Deleting...' : 'Delete offer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

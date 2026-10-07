@@ -9,8 +9,9 @@ import {
   normalizeWhatsAppProductWidget,
 } from '@/lib/whatsappProductWidget'
 import { DEFAULT_SCROLL_TO_TOP, normalizeScrollToTop } from '@/lib/scrollToTopSettings'
+import { DEFAULT_HOME_WELCOME_POPUP, normalizeHomeWelcomePopup } from '@/lib/homeWelcomePopup'
 
-const APPEARANCE_CACHE_KEY = 'public:appearance-sections:v8'
+const APPEARANCE_CACHE_KEY = 'public:appearance-sections:v10'
 
 const DEFAULT_APPEARANCE = {
   categorySliders: { enabled: true, title: 'Featured Collections', description: 'Browse our curated collections' },
@@ -24,6 +25,7 @@ const DEFAULT_APPEARANCE = {
   offersPage: DEFAULT_OFFERS_PAGE,
   whatsappProductWidget: DEFAULT_WHATSAPP_PRODUCT_WIDGET,
   scrollToTop: DEFAULT_SCROLL_TO_TOP,
+  homeWelcomePopup: DEFAULT_HOME_WELCOME_POPUP,
   productPageInfo: {
     returnsText: 'Easy Returns',
     vatText: 'All prices include VAT.',
@@ -184,6 +186,7 @@ function normalizePublic(data = {}) {
       data.whatsappProductWidget || DEFAULT_APPEARANCE.whatsappProductWidget,
     ),
     scrollToTop: normalizeScrollToTop(data.scrollToTop || DEFAULT_APPEARANCE.scrollToTop),
+    homeWelcomePopup: normalizeHomeWelcomePopup(data.homeWelcomePopup || DEFAULT_APPEARANCE.homeWelcomePopup),
     productPageInfo: {
       returnsText: sanitizeProductPageClaimText(
         productPageInfo.returnsText,

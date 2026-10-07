@@ -60,25 +60,9 @@ export async function GET(request) {
 
     await dbConnect();
     const storeMenu = await StoreMenu.findOne({ storeId: access.ownerUserId }).lean();
-    const rawCategories = storeMenu?.categories || [];
-    const { categories: migratedCategories, changed } = await sanitizeCategoryMenuTree(rawCategories, {
-      storeId: access.ownerUserId,
-    });
-
-    if (changed) {
-      await StoreMenu.findOneAndUpdate(
-        { storeId: access.ownerUserId },
-        {
-          storeId: access.ownerUserId,
-          categories: migratedCategories,
-          updatedAt: new Date(),
-        },
-        { upsert: true, new: true }
-      );
-    }
 
     return NextResponse.json({
-      categories: sanitizeCategoryTree(migratedCategories),
+      categories: sanitizeCategoryTree(storeMenu?.categories || []),
     }, { status: 200 });
   } catch (error) {
     return NextResponse.json(

@@ -16,27 +16,27 @@ export default function CategoryBanner({
   const mobileImage = mobile || tablet || desktop;
 
   return (
-    <section className="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50" aria-label={alt}>
+    <section className="mb-3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 md:mb-5" aria-label={alt}>
       <img
         src={desktopImage}
         alt={alt}
         width={1440}
         height={320}
-        className="hidden h-[200px] w-full object-cover object-center xl:h-[320px] lg:block"
+        className="hidden aspect-[1440/320] w-full object-contain object-center lg:block"
       />
       <img
         src={tabletImage}
         alt={alt}
         width={1024}
         height={320}
-        className="hidden h-[240px] w-full object-cover object-center md:h-[280px] md:block lg:hidden"
+        className="hidden aspect-[1024/320] w-full object-contain object-center md:block lg:hidden"
       />
       <img
         src={mobileImage}
         alt={alt}
         width={768}
         height={280}
-        className="block h-[160px] w-full object-cover object-center sm:h-[200px] md:hidden"
+        className="block aspect-[768/280] w-full object-contain object-center md:hidden"
       />
     </section>
   );

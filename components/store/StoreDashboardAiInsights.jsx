@@ -49,7 +49,6 @@ export default function StoreDashboardAiInsights({ getToken, stats, currency = '
     });
 
     if (!force && key === lastKeyRef.current) return;
-    lastKeyRef.current = key;
 
     setLoading(true);
     setError('');
@@ -64,12 +63,15 @@ export default function StoreDashboardAiInsights({ getToken, stats, currency = '
             currency,
           },
         },
-        { headers: { Authorization: `Bearer ${token}` }, timeout: 25000 },
+        { headers: { Authorization: `Bearer ${token}` }, timeout: 20000 },
       );
+      lastKeyRef.current = key;
       setInsights(data);
     } catch (err) {
-      setError('Could not load AI insights');
-      console.error(err);
+      lastKeyRef.current = '';
+      setError(err?.code === 'ECONNABORTED'
+        ? 'AI insights took too long. Showing retry — or check GEMINI_API_KEY / OPENAI_API_KEY.'
+        : 'Could not load AI insights');
     } finally {
       setLoading(false);
     }

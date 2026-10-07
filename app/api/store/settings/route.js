@@ -8,7 +8,7 @@ import { DEFAULT_NAVBAR_BOTTOM_BORDER, normalizeNavbarBottomBorder } from '@/lib
 import { DEFAULT_NAVBAR_PHONE, normalizeNavbarPhone } from '@/lib/storeContact';
 import { DEFAULT_NAVBAR_LANGUAGE, normalizeNavbarLanguage } from '@/lib/storefrontMarket';
 import { DEFAULT_BNPL_TOP_BAR, normalizeBnplTopBar } from '@/lib/bnplTopBar';
-import { findSharedNavbarSettings, resolveStorefrontOwnerId } from '@/lib/storefrontSettingsOwner';
+import { findSharedNavbarSettings, navbarSaveIsStale, resolveStorefrontOwnerId } from '@/lib/storefrontSettingsOwner';
 
 const DEFAULT_SETTINGS = {
   navMenuEnabled: true,
@@ -224,7 +224,10 @@ export async function GET(request) {
     const ownerId = await resolveStorefrontOwnerId(userId || '');
     const doc = await findSharedNavbarSettings(ownerId);
     const merged = mergeWithDefaults(doc || inMemorySettings.public);
-    return NextResponse.json(merged, { status: 200, headers: { 'Cache-Control': 'no-store' } });
+    return NextResponse.json(
+      { ...merged, updatedAt: doc?.updatedAt || null },
+      { status: 200, headers: { 'Cache-Control': 'no-store' } },
+    );
   } catch (error) {
     console.error('[API /store/settings GET] fallback to in-memory:', error?.message || error);
 
@@ -259,6 +262,12 @@ export async function PUT(request) {
     await dbConnect();
     const userId = await resolveStorefrontOwnerId(actorId);
     const existing = await findSharedNavbarSettings(userId);
+    if (navbarSaveIsStale(existing, incoming.settingsUpdatedAt)) {
+      return NextResponse.json(
+        { error: 'These settings were just saved. Reload the page, then save again.' },
+        { status: 409 },
+      );
+    }
     const current = mergeWithDefaults(existing || {});
 
     const next = {
@@ -318,7 +327,7 @@ export async function PUT(request) {
         }
       : {};
 
-    await NavbarMenuSettings.findOneAndUpdate(
+    const savedSettings = await NavbarMenuSettings.findOneAndUpdate(
       { storeId: userId },
       {
         $set: {
@@ -351,7 +360,7 @@ export async function PUT(request) {
 
     deleteCacheKey(HOMEPAGE_CACHE_KEY);
 
-    return NextResponse.json({ success: true, ...next }, { status: 200 });
+    return NextResponse.json({ success: true, ...next, updatedAt: savedSettings?.updatedAt || new Date() }, { status: 200 });
   } catch (error) {
     console.error('[API /store/settings PUT] db unavailable, saving in memory:', error?.message || error);
 

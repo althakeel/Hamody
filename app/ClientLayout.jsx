@@ -53,6 +53,7 @@ const SpinWheelWidget = dynamic(() => loadClientModule(() => import("@/component
 const GiveawayCartManager = dynamic(() => loadClientModule(() => import("@/components/GiveawayCartManager")), { ssr: false });
 const TawkToWidget = dynamic(() => loadClientModule(() => import("@/components/TawkToWidget")), { ssr: false });
 const ScrollToTopButton = dynamic(() => loadClientModule(() => import("@/components/ScrollToTopButton")), { ssr: false });
+const HomeWelcomePopup = dynamic(() => loadClientModule(() => import("@/components/HomeWelcomePopup")), { ssr: false });
 const AuthSessionGuard = dynamic(() => loadClientModule(() => import("@/components/AuthSessionGuard")), { ssr: false });
 const GoogleOneTap = dynamic(() => loadClientModule(() => import("@/components/GoogleOneTap")), { ssr: false });
 
@@ -177,6 +178,7 @@ export default function ClientLayout({ children, initialStorefrontLanguage = 'en
         ) : null}
         {children}
         <DeferredWidgets />
+        {!hideStorefrontChrome ? <HomeWelcomePopup /> : null}
         {!hideStorefrontChrome ? <ScrollToTopButton /> : null}
         {!hideStorefrontChrome ? (
           <StorefrontChromeErrorBoundary>

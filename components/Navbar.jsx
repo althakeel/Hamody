@@ -2075,10 +2075,40 @@ const Navbar = () => {
       applyUnifiedNavbarText(extraButton.style, navbarAppearance),
       'desktop',
     );
+    const extraClass = `inline-flex shrink-0 items-center gap-1 leading-none tracking-[0.04em] transition hover:opacity-90 ${extraAppearance.animationClass || ''}`;
+    if (extraButton.kind === 'dropdown' && extraButton.items?.length) {
+      return (
+        <div className="group relative">
+          <button
+            type="button"
+            className={extraClass}
+            data-font={extraAppearance.fontId || 'inherit'}
+            style={extraAppearance.style}
+            aria-haspopup="menu"
+          >
+            {extraButton.displayLabel}
+            <ChevronDown size={14} className="opacity-80" />
+          </button>
+          <div className="invisible absolute start-0 top-full z-[80] min-w-[200px] pt-2 group-hover:visible">
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-slate-900 shadow-xl">
+              {extraButton.items.map((entry) => (
+                <Link
+                  key={entry.id}
+                  href={entry.link}
+                  className="block px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
+                >
+                  {entry.displayLabel}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <Link
-        href={extraButton.link || '/offers'}
-        className={`inline-flex shrink-0 items-center leading-none tracking-[0.04em] transition hover:opacity-90 ${extraAppearance.animationClass || ''}`}
+        href={/^#(page|brand|category|product)$/.test(extraButton.link || '') ? '/offers' : (extraButton.link || '/offers')}
+        className={extraClass}
         data-font={extraAppearance.fontId || 'inherit'}
         style={extraAppearance.style}
       >

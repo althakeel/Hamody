@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAuth } from '@/lib/firebase-admin';
 import authSeller from '@/middlewares/authSeller';
+import { optimizeUploadBuffer } from '@/lib/optimizeUploadBuffer';
 import { uploadToS3 } from '@/lib/storage';
 
 function parseAuthHeader(req) {
@@ -52,14 +53,25 @@ export async function POST(req) {
       'image/gif': '.gif',
       'image/webp': '.webp',
     };
-    const extension = extensionMap[mimeType] || '.jpg';
-    const fileNameWithExt = `${fileName || `category-${Date.now()}`}${extension}`;
+    const rawBuffer = Buffer.from(base64Data, 'base64');
+    const optimized = await optimizeUploadBuffer(rawBuffer, {
+      contentType: mimeType,
+      fileName: fileName || 'category',
+      maxWidth: 1920,
+      maxHeight: 1080,
+      maxBytes: 1500 * 1024,
+    });
+    const extension = optimized.extension
+      ? `.${optimized.extension}`
+      : (extensionMap[optimized.contentType] || extensionMap[mimeType] || '.jpg');
+    const baseName = String(fileName || 'category').replace(/\.[^.]+$/, '') || 'category';
+    const fileNameWithExt = `${baseName}-${Date.now()}${extension}`;
 
     const upload = await uploadToS3({
-      buffer: Buffer.from(base64Data, 'base64'),
+      buffer: optimized.buffer,
       fileName: fileNameWithExt,
       folder: 'categories',
-      contentType: mimeType,
+      contentType: optimized.contentType || mimeType,
     });
 
     return NextResponse.json(

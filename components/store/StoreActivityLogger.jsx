@@ -83,27 +83,32 @@ export default function StoreActivityLogger() {
       return response;
     });
 
-    const originalFetch = window.fetch.bind(window);
-    window.fetch = async (input, init = {}) => {
-      const response = await originalFetch(input, init);
-      try {
-        const url = typeof input === 'string' ? input : input?.url;
-        logStoreChange({
-          method: String(init.method || input?.method || 'GET').toLowerCase(),
-          path: requestPath(url),
-          status: response.status,
-          authorization: readAuthHeader(init.headers || input?.headers),
-          payload: readRequestPayload(init.body),
-        });
-      } catch {
-        // Ignore logging failures.
-      }
-      return response;
-    };
+    const alreadyWrapped = Boolean(window.fetch?.__storeActivityWrapped);
+    const originalFetch = alreadyWrapped ? null : window.fetch.bind(window);
+    if (!alreadyWrapped) {
+      const wrappedFetch = async (input, init = {}) => {
+        const response = await originalFetch(input, init);
+        try {
+          const url = typeof input === 'string' ? input : input?.url;
+          logStoreChange({
+            method: String(init.method || input?.method || 'GET').toLowerCase(),
+            path: requestPath(url),
+            status: response.status,
+            authorization: readAuthHeader(init.headers || input?.headers),
+            payload: readRequestPayload(init.body),
+          });
+        } catch {
+          // Ignore logging failures.
+        }
+        return response;
+      };
+      wrappedFetch.__storeActivityWrapped = true;
+      window.fetch = wrappedFetch;
+    }
 
     return () => {
       axios.interceptors.response.eject(interceptor);
-      window.fetch = originalFetch;
+      if (originalFetch) window.fetch = originalFetch;
     };
   }, []);
 

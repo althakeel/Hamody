@@ -48,7 +48,7 @@ export default function CategoryPageView({
   const banners = getCategoryBannerUrls(category, { isArabic });
 
   return (
-    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-8" dir={isArabic ? 'rtl' : 'ltr'}>
+    <div className="mx-auto max-w-[1400px] px-4 py-4 sm:px-6 md:py-8" dir={isArabic ? 'rtl' : 'ltr'}>
       <nav
         aria-label="Breadcrumb"
         className={`text-sm text-gray-500 mb-4 flex flex-wrap items-center gap-1 ${isArabic ? 'flex-row-reverse justify-end' : ''}`}
@@ -89,7 +89,6 @@ export default function CategoryPageView({
         }}
         t={t}
         isArabic={isArabic}
-        hideImage={banners.hasBanner}
       />
 
       {showSubcategories && !isL2WithL3Children ? (

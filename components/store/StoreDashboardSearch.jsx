@@ -13,6 +13,7 @@ import {
 const EXTRA_PAGES = [
   { id: 'whatsappWidget', label: 'WhatsApp Widget', href: '/store/customize/whatsapp-widget' },
   { id: 'scrollToTop', label: 'Scroll to Top', href: '/store/customize/scroll-to-top' },
+  { id: 'homePopup', label: 'Homepage popup', href: '/store/customize/home-popup' },
   { id: 'inventoryPage', label: 'Inventory', href: '/store/inventory' },
 ];
 

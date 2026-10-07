@@ -15,6 +15,7 @@ import {
   DEFAULT_SEARCH_STYLE,
   SEARCH_ALIGN_OPTIONS,
   createNavbarExtraButton,
+  createNavbarExtraDropdownItem,
   defaultNavbarItemAlign,
   defaultNavbarItemOrder,
   getNavbarCategoriesButtonAppearance,
@@ -630,9 +631,10 @@ const EXISTING_PAGE_OPTIONS = EXISTING_PAGES.map((pagePath) => ({
 }));
 
 const LINK_TYPE_OPTIONS = [
+  { value: 'page', label: 'Existing page' },
+  { value: 'brand', label: 'Brand' },
   { value: 'category', label: 'Category' },
   { value: 'product', label: 'Product' },
-  { value: 'page', label: 'Existing page' },
   { value: 'custom', label: 'Custom URL' },
 ];
 
@@ -646,6 +648,10 @@ const safeDecode = (value) => {
 
 const readLinkChoice = (link) => {
   const normalized = String(link || '').trim() || '#';
+  if (normalized.startsWith('/category/brands/')) {
+    return { type: 'brand', value: safeDecode(normalized.replace(/^\/category\/brands\//, '').split('/')[0]) };
+  }
+
   if (normalized.startsWith('/category/')) {
     return { type: 'category', value: normalized.replace(/^\/category\//, '').trim() };
   }
@@ -671,12 +677,26 @@ const readLinkChoice = (link) => {
     return { type: 'page', value: normalized };
   }
 
+  if (normalized === '#page') return { type: 'page', value: '' };
+  if (normalized === '#brand') return { type: 'brand', value: '' };
+  if (normalized === '#category') return { type: 'category', value: '' };
+  if (normalized === '#product') return { type: 'product', value: '' };
+
   return { type: 'custom', value: normalized === '#' ? '' : normalized };
 };
 
 const createLinkFromChoice = (type, rawValue) => {
   const value = String(rawValue || '').trim();
-  if (!value) return '#';
+  if (!value) {
+    if (type === 'page' || type === 'brand' || type === 'category' || type === 'product') {
+      return `#${type}`;
+    }
+    return '#';
+  }
+
+  if (type === 'brand') {
+    return `/category/brands/${encodeURIComponent(value)}`;
+  }
 
   if (type === 'category') {
     return toPublicCategoryPath(value);
@@ -692,6 +712,78 @@ const createLinkFromChoice = (type, rawValue) => {
 
   return value;
 };
+
+function ExtraButtonLinkFields({ link, onChange, categoryOptions, productOptions, brandOptions }) {
+  const choice = readLinkChoice(link);
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      <StoreDropdown
+        value={choice.type}
+        onChange={(type) => onChange(createLinkFromChoice(type, ''))}
+        options={LINK_TYPE_OPTIONS}
+        placeholder="Select link type"
+      />
+      {choice.type === 'page' ? (
+        <StoreDropdown
+          searchable
+          value={choice.value}
+          onChange={(value) => onChange(createLinkFromChoice('page', value))}
+          options={EXISTING_PAGE_OPTIONS}
+          placeholder="Select page"
+          searchPlaceholder="Search pages"
+        />
+      ) : null}
+      {choice.type === 'brand' ? (
+        <StoreDropdown
+          searchable
+          value={choice.value}
+          onChange={(value) => onChange(createLinkFromChoice('brand', value))}
+          options={brandOptions.map((brand) => ({
+            value: brand?.slug || brand?._id || '',
+            label: brand?.name || brand?.slug || 'Brand',
+          }))}
+          placeholder="Select brand"
+          searchPlaceholder="Search brands"
+        />
+      ) : null}
+      {choice.type === 'category' ? (
+        <StoreDropdown
+          searchable
+          value={choice.value}
+          onChange={(value) => onChange(createLinkFromChoice('category', value))}
+          options={categoryOptions.map((category) => ({
+            value: category?.slug || category?._id || '',
+            label: category?.name || category?.slug || 'Category',
+          }))}
+          placeholder="Select category"
+          searchPlaceholder="Search categories"
+        />
+      ) : null}
+      {choice.type === 'product' ? (
+        <StoreDropdown
+          searchable
+          value={choice.value}
+          onChange={(value) => onChange(createLinkFromChoice('product', value))}
+          options={productOptions.map((product) => ({
+            value: product?.slug || product?._id || '',
+            label: product?.name || product?.slug || 'Product',
+          }))}
+          placeholder="Select product"
+          searchPlaceholder="Search products"
+        />
+      ) : null}
+      {choice.type === 'custom' ? (
+        <input
+          type="text"
+          value={choice.value}
+          onChange={(event) => onChange(createLinkFromChoice('custom', event.target.value))}
+          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+          placeholder="https://example.com or /your-page"
+        />
+      ) : null}
+    </div>
+  );
+}
 
 export default function MenuManagementPage() {
   const { user, getToken, loading: authLoading } = useAuth();
@@ -727,6 +819,8 @@ export default function MenuManagementPage() {
   const navbarBrandingRef = useRef(navbarBranding);
   const legacyNavbarItemsRef = useRef(legacyNavbarItems);
   const pendingClearLogoRef = useRef(pendingClearLogo);
+  const settingsUpdatedAtRef = useRef('');
+  const saveInFlightRef = useRef(false);
 
   useEffect(() => {
     navbarLayoutRef.current = navbarLayout;
@@ -797,6 +891,43 @@ export default function MenuManagementPage() {
         itemIndex === index ? { ...item, link: createLinkFromChoice(type, value) } : item
       )),
     }));
+  };
+
+  const updateExtraButtonItem = (buttonIndex, itemIndex, patch) => {
+    setNavbarLayout((prev) => ({
+      ...prev,
+      extraButtons: prev.extraButtons.map((item, index) => {
+        if (index !== buttonIndex) return item;
+        return {
+          ...item,
+          items: (item.items || []).map((entry, entryIndex) => (
+            entryIndex === itemIndex ? { ...entry, ...patch } : entry
+          )),
+        };
+      }),
+    }));
+  };
+
+  const translateExtraButtonItemToArabic = async (buttonIndex, itemIndex) => {
+    const english = String(navbarLayout.extraButtons[buttonIndex]?.items?.[itemIndex]?.label || '').trim();
+    if (!english) {
+      toast.error('Enter the English name first');
+      return;
+    }
+    try {
+      setTranslatingKey(`button-item-${buttonIndex}-${itemIndex}`);
+      const labelAr = await translateTextToArabic(english);
+      if (!labelAr) {
+        toast.error('Could not translate to Arabic');
+        return;
+      }
+      updateExtraButtonItem(buttonIndex, itemIndex, { labelAr });
+      toast.success('Arabic name updated');
+    } catch (error) {
+      toast.error(error?.message || 'Failed to translate to Arabic');
+    } finally {
+      setTranslatingKey('');
+    }
   };
 
   const translateCategoriesButtonToArabic = async () => {
@@ -903,6 +1034,10 @@ export default function MenuManagementPage() {
         setPendingClearLogo(false);
         setLegacyNavbarItems(Array.isArray(brandingData?.items) ? brandingData.items : []);
         setNavbarLayout(normalizeNavbarLayout(brandingData));
+        const settingsStamp = data?.updatedAt ? new Date(data.updatedAt).getTime() : 0;
+        const brandingStamp = brandingData?.updatedAt ? new Date(brandingData.updatedAt).getTime() : 0;
+        const latestStamp = Math.max(settingsStamp, brandingStamp);
+        settingsUpdatedAtRef.current = latestStamp ? new Date(latestStamp).toISOString() : '';
       }
     } catch (error) {
       toast.error(error?.message || 'Failed to load menu settings');
@@ -951,6 +1086,10 @@ export default function MenuManagementPage() {
     () => filterParentCategories(categoryOptions),
     [categoryOptions],
   );
+  const brandOptions = useMemo(() => {
+    const parent = categoryOptions.find((category) => String(category?.slug || '').toLowerCase() === 'brands');
+    return parent ? getDirectChildCategories(categoryOptions, parent) : [];
+  }, [categoryOptions]);
 
   const previewMenuItems = useMemo(() => {
     return resolveStoreNavMenuItems(
@@ -959,6 +1098,8 @@ export default function MenuManagementPage() {
         navMenuItems: form.navMenuItems,
       },
       categoryOptions,
+      'en',
+      { previewLiveParents: true },
     );
   }, [form.navMenuUseParentCategories, form.navMenuItems, categoryOptions]);
 
@@ -1478,13 +1619,17 @@ export default function MenuManagementPage() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        ...payload,
+        settingsUpdatedAt: settingsUpdatedAtRef.current || undefined,
+      }),
     });
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       throw new Error(data?.error || 'Failed to save settings');
     }
+    if (data?.updatedAt) settingsUpdatedAtRef.current = new Date(data.updatedAt).toISOString();
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('navMenuUpdated'));
@@ -1570,6 +1715,7 @@ export default function MenuManagementPage() {
       unifyNavbarText: layout.unifyNavbarText,
       unifiedTextFontFamily: layout.unifiedTextFontFamily,
       unifiedTextFontSize: layout.unifiedTextFontSize,
+      settingsUpdatedAt: settingsUpdatedAtRef.current || undefined,
     };
 
     const response = await fetch('/api/store/navbar-menu', {
@@ -1600,6 +1746,7 @@ export default function MenuManagementPage() {
     setPendingClearLogo(false);
     if (data?.data) {
       setNavbarLayout(normalizeNavbarLayout(data.data));
+      if (data.data.updatedAt) settingsUpdatedAtRef.current = new Date(data.data.updatedAt).toISOString();
     }
 
     if (typeof window !== 'undefined') {
@@ -1932,6 +2079,8 @@ export default function MenuManagementPage() {
   ];
 
   const handleSaveSettings = async () => {
+    if (saveInFlightRef.current) return;
+    saveInFlightRef.current = true;
     setSaving(true);
     try {
       const saveErrors = [];
@@ -1964,12 +2113,18 @@ export default function MenuManagementPage() {
     } catch (error) {
       toast.error(error?.message || 'Failed to save settings');
     } finally {
+      saveInFlightRef.current = false;
       setSaving(false);
     }
   };
 
+  const menuItemsForSave = form.navMenuUseParentCategories && parentCategoryItems.length
+    ? parentCategoryItems
+    : form.navMenuItems;
+
   const handleSaveMenu = async () => {
-    if (form.navMenuItems.length === 0) {
+    if (saveInFlightRef.current) return;
+    if (menuItemsForSave.length === 0) {
       setConfirmDialog({
         tone: 'warning',
         title: 'Save empty menu?',
@@ -1981,7 +2136,7 @@ export default function MenuManagementPage() {
           try {
             await saveSettings({
               navMenuEnabled: form.navMenuEnabled,
-              navMenuItems: form.navMenuItems,
+              navMenuItems: menuItemsForSave,
               navMenuUseParentCategories: form.navMenuUseParentCategories,
               navMenuHoverDropdown: form.navMenuHoverDropdown,
               navMenuStyle: form.navMenuStyle,
@@ -2000,7 +2155,7 @@ export default function MenuManagementPage() {
     try {
       await saveSettings({
         navMenuEnabled: form.navMenuEnabled,
-        navMenuItems: form.navMenuItems,
+        navMenuItems: menuItemsForSave,
         navMenuUseParentCategories: form.navMenuUseParentCategories,
         navMenuHoverDropdown: form.navMenuHoverDropdown,
         navMenuStyle: form.navMenuStyle,
@@ -3128,7 +3283,7 @@ export default function MenuManagementPage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
             <h2 className="text-sm font-semibold text-slate-900">Buttons next to LAST CHANCE</h2>
             <p className="mt-1 text-xs text-slate-500">
-              Add extra text buttons after LAST CHANCE and before search. Up to 3 buttons. To rename the Categories dropdown, open the Categories tab.
+              Add up to 3 buttons. Each one can open a single link, or a dropdown of pages, brands, categories, products, and custom URLs.
             </p>
             <div className="mt-4 space-y-3">
               {navbarLayout.extraButtons.map((button, index) => (
@@ -3174,66 +3329,119 @@ export default function MenuManagementPage() {
                         placeholder="وصل حديثاً"
                       />
                     </label>
-                    <div className="space-y-1 sm:col-span-2">
-                      <span className="text-xs font-medium text-slate-600">Link</span>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        <StoreDropdown
-                          value={readLinkChoice(button.link).type}
-                          onChange={(type) => updateExtraButtonLink(index, type, '')}
-                          options={LINK_TYPE_OPTIONS}
-                          placeholder="Select link type"
-                        />
-
-                        {readLinkChoice(button.link).type === 'category' ? (
-                          <StoreDropdown
-                            searchable
-                            value={readLinkChoice(button.link).value}
-                            onChange={(value) => updateExtraButtonLink(index, 'category', value)}
-                            options={categoryOptions.map((category) => ({
-                              value: category?.slug || category?._id || '',
-                              label: category?.name || category?.slug || category?._id || 'Category',
+                    <div className="space-y-2 sm:col-span-2">
+                      <span className="text-xs font-medium text-slate-600">Button type</span>
+                      <div className="flex gap-2">
+                        {[
+                          ['link', 'Single link'],
+                          ['dropdown', 'Dropdown'],
+                        ].map(([kind, label]) => (
+                          <button
+                            key={kind}
+                            type="button"
+                            onClick={() => setNavbarLayout((prev) => ({
+                              ...prev,
+                              extraButtons: prev.extraButtons.map((item, itemIndex) => (
+                                itemIndex === index ? { ...item, kind, items: item.items || [] } : item
+                              )),
                             }))}
-                            placeholder="Select category"
-                            searchPlaceholder="Search categories"
-                          />
-                        ) : null}
-
-                        {readLinkChoice(button.link).type === 'product' ? (
-                          <StoreDropdown
-                            searchable
-                            value={readLinkChoice(button.link).value}
-                            onChange={(value) => updateExtraButtonLink(index, 'product', value)}
-                            options={productOptions.map((product) => ({
-                              value: product?.slug || product?._id || '',
-                              label: product?.name || product?.slug || product?._id || 'Product',
-                            }))}
-                            placeholder="Select product"
-                            searchPlaceholder="Search products"
-                          />
-                        ) : null}
-
-                        {readLinkChoice(button.link).type === 'page' ? (
-                          <StoreDropdown
-                            searchable
-                            value={readLinkChoice(button.link).value}
-                            onChange={(value) => updateExtraButtonLink(index, 'page', value)}
-                            options={EXISTING_PAGE_OPTIONS}
-                            placeholder="Select page"
-                            searchPlaceholder="Search pages"
-                          />
-                        ) : null}
-
-                        {readLinkChoice(button.link).type === 'custom' ? (
-                          <input
-                            type="text"
-                            value={readLinkChoice(button.link).value}
-                            onChange={(event) => updateExtraButtonLink(index, 'custom', event.target.value)}
-                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                            placeholder="https://example.com or /custom-page"
-                          />
-                        ) : null}
+                            className={`h-9 rounded-lg border px-3 text-xs font-semibold ${(button.kind === 'dropdown' ? 'dropdown' : 'link') === kind ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-700'}`}
+                          >
+                            {label}
+                          </button>
+                        ))}
                       </div>
                     </div>
+                    {button.kind === 'dropdown' ? (
+                      <div className="space-y-2 sm:col-span-2">
+                        <span className="text-xs font-medium text-slate-600">Dropdown items</span>
+                        {(button.items || []).map((entry, entryIndex) => (
+                          <div key={entry.id || entryIndex} className="space-y-2 rounded-lg border border-slate-200 p-3">
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              <input
+                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                                value={entry.label || ''}
+                                placeholder="Name (English)"
+                                onChange={(event) => updateExtraButtonItem(index, entryIndex, { label: event.target.value })}
+                              />
+                              <div className="space-y-1">
+                                <div className="flex justify-end">
+                                  <button
+                                    type="button"
+                                    onClick={() => translateExtraButtonItemToArabic(index, entryIndex)}
+                                    disabled={translatingKey === `button-item-${index}-${entryIndex}` || !String(entry.label || '').trim()}
+                                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 hover:text-violet-700 disabled:opacity-50"
+                                  >
+                                    {translatingKey === `button-item-${index}-${entryIndex}` ? <Loader2 size={12} className="animate-spin" /> : <Languages size={12} />}
+                                    Translate
+                                  </button>
+                                </div>
+                                <input
+                                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                                  dir="rtl"
+                                  value={entry.labelAr || ''}
+                                  placeholder="الاسم بالعربي"
+                                  onChange={(event) => updateExtraButtonItem(index, entryIndex, { labelAr: event.target.value })}
+                                />
+                              </div>
+                            </div>
+                            <ExtraButtonLinkFields
+                              link={entry.link}
+                              onChange={(link) => updateExtraButtonItem(index, entryIndex, { link })}
+                              categoryOptions={categoryOptions}
+                              productOptions={productOptions}
+                              brandOptions={brandOptions}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setNavbarLayout((prev) => ({
+                                ...prev,
+                                extraButtons: prev.extraButtons.map((item, itemIndex) => (
+                                  itemIndex === index
+                                    ? { ...item, items: (item.items || []).filter((_, currentIndex) => currentIndex !== entryIndex) }
+                                    : item
+                                )),
+                              }))}
+                              className="text-xs font-medium text-rose-600"
+                            >
+                              Remove item
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          disabled={(button.items || []).length >= 12}
+                          onClick={() => setNavbarLayout((prev) => ({
+                            ...prev,
+                            extraButtons: prev.extraButtons.map((item, itemIndex) => (
+                              itemIndex === index
+                                ? { ...item, items: [...(item.items || []), createNavbarExtraDropdownItem()] }
+                                : item
+                            )),
+                          }))}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 disabled:opacity-50"
+                        >
+                          <Plus size={14} />
+                          Add dropdown item
+                        </button>
+                      </div>
+                    ) : (
+                    <div className="space-y-1 sm:col-span-2">
+                      <span className="text-xs font-medium text-slate-600">Link</span>
+                      <ExtraButtonLinkFields
+                        link={button.link}
+                        onChange={(link) => setNavbarLayout((prev) => ({
+                          ...prev,
+                          extraButtons: prev.extraButtons.map((item, itemIndex) => (
+                            itemIndex === index ? { ...item, link } : item
+                          )),
+                        }))}
+                        categoryOptions={categoryOptions}
+                        productOptions={productOptions}
+                        brandOptions={brandOptions}
+                      />
+                    </div>
+                    )}
                   </div>
                   <div className="mt-3 flex items-center justify-between">
                     <label className="inline-flex items-center gap-2 text-sm text-slate-700">

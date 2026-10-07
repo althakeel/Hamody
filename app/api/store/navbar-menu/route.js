@@ -3,7 +3,7 @@ import NavbarMenuSettings from '@/models/NavbarMenuSettings';
 import { NextResponse } from 'next/server';
 import { getAuth } from '@/lib/firebase-admin';
 import { DEFAULT_NAVBAR_LAYOUT, normalizeNavbarLayout } from '@/lib/navbarLayoutSettings';
-import { findSharedNavbarSettings, resolveStorefrontOwnerId } from '@/lib/storefrontSettingsOwner';
+import { findSharedNavbarSettings, navbarSaveIsStale, resolveStorefrontOwnerId } from '@/lib/storefrontSettingsOwner';
 
 const MAX_ITEMS = 20;
 
@@ -193,6 +193,7 @@ export async function GET(req) {
           items: settings?.items || [],
           ...pickNavbarLayout(settings),
           ...pickFooterBranding(settings, resolvedLogoUrl),
+          updatedAt: settings?.updatedAt || null,
         };
 
         console.log('[API GET /store/navbar-menu] Sending response:', {
@@ -225,6 +226,7 @@ export async function GET(req) {
         items: settings?.items || [],
         ...pickNavbarLayout(settings),
         ...pickFooterBranding(settings, settings?.logoUrl || ''),
+        updatedAt: settings?.updatedAt || null,
       },
       {
         status: 200,
@@ -297,6 +299,7 @@ export async function POST(req) {
       unifyNavbarText,
       unifiedTextFontFamily,
       unifiedTextFontSize,
+      settingsUpdatedAt,
     } = body || {};
 
     if (!Array.isArray(items)) {
@@ -333,6 +336,12 @@ export async function POST(req) {
     const nextLogoHeight = Math.max(10, Math.min(200, parsedLogoHeight));
 
     const existing = await findSharedNavbarSettings(userId);
+    if (navbarSaveIsStale(existing, settingsUpdatedAt)) {
+      return NextResponse.json(
+        { error: 'These settings were just saved. Reload the page, then save again.' },
+        { status: 409 },
+      );
+    }
 
     const incomingBackgroundColor = String(backgroundColor || '').trim();
     const existingBackgroundColor = String(existing?.backgroundColor || '').trim();
@@ -490,6 +499,7 @@ export async function POST(req) {
           backgroundColor: settings.backgroundColor,
           items: settings.items,
           ...pickNavbarLayout(settings),
+          updatedAt: settings.updatedAt || null,
         },
         meta: {
           storeId: settings.storeId,

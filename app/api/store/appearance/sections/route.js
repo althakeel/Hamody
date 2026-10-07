@@ -11,6 +11,7 @@ import {
   normalizeWhatsAppProductWidget,
 } from '@/lib/whatsappProductWidget'
 import { DEFAULT_SCROLL_TO_TOP, normalizeScrollToTop } from '@/lib/scrollToTopSettings'
+import { DEFAULT_HOME_WELCOME_POPUP, mergeHomePopupStats, normalizeHomeWelcomePopup } from '@/lib/homeWelcomePopup'
 
 const DEFAULT_APPEARANCE = {
   categorySliders: { enabled: true, title: 'Featured Collections', description: 'Browse our curated collections' },
@@ -24,6 +25,7 @@ const DEFAULT_APPEARANCE = {
   offersPage: DEFAULT_OFFERS_PAGE,
   whatsappProductWidget: DEFAULT_WHATSAPP_PRODUCT_WIDGET,
   scrollToTop: DEFAULT_SCROLL_TO_TOP,
+  homeWelcomePopup: DEFAULT_HOME_WELCOME_POPUP,
   productPageInfo: {
     returnsText: 'Easy Returns',
     vatText: 'All prices include VAT.',
@@ -222,6 +224,7 @@ function normalizeAppearance(data = {}) {
       data.whatsappProductWidget || DEFAULT_APPEARANCE.whatsappProductWidget,
     ),
     scrollToTop: normalizeScrollToTop(data.scrollToTop || DEFAULT_APPEARANCE.scrollToTop),
+    homeWelcomePopup: normalizeHomeWelcomePopup(data.homeWelcomePopup || DEFAULT_APPEARANCE.homeWelcomePopup),
     productPageInfo: {
       returnsText: (productPageInfo.returnsText || DEFAULT_APPEARANCE.productPageInfo.returnsText).toString().trim(),
       vatText: (productPageInfo.vatText || DEFAULT_APPEARANCE.productPageInfo.vatText).toString().trim(),
@@ -283,6 +286,10 @@ export async function POST(request) {
       ...(body || {})
     }
     const appearanceSections = normalizeAppearance(mergedPayload)
+    appearanceSections.homeWelcomePopup = mergeHomePopupStats(
+      existingPreference?.appearanceSections?.homeWelcomePopup,
+      appearanceSections.homeWelcomePopup,
+    )
     if (body?.offersPage) {
       appearanceSections.offersPage = {
         ...appearanceSections.offersPage,
@@ -304,6 +311,8 @@ export async function POST(request) {
     deleteCacheKey('public:appearance-sections:v6')
     deleteCacheKey('public:appearance-sections:v7')
     deleteCacheKey('public:appearance-sections:v8')
+    deleteCacheKey('public:appearance-sections:v9')
+    deleteCacheKey('public:appearance-sections:v10')
     invalidateCachePattern('public:appearance-sections')
     invalidateCachePattern('public:offers')
 
