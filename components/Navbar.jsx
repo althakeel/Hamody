@@ -28,6 +28,7 @@ import {
   readPersistedStorefrontLanguage,
 } from '@/lib/storefrontLanguage';
 import { translateStaticText } from '@/lib/useStorefrontI18n';
+import { toBrandCategoryHref } from '@/lib/categorySlug';
 import { recordStorefrontSearch } from '@/lib/recordStorefrontSearch';
 import {
   DEFAULT_OFFERS_NAV_LABEL,
@@ -2094,7 +2095,7 @@ const Navbar = () => {
               {extraButton.items.map((entry) => (
                 <Link
                   key={entry.id}
-                  href={entry.link}
+                  href={toBrandCategoryHref(entry.link || '/offers')}
                   className="block px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
                 >
                   {entry.displayLabel}
@@ -2107,7 +2108,7 @@ const Navbar = () => {
     }
     return (
       <Link
-        href={/^#(page|brand|category|product)$/.test(extraButton.link || '') ? '/offers' : (extraButton.link || '/offers')}
+        href={/^#(page|brand|category|product)$/.test(extraButton.link || '') ? '/offers' : toBrandCategoryHref(extraButton.link || '/offers')}
         className={extraClass}
         data-font={extraAppearance.fontId || 'inherit'}
         style={extraAppearance.style}

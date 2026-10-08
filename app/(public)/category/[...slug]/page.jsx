@@ -56,7 +56,7 @@ export default async function CategoryPage({ params }) {
   const collectionJsonLd = buildCategoryCollectionJsonLd(category, chain);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="flex flex-1 flex-col bg-white">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}

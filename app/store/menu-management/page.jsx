@@ -59,7 +59,8 @@ import {
   isLegacyPlaceholderNavItems,
   resolveStoreNavMenuItems,
 } from '@/lib/categoryNavigation';
-import { toPublicCategoryPath } from '@/lib/categorySlug';
+import { slugifyCategory, toPublicCategoryPath } from '@/lib/categorySlug';
+import { notifyStorefrontMenuUpdated } from '@/lib/storefrontMenuSync';
 import {
   ChevronDown,
   GripVertical,
@@ -648,8 +649,8 @@ const safeDecode = (value) => {
 
 const readLinkChoice = (link) => {
   const normalized = String(link || '').trim() || '#';
-  if (normalized.startsWith('/category/brands/')) {
-    return { type: 'brand', value: safeDecode(normalized.replace(/^\/category\/brands\//, '').split('/')[0]) };
+  if (normalized.startsWith('/brand/')) {
+    return { type: 'brand', value: safeDecode(normalized.replace(/^\/brand\//, '').split('/')[0]) };
   }
 
   if (normalized === '/category/' || normalized.startsWith('/category/')) {
@@ -687,7 +688,8 @@ const createLinkFromChoice = (type, rawValue) => {
   const value = String(rawValue || '').trim();
 
   if (type === 'brand') {
-    return `/shop?brand=${encodeURIComponent(value)}`;
+    const slug = slugifyCategory(value);
+    return slug ? `/brand/${slug}` : '/brand';
   }
 
   if (type === 'category') {
@@ -708,11 +710,18 @@ const createLinkFromChoice = (type, rawValue) => {
 
 function ExtraButtonLinkFields({ link, onChange, categoryOptions, productOptions, brandOptions }) {
   const choice = readLinkChoice(link);
-  const brandSelectOptions = Array.from(new Set([
-    ...(Array.isArray(brandOptions) ? brandOptions : []),
-    choice.type === 'brand' ? choice.value : '',
-  ].map((name) => String(name || '').trim()).filter(Boolean)))
-    .map((name) => ({ value: name, label: name }));
+  const brandSelectOptions = Array.from(new Map(
+    [
+      ...(Array.isArray(brandOptions) ? brandOptions : []),
+      choice.type === 'brand' ? choice.value : '',
+    ]
+      .map((name) => String(name || '').trim())
+      .filter(Boolean)
+      .map((name) => {
+        const slug = slugifyCategory(name);
+        return [slug, { value: slug, label: name }];
+      }),
+  ).values());
 
   return (
     <div className="grid gap-2 sm:grid-cols-2">
@@ -736,7 +745,7 @@ function ExtraButtonLinkFields({ link, onChange, categoryOptions, productOptions
         brandSelectOptions.length ? (
           <StoreDropdown
             searchable
-            value={choice.value}
+            value={slugifyCategory(choice.value)}
             onChange={(value) => onChange(createLinkFromChoice('brand', value))}
             options={brandSelectOptions}
             placeholder="Select brand"
@@ -1675,7 +1684,7 @@ export default function MenuManagementPage() {
     if (data?.updatedAt) settingsUpdatedAtRef.current = new Date(data.updatedAt).toISOString();
 
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('navMenuUpdated'));
+      notifyStorefrontMenuUpdated();
       if (payload?.navActionsVisibility) {
         try {
           window.sessionStorage.setItem(

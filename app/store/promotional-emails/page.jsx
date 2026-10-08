@@ -7,7 +7,6 @@ import { useAuth } from '@/lib/useAuth';
 import Loading from '@/components/Loading';
 import EmailCampaignBuilder from '@/components/store/EmailCampaignBuilder';
 import EmailGalleryPresetCard from '@/components/store/EmailGalleryPresetCard';
-import EmailCampaignLandingPages from '@/components/store/EmailCampaignLandingPages';
 import { getPresetBlocks } from '@/lib/emailCampaignPresets';
 import { listStockImagesForPicker } from '@/lib/emailTemplateStockImages';
 import { renderEmailFromBlocks, toEmailPreviewSrcDoc } from '@/lib/emailCampaignBuilder';
@@ -18,7 +17,6 @@ const TABS = [
   { id: 'send', label: 'Send campaign', icon: Mail },
   { id: 'gallery', label: 'Template gallery', icon: LayoutTemplate },
   { id: 'builder', label: 'Create / customize', icon: PenLine },
-  { id: 'pages', label: 'Landing pages', icon: Layers },
   { id: 'leads', label: 'Leads', icon: Inbox },
   { id: 'history', label: 'History', icon: Clock },
 ];
@@ -1461,13 +1459,13 @@ export default function PromotionalEmailsPage() {
                       + Add date
                     </button>
                     <span className="text-[11px] text-slate-500">
-                      Asia/Dubai · emails go out automatically at this time (you can leave this page)
+                      Asia/Dubai · at this time the server queue starts and keeps sending until every customer is done. You can close this page.
                     </span>
                   </div>
                 )}
                 {scheduleMode === 'send' && (
                   <span className="text-[11px] text-slate-500">
-                    Sends in the background so this page does not time out. Check History in a minute.
+                    Sending continues on the server after you close this page. Check History for progress.
                   </span>
                 )}
                 {scheduleMode === 'auto' && (
@@ -1909,10 +1907,6 @@ export default function PromotionalEmailsPage() {
           />
           </div>
         )}
-
-      {tab === 'pages' && (
-        <EmailCampaignLandingPages getToken={getToken} />
-      )}
 
       {tab === 'leads' && (
         <div className="space-y-4">

@@ -1,9 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Star, Truck } from 'lucide-react';
 
-const DEFAULT_CATEGORY_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'%3E%3Crect width='160' height='160' rx='24' fill='%23f8fafc'/%3E%3C/svg%3E";
 const DESCRIPTION_PREVIEW_LENGTH = 220;
 
 function StarRow({ rating = 0 }) {
@@ -36,12 +35,18 @@ export default function CategoryHeroCard({
   hideImage = false,
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [image]);
   const productCount = Number(stats.productCount) || 0;
   const reviewCount = Number(stats.reviewCount) || 0;
   const averageRating = Number(stats.averageRating) || 0;
   const fastDeliveryPercent = Number(stats.fastDeliveryPercent) || 0;
   const locale = isArabic ? 'ar-AE' : 'en';
-  const imageSrc = String(image || '').trim() || DEFAULT_CATEGORY_IMAGE;
+  const imageSrc = String(image || '').trim();
+  const showImage = !hideImage && Boolean(imageSrc) && !imageFailed;
   const fullDescription = String(description || '').trim();
   const canCollapse = fullDescription.length > DESCRIPTION_PREVIEW_LENGTH;
   const visibleDescription = useMemo(() => {
@@ -53,15 +58,13 @@ export default function CategoryHeroCard({
     <section className="mb-4 md:mb-6" aria-label={name}>
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white md:rounded-3xl">
         <div className={`flex items-center gap-3 p-3 md:items-start md:gap-6 md:p-7 ${isArabic ? 'flex-row-reverse' : ''}`}>
-          {!hideImage ? (
+          {showImage ? (
             <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 md:h-32 md:w-32 md:rounded-2xl">
               <img
                 src={imageSrc}
                 alt={name}
                 className="h-full w-full object-cover object-center"
-                onError={(event) => {
-                  event.currentTarget.src = DEFAULT_CATEGORY_IMAGE;
-                }}
+                onError={() => setImageFailed(true)}
               />
             </div>
           ) : null}

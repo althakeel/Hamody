@@ -79,6 +79,7 @@ function sortProducts(products, sortBy) {
 
 export default function CategoryProductsPanel({
   categoryId = '',
+  moreProductsHref = '',
   products = [],
   subcategoryLinks = [],
   showSubcategoryLinks = false,
@@ -116,7 +117,7 @@ export default function CategoryProductsPanel({
   const totalPages = Math.max(1, Math.ceil((total || pageProducts.length) / CATEGORY_PRODUCTS_PAGE_SIZE));
 
   const loadNextPage = useCallback(async () => {
-    if (!categoryId || loadingMoreLockRef.current) return;
+    if ((!categoryId && !moreProductsHref) || loadingMoreLockRef.current) return;
     if (page >= totalPages) return;
 
     const nextPage = page + 1;
@@ -127,11 +128,14 @@ export default function CategoryProductsPanel({
     setLoadError('');
     try {
       const params = new URLSearchParams({
-        categoryId,
         page: String(nextPage),
         limit: String(CATEGORY_PRODUCTS_PAGE_SIZE),
       });
-      const res = await fetch(`/api/public/category-products?${params.toString()}`);
+      if (categoryId) params.set('categoryId', categoryId);
+      const requestUrl = moreProductsHref
+        ? `${moreProductsHref}${moreProductsHref.includes('?') ? '&' : '?'}${params.toString()}`
+        : `/api/public/category-products?${params.toString()}`;
+      const res = await fetch(requestUrl);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(data.error || 'Failed to load products');
@@ -158,7 +162,7 @@ export default function CategoryProductsPanel({
       setLoadingPage(false);
       loadingMoreLockRef.current = false;
     }
-  }, [categoryId, page, totalPages]);
+  }, [categoryId, moreProductsHref, page, totalPages]);
 
   const hasMoreProducts = page < totalPages;
 

@@ -60,7 +60,7 @@ function PublicLayoutContent({ children }) {
             <GuestOrderLinker />
             <DeferredTrackers />
             <main className={`${isProductPage ? '' : 'flex flex-1 flex-col'} min-w-0 overflow-x-clip ${mobileMainPadding} lg:pb-0`}>
-                <SilentDomErrorBoundary>{children}</SilentDomErrorBoundary>
+                <SilentDomErrorBoundary className="flex min-h-0 w-full min-w-0 flex-1 flex-col">{children}</SilentDomErrorBoundary>
             </main>
             {showMobileBottomNav && <MobileBottomNav />}
         </div>

@@ -37,6 +37,11 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
     const canAccessHref = (href) => {
 
+        if (href === '/store/landing-pages') {
+            return canAccessDashboardArea(permissions, 'customize', { isOwner })
+                || canAccessDashboardArea(permissions, 'promotionalEmails', { isOwner });
+        }
+
         const permissionId = getPermissionIdForHref(href);
 
         return canAccessDashboardArea(permissions, permissionId, { isOwner });
@@ -78,6 +83,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
         { name: 'Mobile Features', href: '/store/mobile-features', icon: Smartphone },
 
         { name: 'Blogs', href: '/store/blogs', icon: FileText },
+
+        { name: 'Landing pages', href: '/store/landing-pages', icon: Layers },
 
         { name: 'Promotional Offers', href: '/store/personalized-offers', icon: Gift },
 
@@ -202,6 +209,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
                 '/store/mobile-features',
 
                 '/store/blogs',
+
+                '/store/landing-pages',
 
                 '/store/media',
 

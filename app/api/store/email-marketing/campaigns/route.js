@@ -6,7 +6,7 @@ import { getAuth } from '@/lib/firebase-admin';
 import { parseDubaiDateTimeLocal, uniqueDailyTimes } from '@/lib/emailMarketingSchedule';
 import { getPresetBlocks } from '@/lib/emailCampaignPresets';
 import { assertMarketingRecipientLimit } from '@/lib/emailMarketingLimits';
-import { runDueEmailMarketingCampaigns } from '@/lib/runEmailMarketingCampaigns';
+import { ensureEmailMarketingQueue, startEmailMarketingSendPump } from '@/lib/runEmailMarketingCampaigns';
 import { inngest } from '@/inngest/client';
 
 export const dynamic = 'force-dynamic';
@@ -123,31 +123,27 @@ export async function POST(request) {
       createdBy: seller.uid,
     });
 
+    ensureEmailMarketingQueue();
     if (sendNow) {
-      after(async () => {
-        inngest.send({
-          name: 'app/email-marketing.send-due',
-          data: { storeId: String(seller.storeId) },
-        }).catch((error) => {
-          console.error('[email-marketing send-now inngest]', error);
-        });
-        try {
-          await runDueEmailMarketingCampaigns({ storeId: seller.storeId });
-        } catch (error) {
-          console.error('[email-marketing send-now]', error);
-        }
-      });
+      const job = startEmailMarketingSendPump(seller.storeId);
+      after(() => job);
     }
+    inngest.send({
+      name: 'app/email-marketing.send-due',
+      data: { storeId: String(seller.storeId) },
+    }).catch((error) => {
+      console.error('[email-marketing queue inngest]', error);
+    });
 
     return NextResponse.json({
       success: true,
       queued: sendNow,
       campaign,
       message: sendNow
-        ? `Sending to ${customerEmails.length} customer(s) in the background. Check History in a minute — this page will not time out.`
+        ? `Sending to ${customerEmails.length} customer(s) on the server. You can close this page. Check History for progress.`
         : scheduleMode === 'daily'
           ? `Daily campaign active. Sends at ${dailyTimes.join(', ')} (Asia/Dubai) until you disable it.`
-          : `Scheduled campaign queued for ${onceAtList.length} send time${onceAtList.length === 1 ? '' : 's'}.`,
+          : `Queued for ${customerEmails.length} customer(s). When the time is reached, the server keeps sending until the queue is finished. You can close this page.`,
     }, { status: 201 });
   } catch (error) {
     console.error('[email-marketing campaigns POST]', error);

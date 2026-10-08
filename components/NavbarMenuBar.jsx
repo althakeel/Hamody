@@ -17,8 +17,13 @@ import {
   STOREFRONT_LANGUAGE_EVENT,
 } from '@/lib/storefrontLanguage';
 import { translateStaticText } from '@/lib/useStorefrontI18n';
-import { normalizeStorefrontCategoryHref } from '@/lib/categorySlug';
+import { normalizeStorefrontCategoryHref, toBrandCategoryHref } from '@/lib/categorySlug';
 import { getNavbarBottomBorderStyle } from '@/lib/navbarLayoutSettings';
+import { subscribeStorefrontMenuUpdated } from '@/lib/storefrontMenuSync';
+
+function menuHref(href = '#') {
+  return toBrandCategoryHref(normalizeStorefrontCategoryHref(href || '#'));
+}
 
 const MENU_CACHE_KEY = 'nav:menu:v1';
 const CATEGORIES_CACHE_KEY = 'nav:categories:v2';
@@ -26,7 +31,7 @@ const MENU_ENABLED_CACHE_KEY = 'nav:menu:enabled:v1';
 const ACTIONS_VISIBILITY_CACHE_KEY = 'nav:actions:visibility:v1';
 const MENU_STYLE_CACHE_KEY = 'nav:menu:style:v1';
 const NAVBAR_APPEARANCE_CACHE_KEY = 'navbarAppearanceCache';
-const REFRESH_MS = 10 * 60 * 1000;
+const REFRESH_MS = 15 * 1000;
 
 const defaultActionsVisibility = {
   store: true,
@@ -209,7 +214,7 @@ function CategoryHoverPanel({
             onMouseEnter={() => setOpenChildIndex(hasChildren ? idx : null)}
           >
             <Link
-              href={entry.link || '#'}
+              href={menuHref(entry.link)}
               className="flex items-center justify-between gap-3 px-3.5 py-2 text-sm font-medium transition hover:bg-slate-50"
               style={{ color: menuStyle.dropdownTextColor }}
             >
@@ -230,7 +235,7 @@ function CategoryHoverPanel({
                 {children.map((child, childIdx) => (
                   <Link
                     key={`${child.name}-${childIdx}`}
-                    href={child.link || '#'}
+                    href={menuHref(child.link)}
                     className="block px-3.5 py-2 text-sm transition hover:bg-slate-50"
                     style={{ color: menuStyle.dropdownTextColor }}
                   >
@@ -271,7 +276,7 @@ function MegaDropdown({ item, dropdownLinks, featuredImages, onClose, timerRef, 
               {dropdownLinks.map((entry, idx) => (
                 <div key={`${entry.name}-${idx}`} className="space-y-1">
                   <Link
-                    href={entry.link || '#'}
+                    href={menuHref(entry.link)}
                     className="block rounded-lg border px-3 py-2 text-sm font-medium transition"
                     style={{ borderColor: menuStyle.dropdownBorderColor, color: menuStyle.dropdownTextColor }}
                   >
@@ -282,7 +287,7 @@ function MegaDropdown({ item, dropdownLinks, featuredImages, onClose, timerRef, 
                       {entry.children.map((child) => (
                         <Link
                           key={`${entry.name}-${child.name}`}
-                          href={child.link || '#'}
+                          href={menuHref(child.link)}
                           className="block rounded px-2 py-1 text-xs transition hover:underline"
                           style={{ color: menuStyle.dropdownMutedTextColor }}
                         >
@@ -297,7 +302,7 @@ function MegaDropdown({ item, dropdownLinks, featuredImages, onClose, timerRef, 
 
             {item?.link && item.link !== '#' ? (
               <div className="mt-4">
-                <Link href={item.link} className="text-sm font-semibold hover:underline" style={{ color: menuStyle.dropdownTextColor }}>
+                <Link href={menuHref(item.link)} className="text-sm font-semibold hover:underline" style={{ color: menuStyle.dropdownTextColor }}>
                   {`View all ${item.name}`}
                 </Link>
               </div>
@@ -310,7 +315,7 @@ function MegaDropdown({ item, dropdownLinks, featuredImages, onClose, timerRef, 
             {featuredImages.map((entry, idx) => (
               <Link
                 key={`${entry.url}-${idx}`}
-                href={entry.link || '#'}
+                href={menuHref(entry.link)}
                 className="group block w-full overflow-hidden rounded-xl border"
                 style={{ borderColor: menuStyle.dropdownBorderColor }}
               >
@@ -519,13 +524,20 @@ export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
         setNavbarMaxWidth(nextMaxWidth);
       }
     };
-    window.addEventListener('navMenuUpdated', handleMenuUpdated);
+    const unsubscribeMenu = subscribeStorefrontMenuUpdated(handleMenuUpdated);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') revalidate();
+    };
     window.addEventListener('navbarAppearanceUpdated', handleNavbarAppearance);
+    window.addEventListener('focus', refreshWhenVisible);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
 
     return () => {
       active = false;
-      window.removeEventListener('navMenuUpdated', handleMenuUpdated);
+      unsubscribeMenu();
       window.removeEventListener('navbarAppearanceUpdated', handleNavbarAppearance);
+      window.removeEventListener('focus', refreshWhenVisible);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
       clearInterval(intervalId);
       if (megaTimer.current) clearTimeout(megaTimer.current);
       if (categoryTimer.current) clearTimeout(categoryTimer.current);
@@ -752,7 +764,7 @@ export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
               && dropdownLinks.length > 0
               && featuredImages.length === 0;
             const shouldUseMega = navMenuHoverDropdown && !shouldUseHoverDropdown && hasMegaContent(item);
-            const itemHref = item.link || '#';
+            const itemHref = menuHref(item.link);
 
             return (
               <div

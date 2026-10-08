@@ -5,6 +5,12 @@ import authSeller from '@/middlewares/authSeller';
 import { getAuth } from '@/lib/firebase-admin';
 import { invalidateStorefrontProductCaches } from '@/lib/cache';
 import { escapeRegex } from '@/lib/productSearch';
+import {
+  loadStoreBrandPages,
+  matchStoreBrandPage,
+  saveBrandPage,
+  serializeBrandPage,
+} from '@/lib/brandPage';
 
 export const runtime = 'nodejs';
 
@@ -47,11 +53,18 @@ export async function GET(request) {
       { $sort: { productCount: -1, _id: 1 } },
     ]);
 
+    const brandPages = await loadStoreBrandPages(storeKey);
+
     const brands = (rows || [])
-      .map((row) => ({
-        name: normalizeBrandLabel(row?._id),
-        productCount: Number(row?.productCount || 0),
-      }))
+      .map((row) => {
+        const name = normalizeBrandLabel(row?._id);
+        const page = serializeBrandPage(matchStoreBrandPage(brandPages, name));
+        return {
+          name,
+          productCount: Number(row?.productCount || 0),
+          page,
+        };
+      })
       .filter((row) => row.name);
 
     // Case-insensitive duplicate groups (e.g. Apple / apple / APPLE)
@@ -93,6 +106,21 @@ export async function PATCH(request) {
 
     const body = await request.json();
     const action = String(body?.action || 'rename').trim().toLowerCase();
+
+    if (action === 'save-page') {
+      try {
+        const page = await saveBrandPage(storeId, body?.name, body);
+        return NextResponse.json({
+          success: true,
+          page,
+          message: 'Brand page saved',
+        });
+      } catch (error) {
+        const status = Number(error?.status) || 500;
+        return NextResponse.json({ error: error?.message || 'Failed to save brand page' }, { status });
+      }
+    }
+
     const fromBrand = normalizeBrandLabel(body?.from);
     const toBrand = normalizeBrandLabel(body?.to);
 

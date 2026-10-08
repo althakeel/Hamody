@@ -11,6 +11,7 @@ import Loading from '@/components/Loading';
 import { cleanDisplayText } from '@/lib/displayText';
 import { suggestUaeArabicCategory } from '@/lib/categoryLocalization';
 import { toPublicCategoryPath } from '@/lib/categorySlug';
+import { notifyStorefrontMenuUpdated } from '@/lib/storefrontMenuSync';
 
 const DEFAULT_CATEGORY_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23eff6ff'/%3E%3Cstop offset='100%25' stop-color='%23e2e8f0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='160' height='160' rx='28' fill='url(%23g)'/%3E%3Ccircle cx='80' cy='64' r='24' fill='%23bfdbfe'/%3E%3Cpath d='M38 124c10-22 29-34 42-34s32 12 42 34' fill='%2394a3b8'/%3E%3C/svg%3E";
 
@@ -1063,6 +1064,7 @@ export default function StoreCategoryMenu() {
         : 'Categories imported';
 
       toast.success(summary);
+      notifyStorefrontMenuUpdated();
 
       if (Array.isArray(data?.warnings) && data.warnings.length) {
         toast((t) => (
@@ -1188,6 +1190,7 @@ export default function StoreCategoryMenu() {
       }
 
       toast.success(editingCategoryId ? 'Category updated!' : 'Category added!');
+      notifyStorefrontMenuUpdated();
       await fetchCategories();
       handleCancel();
     } catch (error) {
@@ -1300,6 +1303,7 @@ export default function StoreCategoryMenu() {
       });
       await fetchCategories();
       toast.success(nextActive ? 'Category enabled on the store' : 'Category hidden from the store');
+      notifyStorefrontMenuUpdated();
     } catch (error) {
       toast.error(error?.response?.data?.error || 'Failed to update category');
     } finally {
@@ -1317,6 +1321,7 @@ export default function StoreCategoryMenu() {
       });
       await fetchCategories();
       toast.success('Category deleted');
+      notifyStorefrontMenuUpdated();
     } catch (error) {
       toast.error(error?.response?.data?.error || 'Failed to delete category');
     }
@@ -1416,6 +1421,7 @@ export default function StoreCategoryMenu() {
 
       if (deletedIds.length) {
         toast.success(`Deleted ${deletedIds.length} categor${deletedIds.length === 1 ? 'y' : 'ies'}`);
+        notifyStorefrontMenuUpdated();
       } else if (!failed.length) {
         toast.error('No categories were deleted');
       }

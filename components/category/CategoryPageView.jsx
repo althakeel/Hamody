@@ -48,7 +48,7 @@ export default function CategoryPageView({
   const banners = getCategoryBannerUrls(category, { isArabic });
 
   return (
-    <div className="mx-auto max-w-[1400px] px-4 py-4 sm:px-6 md:py-8" dir={isArabic ? 'rtl' : 'ltr'}>
+    <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col px-4 py-4 sm:px-6 md:py-8" dir={isArabic ? 'rtl' : 'ltr'}>
       <nav
         aria-label="Breadcrumb"
         className={`text-sm text-gray-500 mb-4 flex flex-wrap items-center gap-1 ${isArabic ? 'flex-row-reverse justify-end' : ''}`}
@@ -128,7 +128,7 @@ export default function CategoryPageView({
         </div>
       )}
 
-      <div className="mt-8 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="mt-auto grid grid-cols-2 gap-2 pt-8 sm:grid-cols-4">
         {[
           { icon: ShieldCheck, label: t('category.trust.warranty') },
           { icon: Truck, label: t('category.trust.freeDelivery') },
