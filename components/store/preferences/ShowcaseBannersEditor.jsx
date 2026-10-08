@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import Image from 'next/image'
-import { Check, ChevronDown, ChevronUp, Loader2, Plus, Save, Search, Trash2, Upload } from 'lucide-react'
+import { Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Loader2, Plus, Save, Search, Trash2, Upload } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/lib/useAuth'
 import {
@@ -35,6 +35,9 @@ import {
   FULL_WIDTH_BANNER_GAP_MIN,
   FULL_WIDTH_BANNER_GAP_MAX,
   FULL_WIDTH_BANNER_GAP_DEFAULT,
+  DEFAULT_BANNER_ARROW,
+  normalizeBannerArrowSettings,
+  bannerArrowHoverClass,
 } from '@/lib/shopShowcaseLargeBanners'
 import { hasShowcaseBannerImage, serializeShowcaseImageFields } from '@/lib/showcaseBannerImages'
 import { uploadShowcaseBannerOriginal } from '@/lib/uploadShowcaseBanner'
@@ -941,6 +944,13 @@ const DEFAULT_FORM = {
   lowerFullWidthBannerBorderColor: LOWER_FULL_WIDTH_BANNER_BORDER_COLOR_DEFAULT,
   fullWidthBannerTopSpace: FULL_WIDTH_BANNER_TOP_SPACE_DEFAULT,
   fullWidthBannerGap: FULL_WIDTH_BANNER_GAP_DEFAULT,
+  bannerArrowStyle: DEFAULT_BANNER_ARROW.bannerArrowStyle,
+  bannerArrowColor: DEFAULT_BANNER_ARROW.bannerArrowColor,
+  bannerArrowBgColor: DEFAULT_BANNER_ARROW.bannerArrowBgColor,
+  bannerArrowSize: DEFAULT_BANNER_ARROW.bannerArrowSize,
+  bannerArrowHover: DEFAULT_BANNER_ARROW.bannerArrowHover,
+  bannerArrowHoverColor: DEFAULT_BANNER_ARROW.bannerArrowHoverColor,
+  bannerArrowHoverBgColor: DEFAULT_BANNER_ARROW.bannerArrowHoverBgColor,
   lowerFullWidthBannerSliderItems: [createLargeBannerSlide({ alt: 'Lower full-width banner 1' })],
   productBanners: [
     createBanner(),
@@ -1096,6 +1106,7 @@ function buildShowcaseFormState(showcase = {}, previousForm = null) {
     lowerFullWidthBannerBorderColor: normalizeLowerFullWidthBannerBorderColor(showcase?.lowerFullWidthBannerBorderColor),
     fullWidthBannerTopSpace: normalizeFullWidthBannerTopSpace(showcase?.fullWidthBannerTopSpace),
     fullWidthBannerGap: normalizeFullWidthBannerGap(showcase?.fullWidthBannerGap),
+    ...normalizeBannerArrowSettings(showcase),
     lowerFullWidthBannerSliderItems: (() => {
       const items = mapSliderItemsForEditor(showcase, 'lowerFullWidthBannerSliderItems', 'lowerFullWidthBannerImage', 'lowerFullWidthBannerLink', 'lower-full-width-large-banner', 'Lower full-width banner')
       const baseItems = items.length ? items : [createLargeBannerSlide({ alt: 'Lower full-width banner 1', file: null })]
@@ -1564,6 +1575,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
         lowerFullWidthBannerBorderWidth: normalizeLowerFullWidthBannerBorderWidth(currentForm.lowerFullWidthBannerBorderWidth),
         lowerFullWidthBannerBorderColor: normalizeLowerFullWidthBannerBorderColor(currentForm.lowerFullWidthBannerBorderColor),
         fullWidthBannerGap: normalizeFullWidthBannerGap(currentForm.fullWidthBannerGap),
+        ...normalizeBannerArrowSettings(currentForm),
         lowerFullWidthBannerSliderItems,
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -1592,6 +1604,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
   }
 
   const fullWidthSizes = getFullWidthBannerSizes(form.fullWidthBannerDesktopHeight)
+  const arrowSettings = normalizeBannerArrowSettings(form)
   const lowerFullWidthSizes = getLowerFullWidthBannerSizes(form.lowerFullWidthBannerDesktopHeight)
 
   return (
@@ -1605,6 +1618,177 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
             </p>
           </>
         )}
+
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h2 className="text-sm font-semibold text-slate-900">Banner arrows</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            These arrows sit on the left and right of the homepage banner when it has more than one slide. Click Publish to update the store.
+          </p>
+          <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_180px]">
+            <div className="space-y-4">
+              <div>
+                <p className="mb-2 text-sm font-medium text-slate-700">Design</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    ['circle', 'Circle'],
+                    ['rounded', 'Rounded'],
+                    ['square', 'Square'],
+                    ['pill', 'Pill'],
+                    ['outline', 'Outline'],
+                    ['plain', 'Arrow only'],
+                  ].map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, bannerArrowStyle: id }))}
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                        arrowSettings.bannerArrowStyle === id
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="mb-2 text-sm font-medium text-slate-700">Size</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    ['sm', 'Small'],
+                    ['md', 'Medium'],
+                    ['lg', 'Large'],
+                  ].map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, bannerArrowSize: id }))}
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                        arrowSettings.bannerArrowSize === id
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="mb-2 text-sm font-medium text-slate-700">Hover animation</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    ['none', 'None'],
+                    ['grow', 'Grow'],
+                    ['slide', 'Slide'],
+                    ['lift', 'Lift'],
+                    ['bounce', 'Bounce'],
+                  ].map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, bannerArrowHover: id }))}
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                        arrowSettings.bannerArrowHover === id
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-slate-500">Hover the arrows in the preview to see it. Publish to update the store.</p>
+              </div>
+              <div className="flex flex-wrap gap-4">
+                <label className="block text-sm font-medium text-slate-700">
+                  Arrow color
+                  <input
+                    type="color"
+                    className="mt-2 block h-10 w-16 cursor-pointer rounded border border-slate-300 bg-white p-1"
+                    value={arrowSettings.bannerArrowColor}
+                    onChange={(event) => setForm((prev) => ({ ...prev, bannerArrowColor: event.target.value }))}
+                  />
+                </label>
+                <label className="block text-sm font-medium text-slate-700">
+                  Button color
+                  <input
+                    type="color"
+                    className="mt-2 block h-10 w-16 cursor-pointer rounded border border-slate-300 bg-white p-1"
+                    value={arrowSettings.bannerArrowBgColor}
+                    onChange={(event) => setForm((prev) => ({ ...prev, bannerArrowBgColor: event.target.value }))}
+                  />
+                </label>
+                <label className="block text-sm font-medium text-slate-700">
+                  Hover arrow color
+                  <input
+                    type="color"
+                    className="mt-2 block h-10 w-16 cursor-pointer rounded border border-slate-300 bg-white p-1"
+                    value={arrowSettings.bannerArrowHoverColor}
+                    onChange={(event) => setForm((prev) => ({ ...prev, bannerArrowHoverColor: event.target.value }))}
+                  />
+                </label>
+                <label className="block text-sm font-medium text-slate-700">
+                  Hover button color
+                  <input
+                    type="color"
+                    className="mt-2 block h-10 w-16 cursor-pointer rounded border border-slate-300 bg-white p-1"
+                    value={arrowSettings.bannerArrowHoverBgColor}
+                    onChange={(event) => setForm((prev) => ({ ...prev, bannerArrowHoverBgColor: event.target.value }))}
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
+          {(() => {
+            const arrow = arrowSettings
+            const previewImage = form.fullWidthBannerSliderItems?.[0]?.image || form.fullWidthBannerImage || ''
+            const sizePx = arrow.bannerArrowSize === 'lg' ? 44 : arrow.bannerArrowSize === 'sm' ? 28 : 36
+            const iconPx = arrow.bannerArrowSize === 'lg' ? 22 : arrow.bannerArrowSize === 'sm' ? 14 : 18
+            const widthPx = arrow.bannerArrowStyle === 'pill' ? 52 : sizePx
+            const radius = arrow.bannerArrowStyle === 'square' ? 0 : arrow.bannerArrowStyle === 'rounded' ? 10 : 999
+            const buttonStyle = {
+              width: arrow.bannerArrowStyle === 'plain' ? iconPx + 8 : widthPx,
+              height: arrow.bannerArrowStyle === 'plain' ? iconPx + 8 : sizePx,
+              borderRadius: arrow.bannerArrowStyle === 'plain' ? 0 : radius,
+              borderWidth: arrow.bannerArrowStyle === 'outline' ? 2 : 0,
+              borderStyle: 'solid',
+              boxShadow: arrow.bannerArrowStyle === 'plain' ? 'none' : '0 2px 8px rgba(0,0,0,0.28)',
+              '--banner-arrow-color': arrow.bannerArrowColor,
+              '--banner-arrow-bg': arrow.bannerArrowStyle === 'plain' || arrow.bannerArrowStyle === 'outline' ? 'transparent' : arrow.bannerArrowBgColor,
+              '--banner-arrow-border': arrow.bannerArrowStyle === 'outline' ? arrow.bannerArrowBgColor : 'transparent',
+              '--banner-arrow-hover-color': arrow.bannerArrowHoverColor,
+              '--banner-arrow-hover-bg': arrow.bannerArrowStyle === 'plain' ? 'transparent' : arrow.bannerArrowHoverBgColor,
+            }
+            return (
+              <div className="relative mt-4 h-32 overflow-hidden rounded-xl border border-slate-200 bg-slate-200">
+                {previewImage ? (
+                  <img src={previewImage} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="h-full w-full bg-gradient-to-r from-amber-500 via-orange-400 to-sky-700" />
+                )}
+                {['left', 'right'].map((side) => {
+                  const Icon = side === 'left' ? ChevronLeft : ChevronRight
+                  return (
+                    <span
+                      key={side}
+                      className="absolute top-1/2 -translate-y-1/2"
+                      style={{ [side]: 12 }}
+                    >
+                      <span
+                        className={`banner-arrow-btn flex items-center justify-center ${bannerArrowHoverClass(arrow.bannerArrowHover, side)}`}
+                        style={buttonStyle}
+                      >
+                        <Icon size={iconPx} strokeWidth={2.5} />
+                      </span>
+                    </span>
+                  )
+                })}
+              </div>
+            )
+          })()}
+        </div>
 
         <AccordionRow
           title="Layout Upload Guide"

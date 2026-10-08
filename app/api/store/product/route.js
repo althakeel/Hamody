@@ -540,6 +540,16 @@ export async function GET(request) {
             const limit = Math.min(maxLimit, Math.max(1, Number.parseInt(searchParams.get('limit') || '24', 10) || 24));
             const sort = searchParams.get('sort') || 'newest';
             const category = String(searchParams.get('category') || '').trim();
+            const filterCategoryIds = String(searchParams.get('categories') || '')
+                .split(',')
+                .map((id) => id.trim())
+                .filter(Boolean)
+                .slice(0, 80);
+            const filterTags = String(searchParams.get('tags') || '')
+                .split(',')
+                .map((tag) => tag.trim())
+                .filter(Boolean)
+                .slice(0, 40);
             const media = searchParams.get('media') === 'true';
             const detailsProgress = String(searchParams.get('detailsProgress') || 'all').trim();
             const minPrice = String(searchParams.get('minPrice') || '').trim();
@@ -556,6 +566,8 @@ export async function GET(request) {
                 search,
                 sort,
                 category,
+                filterCategoryIds,
+                filterTags,
                 mode: manage ? 'manage' : media ? 'media' : 'picker',
                 detailsProgress: manage ? detailsProgress : 'all',
                 Category: manage || search ? Category : null,

@@ -180,6 +180,13 @@ const StorePreferenceSchema = new mongoose.Schema(
       lowerFullWidthBannerBorderColor: { type: String, trim: true, default: '#e5e7eb' },
       fullWidthBannerTopSpace: { type: Number, default: 0 },
       fullWidthBannerGap: { type: Number, default: 12 },
+      bannerArrowStyle: { type: String, trim: true, default: 'circle' },
+      bannerArrowColor: { type: String, trim: true, default: '#0f172a' },
+      bannerArrowBgColor: { type: String, trim: true, default: '#ffffff' },
+      bannerArrowSize: { type: String, trim: true, default: 'md' },
+      bannerArrowHover: { type: String, trim: true, default: 'grow' },
+      bannerArrowHoverColor: { type: String, trim: true, default: '#ffffff' },
+      bannerArrowHoverBgColor: { type: String, trim: true, default: '#0f172a' },
       lowerFullWidthBannerSliderItems: {
         type: [BannerSliderItemSchema],
         default: [],
@@ -562,6 +569,34 @@ if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerTopSpace')) {
 
 if (!StorePreferenceModel.schema.path('shopShowcase.fullWidthBannerGap')) {
   missingShopShowcasePaths.fullWidthBannerGap = { type: Number, default: 12 }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.bannerArrowStyle')) {
+  missingShopShowcasePaths.bannerArrowStyle = { type: String, trim: true, default: 'circle' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.bannerArrowColor')) {
+  missingShopShowcasePaths.bannerArrowColor = { type: String, trim: true, default: '#0f172a' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.bannerArrowBgColor')) {
+  missingShopShowcasePaths.bannerArrowBgColor = { type: String, trim: true, default: '#ffffff' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.bannerArrowSize')) {
+  missingShopShowcasePaths.bannerArrowSize = { type: String, trim: true, default: 'md' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.bannerArrowHover')) {
+  missingShopShowcasePaths.bannerArrowHover = { type: String, trim: true, default: 'grow' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.bannerArrowHoverColor')) {
+  missingShopShowcasePaths.bannerArrowHoverColor = { type: String, trim: true, default: '#ffffff' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.bannerArrowHoverBgColor')) {
+  missingShopShowcasePaths.bannerArrowHoverBgColor = { type: String, trim: true, default: '#0f172a' }
 }
 
 if (!StorePreferenceModel.schema.path('shopShowcase.lowerFullWidthBannerSliderItems')) {

@@ -9,6 +9,10 @@ import Placeholder from '@tiptap/extension-placeholder'
 import TextAlign from '@tiptap/extension-text-align'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
+import { Table } from '@tiptap/extension-table'
+import { TableRow } from '@tiptap/extension-table-row'
+import { TableCell } from '@tiptap/extension-table-cell'
+import { TableHeader } from '@tiptap/extension-table-header'
 import {
   AlignCenter,
   AlignLeft,
@@ -25,6 +29,7 @@ import {
   Loader2,
   Pilcrow,
   Strikethrough,
+  Table2,
 } from 'lucide-react'
 import { compressImageForUpload } from '@/lib/compressImageForUpload'
 
@@ -274,6 +279,10 @@ export default function BlogRichTextEditor({
         allowBase64: false,
         inline: false,
       }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
       Placeholder.configure({ placeholder }),
     ],
     content: value || '',
@@ -582,6 +591,47 @@ export default function BlogRichTextEditor({
           <ListOrdered size={14} />
         </ToolbarButton>
         <ToolbarButton
+          title="Insert table"
+          active={editor.isActive('table')}
+          onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+        >
+          <Table2 size={14} />
+        </ToolbarButton>
+        {editor.isActive('table') ? (
+          <>
+            <ToolbarButton
+              title="Add column"
+              onClick={() => editor.chain().focus().addColumnAfter().run()}
+            >
+              + Col
+            </ToolbarButton>
+            <ToolbarButton
+              title="Remove column"
+              onClick={() => editor.chain().focus().deleteColumn().run()}
+            >
+              − Col
+            </ToolbarButton>
+            <ToolbarButton
+              title="Add row"
+              onClick={() => editor.chain().focus().addRowAfter().run()}
+            >
+              + Row
+            </ToolbarButton>
+            <ToolbarButton
+              title="Remove row"
+              onClick={() => editor.chain().focus().deleteRow().run()}
+            >
+              − Row
+            </ToolbarButton>
+            <ToolbarButton
+              title="Delete table"
+              onClick={() => editor.chain().focus().deleteTable().run()}
+            >
+              Delete
+            </ToolbarButton>
+          </>
+        ) : null}
+        <ToolbarButton
           title="Link"
           active={editor.isActive('link')}
           onClick={() => {
@@ -665,6 +715,7 @@ export default function BlogRichTextEditor({
       <EditorContent editor={editor} />
       <p className="border-t border-slate-100 bg-slate-50 px-3 py-2 text-[11px] text-slate-500">
         Select a word for font family / weight / size / color. H1–H3 apply to the whole line.
+        Table inserts a 3×3 grid. Click inside it to add or remove rows and columns.
         Select an image → set Full / ½ / ⅓ width, then Left / Center / Right. (Center/Right need ½ or ⅓ width.)
         Drag to reorder. Drop a file to upload to S3.
       </p>

@@ -31,7 +31,7 @@ export async function GET(req) {
 
         await connectDB();
 
-        const allCategories = await Category.find({ isActive: { $ne: false } })
+        const allCategories = await Category.find(isStoreDashboardRequest ? {} : { isActive: { $ne: false } })
             .sort({ level: 1, sortOrder: 1, name: 1 })
             .lean();
 
@@ -64,7 +64,9 @@ export async function GET(req) {
             lookup,
         };
 
-        setCachedData(cacheKey, payload, 300);
+        if (!isStoreDashboardRequest) {
+            setCachedData(cacheKey, payload, 300);
+        }
 
         const isDev = process.env.NODE_ENV !== 'production';
         return NextResponse.json(payload, {

@@ -595,6 +595,7 @@ export default function StoreCategoryMenu() {
   const [bannerFiles, setBannerFiles] = useState(EMPTY_BANNER_FILES);
   const [bannerPreviews, setBannerPreviews] = useState(EMPTY_BANNER_PREVIEWS);
   const [generatingImageKey, setGeneratingImageKey] = useState(null);
+  const [togglingCategoryId, setTogglingCategoryId] = useState('');
   const [backfillingArabic, setBackfillingArabic] = useState(false);
   const [translatingDescription, setTranslatingDescription] = useState(false);
   const [translatingName, setTranslatingName] = useState(false);
@@ -1286,6 +1287,26 @@ export default function StoreCategoryMenu() {
     }
   };
 
+  const handleToggleActive = async (category) => {
+    const nextActive = category?.isActive === false;
+    try {
+      setTogglingCategoryId(String(category._id));
+      const token = await getToken();
+      await axios.put(`/api/store/categories/${category._id}`, {
+        name: category.name,
+        isActive: nextActive,
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await fetchCategories();
+      toast.success(nextActive ? 'Category enabled on the store' : 'Category hidden from the store');
+    } catch (error) {
+      toast.error(error?.response?.data?.error || 'Failed to update category');
+    } finally {
+      setTogglingCategoryId('');
+    }
+  };
+
   const handleDelete = async (categoryId) => {
     if (!confirm('Are you sure you want to delete this category?')) return;
 
@@ -1582,6 +1603,8 @@ export default function StoreCategoryMenu() {
     const productCount = categoryProductCounts[categoryId] || 0;
     const directProductCount = categoryDirectProductCounts[categoryId] || 0;
     const showsSubcategoryRollup = productCount > directProductCount;
+    const categoryEnabled = category.isActive !== false;
+    const isToggling = togglingCategoryId === categoryId;
 
     const listIndent = !showNestedChildren && depth > 0
       ? (depth === 1 ? 'ms-5 sm:ms-8' : depth === 2 ? 'ms-10 sm:ms-16' : 'ms-14 sm:ms-24')
@@ -1591,7 +1614,7 @@ export default function StoreCategoryMenu() {
       : '';
 
     return (
-      <div key={String(category._id)} className={`rounded-xl border shadow-md ${meta.cardClassName} ${listIndent} ${levelRail} ${isSelected ? 'border-blue-500 ring-2 ring-blue-100' : ''}`}>
+      <div key={String(category._id)} className={`rounded-xl border shadow-md ${meta.cardClassName} ${listIndent} ${levelRail} ${isSelected ? 'border-blue-500 ring-2 ring-blue-100' : ''} ${categoryEnabled ? '' : 'opacity-60 grayscale'}`}>
         <div className="p-3 sm:p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
             <div className="flex items-start gap-2.5 sm:gap-3">
@@ -1654,6 +1677,9 @@ export default function StoreCategoryMenu() {
                       SEO: {category.metaTitle || 'custom description set'}
                     </p>
                   )}
+                  <p className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${categoryEnabled ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
+                    {categoryEnabled ? 'Enabled' : 'Disabled'}
+                  </p>
                   <p className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500 sm:text-xs">
                     {hasChildren
                       ? `${meta.label} with ${childCount} nested ${childCount === 1 ? 'category' : 'categories'}`
@@ -1689,6 +1715,18 @@ export default function StoreCategoryMenu() {
                     }`}
                   >
                     {isSelected ? 'Selected' : 'Select'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleActive(category)}
+                    disabled={isToggling}
+                    className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition sm:px-3 sm:py-2 sm:text-sm disabled:cursor-not-allowed disabled:opacity-60 ${
+                      categoryEnabled
+                        ? 'border border-amber-200 bg-white text-amber-700 hover:bg-amber-50'
+                        : 'border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50'
+                    }`}
+                  >
+                    {isToggling ? 'Saving...' : categoryEnabled ? 'Disable' : 'Enable'}
                   </button>
                   <button
                     type="button"

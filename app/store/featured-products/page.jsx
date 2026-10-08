@@ -19,6 +19,10 @@ import {
     Clock,
     Check,
     Eye,
+    Languages,
+    ChevronUp,
+    ChevronDown,
+    X,
 } from 'lucide-react'
 
 const SOURCE_OPTIONS = [
@@ -35,15 +39,43 @@ function normalizeProductId(productId) {
     return String(productId?._id || productId || '')
 }
 
-function flattenCategories(items = [], depth = 0) {
+function flattenCategories(items = [], depth = 0, parentId = '') {
     if (!Array.isArray(items)) return []
 
     return items.flatMap((item) => {
         const id = String(item?._id || item?.id || '').trim()
-        const current = { id, name: String(item?.name || '').trim(), depth }
-        const children = flattenCategories(item?.children || [], depth + 1)
+        const current = {
+            id,
+            name: String(item?.name || '').trim(),
+            depth,
+            parentId: String(item?.parentId || parentId || ''),
+        }
+        const children = flattenCategories(item?.children || [], depth + 1, id)
         return id ? [current, ...children] : children
     })
+}
+
+function expandSelectedCategories(flatCategories = [], selectedIds = []) {
+    const childrenByParent = new Map()
+    for (const category of flatCategories) {
+        if (!category.parentId) continue
+        const list = childrenByParent.get(category.parentId) || []
+        list.push(category.id)
+        childrenByParent.set(category.parentId, list)
+    }
+
+    const result = new Set(selectedIds.map((id) => String(id || '')).filter(Boolean))
+    const stack = [...result]
+    while (stack.length) {
+        const id = stack.pop()
+        for (const childId of childrenByParent.get(id) || []) {
+            if (!result.has(childId)) {
+                result.add(childId)
+                stack.push(childId)
+            }
+        }
+    }
+    return [...result]
 }
 
 function buildPreviewFromSelection(selectedIds, productPool = []) {
@@ -102,9 +134,13 @@ export default function FeaturedProducts() {
     const [selectedProducts, setSelectedProducts] = useState([])
     const [sourceMode, setSourceMode] = useState('manual')
     const [selectedCategoryIds, setSelectedCategoryIds] = useState([])
-    const [selectedTagsText, setSelectedTagsText] = useState('')
+    const [selectedTags, setSelectedTags] = useState([])
+    const [tagInput, setTagInput] = useState('')
     const [sectionTitle, setSectionTitle] = useState('Craziest sale of the year!')
     const [sectionDescription, setSectionDescription] = useState("Grab the best deals before they're gone!")
+    const [sectionTitleAr, setSectionTitleAr] = useState('')
+    const [sectionDescriptionAr, setSectionDescriptionAr] = useState('')
+    const [translatingCopy, setTranslatingCopy] = useState(false)
     const [loading, setLoading] = useState(true)
     const [productsLoading, setProductsLoading] = useState(false)
     const [selectingAll, setSelectingAll] = useState(false)
@@ -164,8 +200,10 @@ export default function FeaturedProducts() {
 
     const fetchProductsPage = useCallback(async ({
         page = 1,
-        search = debouncedSearch,
-        sort = sortBy,
+        search = '',
+        sort = 'name',
+        categories = '',
+        tags = '',
         silent = false,
     } = {}) => {
         productsAbortRef.current?.abort()
@@ -181,6 +219,8 @@ export default function FeaturedProducts() {
                     limit: PRODUCTS_PER_PAGE,
                     search: search || undefined,
                     sort,
+                    categories: categories || undefined,
+                    tags: tags || undefined,
                 },
                 headers: { Authorization: `Bearer ${token}` },
                 signal: controller.signal,
@@ -206,7 +246,7 @@ export default function FeaturedProducts() {
                 setProductsLoading(false)
             }
         }
-    }, [cachePreviewProducts, debouncedSearch, getToken, sortBy])
+    }, [cachePreviewProducts, getToken])
 
     const fetchInitialData = async () => {
         try {
@@ -231,9 +271,11 @@ export default function FeaturedProducts() {
             setSelectedProducts(initialSelected)
             setSourceMode(savedData.sourceMode || 'manual')
             setSelectedCategoryIds(savedData.categoryIds || [])
-            setSelectedTagsText(Array.isArray(savedData.tags) ? savedData.tags.join(', ') : '')
+            setSelectedTags(Array.isArray(savedData.tags) ? savedData.tags.map((tag) => String(tag || '').trim()).filter(Boolean) : [])
             if (savedData.sectionTitle) setSectionTitle(savedData.sectionTitle)
             if (savedData.sectionDescription) setSectionDescription(savedData.sectionDescription)
+            setSectionTitleAr(savedData.sectionTitleAr || '')
+            setSectionDescriptionAr(savedData.sectionDescriptionAr || '')
 
             const initialProducts = productsResponse.data?.products || []
             setProducts(initialProducts)
@@ -269,14 +311,51 @@ export default function FeaturedProducts() {
         }
     }, [searchQuery])
 
+    const categoryQuery = useMemo(() => {
+        if (sourceMode !== 'category') return ''
+        return expandSelectedCategories(categories, selectedCategoryIds).join(',')
+    }, [categories, selectedCategoryIds, sourceMode])
+
+    const tagQuery = useMemo(() => {
+        if (sourceMode !== 'tag') return ''
+        return selectedTags.join(',')
+    }, [selectedTags, sourceMode])
+
+    const sourceFilterKey = `${sourceMode}|${categoryQuery}|${tagQuery}|${sourceMode === 'manual' ? debouncedSearch : ''}|${sourceMode === 'latest' ? 'newest' : sortBy}`
+    const sourceFilterKeyRef = useRef(sourceFilterKey)
+
     useEffect(() => {
-        if (loading || sourceMode !== 'manual') return
-        if (skipNextProductsFetchRef.current) {
+        if (loading) return
+        if (sourceMode === 'manual' && skipNextProductsFetchRef.current) {
             skipNextProductsFetchRef.current = false
             return
         }
-        fetchProductsPage({ page: pagination.page, search: debouncedSearch, sort: sortBy, silent: pagination.page > 1 })
-    }, [loading, sourceMode, pagination.page, debouncedSearch, sortBy, fetchProductsPage])
+        if (sourceFilterKeyRef.current !== sourceFilterKey) {
+            sourceFilterKeyRef.current = sourceFilterKey
+            if (pagination.page !== 1) {
+                setPagination((current) => ({ ...current, page: 1 }))
+                return
+            }
+        }
+        if (sourceMode === 'category' && !categoryQuery) {
+            setProducts([])
+            setPagination((current) => ({ ...current, total: 0, totalPages: 1 }))
+            return
+        }
+        if (sourceMode === 'tag' && !tagQuery) {
+            setProducts([])
+            setPagination((current) => ({ ...current, total: 0, totalPages: 1 }))
+            return
+        }
+        fetchProductsPage({
+            page: pagination.page,
+            search: sourceMode === 'manual' ? debouncedSearch : '',
+            sort: sourceMode === 'latest' ? 'newest' : sortBy,
+            categories: categoryQuery,
+            tags: tagQuery,
+            silent: pagination.page > 1,
+        })
+    }, [loading, sourceMode, pagination.page, debouncedSearch, sortBy, categoryQuery, tagQuery, sourceFilterKey, fetchProductsPage])
 
     useEffect(() => {
         if (sourceMode !== 'manual') return
@@ -345,12 +424,81 @@ export default function FeaturedProducts() {
         ))
     }
 
+    const addTags = (raw) => {
+        const parts = String(raw || '').split(/[,،\n]/).map((tag) => tag.trim()).filter(Boolean)
+        if (!parts.length) return
+        setSelectedTags((prev) => {
+            const next = [...prev]
+            for (const part of parts) {
+                if (!next.some((tag) => tag.toLowerCase() === part.toLowerCase())) next.push(part)
+            }
+            return next
+        })
+        setTagInput('')
+    }
+
+    const translateCopyToArabic = async () => {
+        const englishTitle = String(sectionTitle || '').trim()
+        const englishSubtitle = String(sectionDescription || '').trim()
+        if (!englishTitle && !englishSubtitle) {
+            toast.error('Enter an English title or subtitle first')
+            return
+        }
+        try {
+            setTranslatingCopy(true)
+            const token = await getToken()
+            const translateText = async (text) => {
+                if (!text) return ''
+                const { data } = await axios.post(
+                    '/api/store/categories/translate-arabic',
+                    { text },
+                    { headers: { Authorization: `Bearer ${token}` } },
+                )
+                return String(data?.descriptionAr || '').trim()
+            }
+            const [titleAr, subtitleAr] = await Promise.all([
+                translateText(englishTitle),
+                translateText(englishSubtitle),
+            ])
+            if (!titleAr && !subtitleAr) {
+                toast.error('Could not translate to Arabic')
+                return
+            }
+            if (titleAr) setSectionTitleAr(titleAr)
+            if (subtitleAr) setSectionDescriptionAr(subtitleAr)
+            toast.success('Arabic title and subtitle updated')
+        } catch (error) {
+            toast.error(error?.response?.data?.error || 'Failed to translate to Arabic')
+        } finally {
+            setTranslatingCopy(false)
+        }
+    }
+
+    const moveSelectedProduct = (productId, direction) => {
+        setSelectedProducts((prev) => {
+            const index = prev.indexOf(productId)
+            const nextIndex = index + direction
+            if (index < 0 || nextIndex < 0 || nextIndex >= prev.length) return prev
+            const next = [...prev]
+            const [item] = next.splice(index, 1)
+            next.splice(nextIndex, 0, item)
+            return next
+        })
+    }
+
     const saveFeaturedProducts = async () => {
         try {
-            const normalizedTags = selectedTagsText
-                .split(',')
-                .map((tag) => tag.trim())
-                .filter(Boolean)
+            const pendingTags = String(tagInput || '').split(/[,،\n]/).map((tag) => tag.trim()).filter(Boolean)
+            const normalizedTags = [...selectedTags]
+            for (const tag of pendingTags) {
+                if (!normalizedTags.some((item) => item.toLowerCase() === tag.toLowerCase())) {
+                    normalizedTags.push(tag)
+                }
+            }
+            if (pendingTags.length) {
+                setSelectedTags(normalizedTags)
+                setTagInput('')
+            }
 
             if (sourceMode === 'manual' && selectedProducts.length === 0) {
                 toast.error('Select at least one product')
@@ -377,6 +525,8 @@ export default function FeaturedProducts() {
                     tags: normalizedTags,
                     sectionTitle,
                     sectionDescription,
+                    sectionTitleAr,
+                    sectionDescriptionAr,
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
             )
@@ -388,11 +538,6 @@ export default function FeaturedProducts() {
             setSaving(false)
         }
     }
-
-    const selectedTags = selectedTagsText
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter(Boolean)
 
     const selectedIdSet = useMemo(
         () => new Set(selectedProducts.map(normalizeProductId)),
@@ -468,8 +613,14 @@ export default function FeaturedProducts() {
                                 Storefront preview
                             </div>
                             <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 p-5 text-white">
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-white/50">English</p>
                                 <p className="text-lg font-bold leading-tight">{sectionTitle || 'Section title'}</p>
                                 <p className="mt-1 text-sm text-white/70">{sectionDescription || 'Section subtitle'}</p>
+                                <div className="mt-3 border-t border-white/10 pt-3">
+                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-white/50">Arabic</p>
+                                    <p dir="rtl" lang="ar" className="mt-1 text-lg font-bold leading-tight">{sectionTitleAr || 'عنوان القسم'}</p>
+                                    <p dir="rtl" lang="ar" className="mt-1 text-sm text-white/70">{sectionDescriptionAr || 'وصف القسم'}</p>
+                                </div>
                                 <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
                                     {(previewItems.length ? previewItems : [1, 2, 3, 4, 5]).map((item, index) => (
                                         <div
@@ -491,10 +642,21 @@ export default function FeaturedProducts() {
                         </div>
 
                         <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
-                            <h2 className="mb-4 text-sm font-semibold text-slate-900">Section copy</h2>
+                            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                                <h2 className="text-sm font-semibold text-slate-900">Section copy</h2>
+                                <button
+                                    type="button"
+                                    onClick={translateCopyToArabic}
+                                    disabled={translatingCopy}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    {translatingCopy ? <Loader size={13} className="animate-spin" /> : <Languages size={13} />}
+                                    Translate to Arabic
+                                </button>
+                            </div>
                             <div className="space-y-3">
                                 <div>
-                                    <label className="mb-1.5 block text-xs font-medium text-slate-500">Title</label>
+                                    <label className="mb-1.5 block text-xs font-medium text-slate-500">Title (English)</label>
                                     <input
                                         type="text"
                                         value={sectionTitle}
@@ -504,11 +666,35 @@ export default function FeaturedProducts() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="mb-1.5 block text-xs font-medium text-slate-500">Subtitle</label>
+                                    <label className="mb-1.5 block text-xs font-medium text-slate-500">Subtitle (English)</label>
                                     <textarea
                                         value={sectionDescription}
                                         onChange={(e) => setSectionDescription(e.target.value)}
                                         placeholder="Handpicked products just for you"
+                                        rows={2}
+                                        className="w-full resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-medium text-slate-500">Title (Arabic)</label>
+                                    <input
+                                        type="text"
+                                        dir="rtl"
+                                        lang="ar"
+                                        value={sectionTitleAr}
+                                        onChange={(e) => setSectionTitleAr(e.target.value)}
+                                        placeholder="عنوان القسم"
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-medium text-slate-500">Subtitle (Arabic)</label>
+                                    <textarea
+                                        dir="rtl"
+                                        lang="ar"
+                                        value={sectionDescriptionAr}
+                                        onChange={(e) => setSectionDescriptionAr(e.target.value)}
+                                        placeholder="وصف القسم"
                                         rows={2}
                                         className="w-full resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
                                     />
@@ -584,14 +770,47 @@ export default function FeaturedProducts() {
                             {sourceMode === 'tag' && (
                                 <div className="mt-4">
                                     <label className="mb-2 block text-xs font-medium text-slate-500">Tags</label>
-                                    <input
-                                        type="text"
-                                        value={selectedTagsText}
-                                        onChange={(e) => setSelectedTagsText(e.target.value)}
-                                        placeholder="summer, sale, new-arrivals"
-                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                                    />
-                                    <p className="mt-1.5 text-[11px] text-slate-400">Comma-separated tags</p>
+                                    <div className="rounded-xl border border-slate-200 bg-white p-2">
+                                        {selectedTags.length ? (
+                                            <div className="mb-2 flex flex-wrap gap-1.5">
+                                                {selectedTags.map((tag) => (
+                                                    <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-800">
+                                                        {tag}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setSelectedTags((prev) => prev.filter((item) => item !== tag))}
+                                                            className="text-emerald-700 hover:text-emerald-900"
+                                                            aria-label={`Remove ${tag}`}
+                                                        >
+                                                            <X size={12} />
+                                                        </button>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        ) : null}
+                                        <input
+                                            type="text"
+                                            value={tagInput}
+                                            onChange={(e) => {
+                                                const value = e.target.value
+                                                if (value.includes(',') || value.includes('،')) {
+                                                    addTags(value)
+                                                    return
+                                                }
+                                                setTagInput(value)
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ',') {
+                                                    e.preventDefault()
+                                                    addTags(tagInput)
+                                                }
+                                            }}
+                                            onBlur={() => addTags(tagInput)}
+                                            placeholder="Type a tag, then press Enter or comma"
+                                            className="w-full rounded-lg px-2 py-1.5 text-sm focus:outline-none"
+                                        />
+                                    </div>
+                                    <p className="mt-1.5 text-[11px] text-slate-400">Add as many tags as you need. Press Enter or comma after each one.</p>
                                 </div>
                             )}
 
@@ -610,8 +829,8 @@ export default function FeaturedProducts() {
                                     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                                         <div>
                                             <h2 className="text-base font-semibold text-slate-900">Select products</h2>
-                                            <p className="text-xs text-slate-500">
-                                                {selectedProducts.length} selected · {pagination.total} total products
+                                                <p className="text-xs text-slate-500">
+                                                {selectedProducts.length} selected · {pagination.total} total products. Number 1 is shown first.
                                             </p>
                                         </div>
                                         <div className="flex flex-wrap gap-2">
@@ -683,17 +902,57 @@ export default function FeaturedProducts() {
                                             {products.map((product) => {
                                                 const productId = normalizeProductId(product)
                                                 const isSelected = selectedIdSet.has(productId)
+                                                const position = selectedProducts.indexOf(productId)
                                                 return (
-                                                    <button
+                                                    <div
                                                         key={productId}
-                                                        type="button"
+                                                        role="button"
+                                                        tabIndex={0}
                                                         onClick={() => toggleProduct(productId)}
-                                                        className={`group relative rounded-2xl border p-3 text-left transition ${
+                                                        onKeyDown={(event) => {
+                                                            if (event.target !== event.currentTarget) return
+                                                            if (event.key === 'Enter' || event.key === ' ') {
+                                                                event.preventDefault()
+                                                                toggleProduct(productId)
+                                                            }
+                                                        }}
+                                                        className={`group relative cursor-pointer rounded-2xl border p-3 text-left transition ${
                                                             isSelected
                                                                 ? 'border-emerald-400 bg-emerald-50/60 ring-2 ring-emerald-200'
                                                                 : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
                                                         }`}
                                                     >
+                                                        {isSelected ? (
+                                                            <span className="absolute left-2 top-2 flex items-center gap-1">
+                                                                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-slate-900 px-1 text-[10px] font-semibold text-white">
+                                                                    {position + 1}
+                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={position <= 0}
+                                                                    onClick={(event) => {
+                                                                        event.stopPropagation()
+                                                                        moveSelectedProduct(productId, -1)
+                                                                    }}
+                                                                    className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 disabled:opacity-30"
+                                                                    aria-label="Move earlier"
+                                                                >
+                                                                    <ChevronUp size={12} />
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={position >= selectedProducts.length - 1}
+                                                                    onClick={(event) => {
+                                                                        event.stopPropagation()
+                                                                        moveSelectedProduct(productId, 1)
+                                                                    }}
+                                                                    className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 disabled:opacity-30"
+                                                                    aria-label="Move later"
+                                                                >
+                                                                    <ChevronDown size={12} />
+                                                                </button>
+                                                            </span>
+                                                        ) : null}
                                                         <span className={`absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border transition ${
                                                             isSelected
                                                                 ? 'border-emerald-500 bg-emerald-500 text-white'
@@ -725,7 +984,7 @@ export default function FeaturedProducts() {
                                                                 {product.inStock ? 'In stock' : 'Out'}
                                                             </span>
                                                         </div>
-                                                    </button>
+                                                    </div>
                                                 )
                                             })}
                                         </div>
@@ -781,25 +1040,79 @@ export default function FeaturedProducts() {
                                 ) : null}
                             </div>
                         ) : (
-                            <div className="flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center sm:min-h-[420px] sm:p-10">
-                                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
-                                    {sourceMode === 'category' ? <FolderTree size={24} /> : null}
-                                    {sourceMode === 'tag' ? <Tag size={24} /> : null}
-                                    {sourceMode === 'latest' ? <Clock size={24} /> : null}
+                            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                                <div className="border-b border-slate-100 px-4 py-4 sm:px-6">
+                                    <h2 className="text-base font-semibold text-slate-900">
+                                        {sourceMode === 'category' && 'Products in these categories'}
+                                        {sourceMode === 'tag' && 'Products with these tags'}
+                                        {sourceMode === 'latest' && 'Newest products'}
+                                    </h2>
+                                    <p className="text-xs text-slate-500">
+                                        {sourceMode === 'category' && !selectedCategoryIds.length
+                                            ? 'Select one or more categories on the left.'
+                                            : sourceMode === 'tag' && !selectedTags.length
+                                                ? 'Add one or more tags on the left.'
+                                                : `${pagination.total} products will appear in this section.`}
+                                    </p>
                                 </div>
-                                <h3 className="text-lg font-semibold text-slate-900">
-                                    {sourceMode === 'category' && 'Category-driven section'}
-                                    {sourceMode === 'tag' && 'Tag-driven section'}
-                                    {sourceMode === 'latest' && 'Latest products section'}
-                                </h3>
-                                <p className="mt-2 max-w-sm text-sm text-slate-500">
-                                    {sourceMode === 'category' && 'Products are pulled from the categories you selected on the left.'}
-                                    {sourceMode === 'tag' && 'Products matching your tags will appear on the home page.'}
-                                    {sourceMode === 'latest' && 'Your newest catalog items will fill this section automatically.'}
-                                </p>
-                                <p className="mt-6 text-xs text-slate-400">
-                                    Switch to <strong>Manual</strong> to pick individual products.
-                                </p>
+                                <div className="p-4 sm:p-6">
+                                    {productsLoading ? (
+                                        <div className="flex items-center justify-center py-20">
+                                            <Loader size={28} className="animate-spin text-emerald-500" />
+                                        </div>
+                                    ) : products.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center py-16 text-center">
+                                            <Package size={40} className="text-slate-300" />
+                                            <p className="mt-3 text-sm font-medium text-slate-600">
+                                                {sourceMode === 'category' && !selectedCategoryIds.length
+                                                    ? 'No category selected'
+                                                    : sourceMode === 'tag' && !selectedTags.length
+                                                        ? 'No tags added'
+                                                        : 'No products found'}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+                                            {products.map((product) => (
+                                                <div key={normalizeProductId(product)} className="rounded-2xl border border-slate-200 bg-white p-3">
+                                                    <div className="mb-3 flex justify-center">
+                                                        <ProductThumb product={product} size={88} />
+                                                    </div>
+                                                    <p className="line-clamp-2 text-xs font-semibold leading-snug text-slate-800">{product.name}</p>
+                                                    <div className="mt-2 flex items-center justify-between gap-1">
+                                                        <span className="text-sm font-bold text-slate-900">{currency}{Number(product.price || 0).toFixed(0)}</span>
+                                                        <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${product.inStock ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+                                                            {product.inStock ? 'In stock' : 'Out'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                {pagination.totalPages > 1 ? (
+                                    <div className="flex items-center justify-between border-t border-slate-100 px-4 py-4 sm:px-6">
+                                        <p className="text-xs text-slate-500">Page {pagination.page} of {pagination.totalPages}</p>
+                                        <div className="flex gap-2">
+                                            <button
+                                                type="button"
+                                                disabled={pagination.page <= 1 || productsLoading}
+                                                onClick={() => setPagination((current) => ({ ...current, page: current.page - 1 }))}
+                                                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 disabled:opacity-50"
+                                            >
+                                                Previous
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={pagination.page >= pagination.totalPages || productsLoading}
+                                                onClick={() => setPagination((current) => ({ ...current, page: current.page + 1 }))}
+                                                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 disabled:opacity-50"
+                                            >
+                                                Next
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : null}
                             </div>
                         )}
                     </div>

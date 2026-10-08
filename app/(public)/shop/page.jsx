@@ -70,7 +70,7 @@ function ShopContent() {
     const { t, language, isArabic } = useStorefrontI18n();
     const locale = isArabic ? 'ar-AE' : 'en';
     const searchParams = useSearchParams();
-    const search = searchParams.get('search');
+    const search = searchParams.get('search') || searchParams.get('brand');
     const selectedCategories = useMemo(() => {
         const multi = String(searchParams.get('categories') || '').trim();
         if (multi) {

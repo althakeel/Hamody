@@ -957,3 +957,64 @@ body::-webkit-scrollbar-thumb:hover {
 .storefront-toaster > div > * {
     pointer-events: auto !important;
 }
+
+@keyframes banner-arrow-bounce {
+    0%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-6px); }
+    70% { transform: translateY(2px); }
+}
+
+.banner-arrow-bounce:hover {
+    animation: banner-arrow-bounce 0.45s ease;
+}
+
+.banner-arrow-btn {
+    color: var(--banner-arrow-color);
+    background-color: var(--banner-arrow-bg);
+    border-color: var(--banner-arrow-border, transparent);
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.banner-arrow-btn:hover {
+    color: var(--banner-arrow-hover-color);
+    background-color: var(--banner-arrow-hover-bg);
+    border-color: var(--banner-arrow-hover-bg);
+}
+
+/* Public blog tables — same borders, header, and cell spacing as the editor. */
+.blog-content table {
+    border-collapse: collapse;
+    table-layout: fixed;
+    width: 100%;
+    max-width: 100%;
+    margin: 1em 0;
+    overflow: hidden;
+}
+
+.blog-content td,
+.blog-content th {
+    min-width: 1em;
+    border: 2px solid #cbd5e1 !important;
+    padding: 0.5em 0.75em !important;
+    vertical-align: top;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+    word-break: normal;
+    background-color: #ffffff;
+}
+
+.blog-content th {
+    font-weight: 700;
+    text-align: start;
+    background-color: #f1f5f9 !important;
+}
+
+.blog-content td > :first-child,
+.blog-content th > :first-child {
+    margin-top: 0;
+}
+
+.blog-content td > :last-child,
+.blog-content th > :last-child {
+    margin-bottom: 0;
+}

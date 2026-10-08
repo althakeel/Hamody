@@ -652,20 +652,23 @@ const readLinkChoice = (link) => {
     return { type: 'brand', value: safeDecode(normalized.replace(/^\/category\/brands\//, '').split('/')[0]) };
   }
 
-  if (normalized.startsWith('/category/')) {
+  if (normalized === '/category/' || normalized.startsWith('/category/')) {
     return { type: 'category', value: normalized.replace(/^\/category\//, '').trim() };
   }
 
   if (normalized.startsWith('/shop?')) {
     const query = normalized.split('?')[1] || '';
     const params = new URLSearchParams(query);
+    if (params.has('brand')) {
+      return { type: 'brand', value: safeDecode(params.get('brand') || '') };
+    }
     const category = params.get('category');
     if (category) {
       return { type: 'category', value: safeDecode(category) };
     }
   }
 
-  if (normalized.startsWith('/product/')) {
+  if (normalized === '/product/' || normalized.startsWith('/product/')) {
     return { type: 'product', value: safeDecode(normalized.replace('/product/', '').trim()) };
   }
 
@@ -677,29 +680,18 @@ const readLinkChoice = (link) => {
     return { type: 'page', value: normalized };
   }
 
-  if (normalized === '#page') return { type: 'page', value: '' };
-  if (normalized === '#brand') return { type: 'brand', value: '' };
-  if (normalized === '#category') return { type: 'category', value: '' };
-  if (normalized === '#product') return { type: 'product', value: '' };
-
   return { type: 'custom', value: normalized === '#' ? '' : normalized };
 };
 
 const createLinkFromChoice = (type, rawValue) => {
   const value = String(rawValue || '').trim();
-  if (!value) {
-    if (type === 'page' || type === 'brand' || type === 'category' || type === 'product') {
-      return `#${type}`;
-    }
-    return '#';
-  }
 
   if (type === 'brand') {
-    return `/category/brands/${encodeURIComponent(value)}`;
+    return `/shop?brand=${encodeURIComponent(value)}`;
   }
 
   if (type === 'category') {
-    return toPublicCategoryPath(value);
+    return value ? toPublicCategoryPath(value) : '/category/';
   }
 
   if (type === 'product') {
@@ -707,14 +699,21 @@ const createLinkFromChoice = (type, rawValue) => {
   }
 
   if (type === 'page') {
+    if (!value) return '/';
     return value.startsWith('/') ? value : `/${value}`;
   }
 
-  return value;
+  return value || '#';
 };
 
 function ExtraButtonLinkFields({ link, onChange, categoryOptions, productOptions, brandOptions }) {
   const choice = readLinkChoice(link);
+  const brandSelectOptions = Array.from(new Set([
+    ...(Array.isArray(brandOptions) ? brandOptions : []),
+    choice.type === 'brand' ? choice.value : '',
+  ].map((name) => String(name || '').trim()).filter(Boolean)))
+    .map((name) => ({ value: name, label: name }));
+
   return (
     <div className="grid gap-2 sm:grid-cols-2">
       <StoreDropdown
@@ -734,17 +733,24 @@ function ExtraButtonLinkFields({ link, onChange, categoryOptions, productOptions
         />
       ) : null}
       {choice.type === 'brand' ? (
-        <StoreDropdown
-          searchable
-          value={choice.value}
-          onChange={(value) => onChange(createLinkFromChoice('brand', value))}
-          options={brandOptions.map((brand) => ({
-            value: brand?.slug || brand?._id || '',
-            label: brand?.name || brand?.slug || 'Brand',
-          }))}
-          placeholder="Select brand"
-          searchPlaceholder="Search brands"
-        />
+        brandSelectOptions.length ? (
+          <StoreDropdown
+            searchable
+            value={choice.value}
+            onChange={(value) => onChange(createLinkFromChoice('brand', value))}
+            options={brandSelectOptions}
+            placeholder="Select brand"
+            searchPlaceholder="Search brands"
+          />
+        ) : (
+          <input
+            type="text"
+            value={choice.value}
+            onChange={(event) => onChange(createLinkFromChoice('brand', event.target.value))}
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            placeholder="Type brand name"
+          />
+        )
       ) : null}
       {choice.type === 'category' ? (
         <StoreDropdown
@@ -781,6 +787,15 @@ function ExtraButtonLinkFields({ link, onChange, categoryOptions, productOptions
           placeholder="https://example.com or /your-page"
         />
       ) : null}
+      {choice.type === 'brand' && brandSelectOptions.length ? (
+        <input
+          type="text"
+          value={choice.value}
+          onChange={(event) => onChange(createLinkFromChoice('brand', event.target.value))}
+          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm sm:col-span-2"
+          placeholder="Or type a brand name"
+        />
+      ) : null}
     </div>
   );
 }
@@ -796,6 +811,7 @@ export default function MenuManagementPage() {
   const [nestedDrop, setNestedDrop] = useState(null);
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [productOptions, setProductOptions] = useState([]);
+  const [productBrandNames, setProductBrandNames] = useState([]);
   const [activePanel, setActivePanel] = useState('settings');
   const [settingsSection, setSettingsSection] = useState('topbar');
   const [uploadingMegaImageKey, setUploadingMegaImageKey] = useState('');
@@ -1053,25 +1069,38 @@ export default function MenuManagementPage() {
 
   useEffect(() => {
     let active = true;
+    if (authLoading) return undefined;
 
     const loadLinkTargets = async () => {
       try {
-        const [categoriesRes, productsRes] = await Promise.all([
+        const token = user ? await getToken() : null;
+        const [categoriesRes, productsRes, brandsRes] = await Promise.all([
           fetch('/api/categories', { cache: 'no-store' }),
           fetch('/api/products?limit=200', { cache: 'no-store' }),
+          fetch('/api/store/brands', {
+            cache: 'no-store',
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          }),
         ]);
 
         const categoriesData = categoriesRes.ok ? await categoriesRes.json() : { categories: [] };
         const productsData = productsRes.ok ? await productsRes.json() : { products: [] };
+        const brandsData = brandsRes.ok ? await brandsRes.json() : { brands: [] };
 
         if (!active) return;
 
         setCategoryOptions(Array.isArray(categoriesData?.categories) ? categoriesData.categories : []);
         setProductOptions(Array.isArray(productsData?.products) ? productsData.products : []);
+        setProductBrandNames(
+          (Array.isArray(brandsData?.brands) ? brandsData.brands : [])
+            .map((brand) => String(brand?.name || '').trim())
+            .filter(Boolean),
+        );
       } catch {
         if (!active) return;
         setCategoryOptions([]);
         setProductOptions([]);
+        setProductBrandNames([]);
       }
     };
 
@@ -1080,16 +1109,30 @@ export default function MenuManagementPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [authLoading, user]);
 
   const parentCategoryPreview = useMemo(
     () => filterParentCategories(categoryOptions),
     [categoryOptions],
   );
   const brandOptions = useMemo(() => {
+    const names = new Set();
+    for (const name of productBrandNames) {
+      if (name) names.add(name);
+    }
+    for (const product of productOptions) {
+      const name = String(product?.brand || '').trim();
+      if (name) names.add(name);
+    }
     const parent = categoryOptions.find((category) => String(category?.slug || '').toLowerCase() === 'brands');
-    return parent ? getDirectChildCategories(categoryOptions, parent) : [];
-  }, [categoryOptions]);
+    if (parent) {
+      for (const child of getDirectChildCategories(categoryOptions, parent)) {
+        const name = String(child?.name || child?.slug || '').trim();
+        if (name) names.add(name);
+      }
+    }
+    return Array.from(names).sort((left, right) => left.localeCompare(right));
+  }, [productBrandNames, productOptions, categoryOptions]);
 
   const previewMenuItems = useMemo(() => {
     return resolveStoreNavMenuItems(
@@ -3341,9 +3384,17 @@ export default function MenuManagementPage() {
                             type="button"
                             onClick={() => setNavbarLayout((prev) => ({
                               ...prev,
-                              extraButtons: prev.extraButtons.map((item, itemIndex) => (
-                                itemIndex === index ? { ...item, kind, items: item.items || [] } : item
-                              )),
+                              extraButtons: prev.extraButtons.map((item, itemIndex) => {
+                                if (itemIndex !== index) return item;
+                                const items = Array.isArray(item.items) ? item.items : [];
+                                return {
+                                  ...item,
+                                  kind,
+                                  items: kind === 'dropdown' && items.length === 0
+                                    ? [createNavbarExtraDropdownItem()]
+                                    : items,
+                                };
+                              }),
                             }))}
                             className={`h-9 rounded-lg border px-3 text-xs font-semibold ${(button.kind === 'dropdown' ? 'dropdown' : 'link') === kind ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-700'}`}
                           >
@@ -3353,19 +3404,41 @@ export default function MenuManagementPage() {
                       </div>
                     </div>
                     {button.kind === 'dropdown' ? (
-                      <div className="space-y-2 sm:col-span-2">
+                      <div className="space-y-3 sm:col-span-2">
+                        <div className="space-y-1">
+                          <span className="text-xs font-medium text-slate-600">Button click (optional)</span>
+                          <ExtraButtonLinkFields
+                            link={button.link}
+                            onChange={(link) => setNavbarLayout((prev) => ({
+                              ...prev,
+                              extraButtons: prev.extraButtons.map((item, itemIndex) => (
+                                itemIndex === index ? { ...item, link } : item
+                              )),
+                            }))}
+                            categoryOptions={categoryOptions}
+                            productOptions={productOptions}
+                            brandOptions={brandOptions}
+                          />
+                        </div>
                         <span className="text-xs font-medium text-slate-600">Dropdown items</span>
+                        <p className="text-[11px] text-slate-500">
+                          Add English and Arabic names, then pick an existing page, brand, category, product, or type a custom URL.
+                        </p>
                         {(button.items || []).map((entry, entryIndex) => (
                           <div key={entry.id || entryIndex} className="space-y-2 rounded-lg border border-slate-200 p-3">
                             <div className="grid gap-2 sm:grid-cols-2">
-                              <input
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                                value={entry.label || ''}
-                                placeholder="Name (English)"
-                                onChange={(event) => updateExtraButtonItem(index, entryIndex, { label: event.target.value })}
-                              />
-                              <div className="space-y-1">
-                                <div className="flex justify-end">
+                              <label className="block space-y-1">
+                                <span className="text-[11px] font-medium text-slate-500">Name (English)</span>
+                                <input
+                                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                                  value={entry.label || ''}
+                                  placeholder="Samsung"
+                                  onChange={(event) => updateExtraButtonItem(index, entryIndex, { label: event.target.value })}
+                                />
+                              </label>
+                              <label className="block space-y-1">
+                                <span className="flex items-center justify-between gap-2 text-[11px] font-medium text-slate-500">
+                                  Name (Arabic)
                                   <button
                                     type="button"
                                     onClick={() => translateExtraButtonItemToArabic(index, entryIndex)}
@@ -3375,7 +3448,7 @@ export default function MenuManagementPage() {
                                     {translatingKey === `button-item-${index}-${entryIndex}` ? <Loader2 size={12} className="animate-spin" /> : <Languages size={12} />}
                                     Translate
                                   </button>
-                                </div>
+                                </span>
                                 <input
                                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                                   dir="rtl"
@@ -3383,15 +3456,18 @@ export default function MenuManagementPage() {
                                   placeholder="الاسم بالعربي"
                                   onChange={(event) => updateExtraButtonItem(index, entryIndex, { labelAr: event.target.value })}
                                 />
-                              </div>
+                              </label>
                             </div>
-                            <ExtraButtonLinkFields
-                              link={entry.link}
-                              onChange={(link) => updateExtraButtonItem(index, entryIndex, { link })}
-                              categoryOptions={categoryOptions}
-                              productOptions={productOptions}
-                              brandOptions={brandOptions}
-                            />
+                            <div className="space-y-1">
+                              <span className="text-[11px] font-medium text-slate-500">Link</span>
+                              <ExtraButtonLinkFields
+                                link={entry.link}
+                                onChange={(link) => updateExtraButtonItem(index, entryIndex, { link })}
+                                categoryOptions={categoryOptions}
+                                productOptions={productOptions}
+                                brandOptions={brandOptions}
+                              />
+                            </div>
                             <button
                               type="button"
                               onClick={() => setNavbarLayout((prev) => ({

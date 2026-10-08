@@ -221,19 +221,35 @@ export default function BlogPostPage() {
         }
         .blog-content table {
           border-collapse: collapse;
+          table-layout: fixed;
           width: 100%;
+          max-width: 100%;
           margin: 1em 0;
+          overflow: hidden;
         }
         .blog-content td,
         .blog-content th {
+          min-width: 1em;
           border: 2px solid #cbd5e1;
           padding: 0.5em 0.75em;
           vertical-align: top;
+          box-sizing: border-box;
+          overflow-wrap: break-word;
+          word-break: normal;
+          background-color: #ffffff;
         }
         .blog-content th {
           font-weight: bold;
-          text-align: left;
+          text-align: start;
           background-color: #f1f5f9;
+        }
+        .blog-content td > :first-child,
+        .blog-content th > :first-child {
+          margin-top: 0;
+        }
+        .blog-content td > :last-child,
+        .blog-content th > :last-child {
+          margin-bottom: 0;
         }
         .blog-content img {
           max-width: 100%;

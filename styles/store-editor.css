@@ -85,8 +85,18 @@
 
   .ProseMirror th {
     font-weight: bold;
-    text-align: left;
+    text-align: start;
     background-color: #f1f5f9;
+  }
+
+  .ProseMirror td > :first-child,
+  .ProseMirror th > :first-child {
+    margin-top: 0;
+  }
+
+  .ProseMirror td > :last-child,
+  .ProseMirror th > :last-child {
+    margin-bottom: 0;
   }
 
   .ProseMirror .selectedCell:after {

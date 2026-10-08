@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Search, Truck } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Truck } from 'lucide-react';
 import { useInfiniteBannerCarousel } from '@/lib/useInfiniteBannerCarousel';
 import { stripImageKitTransforms, withImageKitDelivery } from '@/lib/imageKitDelivery';
 import { hasShowcaseBannerImage, pickShowcaseBannerSources } from '@/lib/showcaseBannerImages';
 import { getShowcaseLinkProps } from '@/lib/showcaseBannerLinks';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
+import { bannerArrowHoverClass, normalizeBannerArrowSettings } from '@/lib/shopShowcaseLargeBanners';
 
 function getDisplayImageUrl(value, width = 1400, quality = 72, keepOriginal = false) {
   if (keepOriginal) return stripImageKitTransforms(value);
@@ -22,6 +23,59 @@ function buildSlidesSignature(slides = [], language = 'en') {
     slide.sources?.tablet || '',
     slide.sources?.mobile || '',
   ].join(':')).join('|')}`;
+}
+
+const ARROW_SIZE_CLASS = {
+  sm: 'h-7 w-7',
+  md: 'h-9 w-9',
+  lg: 'h-11 w-11',
+};
+
+const ARROW_ICON_SIZE = { sm: 14, md: 18, lg: 22 };
+
+function BannerArrowButton({ direction, label, onClick, arrow }) {
+  const settings = normalizeBannerArrowSettings({
+    bannerArrowStyle: arrow?.style,
+    bannerArrowColor: arrow?.color,
+    bannerArrowBgColor: arrow?.bgColor,
+    bannerArrowSize: arrow?.size,
+    bannerArrowHover: arrow?.hover,
+    bannerArrowHoverColor: arrow?.hoverColor,
+    bannerArrowHoverBgColor: arrow?.hoverBg,
+  });
+  const size = settings.bannerArrowSize;
+  const styleName = settings.bannerArrowStyle;
+  const Icon = direction === 'prev' ? ChevronLeft : ChevronRight;
+  const shapeClass = styleName === 'square'
+    ? 'rounded-none'
+    : styleName === 'rounded'
+      ? 'rounded-xl'
+      : styleName === 'pill'
+        ? 'rounded-full !w-12'
+        : 'rounded-full';
+
+  return (
+    <span className={`absolute top-1/2 z-10 -translate-y-1/2 ${direction === 'prev' ? 'left-3' : 'right-3'}`}>
+      <button
+        type="button"
+        aria-label={label}
+        data-banner-ignore-drag
+        onClick={onClick}
+        className={`banner-arrow-btn flex items-center justify-center shadow-md ${ARROW_SIZE_CLASS[size]} ${styleName === 'plain' ? 'shadow-none' : shapeClass} ${bannerArrowHoverClass(settings.bannerArrowHover, direction)}`}
+        style={{
+          '--banner-arrow-color': settings.bannerArrowColor,
+          '--banner-arrow-bg': styleName === 'plain' || styleName === 'outline' ? 'transparent' : settings.bannerArrowBgColor,
+          '--banner-arrow-border': styleName === 'outline' ? settings.bannerArrowBgColor : 'transparent',
+          '--banner-arrow-hover-color': settings.bannerArrowHoverColor,
+          '--banner-arrow-hover-bg': styleName === 'plain' ? 'transparent' : settings.bannerArrowHoverBgColor,
+          borderWidth: styleName === 'outline' ? 2 : 0,
+          borderStyle: 'solid',
+        }}
+      >
+        <Icon size={ARROW_ICON_SIZE[size]} />
+      </button>
+    </span>
+  );
 }
 
 function BannerTextOverlay({ fallback, showTruckIcon = false }) {
@@ -110,6 +164,7 @@ export default function ShowcaseLargeBannerSlider({
   bannerHeight,
   fallback = null,
   showTruckIcon = false,
+  arrow = null,
 }) {
   const { language, isArabic } = useStorefrontI18n();
   const bannerRowClassName = [
@@ -175,6 +230,8 @@ export default function ShowcaseLargeBannerSlider({
     activeDotIndex,
     handleTrackTransitionEnd,
     goToSlide,
+    goNext,
+    goPrev,
     viewportHandlers,
     shouldSuppressClick,
     cursorClass,
@@ -269,6 +326,31 @@ export default function ShowcaseLargeBannerSlider({
 
       {bannerVariant === 'full' ? (
         <BannerTextOverlay fallback={fallback} showTruckIcon={showTruckIcon} />
+      ) : null}
+
+      {enabled && slideCount > 1 ? (
+        <>
+          <BannerArrowButton
+            direction="prev"
+            label="Previous banner"
+            arrow={arrow}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              goPrev();
+            }}
+          />
+          <BannerArrowButton
+            direction="next"
+            label="Next banner"
+            arrow={arrow}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              goNext();
+            }}
+          />
+        </>
       ) : null}
 
       {enabled && slideCount > 1 ? (

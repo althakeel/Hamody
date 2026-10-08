@@ -112,9 +112,9 @@ function HelpMessageBody({ text, links = [], canExport = false, exporting = '', 
 
 const STARTERS = [
   'How many sales did I get this month?',
+  'How do I set up the homepage popup?',
+  'How do I add a navbar dropdown?',
   'Where do I add category banners?',
-  'Where do I change the navbar font?',
-  'Where is the spin wheel?',
   'How do I set COD limits?',
 ];
 

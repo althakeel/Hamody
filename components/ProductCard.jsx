@@ -462,11 +462,9 @@ const ProductCard = ({
               </span>
               {discount > 0 ? (
                 <span className="shrink-0 whitespace-nowrap text-[10px] font-semibold leading-none text-emerald-700 sm:text-xs">
-                  {language === 'ar' ? (
-                    <>خصم <bdi dir="ltr">{discount}%</bdi></>
-                  ) : (
-                    t('common.offPercent', { discount })
-                  )}
+                  {t('common.offPercent', {
+                    discount: formatNumber(discount, language, { maximumFractionDigits: 0 }),
+                  })}
                 </span>
               ) : null}
             </div>

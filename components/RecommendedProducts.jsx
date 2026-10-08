@@ -25,6 +25,7 @@ export default function RecommendedProducts() {
   const [viewedProducts, setViewedProducts] = useState([]);
   const [recommendedProducts, setRecommendedProducts] = useState([]);
   const [isNewCustomer, setIsNewCustomer] = useState(true);
+  const [sectionEnabled, setSectionEnabled] = useState(true);
   const [manualRecommendedIds, setManualRecommendedIds] = useState([]);
   const [manualRecommendedProducts, setManualRecommendedProducts] = useState([]);
   const [settingsLoading, setSettingsLoading] = useState(true);
@@ -76,6 +77,7 @@ export default function RecommendedProducts() {
         const ids = Array.isArray(chosen?.data?.productIds)
           ? chosen.data.productIds.map((id) => String(id || '').trim()).filter(Boolean)
           : [];
+        setSectionEnabled(chosen?.data?.enabled !== false);
         setManualRecommendedIds(ids);
       } catch {
         if (isMounted) {
@@ -239,7 +241,7 @@ export default function RecommendedProducts() {
     return <HomeProductCarouselSkeleton count={6} />;
   }
 
-  if (!hasManualRecommendations || productsToRender.length === 0) {
+  if (!sectionEnabled || !hasManualRecommendations || productsToRender.length === 0) {
     return null;
   }
 

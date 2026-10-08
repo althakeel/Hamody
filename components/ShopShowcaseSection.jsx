@@ -787,6 +787,15 @@ export default function ShopShowcaseSection({
       bannerVariant={variant || (banner.type === 'top' ? 'main' : banner.type === 'fullWidth' || banner.type === 'lowerFullWidth' ? 'full' : 'secondary')}
       bannerHeight={banner.desktopHeight}
       showTruckIcon={banner.showTruckIcon}
+      arrow={{
+        style: config?.bannerArrowStyle,
+        color: config?.bannerArrowColor,
+        bgColor: config?.bannerArrowBgColor,
+        size: config?.bannerArrowSize,
+        hover: config?.bannerArrowHover,
+        hoverColor: config?.bannerArrowHoverColor,
+        hoverBg: config?.bannerArrowHoverBgColor,
+      }}
       fallback={
         banner.type === 'fullWidth' || banner.type === 'lowerFullWidth'
           ? {

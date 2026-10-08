@@ -3560,11 +3560,9 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                   )}
                   {discountPercent > 0 && (
                     <span className="text-sm text-green-600 font-semibold whitespace-nowrap">
-                      {language === 'ar' ? (
-                        <>خصم <bdi dir="ltr">{discountPercent}%</bdi></>
-                      ) : (
-                        t('common.offPercent', { discount: discountPercent })
-                      )}
+                      {t('common.offPercent', {
+                        discount: formatCount(discountPercent, { maximumFractionDigits: 0 }),
+                      })}
                     </span>
                   )}
                 </div>
@@ -3809,7 +3807,9 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
 
                 {effAED > effPrice && (
                   <span className="inline-flex items-center border border-orange-400 bg-orange-50 text-orange-500 text-[12px] font-medium px-2 py-0.5 rounded-sm leading-none whitespace-nowrap">
-                    {t('common.offPercent', { discount: discountPercent })} {t('product.limitedTime')}
+                    {t('common.offPercent', {
+                      discount: formatCount(discountPercent, { maximumFractionDigits: 0 }),
+                    })} {t('product.limitedTime')}
                   </span>
                 )}
 

@@ -125,6 +125,7 @@ export async function PUT(req, { params }) {
         metaDescription: body?.metaDescription !== undefined
           ? cleanDisplayText(body.metaDescription || '').slice(0, 320)
           : (existingCategory.metaDescription || ''),
+        ...(typeof body?.isActive === 'boolean' ? { isActive: body.isActive } : {}),
       },
       { new: true }
     ).lean();
