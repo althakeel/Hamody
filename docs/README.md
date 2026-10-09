@@ -12,7 +12,9 @@ This folder is the **full API documentation set** — from public storefront / m
 
 | # | Document | Who it’s for | Coverage |
 |---|----------|--------------|----------|
-| **0** | **[STORE1920_FULL_API.md](./STORE1920_FULL_API.md)** | **Mobile + all teams** | **Master guide: home APIs, full shopper catalog, auth, links to every surface** |
+| **0** | **[FLUTTER_ENTIRE_APP.md](./FLUTTER_ENTIRE_APP.md)** | **Flutter shopper app** | **Entire customer app: every website screen, API, and what not to build** |
+| **0b** | [FLUTTER_MOBILE_BOTTOM_BUTTON.md](./FLUTTER_MOBILE_BOTTOM_BUTTON.md) | Flutter | Phone center circle only (part of the app doc) |
+| **0c** | **[STORE1920_FULL_API.md](./STORE1920_FULL_API.md)** | **Mobile + all teams** | **Master guide: home APIs, full shopper catalog, auth, links to every surface** |
 | 1 | [API_OVERVIEW.md](./API_OVERVIEW.md) | Everyone | Architecture, auth modes, systems map |
 | 2 | [MOBILE_APP_API.md](./MOBILE_APP_API.md) | Customer mobile / web shopper | Catalog, cart, checkout, COD/Stripe/Tabby/Tamara, wishlist, track (~90 routes) |
 | 2b | [MOBILE_HOME_PAGE_APIS.md](./MOBILE_HOME_PAGE_APIS.md) | Mobile home screen | Same APIs as website homepage + mobile banners |
@@ -40,7 +42,8 @@ This folder is the **full API documentation set** — from public storefront / m
 
 ## Recommended reading order (mobile)
 
-1. **[STORE1920_FULL_API.md](./STORE1920_FULL_API.md)** — home call order + full shopper table  
+1. **[FLUTTER_ENTIRE_APP.md](./FLUTTER_ENTIRE_APP.md)** — entire customer app for Flutter  
+2. **[STORE1920_FULL_API.md](./STORE1920_FULL_API.md)** — home call order + full shopper table  
 2. [MOBILE_HOME_PAGE_APIS.md](./MOBILE_HOME_PAGE_APIS.md) — homepage only  
 3. [MOBILE_FEATURES_DOCUMENTATION.md](./MOBILE_FEATURES_DOCUMENTATION.md) — banners only (JSON + APIs)  
 4. [MOBILE_APP_API.md](./MOBILE_APP_API.md) — checkout / cart deep dive  
