@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { ArrowLeft, ImagePlus, Loader2, Percent, Save, X } from 'lucide-react'
+import { ArrowLeft, ImagePlus, Languages, Loader2, Percent, Save, X } from 'lucide-react'
 import { useAuth } from '@/lib/useAuth'
 import BusyButtonIcon from '@/components/store/BusyButtonIcon'
 import StoreDropdown from '@/components/store/StoreDropdown'
@@ -29,6 +29,7 @@ export default function BottomButtonCustomizePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [translatingBelow, setTranslatingBelow] = useState(false)
   const [offersPage, setOffersPage] = useState(DEFAULT_OFFERS_PAGE)
   const [linkType, setLinkType] = useState('page')
   const [categories, setCategories] = useState([])
@@ -153,6 +154,39 @@ export default function BottomButtonCustomizePage() {
       toast.error(error?.response?.data?.error || error?.message || 'Image upload failed')
     } finally {
       setUploading(false)
+    }
+  }
+
+  const translateBelowToArabic = async () => {
+    const english = String(offersPage.bottomNavBelowText || '').trim()
+    if (!english) {
+      toast.error('Enter the English text below the circle first')
+      return
+    }
+
+    try {
+      setTranslatingBelow(true)
+      const token = await getToken()
+      if (!token) {
+        toast.error('Please sign in again')
+        return
+      }
+      const { data } = await axios.post(
+        '/api/store/categories/translate-arabic',
+        { text: english },
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      const translated = String(data?.descriptionAr || '').replace(/\s+/g, ' ').trim().slice(0, 24)
+      if (!translated) {
+        toast.error('Could not translate to Arabic')
+        return
+      }
+      patch({ bottomNavBelowTextAr: translated })
+      toast.success('Arabic text updated')
+    } catch (error) {
+      toast.error(error?.response?.data?.error || 'Failed to translate to Arabic')
+    } finally {
+      setTranslatingBelow(false)
     }
   }
 
@@ -384,7 +418,18 @@ export default function BottomButtonCustomizePage() {
               />
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-xs font-medium text-slate-500">Text below the circle (Arabic)</span>
+              <span className="mb-1.5 flex items-center justify-between gap-2">
+                <span className="text-xs font-medium text-slate-500">Text below the circle (Arabic)</span>
+                <button
+                  type="button"
+                  onClick={translateBelowToArabic}
+                  disabled={translatingBelow || !String(offersPage.bottomNavBelowText || '').trim()}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <BusyButtonIcon busy={translatingBelow} icon={Languages} size={12} />
+                  {translatingBelow ? 'Translating...' : 'Translate'}
+                </button>
+              </span>
               <input
                 type="text"
                 dir="rtl"
