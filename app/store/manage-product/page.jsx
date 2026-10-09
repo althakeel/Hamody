@@ -25,8 +25,45 @@ import {
 import { getProductThumbnailUrl } from '@/lib/productMedia'
 import { readSellerCache } from '@/lib/storeDashboardCache'
 import { canBulkEditProducts, canChangeProductPricing } from '@/lib/productSaveGuards'
+import { importProductSpreadsheetFile } from '@/lib/productImportClient'
+import { parseProductImportFile } from '@/lib/productImportSpreadsheet'
+import { isSkippableVariationImportRow } from '@/lib/productImportTypes'
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100, 500]
+
+function templateCell(row, ...keys) {
+    for (const key of keys) {
+        const value = String(row?.[key] ?? '').trim()
+        if (value) return value
+    }
+    return ''
+}
+
+function buildTemplatePreviewRows(rows = []) {
+    const reserved = new Set([
+        'SKU', 'sku', 'Name', 'name', 'Sale price', 'price', 'Price', 'Sale Price',
+        'Regular price', 'mrp', 'MRP', 'Regular Price',
+        'Meta: _total_stock_quantity', 'Stock', 'stock', 'stockQuantity',
+        'Type', 'type', 'ID', 'id', 'Store product id', 'Parent', 'parent',
+    ])
+    return rows.map((row, index) => {
+        const variation = isSkippableVariationImportRow(row)
+        const other = Object.entries(row)
+            .filter(([key, value]) => !reserved.has(key) && String(value ?? '').trim())
+            .map(([key, value]) => `${key}: ${String(value).trim()}`)
+        return {
+            row: index + 2,
+            variation,
+            sku: templateCell(row, 'SKU', 'sku'),
+            name: templateCell(row, 'Name', 'name'),
+            salePrice: templateCell(row, 'Sale price', 'price', 'Price', 'Sale Price'),
+            regularPrice: templateCell(row, 'Regular price', 'mrp', 'MRP', 'Regular Price'),
+            stock: templateCell(row, 'Meta: _total_stock_quantity', 'Stock', 'stock', 'stockQuantity'),
+            other,
+            missingSku: !variation && !templateCell(row, 'SKU', 'sku'),
+        }
+    }).filter((row) => row.sku || row.name || row.salePrice || row.regularPrice || row.stock || row.other.length)
+}
 
 const DETAILS_PROGRESS_FILTERS = [
     { value: 'all', label: 'All details' },
@@ -342,6 +379,10 @@ export default function StoreManageProducts() {
     const [categoryActionPrimary, setCategoryActionPrimary] = useState('')
     const [categoryActionSaving, setCategoryActionSaving] = useState(false)
     const [aiAutofillRunning, setAiAutofillRunning] = useState(false)
+    const [exportingTemplate, setExportingTemplate] = useState(false)
+    const [importingTemplate, setImportingTemplate] = useState(false)
+    const [templatePreview, setTemplatePreview] = useState(null)
+    const templateImportInputRef = useRef(null)
     const [aiAutofillProgress, setAiAutofillProgress] = useState(null)
     const [bulkAutofillJob, setBulkAutofillJob] = useState(null)
     const [bulkEligibleCount, setBulkEligibleCount] = useState(null)
@@ -1220,6 +1261,92 @@ export default function StoreManageProducts() {
         link.remove()
         URL.revokeObjectURL(url)
         toast.success(`Exported ${filteredProducts.length} product(s)`)
+    }
+
+    const exportProductTemplate = async () => {
+        try {
+            setExportingTemplate(true)
+            const token = await getToken()
+            const response = await axios.post('/api/store/product/export-template', {}, {
+                headers: { Authorization: `Bearer ${token}` },
+                responseType: 'blob',
+            })
+            const blob = response.data
+            if (blob?.type?.includes('json')) {
+                const payload = JSON.parse(await blob.text())
+                throw new Error(payload.error || 'Export failed')
+            }
+            const url = URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = url
+            link.download = `store-product-template-${new Date().toISOString().slice(0, 10)}.xlsx`
+            document.body.appendChild(link)
+            link.click()
+            link.remove()
+            URL.revokeObjectURL(url)
+            toast.success('Downloaded the column template. Fill it in, then use Import template.')
+        } catch (error) {
+            let message = error?.response?.data?.error || error?.message || 'Failed to export template'
+            const data = error?.response?.data
+            if (data && typeof data.text === 'function') {
+                try {
+                    const payload = JSON.parse(await data.text())
+                    if (payload?.error) message = payload.error
+                } catch {
+                    message = 'Failed to export template'
+                }
+            }
+            toast.error(message)
+        } finally {
+            setExportingTemplate(false)
+        }
+    }
+
+    const closeTemplatePreview = () => {
+        if (importingTemplate) return
+        setTemplatePreview(null)
+    }
+
+    const importProductTemplate = async (file) => {
+        if (!file) return
+        const fileName = String(file.name || '').toLowerCase()
+        if (!['.xlsx', '.xls', '.csv'].some((ext) => fileName.endsWith(ext))) {
+            toast.error('Upload the template as .xlsx, .xls, or .csv')
+            return
+        }
+        try {
+            setImportingTemplate(true)
+            const parsed = await parseProductImportFile(file)
+            const rows = buildTemplatePreviewRows(parsed)
+            if (!rows.length) {
+                toast.error('No product rows found in this file')
+                return
+            }
+            setTemplatePreview({ file, fileName: file.name, rows })
+        } catch (error) {
+            toast.error(error?.message || 'Could not read this file')
+        } finally {
+            setImportingTemplate(false)
+            if (templateImportInputRef.current) templateImportInputRef.current.value = ''
+        }
+    }
+
+    const confirmTemplateImport = async () => {
+        const file = templatePreview?.file
+        if (!file || importingTemplate) return
+        try {
+            setImportingTemplate(true)
+            const result = await importProductSpreadsheetFile(file, { getToken })
+            const created = result?.summary?.created || 0
+            const updated = result?.summary?.updated || 0
+            toast.success(result?.message || `Import finished: ${created} created, ${updated} updated`)
+            setTemplatePreview(null)
+            await handleImportComplete()
+        } catch (error) {
+            toast.error(error?.message || 'Failed to import template')
+        } finally {
+            setImportingTemplate(false)
+        }
     }
 
     const openRemoveFromCategoryModal = (productIds = []) => {
@@ -2574,6 +2701,69 @@ export default function StoreManageProducts() {
                 />
             )}
 
+            {templatePreview ? (
+                <div className="fixed inset-0 z-[1100] bg-black/50 flex items-center justify-center p-4" onClick={closeTemplatePreview}>
+                    <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+                        <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+                            <div>
+                                <h2 className="text-xl font-semibold text-slate-900">Preview import</h2>
+                                <p className="mt-1 text-sm text-slate-600">
+                                    {templatePreview.fileName}. {templatePreview.rows.length} row(s). Columns are read by their title, in any order. Empty cells stay unchanged. SKU finds the product.
+                                </p>
+                            </div>
+                            <button type="button" onClick={closeTemplatePreview} className="text-sm font-medium text-slate-500 hover:text-slate-800">Close</button>
+                        </div>
+                        {templatePreview.rows.some((row) => row.missingSku) ? (
+                            <p className="border-b border-amber-100 bg-amber-50 px-5 py-2 text-sm text-amber-800">
+                                Rows without a SKU will not update a product.
+                            </p>
+                        ) : null}
+                        <div className="min-h-0 flex-1 overflow-auto">
+                            <table className="min-w-full text-left text-sm">
+                                <thead className="sticky top-0 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                                    <tr>
+                                        <th className="px-4 py-2">Row</th>
+                                        <th className="px-4 py-2">SKU</th>
+                                        <th className="px-4 py-2">Name</th>
+                                        <th className="px-4 py-2">Sale price</th>
+                                        <th className="px-4 py-2">Regular price</th>
+                                        <th className="px-4 py-2">Stock</th>
+                                        <th className="px-4 py-2">Other filled columns</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {templatePreview.rows.slice(0, 300).map((row) => (
+                                        <tr key={`${row.row}-${row.sku}`} className="border-t border-slate-100">
+                                            <td className="px-4 py-2 text-slate-400">{row.row}</td>
+                                            <td className="px-4 py-2 font-medium text-slate-900">
+                                                {row.sku || 'Missing SKU'}
+                                                {row.variation ? <span className="ml-2 text-xs font-normal text-slate-400">Variant</span> : null}
+                                            </td>
+                                            <td className="max-w-[16rem] truncate px-4 py-2 text-slate-700">{row.name || '—'}</td>
+                                            <td className="px-4 py-2 text-slate-700">{row.salePrice || '—'}</td>
+                                            <td className="px-4 py-2 text-slate-700">{row.regularPrice || '—'}</td>
+                                            <td className="px-4 py-2 text-slate-700">{row.stock || '—'}</td>
+                                            <td className="max-w-[18rem] truncate px-4 py-2 text-slate-500" title={row.other.join(', ')}>{row.other.join(', ') || '—'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {templatePreview.rows.length > 300 ? (
+                            <p className="border-t border-slate-100 px-5 py-2 text-xs text-slate-500">Showing the first 300 rows. Continue import applies the full file.</p>
+                        ) : null}
+                        <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-4">
+                            <button type="button" onClick={closeTemplatePreview} disabled={importingTemplate} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                                Cancel
+                            </button>
+                            <button type="button" onClick={confirmTemplateImport} disabled={importingTemplate} className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">
+                                {importingTemplate ? 'Importing...' : 'Continue import'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+
             {showBulkEditModal && (
                 <div className="fixed inset-0 z-[1000] bg-black/50 flex items-center justify-center p-4" onClick={closeBulkEditModal}>
                     <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
@@ -2594,6 +2784,35 @@ export default function StoreManageProducts() {
                         </div>
 
                         <div className="space-y-4 px-5 py-5">
+                            <div className="rounded-xl border border-slate-200 p-4">
+                                <p className="text-sm font-semibold text-slate-900">Excel template</p>
+                                <p className="mt-1 text-xs text-slate-500">Download the column titles, fill the SKU and the fields you want to change, then import. You can preview before the final import.</p>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={exportProductTemplate}
+                                        disabled={exportingTemplate}
+                                        className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-60"
+                                    >
+                                        {exportingTemplate ? 'Exporting template...' : 'Export template'}
+                                    </button>
+                                    <input
+                                        ref={templateImportInputRef}
+                                        type="file"
+                                        accept=".xlsx,.xls,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+                                        className="hidden"
+                                        onChange={(event) => importProductTemplate(event.target.files?.[0])}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => templateImportInputRef.current?.click()}
+                                        disabled={importingTemplate}
+                                        className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-60"
+                                    >
+                                        {importingTemplate ? 'Reading file...' : 'Import template'}
+                                    </button>
+                                </div>
+                            </div>
                             <fieldset className="rounded-xl border border-slate-200 p-4">
                                 <legend className="px-1 text-sm font-semibold text-slate-900">Apply changes to</legend>
                                 <div className="mt-2 space-y-2">

@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import connectDB from '@/lib/mongodb';
 import Product from '@/models/Product';
 import Category from '@/models/Category';
+import Supplier from '@/models/Supplier';
 import StorePreference from '@/models/StorePreference';
 import authSeller from '@/middlewares/authSeller';
 import { getAuth } from '@/lib/firebase-admin';
@@ -94,6 +95,20 @@ const normalizeImportedRichText = (value) => normalizeImportedText(value)
   .replace(/contenteditable=\"true\"/gi, 'contenteditable="true"');
 
 const parseRowType = parseImportRowType;
+
+const rowHas = (row, key) => Object.prototype.hasOwnProperty.call(row || {}, key);
+
+const readSheetText = (row, header) => {
+  if (!rowHas(row, header) && !rowHas(row, `${header} (2)`)) return '';
+  const parts = [row?.[header]];
+  for (let index = 2; index <= 8; index += 1) {
+    const key = `${header} (${index})`;
+    if (rowHas(row, key)) parts.push(row[key]);
+  }
+  return parts.map((part) => String(part || '')).join('');
+};
+
+const isTemplateRow = (row) => rowHas(row, 'Store product id');
 
 const getFirstPresentValue = (...values) => {
   for (const value of values) {
@@ -436,8 +451,21 @@ const buildVariantsFromVariationRows = async (parentRow, variationRowsByParent, 
       }
     }
 
+    const assignOption = (key, column) => {
+      if (!rowHas(row, column)) return;
+      const value = String(row[column] ?? '').trim();
+      if (!value) return;
+      options[key] = key === 'bundleQty' || key === 'imageSlot' ? parseNumber(value, 0) : value;
+    };
+    assignOption('bundleQty', 'Bundle qty');
+    assignOption('optionLabel', 'Option label');
+    assignOption('bundleTitle', 'Bundle title');
+    assignOption('tag', 'Variant tag');
+    assignOption('imageSlot', 'Image slot');
+
+    const variantId = String(row['Variant id'] || '').trim();
     variants.push({
-      _id: new mongoose.Types.ObjectId().toString(),
+      _id: /^[a-fA-F0-9]{24}$/.test(variantId) ? variantId : new mongoose.Types.ObjectId().toString(),
       sku: String(getFirstPresentValue(row.SKU, row.sku) || '').trim() || undefined,
       price: salePrice,
       AED: regularPrice || salePrice,
@@ -544,6 +572,54 @@ const truncateImportedText = (value = '', max = MAX_IMPORTED_TEXT_LENGTH) => {
   const text = String(value || '');
   if (text.length <= max) return text;
   return `${text.slice(0, max)}...[truncated during import]`;
+};
+
+const resolveTemplateSuppliers = async (storeId, names, cache) => {
+  const requested = [...new Set(names.map((name) => String(name || '').trim()).filter(Boolean))];
+  if (!cache.map) {
+    const docs = await Supplier.find({ storeId }).select('_id name').lean();
+    cache.map = new Map(docs.map((doc) => [String(doc.name || '').trim().toLowerCase(), doc]));
+  }
+  const resolvedNames = [];
+  const ids = [];
+  requested.forEach((name) => {
+    resolvedNames.push(name);
+    const match = cache.map.get(name.toLowerCase());
+    if (match?._id) ids.push(String(match._id));
+  });
+  return { names: resolvedNames, ids };
+};
+
+const applyTemplateFields = async (payload, row, storeId, supplierCache) => {
+  const assignText = (column, field, normalizer = (value) => value) => {
+    const value = String(normalizer(readSheetText(row, column)) || '').trim();
+    if (value) payload[field] = value;
+  };
+  assignText('Name Arabic', 'nameAr');
+  assignText('Brand Arabic', 'brandAr');
+  assignText('Short description Arabic', 'shortDescriptionAr', (value) => truncateImportedText(normalizeImportedText(value)));
+  assignText('Short description 2', 'shortDescription2', (value) => truncateImportedText(normalizeImportedText(value)));
+  assignText('Description Arabic', 'descriptionAr', (value) => truncateImportedText(normalizeImportedRichText(value)));
+  assignText('Description', 'description', (value) => truncateImportedText(normalizeImportedRichText(value)));
+  assignText('Short description', 'shortDescription', (value) => truncateImportedText(normalizeImportedText(value)));
+  if (String(row['Cost price'] || '').trim()) payload.costPrice = parseNumber(row['Cost price'], 0);
+  assignText('SEO title', 'seoTitle');
+  assignText('SEO H1', 'seoH1');
+  assignText('SEO H1 Arabic', 'seoH1Ar');
+  assignText('SEO description', 'seoDescription');
+  if (String(row['SEO keywords'] || '').trim()) payload.seoKeywords = parseStringArray(row['SEO keywords']);
+  assignText('HS code', 'hsCode');
+  assignText('Origin country', 'originCountry');
+  if (String(row['Shipping weight kg'] || '').trim()) payload.shippingWeightKg = parseNumber(row['Shipping weight kg'], 0);
+  if (String(row['Image aspect ratio'] || '').trim()) payload.imageAspectRatio = String(row['Image aspect ratio']).trim();
+  if (String(row['Use products path'] || '').trim()) payload.useProductsPath = parseBoolean(row['Use products path'], false);
+  if (String(row.Suppliers || '').trim()) {
+    const resolved = await resolveTemplateSuppliers(storeId, parseStringArray(row.Suppliers), supplierCache);
+    payload.supplierNames = resolved.names;
+    payload.supplierIds = resolved.ids;
+    payload.supplierId = resolved.ids[0] || null;
+    payload.supplierName = resolved.names[0] || '';
+  }
 };
 
 export async function POST(request) {
@@ -653,6 +729,8 @@ export async function POST(request) {
     let variantsImported = 0;
     const failures = [];
 
+    const supplierCache = { map: null };
+
     for (let index = 0; index < rows.length; index += 1) {
       const row = rows[index] || {};
       const rowNumber = index + 2;
@@ -680,8 +758,9 @@ export async function POST(request) {
         const synthesizedVariationName = parentName && attributeValues.length
           ? `${parentName} - ${attributeValues.join(', ')}`
           : parentName;
+        const explicitName = String(getFirstPresentValue(row.Name, row.name) || '').trim();
         const fallbackName = String(getFirstPresentValue(row.SKU, row.sku, row.ID, row.id, `Imported Product ${rowNumber}`) || '').trim();
-        const name = String(getFirstPresentValue(row.Name, row.name, synthesizedVariationName, fallbackName) || '').trim();
+        const name = explicitName || synthesizedVariationName || fallbackName;
 
         if (!name) {
           skipped += 1;
@@ -712,12 +791,56 @@ export async function POST(request) {
         const legacySourceId = rawLegacyId ? `woo:${rawLegacyId}` : `woo:row:${rowNumber}`;
         const skuRaw = getFirstPresentValue(row.SKU, row.sku, row['GTIN, UPC, EAN, or ISBN']);
         const sku = String(skuRaw || '').trim() || null;
-        const existingByLegacySourceId = legacySourceId
+        const storeProductId = String(row['Store product id'] || '').trim();
+        const existingByStoreId = /^[a-fA-F0-9]{24}$/.test(storeProductId)
+          ? await Product.findOne({ _id: storeProductId, storeId }).lean()
+          : null;
+        const existingByLegacySourceId = !sku && legacySourceId
           ? await Product.findOne({ legacySourceId, storeId }).lean()
           : null;
-        const existingBySlug = await Product.findOne({ slug: baseSlug, storeId }).lean();
-        const existingBySku = sku ? await Product.findOne({ sku, storeId }).lean() : null;
-        const existingProduct = existingByLegacySourceId || existingBySku || existingBySlug;
+        const existingBySlug = (explicitName || String(row.Slug || row.slug || '').trim())
+          ? await Product.findOne({ slug: baseSlug, storeId }).lean()
+          : null;
+        let matchedVariantIndex = -1;
+        let existingBySku = sku ? await Product.findOne({ sku, storeId }).lean() : null;
+        if (!existingBySku && sku) {
+          existingBySku = await Product.findOne({ storeId, 'variants.sku': sku }).lean();
+          if (existingBySku) {
+            matchedVariantIndex = (Array.isArray(existingBySku.variants) ? existingBySku.variants : [])
+              .findIndex((variant) => String(variant?.sku || '').trim() === sku);
+          }
+        }
+        const existingProduct = existingBySku || existingByStoreId || existingByLegacySourceId || existingBySlug;
+        const salePriceRaw = getFirstPresentValue(row['Sale price'], row.price, row.Price, row['Sale Price']);
+        const regularPriceRaw = getFirstPresentValue(row['Regular price'], row.mrp, row.MRP, row['Regular Price']);
+        const salePriceProvided = String(salePriceRaw ?? '').trim() !== '';
+        const regularPriceProvided = String(regularPriceRaw ?? '').trim() !== '';
+
+        if (!existingProduct && !sku) {
+          failed += 1;
+          failures.push({ row: rowNumber, reason: 'SKU is required' });
+          continue;
+        }
+
+        if (existingProduct && matchedVariantIndex >= 0 && (salePriceProvided || regularPriceProvided || !explicitName)) {
+          const nextVariants = (existingProduct.variants || []).map((variant) => ({
+            ...variant,
+            options: variant?.options && typeof variant.options === 'object' ? { ...variant.options } : {},
+          }));
+          const currentVariant = { ...nextVariants[matchedVariantIndex] };
+          if (salePriceProvided) currentVariant.price = parseNumber(salePriceRaw, 0);
+          if (regularPriceProvided) currentVariant.AED = parseNumber(regularPriceRaw, currentVariant.price || 0);
+          nextVariants[matchedVariantIndex] = currentVariant;
+          const variantPatch = { variants: nextVariants, hasVariants: true };
+          if (explicitName) variantPatch.name = explicitName;
+          if (!salePriceProvided && !regularPriceProvided && !explicitName) {
+            skipped += 1;
+            continue;
+          }
+          await Product.findByIdAndUpdate(existingProduct._id, { $set: variantPatch });
+          updated += 1;
+          continue;
+        }
 
         const existingSlugAnywhere = await Product.findOne({ slug: baseSlug }).lean();
         const slug = existingProduct
@@ -746,18 +869,12 @@ export async function POST(request) {
           parentRow?.['Meta: _store1920_product_subtitle']
         );
         const shortDescription = truncateImportedText(normalizeImportedText(shortDescriptionRaw));
-        const fallbackRegularPrice = parseNumber(
-          getFirstPresentValue(row['Regular price'], row.mrp, row.MRP, row['Regular Price'], parentRow?.['Regular price'], parentRow?.mrp, parentRow?.MRP, parentRow?.['Regular Price']),
-          0
-        );
-        const price = parseNumber(
-          getFirstPresentValue(row['Sale price'], row.price, row.Price, row['Sale Price'], parentRow?.['Sale price'], parentRow?.price, parentRow?.Price, parentRow?.['Sale Price']),
-          fallbackRegularPrice
-        );
-        const regularPrice = parseNumber(
-          getFirstPresentValue(row['Regular price'], row.mrp, row.MRP, row['Regular Price'], parentRow?.['Regular price'], parentRow?.mrp, parentRow?.MRP, parentRow?.['Regular Price']),
-          price
-        );
+        const price = salePriceProvided
+          ? parseNumber(salePriceRaw, 0)
+          : (regularPriceProvided ? parseNumber(regularPriceRaw, 0) : (existingProduct?.price ?? 0));
+        const regularPrice = regularPriceProvided
+          ? parseNumber(regularPriceRaw, price)
+          : (salePriceProvided && !existingProduct ? price : (existingProduct?.AED ?? price));
         const images = parseStringArray(
           getFirstPresentValue(
             row.Images,
@@ -845,11 +962,11 @@ export async function POST(request) {
         const categoryNames = extractCategoryNames(getFirstPresentValue(row.Categories, row.categories, parentRow?.Categories, parentRow?.categories) || '');
         let categoryIds = await findOrCreateCategoryIds(categoryNames);
 
-        if (!categoryIds.length) {
+        if (!categoryIds.length && !existingProduct) {
           categoryIds = await ensureFallbackCategoryId();
         }
 
-        if (!categoryIds.length) {
+        if (!categoryIds.length && !existingProduct) {
           failed += 1;
           failures.push({ row: rowNumber, reason: 'Unable to create fallback category' });
           continue;
@@ -967,6 +1084,11 @@ export async function POST(request) {
           storeId,
         };
 
+        const fromTemplate = isTemplateRow(row);
+        if (fromTemplate) {
+          await applyTemplateFields(productPayload, row, storeId, supplierCache);
+        }
+
         if (existingProduct) {
           // Re-import must not wipe SKU / stock / copy when those CSV columns are blank.
           const updatePayload = { ...productPayload };
@@ -979,27 +1101,48 @@ export async function POST(request) {
               updatePayload.inStock = existingProduct.inStock;
             }
           }
+          if (!salePriceProvided && !variants.length) {
+            updatePayload.price = existingProduct.price;
+          }
+          if (!regularPriceProvided && !variants.length) {
+            updatePayload.AED = existingProduct.AED;
+          }
           if (!String(description || '').trim() && existingProduct.description) {
             updatePayload.description = existingProduct.description;
           }
           if (!String(shortDescription || '').trim() && existingProduct.shortDescription) {
             updatePayload.shortDescription = existingProduct.shortDescription;
           }
-          if (!String(name || '').trim() && existingProduct.name) {
+          if (!explicitName && existingProduct.name) {
             updatePayload.name = existingProduct.name;
           }
           if (!String(brand || '').trim() && existingProduct.brand) {
             updatePayload.brand = existingProduct.brand;
           }
-          if ((!Array.isArray(categoryIds) || categoryIds.length === 0) && existingProduct.categories?.length) {
+          if (
+            existingProduct.categories?.length
+            && (
+              (!Array.isArray(categoryIds) || categoryIds.length === 0)
+              || (fromTemplate && !String(row.Categories || row.categories || '').trim())
+            )
+          ) {
             updatePayload.categories = existingProduct.categories;
             updatePayload.category = existingProduct.category || existingProduct.categories[0];
           }
-          if ((!Array.isArray(variants) || variants.length === 0) && existingProduct.hasVariants && existingProduct.variants?.length) {
-            updatePayload.variants = existingProduct.variants;
-            updatePayload.hasVariants = existingProduct.hasVariants;
-            updatePayload.stockQuantity = existingProduct.stockQuantity;
-            updatePayload.inStock = existingProduct.inStock;
+          const explicitType = String(row.Type || row.type || '').trim();
+          if (!variants.length && existingProduct.hasVariants && existingProduct.variants?.length) {
+            const templateClearsVariants = Boolean(explicitType) && !isVariableImportProductRow(row);
+            if (!templateClearsVariants) {
+              updatePayload.variants = existingProduct.variants;
+              updatePayload.hasVariants = existingProduct.hasVariants;
+              if (!stockProvided) {
+                updatePayload.stockQuantity = existingProduct.stockQuantity;
+                updatePayload.inStock = existingProduct.inStock;
+              }
+            }
+          }
+          if (fromTemplate && String(row.ID || '') === String(existingProduct._id)) {
+            updatePayload.legacySourceId = existingProduct.legacySourceId || updatePayload.legacySourceId;
           }
 
           await Product.findByIdAndUpdate(existingProduct._id, {

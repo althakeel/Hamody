@@ -246,16 +246,30 @@ export default function ProductBulkImportPanel({
     if (input) input.value = ''
   }
 
-  const downloadTemplate = () => {
-    const link = document.createElement('a')
-    link.href = '/sample-product-import.csv'
-    link.download = 'sample-product-import.csv'
-    document.body.appendChild(link)
-    link.click()
-    if (link.parentNode) {
+  const downloadTemplate = async () => {
+    try {
+      const token = await getToken()
+      const response = await axios.post('/api/store/product/export-template', {}, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob',
+      })
+      const blob = response.data
+      if (blob?.type?.includes('json')) {
+        const payload = JSON.parse(await blob.text())
+        throw new Error(payload.error || 'Could not download the template')
+      }
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `store-product-template-${new Date().toISOString().slice(0, 10)}.xlsx`
+      document.body.appendChild(link)
+      link.click()
       link.remove()
+      URL.revokeObjectURL(url)
+      toast.success('Template downloaded')
+    } catch (error) {
+      toast.error(error?.message || 'Could not download the template')
     }
-    toast.success('Template downloaded')
   }
 
   const handleImport = async () => {
@@ -356,13 +370,13 @@ export default function ProductBulkImportPanel({
         {!embedded ? (
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-slate-900 mb-2">Bulk Import Products</h1>
-            <p className="text-slate-600">Import WooCommerce Excel/CSV exports directly into Store1920.</p>
+            <p className="text-slate-600">Upload the product template. The SKU finds each product, and only filled columns are updated.</p>
           </div>
         ) : (
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-slate-900">Import products here</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Upload your WooCommerce export (Excel or CSV) from this page. Images are copied to S3 during import when possible.
+              Upload the product template from this page. The SKU finds each product, and only filled columns are updated.
             </p>
           </div>
         )}
@@ -372,8 +386,8 @@ export default function ProductBulkImportPanel({
             <div className="flex gap-2">
               <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
               <div className="space-y-1">
-                <p><strong>WooCommerce:</strong> Export from WordPress → Store1920 Product Export, then upload here.</p>
-                <p><strong>Updates:</strong> Existing products are matched by WooCommerce ID and updated.</p>
+                <p><strong>Template:</strong> Download the column file, fill the SKU and the fields you want to change, then upload it here.</p>
+                <p><strong>Updates:</strong> The SKU finds the product. A blank name and other empty cells stay as they are.</p>
               </div>
             </div>
           </div>

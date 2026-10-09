@@ -6802,6 +6802,9 @@ export default function StoreOrders() {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-medium text-slate-900">{itemName}</p>
+                                                {item.sku ? (
+                                                    <p className="text-xs font-medium text-slate-500">SKU: {item.sku}</p>
+                                                ) : null}
                                                 {!item.productId && !item.product?.name && item.name ? (
                                                     <p className="text-xs text-orange-600">Imported item (not linked to catalog)</p>
                                                 ) : null}
