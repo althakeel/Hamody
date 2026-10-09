@@ -6,7 +6,43 @@ import { useAuth } from '@/lib/useAuth'
 import toast from 'react-hot-toast'
 import { PlusIcon, EditIcon, TrashIcon, TicketIcon, XIcon, PercentIcon, DollarSignIcon, PackageIcon, UserIcon, ClockIcon, ToggleLeftIcon, ToggleRightIcon, SearchIcon } from 'lucide-react'
 
+const COUPON_PRODUCT_CAP = 5000
+const COUPON_PRODUCT_PAGE = 500
+
+const PRODUCT_SOURCES = [
+    { id: 'search', label: 'Search' },
+    { id: 'all', label: 'All products' },
+    { id: 'category', label: 'Category' },
+    { id: 'brand', label: 'Brand' },
+    { id: 'latest', label: 'Latest' },
+    { id: 'tag', label: 'Tags' },
+]
+
 const getProductId = (product) => String(product?._id || product?.id || '').trim()
+
+function flattenCategoryOptions(categories = []) {
+    const rows = []
+    const seen = new Set()
+    const walk = (items, depth) => {
+        for (const item of items || []) {
+            const id = String(item?._id || item?.id || '').trim()
+            if (id && !seen.has(id)) {
+                seen.add(id)
+                rows.push({
+                    id,
+                    label: `${depth ? '— '.repeat(depth) : ''}${item?.name || 'Category'}`,
+                })
+            }
+            if (Array.isArray(item?.children) && item.children.length) {
+                walk(item.children, id ? depth + 1 : depth)
+            }
+        }
+    }
+    const list = Array.isArray(categories) ? categories : []
+    const roots = list.filter((item) => !item?.parentId)
+    walk(roots.length ? roots : list, 0)
+    return rows
+}
 
 function fieldFromNumber(value, fallback = '') {
     if (value == null || value === '') return fallback
@@ -29,8 +65,17 @@ export default function StoreCouponsPage() {
     const [editingCoupon, setEditingCoupon] = useState(null)
     const [submitting, setSubmitting] = useState(false)
     const [productSearch, setProductSearch] = useState('')
+    const [productSource, setProductSource] = useState('search')
+    const [pickerCategory, setPickerCategory] = useState('')
+    const [pickerBrand, setPickerBrand] = useState('')
+    const [pickerTags, setPickerTags] = useState([])
+    const [pickerTagInput, setPickerTagInput] = useState('')
+    const [catalogCategories, setCatalogCategories] = useState([])
+    const [catalogBrands, setCatalogBrands] = useState([])
     const [searchResults, setSearchResults] = useState([])
     const [searchLoading, setSearchLoading] = useState(false)
+    const [selectingAll, setSelectingAll] = useState(false)
+    const [productMetaLoading, setProductMetaLoading] = useState(false)
     const [selectedProductMeta, setSelectedProductMeta] = useState({})
     const [deleteTarget, setDeleteTarget] = useState(null)
     const [deleting, setDeleting] = useState(false)
@@ -63,8 +108,67 @@ export default function StoreCouponsPage() {
     }, []);
 
     useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const token = await getToken();
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                const [categoryRes, brandRes] = await Promise.all([
+                    fetch('/api/categories', { headers }),
+                    fetch('/api/store/product?page=1&manage=true&distinct=brands', { headers }),
+                ]);
+                const categoryData = await categoryRes.json().catch(() => ({}));
+                const brandData = await brandRes.json().catch(() => ({}));
+                if (cancelled) return;
+                setCatalogCategories(flattenCategoryOptions(categoryData.categories));
+                setCatalogBrands(Array.isArray(brandData.brands) ? brandData.brands : []);
+            } catch (error) {
+                console.error('Error loading product filters:', error);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [getToken]);
+
+    const buildProductQuery = (source, { forSelectAll = false } = {}) => {
+        const params = new URLSearchParams();
+        params.set('page', '1');
+        params.set('manage', 'true');
         const query = productSearch.trim();
-        if (!query) {
+
+        if (source === 'search') {
+            if (!query) return null;
+            params.set('search', query);
+            params.set('limit', forSelectAll ? String(COUPON_PRODUCT_PAGE) : '20');
+        } else if (source === 'all') {
+            params.set('sort', 'name');
+            params.set('limit', forSelectAll ? String(COUPON_PRODUCT_PAGE) : '48');
+        } else if (source === 'latest') {
+            params.set('sort', 'newest');
+            params.set('limit', forSelectAll ? String(COUPON_PRODUCT_PAGE) : '48');
+        } else if (source === 'category') {
+            if (!pickerCategory) return null;
+            params.set('category', pickerCategory);
+            params.set('limit', forSelectAll ? String(COUPON_PRODUCT_PAGE) : '48');
+        } else if (source === 'brand') {
+            if (!pickerBrand) return null;
+            params.set('brand', pickerBrand);
+            params.set('limit', forSelectAll ? String(COUPON_PRODUCT_PAGE) : '48');
+        } else if (source === 'tag') {
+            if (!pickerTags.length) return null;
+            params.set('tags', pickerTags.join(','));
+            params.set('limit', forSelectAll ? String(COUPON_PRODUCT_PAGE) : '48');
+        } else {
+            return null;
+        }
+
+        return params;
+    };
+
+    useEffect(() => {
+        const params = buildProductQuery(productSource);
+        if (!params) {
             setSearchResults([]);
             setSearchLoading(false);
             return undefined;
@@ -74,10 +178,9 @@ export default function StoreCouponsPage() {
             setSearchLoading(true);
             try {
                 const token = await getToken();
-                const res = await fetch(
-                    `/api/store/product?page=1&limit=20&search=${encodeURIComponent(query)}`,
-                    { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-                );
+                const res = await fetch(`/api/store/product?${params.toString()}`, {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {},
+                });
                 const data = await res.json();
                 setSearchResults(Array.isArray(data.products) ? data.products : []);
             } catch (error) {
@@ -86,10 +189,12 @@ export default function StoreCouponsPage() {
             } finally {
                 setSearchLoading(false);
             }
-        }, 300);
+        }, productSource === 'search' ? 300 : 0);
 
         return () => clearTimeout(timer);
-    }, [productSearch, getToken]);
+        // buildProductQuery reads the current picker fields.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [productSearch, productSource, pickerCategory, pickerBrand, pickerTags, getToken]);
 
     const loadSelectedProductMeta = async (productIds = []) => {
         const ids = [...new Set(productIds.map(String).filter(Boolean))];
@@ -98,25 +203,33 @@ export default function StoreCouponsPage() {
             return;
         }
 
+        setProductMetaLoading(true);
+        const nextMeta = {};
         try {
             const token = await getToken();
-            const res = await fetch(
-                `/api/store/product?ids=${encodeURIComponent(ids.join(','))}`,
-                { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-            );
-            const data = await res.json();
-            const nextMeta = {};
-            (data.products || []).forEach((product) => {
-                const id = getProductId(product);
-                if (!id) return;
-                nextMeta[id] = {
-                    name: product.name || 'Product',
-                    image: Array.isArray(product.images) ? product.images[0] : null,
-                };
-            });
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            for (let index = 0; index < ids.length; index += 80) {
+                const chunk = ids.slice(index, index + 80);
+                const res = await fetch(
+                    `/api/store/product?ids=${encodeURIComponent(chunk.join(','))}`,
+                    { headers }
+                );
+                const data = await res.json();
+                (data.products || []).forEach((product) => {
+                    const id = getProductId(product);
+                    if (!id) return;
+                    nextMeta[id] = {
+                        name: product.name || 'Unavailable',
+                        image: Array.isArray(product.images) ? product.images[0] : null,
+                    };
+                });
+            }
             setSelectedProductMeta(nextMeta);
         } catch (error) {
             console.error('Error loading selected products:', error);
+            setSelectedProductMeta(nextMeta);
+        } finally {
+            setProductMetaLoading(false);
         }
     };
 
@@ -150,6 +263,91 @@ export default function StoreCouponsPage() {
             delete next[id];
             return next;
         });
+    };
+
+    const addSpecificProducts = (products) => {
+        const incoming = (products || [])
+            .map((product) => ({
+                id: getProductId(product),
+                name: product.name || 'Product',
+                image: Array.isArray(product.images) ? product.images[0] : null,
+            }))
+            .filter((product) => product.id);
+        if (!incoming.length) return;
+
+        setFormData((prev) => {
+            const current = prev.specificProducts.map(String);
+            const seen = new Set(current);
+            const next = [...current];
+            incoming.forEach((product) => {
+                if (seen.has(product.id) || next.length >= COUPON_PRODUCT_CAP) return;
+                seen.add(product.id);
+                next.push(product.id);
+            });
+            return next.length === current.length ? prev : { ...prev, specificProducts: next };
+        });
+        setSelectedProductMeta((prev) => {
+            const next = { ...prev };
+            incoming.forEach((product) => {
+                next[product.id] = { name: product.name, image: product.image };
+            });
+            return next;
+        });
+    };
+
+    const addPickerTag = (raw) => {
+        const parts = String(raw || '').split(/[,\n،]/).map((tag) => tag.trim()).filter(Boolean);
+        if (!parts.length) return;
+        setPickerTags((prev) => {
+            const next = [...prev];
+            parts.forEach((tag) => {
+                if (!next.some((item) => item.toLowerCase() === tag.toLowerCase())) next.push(tag);
+            });
+            return next.slice(0, 40);
+        });
+        setPickerTagInput('');
+    };
+
+    const selectAllProducts = async () => {
+        const params = buildProductQuery(productSource, { forSelectAll: true });
+        if (!params) return;
+        setSelectingAll(true);
+        try {
+            const token = await getToken();
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            const products = [];
+            let total = 0;
+            let page = 1;
+            while (products.length < COUPON_PRODUCT_CAP) {
+                params.set('page', String(page));
+                params.set('limit', String(COUPON_PRODUCT_PAGE));
+                const res = await fetch(`/api/store/product?${params.toString()}`, { headers });
+                const data = await res.json();
+                const batch = Array.isArray(data.products) ? data.products : [];
+                total = Number(data?.pagination?.total || 0);
+                if (!batch.length) break;
+                products.push(...batch);
+                if (products.length >= total || batch.length < COUPON_PRODUCT_PAGE) break;
+                page += 1;
+            }
+            const selected = products.slice(0, COUPON_PRODUCT_CAP);
+            addSpecificProducts(selected);
+            if (!selected.length) {
+                toast.error('No products matched');
+            } else if (total > selected.length) {
+                toast.success(`Selected the first ${selected.length.toLocaleString()}. A coupon can hold ${COUPON_PRODUCT_CAP.toLocaleString()} products.`);
+            }
+        } catch (error) {
+            console.error('Error selecting products:', error);
+            toast.error('Failed to select products');
+        } finally {
+            setSelectingAll(false);
+        }
+    };
+
+    const clearSpecificProducts = () => {
+        setFormData((prev) => ({ ...prev, specificProducts: [] }));
+        setSelectedProductMeta({});
     };
     const fetchCoupons = async () => {
         try {
@@ -293,6 +491,11 @@ export default function StoreCouponsPage() {
         const specificProducts = (coupon.specificProducts || []).map(String).filter(Boolean)
         setEditingCoupon(coupon)
         setProductSearch('')
+        setProductSource('search')
+        setPickerCategory('')
+        setPickerBrand('')
+        setPickerTags([])
+        setPickerTagInput('')
         setSearchResults([])
         setFormData({
             code: coupon.code,
@@ -334,6 +537,11 @@ export default function StoreCouponsPage() {
             expiresAt: ''
         })
         setProductSearch('')
+        setProductSource('search')
+        setPickerCategory('')
+        setPickerBrand('')
+        setPickerTags([])
+        setPickerTagInput('')
         setSearchResults([])
         setSelectedProductMeta({})
     }
@@ -659,45 +867,169 @@ export default function StoreCouponsPage() {
                                 </label>
 
                                 {formData.specificProducts.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mb-3">
-                                        {formData.specificProducts.map((productId) => {
-                                            const id = String(productId)
-                                            const meta = selectedProductMeta[id]
-                                            return (
-                                                <span
-                                                    key={id}
-                                                    className="flex items-center gap-1.5 bg-orange-50 text-orange-800 text-xs font-medium px-2.5 py-1 rounded-full border border-orange-200"
-                                                >
-                                                    {meta?.name || 'Product'}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeSpecificProduct(id)}
-                                                        className="hover:text-orange-600"
-                                                        aria-label={`Remove ${meta?.name || 'product'}`}
+                                    <div className="mb-3">
+                                        <div className="mb-2 flex items-center justify-between gap-2">
+                                            <p className="text-xs font-medium text-gray-700">
+                                                {formData.specificProducts.length} selected
+                                                {productMetaLoading ? ' · loading names…' : ''}
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={clearSpecificProducts}
+                                                className="text-xs font-medium text-gray-500 hover:text-gray-800"
+                                            >
+                                                Clear
+                                            </button>
+                                        </div>
+                                        <div className="flex max-h-28 flex-wrap gap-2 overflow-y-auto rounded-lg border border-orange-100 bg-orange-50/40 p-2">
+                                            {formData.specificProducts.map((productId) => {
+                                                const id = String(productId)
+                                                const meta = selectedProductMeta[id]
+                                                const label = meta?.name || (productMetaLoading ? 'Loading…' : 'Unavailable')
+                                                return (
+                                                    <span
+                                                        key={id}
+                                                        className="flex max-w-full items-center gap-1.5 rounded-full border border-orange-200 bg-white px-2.5 py-1 text-xs font-medium text-orange-800"
                                                     >
-                                                        <XIcon size={12} />
-                                                    </button>
-                                                </span>
-                                            )
-                                        })}
+                                                        <span className="truncate">{label}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeSpecificProduct(id)}
+                                                            className="hover:text-orange-600"
+                                                            aria-label={`Remove ${label}`}
+                                                        >
+                                                            <XIcon size={12} />
+                                                        </button>
+                                                    </span>
+                                                )
+                                            })}
+                                        </div>
                                     </div>
                                 )}
 
-                                <div className="relative mb-2">
-                                    <SearchIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        value={productSearch}
-                                        onChange={(e) => setProductSearch(e.target.value)}
-                                        placeholder="Search products to add..."
-                                        className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                    />
+                                <div className="flex flex-wrap gap-1.5 mb-2">
+                                    {PRODUCT_SOURCES.map((source) => (
+                                        <button
+                                            key={source.id}
+                                            type="button"
+                                            onClick={() => setProductSource(source.id)}
+                                            className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                                                productSource === source.id
+                                                    ? 'bg-orange-500 text-white'
+                                                    : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50'
+                                            }`}
+                                        >
+                                            {source.label}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {productSource === 'search' && (
+                                    <div className="relative mb-2">
+                                        <SearchIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                        <input
+                                            type="text"
+                                            value={productSearch}
+                                            onChange={(e) => setProductSearch(e.target.value)}
+                                            placeholder="Search products to add..."
+                                            className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        />
+                                    </div>
+                                )}
+
+                                {productSource === 'category' && (
+                                    <select
+                                        value={pickerCategory}
+                                        onChange={(e) => setPickerCategory(e.target.value)}
+                                        className="w-full mb-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                                    >
+                                        <option value="">Choose a category...</option>
+                                        {catalogCategories.map((category) => (
+                                            <option key={category.id} value={category.id}>{category.label}</option>
+                                        ))}
+                                    </select>
+                                )}
+
+                                {productSource === 'brand' && (
+                                    <select
+                                        value={pickerBrand}
+                                        onChange={(e) => setPickerBrand(e.target.value)}
+                                        className="w-full mb-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                                    >
+                                        <option value="">Choose a brand...</option>
+                                        {catalogBrands.map((brand) => (
+                                            <option key={brand} value={brand}>{brand}</option>
+                                        ))}
+                                    </select>
+                                )}
+
+                                {productSource === 'tag' && (
+                                    <div className="mb-2 space-y-2">
+                                        {pickerTags.length > 0 && (
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {pickerTags.map((tag) => (
+                                                    <button
+                                                        key={tag}
+                                                        type="button"
+                                                        onClick={() => setPickerTags((prev) => prev.filter((item) => item !== tag))}
+                                                        className="rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-700"
+                                                    >
+                                                        {tag} ×
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <input
+                                            type="text"
+                                            value={pickerTagInput}
+                                            onChange={(e) => setPickerTagInput(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ',') {
+                                                    e.preventDefault();
+                                                    addPickerTag(pickerTagInput);
+                                                }
+                                            }}
+                                            onBlur={() => addPickerTag(pickerTagInput)}
+                                            placeholder="Type a tag, then press Enter"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="flex items-center justify-between gap-2 mb-2">
+                                    <p className="text-xs text-gray-500">
+                                        {productSource === 'all'
+                                            ? 'Products in the catalog.'
+                                            : productSource === 'latest'
+                                                ? 'Newest products first.'
+                                                : 'One click adds every match, up to 5,000.'}
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={selectAllProducts}
+                                        disabled={selectingAll || searchLoading || !buildProductQuery(productSource)}
+                                        className="rounded-full bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        {selectingAll ? 'Selecting...' : 'Select all'}
+                                    </button>
                                 </div>
 
                                 <div className="max-h-56 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
-                                    {!productSearch.trim() ? (
+                                    {productSource === 'search' && !productSearch.trim() ? (
                                         <p className="text-sm text-gray-400 text-center py-6">
                                             Type a product name or SKU to search
+                                        </p>
+                                    ) : productSource === 'category' && !pickerCategory ? (
+                                        <p className="text-sm text-gray-400 text-center py-6">
+                                            Choose a category
+                                        </p>
+                                    ) : productSource === 'brand' && !pickerBrand ? (
+                                        <p className="text-sm text-gray-400 text-center py-6">
+                                            Choose a brand
+                                        </p>
+                                    ) : productSource === 'tag' && pickerTags.length === 0 ? (
+                                        <p className="text-sm text-gray-400 text-center py-6">
+                                            Add a tag to see products
                                         </p>
                                     ) : searchLoading ? (
                                         <p className="text-sm text-gray-400 text-center py-6">Searching...</p>
@@ -729,9 +1061,20 @@ export default function StoreCouponsPage() {
                                         })
                                     )}
                                 </div>
-                                <p className="text-xs text-gray-500 mt-1">
-                                    {formData.specificProducts.length} product(s) selected. Leave empty to apply to all products.
-                                </p>
+                                <div className="flex items-center justify-between gap-2 mt-1">
+                                    <p className="text-xs text-gray-500">
+                                        {formData.specificProducts.length} product(s) selected. Leave empty to apply to all products.
+                                    </p>
+                                    {formData.specificProducts.length > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={clearSpecificProducts}
+                                            className="text-xs font-medium text-gray-500 hover:text-gray-800"
+                                        >
+                                            Clear
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Checkboxes */}
