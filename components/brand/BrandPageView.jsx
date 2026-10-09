@@ -48,6 +48,7 @@ export default function BrandPageView({
         stats={stats}
         t={t}
         isArabic={isArabic}
+        eyebrow={t('brand.label')}
       />
 
       {products.length > 0 || Number(total) > 0 ? (

@@ -31,10 +31,19 @@ export async function GET(request) {
     const requestedIds = idsParam
       ? idsParam.split(',').map((id) => id.trim()).filter(Boolean).slice(0, 500)
       : [];
+    const selectAll = searchParams.get('all') === '1';
     const defaultLimit = requestedIds.length ? requestedIds.length : 48;
-    const maxLimit = requestedIds.length ? 500 : 100;
+    const maxLimit = requestedIds.length || selectAll ? 500 : 100;
     const limit = Math.min(maxLimit, Math.max(4, Number(searchParams.get('limit') || defaultLimit) || defaultLimit));
     const categoryParam = String(searchParams.get('category') || '').trim();
+    const brandParam = String(searchParams.get('brand') || '').trim();
+    const tagList = String(searchParams.get('tags') || '')
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .slice(0, 40);
+    const source = String(searchParams.get('source') || '').trim().toLowerCase();
+    const includeCatalog = searchParams.get('catalog') === '1';
     const q = normalizeSearchKeyword(searchParams.get('q') || searchParams.get('search') || '');
 
     await connectDB();
@@ -54,6 +63,14 @@ export async function GET(request) {
     } else if (!(q && q.length >= 2)) {
       // Browse lists prefer in-stock; search / id lookup should still find products.
       filter.inStock = true;
+    }
+
+    if (!requestedIds.length && brandParam) {
+      filter.brand = { $regex: `^${escapeRegex(brandParam)}$`, $options: 'i' };
+    }
+
+    if (!requestedIds.length && tagList.length) {
+      filter.tags = { $in: tagList };
     }
 
     if (!requestedIds.length && categoryParam) {
@@ -97,11 +114,11 @@ export async function GET(request) {
 
     let products = await Product.find(filter)
       .sort({ createdAt: -1 })
-      .limit(requestedIds.length ? requestedIds.length : (q || categoryParam ? Math.max(limit, 60) : 160))
+      .limit(requestedIds.length || selectAll ? limit : (q || categoryParam || brandParam || tagList.length ? Math.max(limit, 60) : 160))
       .select('_id name slug price mrp AED images description shortDescription category categories categoryName stockQuantity inStock brand sku createdAt')
       .lean();
 
-    if (!products.length && !q && !categoryParam && !requestedIds.length) {
+    if (!products.length && !q && !categoryParam && !brandParam && !tagList.length && !requestedIds.length) {
       products = await Product.find({ storeId: String(storeId) })
         .sort({ createdAt: -1 })
         .limit(160)
@@ -119,10 +136,21 @@ export async function GET(request) {
       }),
     );
     // Keep search / id hits even when thumbnail resolution fails; browse can prefer imaged items.
-    const page = (requestedIds.length || (q && q.length >= 2)
+    const page = (requestedIds.length || selectAll || (q && q.length >= 2)
       ? mapped
       : mapped.filter((product) => Boolean(product.image))
     ).slice(0, limit);
+
+    let brands = [];
+    if (includeCatalog) {
+      const rawBrands = await Product.distinct('brand', {
+        storeId: String(storeId),
+        brand: { $nin: [null, ''] },
+      });
+      brands = Array.from(new Set(
+        (rawBrands || []).map((name) => String(name || '').trim()).filter(Boolean),
+      )).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    }
 
     const categories = allCategories
       .map((item) => ({
@@ -145,6 +173,7 @@ export async function GET(request) {
       success: true,
       products: page,
       categories,
+      brands,
       categoryNames: categories.map((item) => item.name),
       buckets: {
         featured: page,
@@ -155,6 +184,9 @@ export async function GET(request) {
       meta: {
         q,
         category: categoryParam,
+        brand: brandParam,
+        tags: tagList,
+        source,
         total: mapped.length,
       },
     });

@@ -37,6 +37,56 @@ function gcd(first, second) {
   return second ? gcd(second, first % second) : first
 }
 
+export function useUploadedImageSize(src) {
+  const [size, setSize] = useState(null)
+
+  useEffect(() => {
+    const url = String(src || '').trim()
+    if (!url) {
+      setSize(null)
+      return undefined
+    }
+    let cancelled = false
+    const image = new window.Image()
+    image.onload = () => {
+      if (cancelled) return
+      setSize({
+        width: Number(image.naturalWidth) || 0,
+        height: Number(image.naturalHeight) || 0,
+      })
+    }
+    image.onerror = () => {
+      if (!cancelled) setSize(null)
+    }
+    image.src = url
+    return () => {
+      cancelled = true
+    }
+  }, [src])
+
+  return size
+}
+
+export function UploadedImageSizeTip({ src }) {
+  const size = useUploadedImageSize(src)
+  if (!String(src || '').trim() || !size?.width || !size?.height) return null
+
+  return (
+    <span className="group relative inline-flex">
+      <button
+        type="button"
+        className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 bg-white text-[10px] font-bold leading-none text-slate-500 hover:border-slate-400 hover:text-slate-800"
+        aria-label="Uploaded image size"
+      >
+        ?
+      </button>
+      <span className="pointer-events-none absolute start-0 top-full z-30 mt-1 hidden w-max rounded-lg bg-slate-900 px-2.5 py-1.5 text-[11px] font-medium text-white shadow-lg group-hover:block group-focus-within:block">
+        Uploaded width {size.width} px · height {size.height} px
+      </span>
+    </span>
+  )
+}
+
 export function formatImageRatio(width, height) {
   const divisor = gcd(width, height)
   const ratioWidth = width / divisor
@@ -55,7 +105,10 @@ export function ShowcaseImageSlot({ label, size, value, onUpload, onClear }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-2">
       <div className="mb-1.5">
-        <div className="text-xs font-semibold text-slate-700">{label}</div>
+        <div className="flex items-center gap-1.5">
+          <div className="text-xs font-semibold text-slate-700">{label}</div>
+          <UploadedImageSizeTip src={value} />
+        </div>
         {width && height ? (
           <p className="mt-0.5 text-[11px] leading-4 text-slate-500">
             Width {width} px · Height {height} px · Ratio {ratio}

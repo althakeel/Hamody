@@ -33,6 +33,7 @@ export default function CategoryHeroCard({
   t,
   isArabic = false,
   hideImage = false,
+  eyebrow = '',
 }) {
   const [expanded, setExpanded] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
@@ -71,7 +72,7 @@ export default function CategoryHeroCard({
 
           <div className={`min-w-0 flex-1 text-start ${isArabic ? 'text-end' : ''}`}>
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-orange-600 md:text-xs md:tracking-[0.18em]">
-              {t('category.category')}
+              {eyebrow || t('category.category')}
             </p>
             <h1 className="mt-0.5 text-xl font-bold tracking-tight text-slate-900 md:mt-1 md:text-4xl">
               {name}

@@ -39,6 +39,15 @@ const BANNER_SLOTS = [
 
 const BANNER_ACCEPT = 'image/png,image/jpeg,image/webp,image/gif,.gif,.png,.jpg,.jpeg,.webp';
 
+const PRODUCT_SOURCES = [
+  { id: 'search', label: 'Search' },
+  { id: 'all', label: 'All products' },
+  { id: 'category', label: 'Category' },
+  { id: 'brand', label: 'Brand' },
+  { id: 'latest', label: 'Latest' },
+  { id: 'tag', label: 'Tags' },
+];
+
 function isBannerFile(file) {
   if (!file) return false;
   const type = String(file.type || '').toLowerCase();
@@ -173,8 +182,16 @@ export default function EmailCampaignLandingPages({ getToken }) {
   const [copiedId, setCopiedId] = useState('');
 
   const [productSearch, setProductSearch] = useState('');
+  const [productSource, setProductSource] = useState('search');
+  const [pickerCategory, setPickerCategory] = useState('');
+  const [pickerBrand, setPickerBrand] = useState('');
+  const [pickerTagInput, setPickerTagInput] = useState('');
+  const [pickerTags, setPickerTags] = useState([]);
+  const [catalogCategories, setCatalogCategories] = useState([]);
+  const [catalogBrands, setCatalogBrands] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [selectingAll, setSelectingAll] = useState(false);
   const [selectedMeta, setSelectedMeta] = useState({});
 
   const authHeaders = useCallback(async () => {
@@ -252,32 +269,75 @@ export default function EmailCampaignLandingPages({ getToken }) {
   }, [form.productIds.join('|'), getToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const headers = await authHeaders();
+        const { data } = await axios.get('/api/store/email-marketing/products?catalog=1&limit=8', { headers });
+        if (cancelled) return;
+        setCatalogCategories(Array.isArray(data.categories) ? data.categories : []);
+        setCatalogBrands(Array.isArray(data.brands) ? data.brands : []);
+      } catch {
+        if (!cancelled) {
+          setCatalogCategories([]);
+          setCatalogBrands([]);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authHeaders]);
+
+  useEffect(() => {
     const q = productSearch.trim();
-    if (q.length < 2) {
-      setSearchResults([]);
-      return undefined;
+    const params = new URLSearchParams({ limit: '48' });
+    if (productSource === 'search') {
+      if (q.length < 2) {
+        setSearchResults([]);
+        return undefined;
+      }
+      params.set('q', q);
+    } else if (productSource === 'all' || productSource === 'latest') {
+      params.set('source', productSource);
+    } else if (productSource === 'category') {
+      if (!pickerCategory) {
+        setSearchResults([]);
+        return undefined;
+      }
+      params.set('category', pickerCategory);
+    } else if (productSource === 'brand') {
+      if (!pickerBrand) {
+        setSearchResults([]);
+        return undefined;
+      }
+      params.set('brand', pickerBrand);
+    } else if (productSource === 'tag') {
+      if (!pickerTags.length) {
+        setSearchResults([]);
+        return undefined;
+      }
+      params.set('tags', pickerTags.join(','));
     }
+
     let cancelled = false;
     const timer = window.setTimeout(async () => {
       try {
         setSearchLoading(true);
         const headers = await authHeaders();
-        const { data } = await axios.get(
-          `/api/store/email-marketing/products?q=${encodeURIComponent(q)}&limit=24`,
-          { headers },
-        );
+        const { data } = await axios.get(`/api/store/email-marketing/products?${params.toString()}`, { headers });
         if (!cancelled) setSearchResults(Array.isArray(data.products) ? data.products : []);
       } catch {
         if (!cancelled) setSearchResults([]);
       } finally {
         if (!cancelled) setSearchLoading(false);
       }
-    }, 280);
+    }, productSource === 'search' ? 280 : 0);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [productSearch, authHeaders]);
+  }, [productSearch, productSource, pickerCategory, pickerBrand, pickerTags, authHeaders]);
 
   const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
@@ -329,6 +389,92 @@ export default function EmailCampaignLandingPages({ getToken }) {
     setShowBanners(campaignPageHasBanner(page.banners, page.heroImage));
     setStatusMessage('');
     setError('');
+  };
+
+  const rememberProducts = (products) => {
+    setSelectedMeta((prev) => {
+      const next = { ...prev };
+      products.forEach((product) => {
+        const id = String(product.id || product._id || '');
+        if (!id) return;
+        next[id] = {
+          id,
+          name: product.name || '',
+          image: product.image || '',
+          price: product.price,
+        };
+      });
+      return next;
+    });
+  };
+
+  const addProducts = (products) => {
+    const incoming = (products || []).map((product) => ({
+      ...product,
+      id: String(product.id || product._id || ''),
+    })).filter((product) => product.id);
+    if (!incoming.length) return;
+    rememberProducts(incoming);
+    setForm((prev) => {
+      const nextIds = [...prev.productIds];
+      incoming.forEach((product) => {
+        if (nextIds.includes(product.id)) return;
+        if (nextIds.length >= EMAIL_CAMPAIGN_PAGE_MAX_PRODUCTS) return;
+        nextIds.push(product.id);
+      });
+      return { ...prev, productIds: nextIds };
+    });
+  };
+
+  const pickerQuery = () => {
+    const params = new URLSearchParams();
+    const q = productSearch.trim();
+    if (productSource === 'search') {
+      if (q.length < 2) return null;
+      params.set('q', q);
+    } else if (productSource === 'all' || productSource === 'latest') {
+      params.set('source', productSource);
+    } else if (productSource === 'category') {
+      if (!pickerCategory) return null;
+      params.set('category', pickerCategory);
+    } else if (productSource === 'brand') {
+      if (!pickerBrand) return null;
+      params.set('brand', pickerBrand);
+    } else if (productSource === 'tag') {
+      if (!pickerTags.length) return null;
+      params.set('tags', pickerTags.join(','));
+    }
+    return params;
+  };
+
+  const selectAllProducts = async () => {
+    const params = pickerQuery();
+    if (!params) return;
+    params.set('all', '1');
+    params.set('limit', String(EMAIL_CAMPAIGN_PAGE_MAX_PRODUCTS));
+    try {
+      setSelectingAll(true);
+      const headers = await authHeaders();
+      const { data } = await axios.get(`/api/store/email-marketing/products?${params.toString()}`, { headers });
+      addProducts(Array.isArray(data.products) ? data.products : []);
+    } catch (err) {
+      setError(err?.response?.data?.error || err.message || 'Failed to select products');
+    } finally {
+      setSelectingAll(false);
+    }
+  };
+
+  const addPickerTag = (raw) => {
+    const parts = String(raw || '').split(/[,\n،]/).map((tag) => tag.trim()).filter(Boolean);
+    if (!parts.length) return;
+    setPickerTags((prev) => {
+      const next = [...prev];
+      parts.forEach((tag) => {
+        if (!next.some((item) => item.toLowerCase() === tag.toLowerCase())) next.push(tag);
+      });
+      return next.slice(0, 40);
+    });
+    setPickerTagInput('');
   };
 
   const toggleProduct = (product) => {
@@ -723,19 +869,113 @@ export default function EmailCampaignLandingPages({ getToken }) {
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-slate-500">Search and add the same products you put in the email.</p>
+              <p className="text-xs text-slate-500">Choose how to find products, then add them to this page.</p>
             )}
 
-            <label className="relative block">
-              <Search className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-              <input
-                value={productSearch}
-                onChange={(e) => setProductSearch(e.target.value)}
-                placeholder="Search products by name or SKU…"
-                className="w-full rounded-lg border border-slate-300 bg-white py-2 ps-8 pe-3 text-sm"
-              />
-            </label>
-            {searchLoading ? <p className="text-xs text-slate-500">Searching…</p> : null}
+            <div className="flex flex-wrap gap-1.5">
+              {PRODUCT_SOURCES.map((source) => (
+                <button
+                  key={source.id}
+                  type="button"
+                  onClick={() => setProductSource(source.id)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                    productSource === source.id
+                      ? 'bg-slate-900 text-white'
+                      : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  {source.label}
+                </button>
+              ))}
+            </div>
+
+            {productSource === 'search' ? (
+              <label className="relative block">
+                <Search className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  placeholder="Search products by name or SKU…"
+                  className="w-full rounded-lg border border-slate-300 bg-white py-2 ps-8 pe-3 text-sm"
+                />
+              </label>
+            ) : null}
+
+            {productSource === 'category' ? (
+              <select
+                value={pickerCategory}
+                onChange={(e) => setPickerCategory(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+              >
+                <option value="">Choose a category…</option>
+                {catalogCategories.map((category) => (
+                  <option key={category.id} value={category.id}>{category.name}</option>
+                ))}
+              </select>
+            ) : null}
+
+            {productSource === 'brand' ? (
+              <select
+                value={pickerBrand}
+                onChange={(e) => setPickerBrand(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+              >
+                <option value="">Choose a brand…</option>
+                {catalogBrands.map((brand) => (
+                  <option key={brand} value={brand}>{brand}</option>
+                ))}
+              </select>
+            ) : null}
+
+            {productSource === 'tag' ? (
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-1.5">
+                  {pickerTags.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setPickerTags((prev) => prev.filter((item) => item !== tag))}
+                      className="rounded-full bg-white px-2.5 py-1 text-xs text-slate-700 ring-1 ring-slate-200"
+                    >
+                      {tag} ×
+                    </button>
+                  ))}
+                </div>
+                <input
+                  value={pickerTagInput}
+                  onChange={(e) => setPickerTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ',') {
+                      e.preventDefault();
+                      addPickerTag(pickerTagInput);
+                    }
+                  }}
+                  onBlur={() => addPickerTag(pickerTagInput)}
+                  placeholder="Type a tag, then press Enter"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                />
+              </div>
+            ) : null}
+
+            {productSource === 'all' || productSource === 'latest' ? (
+              <p className="text-xs text-slate-500">
+                {productSource === 'latest' ? 'Newest products in the catalog.' : 'Products currently in stock.'}
+              </p>
+            ) : null}
+
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {searchLoading ? <p className="text-xs text-slate-500">Loading products…</p> : (
+                <p className="text-xs text-slate-500">One click adds every match, up to {EMAIL_CAMPAIGN_PAGE_MAX_PRODUCTS}.</p>
+              )}
+              <button
+                type="button"
+                onClick={selectAllProducts}
+                disabled={selectingAll || searchLoading || !pickerQuery()}
+                className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {selectingAll ? 'Selecting…' : 'Select all'}
+              </button>
+            </div>
             {searchResults.length > 0 ? (
               <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1">
                 {searchResults.map((product) => {

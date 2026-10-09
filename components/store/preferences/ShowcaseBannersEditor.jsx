@@ -41,6 +41,7 @@ import {
 } from '@/lib/shopShowcaseLargeBanners'
 import { hasShowcaseBannerImage, serializeShowcaseImageFields } from '@/lib/showcaseBannerImages'
 import { uploadShowcaseBannerOriginal } from '@/lib/uploadShowcaseBanner'
+import { UploadedImageSizeTip } from '@/components/store/preferences/bannerEditorShared'
 import {
   createShowcaseLinkFromChoice,
   flattenShowcaseCategories,
@@ -148,11 +149,11 @@ function getFullWidthBannerSizes(height = FULL_WIDTH_BANNER_HEIGHT_DEFAULT) {
   const tabletHeight = Math.round(desktopHeight * 0.6)
   const mobileHeight = Math.min(260, Math.round(desktopHeight * 0.5))
   return {
-    image: { width: 1400, height: desktopHeight },
+    image: { width: 2746, height: 572 },
     wideImage: { width: 2560, height: desktopHeight },
     tabletImage: { width: 1024, height: tabletHeight },
     mobileImage: { width: 768, height: mobileHeight },
-    imageAr: { width: 1400, height: desktopHeight },
+    imageAr: { width: 2746, height: 572 },
     wideImageAr: { width: 2560, height: desktopHeight },
     tabletImageAr: { width: 1024, height: tabletHeight },
     mobileImageAr: { width: 768, height: mobileHeight },
@@ -253,7 +254,10 @@ function ShowcaseImageSlot({ label, size, value, onUpload, onClear }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-2">
       <div className="mb-1.5">
-        <div className="text-xs font-semibold text-slate-700">{label}</div>
+        <div className="flex items-center gap-1.5">
+          <div className="text-xs font-semibold text-slate-700">{label}</div>
+          <UploadedImageSizeTip src={value} />
+        </div>
         {width && height ? (
           <p className="mt-0.5 text-[11px] leading-4 text-slate-500">
             Width {width} px · Height {height} px · Ratio {ratio}
