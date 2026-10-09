@@ -5,7 +5,7 @@ Audience: Flutter developers building the Store1920 shopper app
 Website: `https://www.store1920.com`  
 API root: `https://www.store1920.com/api`
 
-This is the document to share for the **entire customer app**. It maps every shopper screen on the website to the screen and API the Flutter app should use. The app must match the website: same products, prices, language, cart, checkout, and seller-controlled content.
+This is the document to share for the **entire customer app**. It maps every shopper screen on the website to the screen and API the Flutter app should use. The app must match the **mobile website** (the phone layout under 768px wide): same screens, same product card, same products, prices, language, cart, checkout, and seller-controlled content. Desktop columns, hover effects, and sidebars are not the app.
 
 Deeper field lists (request bodies, order document, WhatsApp OTP) stay in the linked files. Do not invent a second backend.
 
@@ -181,7 +181,7 @@ Large hero extra setting: **Use website home banners**. When that is on, `banner
 
 #### Website home designs (block `shop-showcase`)
 
-`GET /api/public/shop-showcase` is the same banner stack the website home uses. The seller edits it under **Banner section** (`/store/preferences`). Draw only the pieces that are enabled and have an image.
+`GET /api/public/shop-showcase` is the same banner stack the website home uses. The large photo with arrows and dots is specified on its own in [FLUTTER_HOME_HERO.md](./FLUTTER_HOME_HERO.md). The seller edits it under **Banner section** (`/store/preferences`). Draw only the pieces that are enabled and have an image.
 
 Top to bottom on the website:
 
@@ -227,7 +227,7 @@ If the seller disables a block, that block disappears on the next refresh. No ex
 |---|---|---|
 | `/shop` | Shop / all products | `GET /api/products` |
 | `/categories` | Category index | `GET /api/categories` |
-| `/category/{slug}` | Category products. Slug may be nested, for example `/category/brands/porodo` | `GET /api/public/category-products` and `GET /api/categories` |
+| `/category/{slug}` | Category products. Slug may be nested, for example `/category/brands/porodo` | [FLUTTER_CATEGORY_APIS.md](./FLUTTER_CATEGORY_APIS.md) |
 | `/brand/{slug}` | Brand page. This is **not** the category page | `GET /api/public/brand-products?slug={slug}` |
 | `/product/{slug}` and `/products/{slug}` | Product detail | `GET /api/products/by-slug` or `GET /api/products/page` |
 | `/search-results` | Search | `GET /api/search-products` |
@@ -242,7 +242,43 @@ If the seller disables a block, that block disappears on the next refresh. No ex
 | `/recently-viewed` | Recently viewed | `GET /api/browse-history` (Bearer) |
 | `/browse` | Browse | categories + products |
 
-Product card data to show when the API sends it: image, name (Arabic name when the language is Arabic), price, compare-at price, discount, brand, rating, stock, badges.
+### 4.2.1 Product card — same design as the mobile website
+
+Field list, list APIs, and this layout are in [FLUTTER_PRODUCT_CARDS.md](./FLUTTER_PRODUCT_CARDS.md).
+
+Use this card on every product list: home, shop, category, brand, search, offers, wishlist, and recommendations. Open `https://www.store1920.com/shop` on a phone. That grid is the reference.
+
+The phone grid is **2 columns** with a **12px** gap.
+
+| Piece | Mobile website | App |
+|---|---|---|
+| Card | White, 1px border `#e2e8f0`, corner radius **2px**, no shadow | Same |
+| Image | Square, image fills the box (`cover`, centered). White behind it | Same. Use the image URL from the API |
+| Second image | Swaps in on desktop hover only | Phone has no hover. Show the first image |
+| Name | **12px**, semibold, `#0f172a`, **2 lines**, then ellipsis. Left in English, right in Arabic | Arabic name when the language is Arabic. If that field is empty, use the English name |
+| Sale price | **14px**, semibold, `#020617`. Whole number, no decimals. Currency mark then the number | AED unless the market API says otherwise |
+| Old price | Struck through, **10px**, `#94a3b8`. Show only when it is higher than the sale price | Field is `AED` (compare-at) |
+| Discount | **10px**, semibold, `#047857`. English `10% off`. Arabic `خصم 10٪` | `round((compare − sale) / compare × 100)` when compare is higher |
+| Stars | 5 stars, **9px**. Filled `#facc15`, empty `#d1d5db`. Then `(count)` in **9px** gray | Show only when the review count is greater than 0 |
+| Padding under the image | **8px** | Same |
+
+**Add button**, sitting **12px** from the bottom and the end edge of the image (right in English, left in Arabic):
+
+| State | Look |
+|---|---|
+| Not in the cart | **32×32** white square, radius **10px**, border `#d1d5db`, plus icon in `#475569` |
+| In the cart | Blue bar `#2563eb`. Minus (trash icon when the quantity is 1), the quantity, plus. On a phone this bar stays visible |
+| Out of stock | Gray pill, text **Out of stock**. No plus button |
+
+Tapping the card opens the product. Tapping plus adds **1** and does not open the product. Tapping minus removes 1. At quantity 1, the left control removes the line.
+
+**Badges** on the image (New, sale, and any other label the seller turned on) come from:
+
+```http
+GET /api/public/new-tag
+```
+
+Draw a badge only when that response says the product qualifies. Use the label, colors, corner, and position from the response. Do not hardcode a “NEW” ribbon. On a card the usual text size is **10px**, about **8px** in from the corner the seller chose. Shapes the seller can pick: pill, rounded, square, tag, circle.
 
 Product detail also loads:
 
@@ -429,6 +465,9 @@ Use these when a screen needs request and response fields. This file is the map.
 | Every shopper route and checkout bodies | [MOBILE_APP_API.md](./MOBILE_APP_API.md) |
 | Home call order | [MOBILE_HOME_PAGE_APIS.md](./MOBILE_HOME_PAGE_APIS.md) |
 | App home banners | [MOBILE_FEATURES_DOCUMENTATION.md](./MOBILE_FEATURES_DOCUMENTATION.md) |
+| Home hero (photo, arrows, dots) | [FLUTTER_HOME_HERO.md](./FLUTTER_HOME_HERO.md) |
+| Categories | [FLUTTER_CATEGORY_APIS.md](./FLUTTER_CATEGORY_APIS.md) |
+| Product cards | [FLUTTER_PRODUCT_CARDS.md](./FLUTTER_PRODUCT_CARDS.md) |
 | Phone center circle | [FLUTTER_MOBILE_BOTTOM_BUTTON.md](./FLUTTER_MOBILE_BOTTOM_BUTTON.md) |
 | WhatsApp login | [FLUTTER_WHATSAPP_OTP_AUTH.md](./FLUTTER_WHATSAPP_OTP_AUTH.md) |
 | Orders | [ORDER_DETAILS.md](./ORDER_DETAILS.md) |

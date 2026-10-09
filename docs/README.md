@@ -14,6 +14,9 @@ This folder is the **full API documentation set** — from public storefront / m
 |---|----------|--------------|----------|
 | **0** | **[FLUTTER_ENTIRE_APP.md](./FLUTTER_ENTIRE_APP.md)** | **Flutter shopper app** | **Entire customer app: every website screen, API, and what not to build** |
 | **0b** | [FLUTTER_MOBILE_BOTTOM_BUTTON.md](./FLUTTER_MOBILE_BOTTOM_BUTTON.md) | Flutter | Phone center circle only (part of the app doc) |
+| **0d** | [FLUTTER_HOME_HERO.md](./FLUTTER_HOME_HERO.md) | Flutter | Home hero banner: slides, arrows, dots, mobile image |
+| **0e** | [FLUTTER_CATEGORY_APIS.md](./FLUTTER_CATEGORY_APIS.md) | Flutter | Category tree, category page, home icons, category sliders |
+| **0f** | [FLUTTER_PRODUCT_CARDS.md](./FLUTTER_PRODUCT_CARDS.md) | Flutter | Product card APIs, fields, and the phone card layout |
 | **0c** | **[STORE1920_FULL_API.md](./STORE1920_FULL_API.md)** | **Mobile + all teams** | **Master guide: home APIs, full shopper catalog, auth, links to every surface** |
 | 1 | [API_OVERVIEW.md](./API_OVERVIEW.md) | Everyone | Architecture, auth modes, systems map |
 | 2 | [MOBILE_APP_API.md](./MOBILE_APP_API.md) | Customer mobile / web shopper | Catalog, cart, checkout, COD/Stripe/Tabby/Tamara, wishlist, track (~90 routes) |
