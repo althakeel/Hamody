@@ -68,10 +68,17 @@ function sortProducts(products, sortBy) {
       ordered = sorted.sort((a, b) => (b.ratingCount || 0) - (a.ratingCount || 0));
       break;
     case 'newest':
-    default:
-      ordered = sorted.sort(
-        (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+    default: {
+      const pinned = sorted
+        .filter((product) => Number.isFinite(Number(product.merchandiseRank)))
+        .sort((a, b) => Number(a.merchandiseRank) - Number(b.merchandiseRank));
+      const rest = sortOutOfStockLast(
+        sorted
+          .filter((product) => !Number.isFinite(Number(product.merchandiseRank)))
+          .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)),
       );
+      return [...pinned, ...rest];
+    }
   }
 
   return sortOutOfStockLast(ordered);
@@ -189,7 +196,7 @@ export default function CategoryProductsPanel({
 
   const filteredAndSortedProducts = useMemo(() => {
     const filtered = applyProductFilters(pageProducts, activeFilters);
-    return sortOutOfStockLast(sortProducts(filtered, activeFilters.sortBy));
+    return sortProducts(filtered, activeFilters.sortBy);
   }, [pageProducts, activeFilters]);
 
   const hasActiveFilters =

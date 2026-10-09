@@ -12,6 +12,7 @@ import { cleanDisplayText } from '@/lib/displayText';
 import { suggestUaeArabicCategory } from '@/lib/categoryLocalization';
 import { toPublicCategoryPath } from '@/lib/categorySlug';
 import { notifyStorefrontMenuUpdated } from '@/lib/storefrontMenuSync';
+import CategoryMerchandiseModal from '@/components/store/CategoryMerchandiseModal';
 
 const DEFAULT_CATEGORY_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23eff6ff'/%3E%3Cstop offset='100%25' stop-color='%23e2e8f0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='160' height='160' rx='28' fill='url(%23g)'/%3E%3Ccircle cx='80' cy='64' r='24' fill='%23bfdbfe'/%3E%3Cpath d='M38 124c10-22 29-34 42-34s32 12 42 34' fill='%2394a3b8'/%3E%3C/svg%3E";
 
@@ -607,6 +608,7 @@ export default function StoreCategoryMenu() {
   const [totalStoreProducts, setTotalStoreProducts] = useState(0);
 
   const [addProductsOpen, setAddProductsOpen] = useState(false);
+  const [merchandiseCategory, setMerchandiseCategory] = useState(null);
   const [addProductsCategory, setAddProductsCategory] = useState(null);
   const [addProductsSearch, setAddProductsSearch] = useState('');
   const [addProductsSku, setAddProductsSku] = useState('');
@@ -1746,6 +1748,16 @@ export default function StoreCategoryMenu() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => setMerchandiseCategory(category)}
+                    className="rounded-lg border border-orange-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-orange-700 transition hover:bg-orange-50 sm:px-3 sm:py-2 sm:text-sm"
+                  >
+                    Merchandise
+                    {Array.isArray(category.merchandisedProductIds) && category.merchandisedProductIds.length > 0
+                      ? ` (${category.merchandisedProductIds.length})`
+                      : ''}
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => handleEdit(category)}
                     className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition sm:px-3 sm:py-2 sm:text-sm ${meta.useClassName}`}
                   >
@@ -2372,6 +2384,24 @@ export default function StoreCategoryMenu() {
         onConfirm={confirmAddProductsToCategory}
         onPageChange={setAddProductsPage}
       />
+      {merchandiseCategory ? (
+        <CategoryMerchandiseModal
+          category={merchandiseCategory}
+          getToken={getToken}
+          onClose={() => setMerchandiseCategory(null)}
+          onSaved={(productIds) => {
+            const categoryId = String(merchandiseCategory._id);
+            const applyOrder = (nodes) => (nodes || []).map((node) => ({
+              ...node,
+              merchandisedProductIds: String(node._id) === categoryId
+                ? productIds
+                : node.merchandisedProductIds,
+              children: applyOrder(node.children),
+            }));
+            setCategories((current) => applyOrder(current));
+          }}
+        />
+      ) : null}
     </div>
   );
 }

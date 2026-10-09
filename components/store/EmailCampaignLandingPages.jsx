@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import { Copy, ExternalLink, ImagePlus, Plus, Search, Trash2, Check } from 'lucide-react';
 import {
@@ -193,6 +193,8 @@ export default function EmailCampaignLandingPages({ getToken }) {
   const [searchLoading, setSearchLoading] = useState(false);
   const [selectingAll, setSelectingAll] = useState(false);
   const [selectedMeta, setSelectedMeta] = useState({});
+  const [productOverIndex, setProductOverIndex] = useState(null);
+  const productDragIndex = useRef(null);
 
   const authHeaders = useCallback(async () => {
     const token = await getToken?.();
@@ -475,6 +477,26 @@ export default function EmailCampaignLandingPages({ getToken }) {
       return next.slice(0, 40);
     });
     setPickerTagInput('');
+  };
+
+  const moveSelectedProduct = (fromIndex, toIndex) => {
+    setForm((prev) => {
+      const ids = [...(prev.productIds || [])];
+      if (
+        !Number.isFinite(fromIndex)
+        || !Number.isFinite(toIndex)
+        || fromIndex < 0
+        || toIndex < 0
+        || fromIndex >= ids.length
+        || toIndex >= ids.length
+        || fromIndex === toIndex
+      ) {
+        return prev;
+      }
+      const [id] = ids.splice(fromIndex, 1);
+      ids.splice(toIndex, 0, id);
+      return { ...prev, productIds: ids };
+    });
   };
 
   const toggleProduct = (product) => {
@@ -847,25 +869,59 @@ export default function EmailCampaignLandingPages({ getToken }) {
               <div className="text-xs font-semibold text-slate-800">
                 Products on this page ({form.productIds.length}/{EMAIL_CAMPAIGN_PAGE_MAX_PRODUCTS})
               </div>
+              {selectedProducts.length > 1 ? (
+                <p className="text-[11px] text-slate-500">Drag a product to change its place.</p>
+              ) : null}
             </div>
 
             {selectedProducts.length ? (
               <div className="flex flex-wrap gap-2">
-                {selectedProducts.map((product) => (
-                  <button
+                {selectedProducts.map((product, index) => (
+                  <div
                     key={product.id}
-                    type="button"
-                    onClick={() => toggleProduct(product)}
-                    className="inline-flex max-w-full items-center gap-2 rounded-full border border-teal-200 bg-white px-2.5 py-1 text-xs text-slate-800"
-                    title="Remove"
+                    draggable
+                    onDragStart={(event) => {
+                      productDragIndex.current = index;
+                      event.dataTransfer.effectAllowed = 'move';
+                      event.dataTransfer.setData('text/plain', String(index));
+                    }}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      event.dataTransfer.dropEffect = 'move';
+                      if (productOverIndex !== index) setProductOverIndex(index);
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      const from = productDragIndex.current ?? Number(event.dataTransfer.getData('text/plain'));
+                      moveSelectedProduct(from, index);
+                      productDragIndex.current = null;
+                      setProductOverIndex(null);
+                    }}
+                    onDragEnd={() => {
+                      productDragIndex.current = null;
+                      setProductOverIndex(null);
+                    }}
+                    className={`inline-flex max-w-full cursor-grab items-center gap-2 rounded-full border bg-white px-2.5 py-1 text-xs text-slate-800 active:cursor-grabbing ${
+                      productOverIndex === index ? 'border-teal-500 bg-teal-50' : 'border-teal-200'
+                    }`}
                   >
+                    <span className="select-none text-slate-300" aria-hidden="true">⋮⋮</span>
                     {product.image ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={product.image} alt="" className="h-5 w-5 rounded object-cover" />
                     ) : null}
                     <span className="truncate">{product.name || product.id}</span>
-                    <span className="text-slate-400">×</span>
-                  </button>
+                    <button
+                      type="button"
+                      draggable={false}
+                      onDragStart={(event) => event.preventDefault()}
+                      onClick={() => toggleProduct(product)}
+                      className="text-slate-400 hover:text-slate-700"
+                      aria-label="Remove"
+                    >
+                      ×
+                    </button>
+                  </div>
                 ))}
               </div>
             ) : (

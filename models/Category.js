@@ -89,6 +89,10 @@ const categorySchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  merchandisedProductIds: {
+    type: [String],
+    default: [],
+  },
 }, {
   timestamps: true
 });
@@ -97,6 +101,10 @@ categorySchema.index({ parentId: 1, name: 1 });
 categorySchema.index({ parentId: 1, sortOrder: 1 });
 categorySchema.index({ level: 1, sortOrder: 1 });
 categorySchema.index({ isActive: 1, level: 1 });
+
+if (mongoose.models.Category && !mongoose.models.Category.schema.paths.merchandisedProductIds) {
+  delete mongoose.models.Category;
+}
 
 const Category = mongoose.models.Category || mongoose.model('Category', categorySchema);
 
