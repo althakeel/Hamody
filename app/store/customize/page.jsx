@@ -21,6 +21,7 @@ import {
   MessageCircle,
   Tag,
   Gift,
+  Percent,
 } from 'lucide-react'
 
 const designPages = [
@@ -101,6 +102,12 @@ const designPages = [
     description: 'Set the WhatsApp number and choose which product pages show a chat button.',
     href: '/store/customize/whatsapp-widget',
     icon: MessageCircle,
+  },
+  {
+    title: 'Mobile bottom button',
+    description: 'Phone circle: round image or text, link, background color, and animation.',
+    href: '/store/customize/bottom-button',
+    icon: Percent,
   },
   {
     title: 'Scroll to Top',

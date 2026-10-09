@@ -12,6 +12,7 @@ import {
   DEFAULT_OFFERS_NAV_LABEL,
   DEFAULT_OFFERS_NAV_LABEL_AR,
   normalizeNavGifUrl,
+  readBottomNavSettings,
   splitOffersNavLabel,
 } from '@/lib/offersPageSettings'
 
@@ -20,9 +21,6 @@ const INACTIVE_NAV_COLOR = '#94a3b8'
 const NAVBAR_APPEARANCE_CACHE_KEY = 'navbarAppearanceCache'
 const OFFERS_HREF = '/offers'
 const SHOP_HREF = '/shop'
-const DEALS_ACCENT = '#ea580c'
-const DEALS_ACCENT_DARK = '#c2410c'
-
 function readCachedBrandColor() {
   if (typeof window === 'undefined') return DEFAULT_BRAND_COLOR
   try {
@@ -116,47 +114,94 @@ function RegularNavItem({ item, pathname, brandColor, hydrated }) {
   )
 }
 
-function CenterTodayDealsItem({ pathname, line1, line2, gifUrl = '' }) {
-  const isActive = pathname === OFFERS_HREF
-  const hasGif = Boolean(String(gifUrl || '').trim())
+function bottomNavPathMatches(pathname, href) {
+  if (!href.startsWith('/')) return false
+  const path = href.split('?')[0].split('#')[0] || '/'
+  if (path === '/') return pathname === '/'
+  return pathname === path || pathname.startsWith(`${path}/`)
+}
 
-  return (
-    <Link
-      href={OFFERS_HREF}
-      className="group relative -mt-4 flex min-w-0 flex-1 flex-col items-center justify-end pb-0.5"
-      aria-label={`${line1} ${line2}`}
-      aria-current={isActive ? 'page' : undefined}
-    >
+function CenterTodayDealsItem({
+  pathname,
+  line1,
+  line2,
+  gifUrl = '',
+  settings,
+}) {
+  const resolvedHref = settings?.href || OFFERS_HREF
+  const isExternal = /^https?:\/\//i.test(resolvedHref)
+  const isActive = !isExternal && bottomNavPathMatches(pathname, resolvedHref)
+  const showImage = settings?.mode === 'image' && Boolean(String(settings?.imageUrl || '').trim())
+  const showCircleText = settings?.mode === 'text' && Boolean(String(settings?.circleText || '').trim())
+  const hasGif = !showImage && !showCircleText && Boolean(String(gifUrl || '').trim())
+  const labelColor = isActive ? settings.labelActiveColor : settings.labelColor
+  const className = 'group relative -mt-4 flex min-w-0 flex-1 flex-col items-center justify-end pb-0.5'
+  const circle = (
+    <>
       <span
-        className="relative flex h-[46px] w-[46px] items-center justify-center overflow-hidden rounded-full shadow-[0_4px_14px_rgba(234,88,12,0.35)] ring-[3px] ring-white transition-transform duration-200 active:scale-95"
+        className={`relative flex h-[46px] w-[46px] items-center justify-center overflow-hidden rounded-full ring-[3px] ring-white active:scale-95 ${settings.animationClass || ''}`}
         style={{
-          background: `linear-gradient(145deg, ${DEALS_ACCENT} 0%, ${DEALS_ACCENT_DARK} 100%)`,
+          background: showImage ? settings.backgroundColor : settings.background,
+          boxShadow: `0 4px 14px ${settings.shadow}`,
         }}
       >
-        {hasGif ? (
+        {showImage ? (
+          <img src={settings.imageUrl} alt="" className="h-full w-full object-cover" />
+        ) : showCircleText ? (
+          <span className="max-w-[40px] truncate px-1 text-center text-[11px] font-extrabold leading-none text-white">
+            {settings.circleText}
+          </span>
+        ) : hasGif ? (
           <img src={gifUrl} alt="" className="h-7 w-7 object-contain" />
         ) : (
           <Percent size={21} color="#ffffff" strokeWidth={2.5} />
         )}
       </span>
+      {line1 ? (
       <span className="mt-1 flex flex-col items-center leading-none">
         <span
           className={`text-[8px] leading-tight transition-colors duration-200 ${
             isActive ? 'font-bold' : 'font-semibold'
           }`}
-          style={{ color: isActive ? DEALS_ACCENT_DARK : DEALS_ACCENT }}
+          style={{ color: labelColor }}
         >
           {line1}
         </span>
-        <span
-          className={`text-[8px] leading-tight transition-colors duration-200 ${
-            isActive ? 'font-bold' : 'font-semibold'
-          }`}
-          style={{ color: isActive ? DEALS_ACCENT_DARK : DEALS_ACCENT }}
-        >
-          {line2}
-        </span>
+        {line2 ? (
+          <span
+            className={`text-[8px] leading-tight transition-colors duration-200 ${
+              isActive ? 'font-bold' : 'font-semibold'
+            }`}
+            style={{ color: labelColor }}
+          >
+            {line2}
+          </span>
+        ) : null}
       </span>
+      ) : null}
+    </>
+  )
+
+  if (isExternal) {
+    return (
+      <a
+        href={resolvedHref}
+        className={className}
+        aria-label={`${line1} ${line2}`}
+      >
+        {circle}
+      </a>
+    )
+  }
+
+  return (
+    <Link
+      href={resolvedHref}
+      className={className}
+      aria-label={`${line1} ${line2}`}
+      aria-current={isActive ? 'page' : undefined}
+    >
+      {circle}
     </Link>
   )
 }
@@ -170,15 +215,21 @@ export default function MobileBottomNav() {
   const { user } = useAuth()
   const { t, language } = useStorefrontI18n()
   const brandColor = useBrandColor()
-  const [dealsNavLabels, setDealsNavLabels] = useState({
+  const [, setDealsNavLabels] = useState({
     en: DEFAULT_OFFERS_NAV_LABEL,
     ar: DEFAULT_OFFERS_NAV_LABEL_AR,
   })
   const [dealsNavGifUrl, setDealsNavGifUrl] = useState('')
+  const [bottomNav, setBottomNav] = useState(() => readBottomNavSettings({}))
+  const [bottomNavReady, setBottomNavReady] = useState(false)
   const isSignedIn = !!user
   const isArabic = language === 'ar'
-  const dealsNavLabel = isArabic ? dealsNavLabels.ar : dealsNavLabels.en
-  const dealsNavParts = splitOffersNavLabel(dealsNavLabel)
+  const belowLabel = isArabic
+    ? (bottomNav.belowTextAr || bottomNav.belowText)
+    : bottomNav.belowText
+  const dealsNavParts = belowLabel
+    ? splitOffersNavLabel(belowLabel)
+    : { top: '', bottom: '' }
 
   useEffect(() => {
     try {
@@ -194,6 +245,10 @@ export default function MobileBottomNav() {
         if (parsed?.gif !== undefined || parsed?.navGifUrl !== undefined) {
           setDealsNavGifUrl(normalizeNavGifUrl(parsed.gif || parsed.navGifUrl))
         }
+        if (parsed?.bottomNav) {
+          setBottomNav(readBottomNavSettings(parsed))
+          setBottomNavReady(true)
+        }
       }
     } catch {
       // Ignore storage read failures.
@@ -205,12 +260,15 @@ export default function MobileBottomNav() {
         ar: String(offersPage.navLabelAr || DEFAULT_OFFERS_NAV_LABEL_AR).trim() || DEFAULT_OFFERS_NAV_LABEL_AR,
       }
       const nextGif = normalizeNavGifUrl(offersPage.navGifUrl || offersPage.gif)
+      const nextBottomNav = readBottomNavSettings(offersPage)
       setDealsNavLabels(nextLabels)
       setDealsNavGifUrl(nextGif)
+      setBottomNav(nextBottomNav)
       try {
         window.localStorage.setItem('offersNavLabelCache', JSON.stringify({
           ...nextLabels,
           gif: nextGif,
+          bottomNav: nextBottomNav,
         }))
       } catch {
         // Ignore storage write failures.
@@ -228,6 +286,7 @@ export default function MobileBottomNav() {
         applyOffersNav(data.offersPage)
       })
       .catch(() => {})
+      .finally(() => setBottomNavReady(true))
 
     const handleOffersNavLabelUpdate = (event) => {
       const detail = event?.detail || {}
@@ -239,6 +298,9 @@ export default function MobileBottomNav() {
       }
       if (detail.gif !== undefined || detail.navGifUrl !== undefined) {
         setDealsNavGifUrl(normalizeNavGifUrl(detail.gif || detail.navGifUrl))
+      }
+      if (detail.bottomNav) {
+        setBottomNav(readBottomNavSettings(detail))
       }
     }
     window.addEventListener('offersNavLabelUpdated', handleOffersNavLabelUpdate)
@@ -296,12 +358,20 @@ export default function MobileBottomNav() {
           />
         ))}
 
-        <CenterTodayDealsItem
-          pathname={pathname}
-          line1={dealsNavParts.top}
-          line2={dealsNavParts.bottom || dealsNavLabel}
-          gifUrl={dealsNavGifUrl}
-        />
+        {bottomNavReady ? (
+          <CenterTodayDealsItem
+            pathname={pathname}
+            line1={dealsNavParts.top}
+            line2={dealsNavParts.bottom}
+            gifUrl={dealsNavGifUrl}
+            settings={bottomNav}
+          />
+        ) : (
+          <span className="relative -mt-4 flex min-w-0 flex-1 flex-col items-center justify-end pb-0.5" aria-hidden="true">
+            <span className="h-[46px] w-[46px] animate-pulse rounded-full bg-slate-200 ring-[3px] ring-white" />
+            <span className="mt-1 h-2 w-8 animate-pulse rounded bg-slate-200" />
+          </span>
+        )}
 
         {rightItems.map((item) => (
           <RegularNavItem

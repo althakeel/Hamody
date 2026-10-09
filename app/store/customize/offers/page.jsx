@@ -37,6 +37,7 @@ import {
   getOffersNavButtonAppearance,
   getOffersPageSubtitle,
   normalizeOffersPage,
+  readBottomNavSettings,
 } from '@/lib/offersPageSettings'
 import OffersNavLabel from '@/components/OffersNavLabel'
 
@@ -466,6 +467,7 @@ export default function OffersCustomizePage() {
           ar: payload.navLabelAr,
           style: payload.navStyle,
           gif: payload.navGifUrl,
+          bottomNav: readBottomNavSettings(payload),
         }))
         window.dispatchEvent(new CustomEvent('offersNavLabelUpdated', {
           detail: {
@@ -473,6 +475,7 @@ export default function OffersCustomizePage() {
             ar: payload.navLabelAr,
             style: payload.navStyle,
             gif: payload.navGifUrl,
+            bottomNav: readBottomNavSettings(payload),
           },
         }))
       } catch {
@@ -675,7 +678,7 @@ export default function OffersCustomizePage() {
                   ))}
                 </div>
                 <p className="mt-1 text-[11px] text-slate-400">
-                  Emoji and GIF are supported. Type 🔥 or :fire: LAST CHANCE. The button always opens /offers.
+                  These words also sit under the phone circle. Emoji and GIF are supported. Type 🔥 or :fire: LAST CHANCE. Circle color, image, and link are on Customize → Mobile bottom button.
                 </p>
               </div>
               <div>
@@ -754,7 +757,7 @@ export default function OffersCustomizePage() {
                       </button>
                     ) : null}
                     <p className="mt-1 text-[11px] text-slate-400">
-                      Animated GIF stays animated on the storefront. Max 2MB.
+                      Animated GIF stays animated on the header button. Max 2MB.
                     </p>
                   </div>
                 </div>
@@ -763,7 +766,7 @@ export default function OffersCustomizePage() {
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <h3 className="text-xs font-semibold text-slate-800">Navbar button style</h3>
                 <p className="mt-1 text-[11px] text-slate-400">
-                  Changes the look of the header button only. The link stays /offers.
+                  Changes the look of the header button only.
                 </p>
 
                 <div className="mt-3 space-y-3">
