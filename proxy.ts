@@ -1,9 +1,5 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import {
-  STOREFRONT_LANGUAGE_COOKIE,
-  detectLanguageFromAcceptLanguage,
-} from '@/lib/storefrontLanguage';
 import { resolveLegacyCategoryRedirect } from '@/lib/categoryRedirects';
 import { resolveLegacyProductRedirect } from '@/lib/productRedirects';
 import { isStagingStoreHost, normalizeRequestHost } from '@/lib/stagingHost';
@@ -48,21 +44,6 @@ const publicEndpoints = [
 const routeProtectedEndpoints = [
   '/api/store/migration/wp-categories',
 ];
-
-function applyStorefrontLanguageCookie(request: NextRequest, response: NextResponse) {
-  const cookieLang = request.cookies.get(STOREFRONT_LANGUAGE_COOKIE)?.value;
-  if (cookieLang === 'ar' || cookieLang === 'en') {
-    return;
-  }
-
-  const acceptLanguage = request.headers.get('accept-language') || '';
-  const language = detectLanguageFromAcceptLanguage(acceptLanguage);
-  response.cookies.set(STOREFRONT_LANGUAGE_COOKIE, language, {
-    path: '/',
-    maxAge: 31536000,
-    sameSite: 'lax',
-  });
-}
 
 function withApiSecurity(
   request: NextRequest,
@@ -246,9 +227,7 @@ export async function proxy(request: NextRequest) {
 
   const response = NextResponse.next();
 
-  if (!isApiRoute) {
-    applyStorefrontLanguageCookie(request, response);
-  } else {
+  if (isApiRoute) {
     withApiSecurity(request, response, { rate: rateResult, requestId });
     if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
       logApiRequest({

@@ -16,8 +16,32 @@ import {
   normalizeCategorySliderSideImagePosition,
   normalizeCategorySliderAutoSlide,
   normalizeCategorySliderAutoSlideInterval,
+  CATEGORY_SLIDER_MOBILE_IMAGE_RATIOS,
+  DEFAULT_CATEGORY_SLIDER_MOBILE_IMAGE_RATIO,
+  normalizeCategorySliderMobileImageRatio,
+  categorySliderMobileImageRatioParts,
 } from '@/lib/categorySliderTheme';
 import { sortCategorySliders } from '@/lib/categorySliderOrder';
+import { flattenShowcaseCategories } from '@/lib/showcaseBannerLinks';
+import { BOTTOM_NAV_PAGE_OPTIONS } from '@/lib/bottomNavLinkChoices';
+import { categorySliderDefaultPath, normalizeCategorySliderViewAll } from '@/lib/categorySliderViewAll';
+import { slugifyCategory } from '@/lib/categorySlug';
+import StoreDropdown from '@/components/store/StoreDropdown';
+
+const VIEW_ALL_TARGETS = [
+  { id: 'default', label: 'Default page' },
+  { id: 'category', label: 'Category' },
+  { id: 'landing', label: 'Landing page' },
+  { id: 'page', label: 'Existing page' },
+  { id: 'custom', label: 'Custom URL' },
+];
+
+const EMPTY_VIEW_ALL = { viewAllEnabled: false, viewAllTarget: 'default', viewAllValue: '' };
+
+function appImageFrameStyle(ratio) {
+  const parts = categorySliderMobileImageRatioParts(ratio);
+  return { aspectRatio: `${parts.width} / ${parts.height}` };
+}
 
 export default function CategorySliderPage() {
   const { user, getToken, loading: authLoading } = useAuth();
@@ -39,17 +63,29 @@ export default function CategorySliderPage() {
     subtitleAr: '',
     sideImage: '',
     sideImageAr: '',
+    mobileImage: '',
+    mobileImageAr: '',
+    mobileImageRatio: DEFAULT_CATEGORY_SLIDER_MOBILE_IMAGE_RATIO,
     sideImagePosition: 'left',
     cardsPerRow: 6,
     autoSlide: false,
     autoSlideIntervalMs: DEFAULT_CATEGORY_SLIDER_AUTO_SLIDE_INTERVAL_MS,
     backgroundColor: DEFAULT_CATEGORY_SLIDER_BACKGROUND,
     productIds: [],
+    ...EMPTY_VIEW_ALL,
   });
   const [translatingCopy, setTranslatingCopy] = useState(false);
   const [uploadingSideImage, setUploadingSideImage] = useState('');
   const [reorderingId, setReorderingId] = useState(null);
   const [myStoreScopeIds, setMyStoreScopeIds] = useState(() => new Set());
+  const [categories, setCategories] = useState([]);
+  const [landingPages, setLandingPages] = useState([]);
+  const [brandOptions, setBrandOptions] = useState([]);
+  const [productPickMode, setProductPickMode] = useState('manual');
+  const [pickCategoryId, setPickCategoryId] = useState('');
+  const [pickBrand, setPickBrand] = useState('');
+  const [pickerResults, setPickerResults] = useState([]);
+  const [pickerLoading, setPickerLoading] = useState(false);
 
   const normalizeProductIds = (ids = []) => (
     [...new Set(
@@ -97,6 +133,76 @@ export default function CategorySliderPage() {
   useEffect(() => {
     console.log('💾 FormData updated:', formData);
   }, [formData]);
+
+  useEffect(() => {
+    if (authLoading || !user) return undefined;
+    let active = true;
+    const loadTargets = async () => {
+      try {
+        const token = await getToken();
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const [categoryRes, landingRes, brandRes] = await Promise.all([
+          axios.get('/api/categories'),
+          token
+            ? axios.get('/api/store/email-marketing/pages', { headers })
+            : Promise.resolve({ data: { pages: [] } }),
+          token
+            ? axios.get('/api/store/product', { headers, params: { manage: 'true', distinct: 'brands' } })
+            : Promise.resolve({ data: { brands: [] } }),
+        ]);
+        if (!active) return;
+        setCategories(Array.isArray(categoryRes.data?.categories) ? categoryRes.data.categories : []);
+        setLandingPages(Array.isArray(landingRes.data?.pages) ? landingRes.data.pages : []);
+        setBrandOptions((Array.isArray(brandRes.data?.brands) ? brandRes.data.brands : []).map((brand) => ({
+          value: brand,
+          label: brand,
+        })));
+      } catch (error) {
+        console.error('Failed to load View all destinations', error);
+      }
+    };
+    void loadTargets();
+    return () => {
+      active = false;
+    };
+  }, [authLoading, user, getToken]);
+
+  const categoryOptions = flattenShowcaseCategories(categories).map((category) => ({
+    value: category.slug,
+    label: category.label,
+  }));
+  const categoryIdOptions = (() => {
+    const list = Array.isArray(categories) ? categories : [];
+    const byParent = new Map();
+    list.forEach((item) => {
+      const parent = String(item?.parentId || '');
+      if (!byParent.has(parent)) byParent.set(parent, []);
+      byParent.get(parent).push(item);
+    });
+    const rows = [];
+    const walk = (parentId, depth) => {
+      const children = (byParent.get(parentId) || []).slice().sort((a, b) => String(a?.name || '').localeCompare(String(b?.name || '')));
+      children.forEach((item) => {
+        const id = String(item?._id || item?.id || '');
+        if (!id) return;
+        rows.push({ value: id, label: `${'— '.repeat(depth)}${item.name || id}` });
+        walk(id, depth + 1);
+      });
+    };
+    walk('', 0);
+    if (rows.length) return rows;
+    return list.flatMap((item) => {
+      const id = String(item?._id || item?.id || '');
+      return id ? [{ value: id, label: item.name || id }] : [];
+    });
+  })();
+  const landingOptions = landingPages.flatMap((page) => {
+    const slug = String(page?.slug || '').trim();
+    if (!slug) return [];
+    const title = String(page?.title || slug).trim();
+    const status = page?.status === 'published' ? 'Published' : 'Draft';
+    return [{ value: slug, label: `${title} · ${status}` }];
+  });
 
   const fetchData = async ({ silent = false } = {}) => {
     try {
@@ -158,11 +264,15 @@ export default function CategorySliderPage() {
           subtitle: subtitleValue,
           sideImage: section.sideImage ? String(section.sideImage).trim() : '',
           sideImageAr: section.sideImageAr ? String(section.sideImageAr).trim() : '',
+          mobileImage: section.mobileImage ? String(section.mobileImage).trim() : '',
+          mobileImageAr: section.mobileImageAr ? String(section.mobileImageAr).trim() : '',
+          mobileImageRatio: normalizeCategorySliderMobileImageRatio(section.mobileImageRatio),
           sideImagePosition: normalizeCategorySliderSideImagePosition(section.sideImagePosition),
           cardsPerRow: section.cardsPerRow === 5 ? 5 : 6,
           autoSlide: normalizeCategorySliderAutoSlide(section.autoSlide),
           autoSlideIntervalMs: normalizeCategorySliderAutoSlideInterval(section.autoSlideIntervalMs),
           backgroundColor: normalizeCategorySliderBackground(section.backgroundColor),
+          ...normalizeCategorySliderViewAll(section),
         };
       });
       console.log('📊 Fetched sliders:', normalizedSliders);
@@ -251,7 +361,7 @@ export default function CategorySliderPage() {
   };
 
   const handleAddSlider = () => {
-    setFormData({ title: '', subtitle: '', titleAr: '', subtitleAr: '', sideImage: '', sideImageAr: '', sideImagePosition: 'left', cardsPerRow: 6, autoSlide: false, autoSlideIntervalMs: DEFAULT_CATEGORY_SLIDER_AUTO_SLIDE_INTERVAL_MS, backgroundColor: DEFAULT_CATEGORY_SLIDER_BACKGROUND, productIds: [] });
+    setFormData({ title: '', subtitle: '', titleAr: '', subtitleAr: '', sideImage: '', sideImageAr: '', mobileImage: '', mobileImageAr: '', mobileImageRatio: DEFAULT_CATEGORY_SLIDER_MOBILE_IMAGE_RATIO, sideImagePosition: 'left', cardsPerRow: 6, autoSlide: false, autoSlideIntervalMs: DEFAULT_CATEGORY_SLIDER_AUTO_SLIDE_INTERVAL_MS, backgroundColor: DEFAULT_CATEGORY_SLIDER_BACKGROUND, productIds: [], ...EMPTY_VIEW_ALL });
     setEditingIdx(null);
     setShowForm(true);
   };
@@ -276,12 +386,17 @@ export default function CategorySliderPage() {
       subtitleAr: slider.subtitleAr ? String(slider.subtitleAr).trim() : '',
       sideImage: slider.sideImage ? String(slider.sideImage).trim() : '',
       sideImageAr: slider.sideImageAr ? String(slider.sideImageAr).trim() : '',
+      mobileImage: slider.mobileImage ? String(slider.mobileImage).trim() : '',
+      mobileImageAr: slider.mobileImageAr ? String(slider.mobileImageAr).trim() : '',
+      mobileImageRatio: normalizeCategorySliderMobileImageRatio(slider.mobileImageRatio),
       sideImagePosition: normalizeCategorySliderSideImagePosition(slider.sideImagePosition),
       cardsPerRow: slider.cardsPerRow === 5 ? 5 : 6,
       autoSlide: normalizeCategorySliderAutoSlide(slider.autoSlide),
       autoSlideIntervalMs: normalizeCategorySliderAutoSlideInterval(slider.autoSlideIntervalMs),
       backgroundColor: normalizeCategorySliderBackground(slider.backgroundColor),
-      productIds: slider.productIds || []
+      productIds: slider.productIds || [],
+      slug: slider.slug || '',
+      ...normalizeCategorySliderViewAll(slider),
     };
     console.log('📝 New form data being set:', newFormData);
     setFormData(newFormData);
@@ -331,7 +446,13 @@ export default function CategorySliderPage() {
 
   const handleSideImageUpload = async (file, field = 'sideImage') => {
     if (!file) return;
-    const imageField = field === 'sideImageAr' ? 'sideImageAr' : 'sideImage';
+    const imageFields = {
+      sideImage: 'Side image uploaded',
+      sideImageAr: 'Arabic side image uploaded',
+      mobileImage: 'App image uploaded',
+      mobileImageAr: 'Arabic app image uploaded',
+    };
+    const imageField = imageFields[field] ? field : 'sideImage';
 
     try {
       setUploadingSideImage(imageField);
@@ -371,7 +492,7 @@ export default function CategorySliderPage() {
       }
 
       setFormData((prev) => ({ ...prev, [imageField]: data.url }));
-      toast.success(imageField === 'sideImageAr' ? 'Arabic side image uploaded' : 'Side image uploaded');
+      toast.success(imageFields[imageField] || 'Image uploaded');
     } catch (error) {
       console.error('Side image upload failed:', error);
       toast.error(error?.message || 'Failed to upload image');
@@ -387,6 +508,11 @@ export default function CategorySliderPage() {
     }
     if (formData.productIds.length === 0) {
       toast.error('Please select at least one product');
+      return;
+    }
+    const viewAll = normalizeCategorySliderViewAll(formData);
+    if (viewAll.viewAllEnabled && viewAll.viewAllTarget !== 'default' && !viewAll.viewAllValue) {
+      toast.error('Choose where View all opens');
       return;
     }
     if (!isPlatformAdmin && showAllSliders && editingIdx !== null) {
@@ -427,12 +553,17 @@ export default function CategorySliderPage() {
           subtitleAr: formData.subtitleAr ? String(formData.subtitleAr).trim() : '',
           sideImage: formData.sideImage ? String(formData.sideImage).trim() : '',
           sideImageAr: formData.sideImageAr ? String(formData.sideImageAr).trim() : '',
+          mobileImage: formData.mobileImage ? String(formData.mobileImage).trim() : '',
+          mobileImageAr: formData.mobileImageAr ? String(formData.mobileImageAr).trim() : '',
+          mobileImageRatio: normalizeCategorySliderMobileImageRatio(formData.mobileImageRatio),
           sideImagePosition: normalizeCategorySliderSideImagePosition(formData.sideImagePosition),
           cardsPerRow: formData.cardsPerRow === 5 ? 5 : 6,
           autoSlide: normalizeCategorySliderAutoSlide(formData.autoSlide),
           autoSlideIntervalMs: normalizeCategorySliderAutoSlideInterval(formData.autoSlideIntervalMs),
           backgroundColor: normalizeCategorySliderBackground(formData.backgroundColor),
           productIds: normalizeProductIds(formData.productIds),
+          slug: String(formData.slug || '').trim(),
+          ...normalizeCategorySliderViewAll(formData),
         };
         console.log('💾 Final update payload:', JSON.stringify(updatePayload));
         console.log('💾 === UPDATE PAYLOAD READY ===');
@@ -476,12 +607,17 @@ export default function CategorySliderPage() {
           subtitleAr: formData.subtitleAr ? String(formData.subtitleAr).trim() : '',
           sideImage: formData.sideImage ? String(formData.sideImage).trim() : '',
           sideImageAr: formData.sideImageAr ? String(formData.sideImageAr).trim() : '',
+          mobileImage: formData.mobileImage ? String(formData.mobileImage).trim() : '',
+          mobileImageAr: formData.mobileImageAr ? String(formData.mobileImageAr).trim() : '',
+          mobileImageRatio: normalizeCategorySliderMobileImageRatio(formData.mobileImageRatio),
           sideImagePosition: normalizeCategorySliderSideImagePosition(formData.sideImagePosition),
           cardsPerRow: formData.cardsPerRow === 5 ? 5 : 6,
           autoSlide: normalizeCategorySliderAutoSlide(formData.autoSlide),
           autoSlideIntervalMs: normalizeCategorySliderAutoSlideInterval(formData.autoSlideIntervalMs),
           backgroundColor: normalizeCategorySliderBackground(formData.backgroundColor),
           productIds: normalizeProductIds(formData.productIds),
+          slug: String(formData.slug || '').trim(),
+          ...normalizeCategorySliderViewAll(formData),
         };
         console.log('💾 Create payload:', createPayload);
         await axios.post('/api/store/category-slider', createPayload, {
@@ -537,6 +673,79 @@ export default function CategorySliderPage() {
     }
   };
 
+  const addPickerProducts = (list, { replace = false } = {}) => {
+    const normalized = (list || []).map((product) => ({
+      ...product,
+      id: normalizeId(product.id || product._id),
+    })).filter((product) => product.id);
+    setProducts((prev) => {
+      const map = new Map(prev.map((product) => [normalizeId(product.id), product]));
+      normalized.forEach((product) => map.set(product.id, product));
+      return Array.from(map.values());
+    });
+    if (replace) {
+      setFormData((prev) => ({
+        ...prev,
+        productIds: Array.from(new Set([...prev.productIds, ...normalized.map((product) => product.id)])),
+      }));
+    }
+    return normalized;
+  };
+
+  useEffect(() => {
+    if (!showForm) return undefined;
+    const term = searchQuery.trim();
+    if (productPickMode === 'manual' && term.length < 2) {
+      setPickerResults([]);
+      return undefined;
+    }
+    if (productPickMode === 'category' && !pickCategoryId) {
+      setPickerResults([]);
+      return undefined;
+    }
+    if (productPickMode === 'brand' && !pickBrand) {
+      setPickerResults([]);
+      return undefined;
+    }
+
+    let active = true;
+    const timer = setTimeout(async () => {
+      try {
+        setPickerLoading(true);
+        const token = await getToken();
+        const params = { limit: 200, sort: 'name', manage: 'true' };
+        if (productPickMode === 'manual') params.search = term;
+        if (productPickMode === 'category') params.category = pickCategoryId;
+        if (productPickMode === 'brand') params.brand = pickBrand;
+        const { data } = await axios.get('/api/store/product', {
+          headers: { Authorization: `Bearer ${token}` },
+          params,
+        });
+        if (!active) return;
+        const list = (data.products || []).map((product) => ({
+          ...product,
+          id: normalizeId(product.id || product._id),
+        })).filter((product) => product.id);
+        setProducts((prev) => {
+          const map = new Map(prev.map((product) => [normalizeId(product.id), product]));
+          list.forEach((product) => map.set(product.id, product));
+          return Array.from(map.values());
+        });
+        setPickerResults(list);
+      } catch (error) {
+        console.error('Product picker failed', error);
+        if (active) setPickerResults([]);
+      } finally {
+        if (active) setPickerLoading(false);
+      }
+    }, productPickMode === 'manual' ? 300 : 0);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [showForm, productPickMode, pickCategoryId, pickBrand, searchQuery, getToken]);
+
   const toggleProductSelection = (productId) => {
     const normalizedId = normalizeId(productId);
     if (!normalizedId) return;
@@ -575,7 +784,7 @@ export default function CategorySliderPage() {
     if (formData.productIds.length === 0) {
       return (
         <p className="rounded-lg bg-white px-3 py-4 text-center text-sm text-gray-400">
-          No products selected yet. Tick products in the search list below.
+          No products selected yet. Add them by category, brand, or search.
         </p>
       );
     }
@@ -652,11 +861,6 @@ export default function CategorySliderPage() {
     );
   };
 
-  const filteredProducts = products.filter(p =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.sku?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   if (loading) return <Loading />;
 
   return (
@@ -669,16 +873,25 @@ export default function CategorySliderPage() {
               <h1 className="text-4xl font-bold text-gray-900 mb-2">📊 Category Sliders</h1>
               <p className="text-gray-600">Create and manage product sliders for your store</p>
             </div>
-            <button
-              onClick={() => setShowAllSliders(!showAllSliders)}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                showAllSliders 
-                  ? 'bg-purple-600 text-white hover:bg-purple-700' 
-                  : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-              }`}
-            >
-              {showAllSliders ? '🌍 Viewing All Sliders' : '👤 My Sliders Only'}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleAddSlider}
+                className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 font-semibold text-white transition hover:bg-green-700"
+              >
+                <FiPlus size={18} /> New slider
+              </button>
+              <button
+                onClick={() => setShowAllSliders(!showAllSliders)}
+                className={`px-4 py-2 rounded-lg font-semibold transition ${
+                  showAllSliders 
+                    ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                }`}
+              >
+                {showAllSliders ? '🌍 Viewing All Sliders' : '👤 My Sliders Only'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -707,9 +920,8 @@ export default function CategorySliderPage() {
         )}
 
         {/* Main Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Sliders List */}
-          <div className="lg:col-span-2">
+        <div>
+          <div>
             {sliders.length === 0 ? (
               <div className="bg-white rounded-xl shadow-sm p-12 text-center border-2 border-dashed border-gray-300">
                 <p className="text-xl text-gray-500 font-semibold mb-2">No sliders yet</p>
@@ -783,7 +995,7 @@ export default function CategorySliderPage() {
                         {slider.subtitleAr ? (
                           <p className="text-sm text-gray-500 mb-2 italic" dir="rtl">"{slider.subtitleAr}"</p>
                         ) : null}
-                        {(slider.sideImage || slider.sideImageAr) ? (
+                        {(slider.sideImage || slider.sideImageAr || slider.mobileImage || slider.mobileImageAr) ? (
                           <div className="mb-2 flex items-center gap-3">
                             {slider.sideImage ? (
                               <div className="flex items-center gap-2">
@@ -807,9 +1019,36 @@ export default function CategorySliderPage() {
                                 <span className="text-xs text-gray-500">Arabic</span>
                               </div>
                             ) : null}
+                            {slider.mobileImage ? (
+                              <div className="flex items-center gap-2">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={slider.mobileImage}
+                                  alt=""
+                                  className="h-16 w-12 rounded-lg border border-gray-200 object-cover"
+                                />
+                                <span className="text-xs text-gray-500">App {normalizeCategorySliderMobileImageRatio(slider.mobileImageRatio)}</span>
+                              </div>
+                            ) : null}
+                            {slider.mobileImageAr ? (
+                              <div className="flex items-center gap-2">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={slider.mobileImageAr}
+                                  alt=""
+                                  className="h-16 w-12 rounded-lg border border-gray-200 object-cover"
+                                />
+                                <span className="text-xs text-gray-500">App Arabic</span>
+                              </div>
+                            ) : null}
                           </div>
                         ) : null}
                         <p className="text-sm text-gray-500 mt-1">📦 {slider.productIds?.length || 0} products · 🖥️ {slider.cardsPerRow === 5 ? 5 : 6} cards/row{slider.autoSlide ? ` · Auto slide ${Math.round((normalizeCategorySliderAutoSlideInterval(slider.autoSlideIntervalMs) || 4000) / 1000)}s` : ''}</p>
+                        {normalizeCategorySliderViewAll(slider).viewAllEnabled ? (
+                          <p className="mt-1 text-xs font-medium text-blue-700">
+                            View all · {VIEW_ALL_TARGETS.find((item) => item.id === normalizeCategorySliderViewAll(slider).viewAllTarget)?.label || 'Default page'}
+                          </p>
+                        ) : null}
                         {slider.storeId && showAllSliders && (
                           <p className="text-xs text-gray-400 mt-1">Store ID: {slider.storeId.substring(0, 8)}...</p>
                         )}
@@ -863,22 +1102,36 @@ export default function CategorySliderPage() {
             )}
           </div>
 
-          {/* Right Column - Form */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-lg p-6 sticky top-8">
-              {/* Form Header */}
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                {showForm ? (editingIdx !== null ? '✏️ Edit Slider' : '➕ New Slider') : '+ Create'}
-              </h2>
-
-              {!showForm ? (
+          {/* Edit popup */}
+          {showForm ? (
+          <div className="fixed inset-0 z-40 flex items-start justify-center p-4 sm:p-8">
+            <button
+              type="button"
+              className="absolute inset-0 bg-slate-900/50"
+              aria-label="Close editor"
+              onClick={() => {
+                setShowForm(false);
+                setSearchQuery('');
+              }}
+            />
+            <div className="relative z-10 flex max-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:max-h-[calc(100vh-4rem)]" lang="en" dir="ltr">
+              <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {editingIdx !== null ? 'Edit Slider' : 'New Slider'}
+                </h2>
                 <button
-                  onClick={handleAddSlider}
-                  className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-lg hover:shadow-lg font-semibold transition"
+                  type="button"
+                  onClick={() => {
+                    setShowForm(false);
+                    setSearchQuery('');
+                  }}
+                  className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"
+                  aria-label="Close"
                 >
-                  Create New Slider
+                  <FiX size={20} />
                 </button>
-              ) : (
+              </div>
+              <div className="overflow-y-auto px-6 py-5">
                 <div className="space-y-4">
                   {/* Title Input */}
                   <div>
@@ -1040,6 +1293,125 @@ export default function CategorySliderPage() {
                         </button>
                       </div>
                     ) : null}
+                  </div>
+
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-sm font-bold text-gray-800">App image</p>
+                    <p className="mt-1 mb-3 text-xs text-gray-500">
+                      Used by the mobile app only. Pick the ratio, then upload. The website does not show this image. The chosen ratio is sent to the app with the image.
+                    </p>
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      {CATEGORY_SLIDER_MOBILE_IMAGE_RATIOS.map((ratio) => {
+                        const selected = normalizeCategorySliderMobileImageRatio(formData.mobileImageRatio) === ratio.value;
+                        return (
+                          <button
+                            key={ratio.value}
+                            type="button"
+                            onClick={() => setFormData((prev) => ({ ...prev, mobileImageRatio: ratio.value }))}
+                            className={`rounded-lg border-2 px-3 py-1.5 text-sm font-semibold ${
+                              selected
+                                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                            }`}
+                          >
+                            {ratio.value}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-2 block text-sm font-bold text-gray-700">
+                          App image (English)
+                        </label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={Boolean(uploadingSideImage)}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleSideImageUpload(file, 'mobileImage');
+                            e.target.value = '';
+                          }}
+                          className="w-full text-sm text-slate-600 file:me-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:font-medium file:text-slate-700 hover:file:bg-slate-100"
+                        />
+                        {uploadingSideImage === 'mobileImage' ? (
+                          <p className="mt-2 text-xs text-blue-600">Uploading app image...</p>
+                        ) : null}
+                        {formData.mobileImage ? (
+                          <div className="mt-3">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={formData.mobileImage}
+                              alt="English app image preview"
+                              className="w-28 rounded-lg border border-gray-200 object-cover"
+                              style={appImageFrameStyle(formData.mobileImageRatio)}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setFormData((prev) => ({ ...prev, mobileImage: '' }))}
+                              className="mt-2 w-full rounded-lg border border-red-200 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
+                            >
+                              Remove English app image
+                            </button>
+                          </div>
+                        ) : (
+                          <div
+                            className="mt-3 flex w-28 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white text-center text-[11px] text-slate-400"
+                            style={appImageFrameStyle(formData.mobileImageRatio)}
+                          >
+                            {normalizeCategorySliderMobileImageRatio(formData.mobileImageRatio)}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-sm font-bold text-gray-700">
+                          App image (Arabic)
+                        </label>
+                        <p className="mb-2 text-xs text-gray-500">
+                          Optional. If empty, the app uses the English image.
+                        </p>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={Boolean(uploadingSideImage)}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleSideImageUpload(file, 'mobileImageAr');
+                            e.target.value = '';
+                          }}
+                          className="w-full text-sm text-slate-600 file:me-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:font-medium file:text-slate-700 hover:file:bg-slate-100"
+                        />
+                        {uploadingSideImage === 'mobileImageAr' ? (
+                          <p className="mt-2 text-xs text-blue-600">Uploading Arabic app image...</p>
+                        ) : null}
+                        {formData.mobileImageAr ? (
+                          <div className="mt-3">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={formData.mobileImageAr}
+                              alt="Arabic app image preview"
+                              className="w-28 rounded-lg border border-gray-200 object-cover"
+                              style={appImageFrameStyle(formData.mobileImageRatio)}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setFormData((prev) => ({ ...prev, mobileImageAr: '' }))}
+                              className="mt-2 w-full rounded-lg border border-red-200 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
+                            >
+                              Remove Arabic app image
+                            </button>
+                          </div>
+                        ) : (
+                          <div
+                            className="mt-3 flex w-28 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white text-center text-[11px] text-slate-400"
+                            style={appImageFrameStyle(formData.mobileImageRatio)}
+                          >
+                            {normalizeCategorySliderMobileImageRatio(formData.mobileImageRatio)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   {(formData.sideImage || formData.sideImageAr) ? (
@@ -1213,6 +1585,163 @@ export default function CategorySliderPage() {
                     ) : null}
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                      View all button
+                    </label>
+                    <p className="mb-3 text-xs text-gray-500">
+                      Turn this on to show View all on the homepage slider. Default opens a separate page for this slider, with its title, subtitle, and products in a grid.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { value: false, label: 'Off' },
+                        { value: true, label: 'On' },
+                      ].map(({ value, label }) => {
+                        const selected = normalizeCategorySliderViewAll(formData).viewAllEnabled === value;
+                        return (
+                          <button
+                            key={label}
+                            type="button"
+                            onClick={() => setFormData((prev) => ({ ...prev, viewAllEnabled: value }))}
+                            className={`rounded-lg border-2 px-4 py-3 text-sm font-semibold transition ${
+                              selected
+                                ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {normalizeCategorySliderViewAll(formData).viewAllEnabled ? (
+                      <div className="mt-4 space-y-3">
+                        <p className="text-sm font-bold text-gray-700">Where it opens</p>
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                          {VIEW_ALL_TARGETS.map((option) => {
+                            const selected = normalizeCategorySliderViewAll(formData).viewAllTarget === option.id;
+                            return (
+                              <button
+                                key={option.id}
+                                type="button"
+                                onClick={() => setFormData((prev) => ({ ...prev, viewAllTarget: option.id }))}
+                                className={`rounded-lg border-2 px-3 py-2 text-sm font-semibold transition ${
+                                  selected
+                                    ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                                }`}
+                              >
+                                {option.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {formData.viewAllTarget === 'default' ? (
+                          <label className="block space-y-1">
+                            <span className="text-sm font-bold text-gray-700">Path</span>
+                            <span className="flex items-center overflow-hidden rounded-lg border-2 border-gray-200 focus-within:border-blue-500">
+                              <span className="bg-gray-50 px-3 py-2 text-sm text-gray-500">/slider/</span>
+                              <input
+                                type="text"
+                                value={formData.slug || ''}
+                                placeholder={slugifyCategory(formData.title) || 'page-name'}
+                                onChange={(event) => setFormData((prev) => ({
+                                  ...prev,
+                                  slug: event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-'),
+                                }))}
+                                className="w-full bg-white px-3 py-2 text-sm outline-none"
+                              />
+                            </span>
+                            <span className="block text-xs text-gray-500">
+                              Change this path if you want a different page. Leave it blank to use the title.
+                              {categorySliderDefaultPath(formData.slug || slugifyCategory(formData.title))
+                                ? ` Opens ${categorySliderDefaultPath(formData.slug || slugifyCategory(formData.title))}.`
+                                : ''}
+                            </span>
+                          </label>
+                        ) : (
+                          <label className="block space-y-1">
+                            <span className="text-sm font-bold text-gray-700">Path</span>
+                            <input
+                              type="text"
+                              value={
+                                formData.viewAllTarget === 'category' && formData.viewAllValue
+                                  ? `/category/${formData.viewAllValue}`
+                                  : formData.viewAllTarget === 'landing' && formData.viewAllValue
+                                    ? `/c/${formData.viewAllValue}`
+                                    : (formData.viewAllValue || '')
+                              }
+                              onChange={(event) => {
+                                const raw = event.target.value.trim();
+                                if (raw.startsWith('/slider/')) {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    viewAllTarget: 'default',
+                                    slug: raw.replace(/^\/slider\//, '').toLowerCase().replace(/[^a-z0-9-]/g, ''),
+                                  }));
+                                  return;
+                                }
+                                if (raw.startsWith('/category/')) {
+                                  setFormData((prev) => ({ ...prev, viewAllTarget: 'category', viewAllValue: raw.replace(/^\/category\//, '').replace(/\/$/, '') }));
+                                  return;
+                                }
+                                if (raw.startsWith('/c/')) {
+                                  setFormData((prev) => ({ ...prev, viewAllTarget: 'landing', viewAllValue: raw.replace(/^\/c\//, '').split('/')[0] }));
+                                  return;
+                                }
+                                const knownPage = BOTTOM_NAV_PAGE_OPTIONS.some((page) => page.value === raw);
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  viewAllTarget: knownPage ? 'page' : 'custom',
+                                  viewAllValue: raw,
+                                }));
+                              }}
+                              placeholder="/category/kitchen or /shop or https://example.com"
+                              className="w-full rounded-lg border-2 border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                            />
+                            <span className="block text-xs text-gray-500">Pick a destination above, then change this path if you need a different address.</span>
+                          </label>
+                        )}
+                        {formData.viewAllTarget === 'category' ? (
+                          <StoreDropdown
+                            value={formData.viewAllValue || ''}
+                            onChange={(value) => setFormData((prev) => ({ ...prev, viewAllValue: value }))}
+                            options={categoryOptions}
+                            placeholder="Choose a category"
+                            searchable
+                          />
+                        ) : null}
+                        {formData.viewAllTarget === 'landing' ? (
+                          <StoreDropdown
+                            value={formData.viewAllValue || ''}
+                            onChange={(value) => setFormData((prev) => ({ ...prev, viewAllValue: value }))}
+                            options={landingOptions}
+                            placeholder="Choose a landing page"
+                            searchable
+                          />
+                        ) : null}
+                        {formData.viewAllTarget === 'page' ? (
+                          <StoreDropdown
+                            value={formData.viewAllValue || ''}
+                            onChange={(value) => setFormData((prev) => ({ ...prev, viewAllValue: value }))}
+                            options={BOTTOM_NAV_PAGE_OPTIONS}
+                            placeholder="Choose a page"
+                            searchable
+                          />
+                        ) : null}
+                        {formData.viewAllTarget === 'custom' ? (
+                          <input
+                            type="text"
+                            value={formData.viewAllValue || ''}
+                            onChange={(event) => setFormData((prev) => ({ ...prev, viewAllValue: event.target.value }))}
+                            placeholder="/shop or https://example.com"
+                            className="w-full rounded-lg border-2 border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                          />
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+
                   {/* Subtitle Preview */}
                   <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-4">
                     <p className="text-xs font-semibold text-purple-700 mb-2">📝 Subtitle Preview</p>
@@ -1245,7 +1774,7 @@ export default function CategorySliderPage() {
                   </div>
 
                   {selectedProductsOpen ? (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                       <button
                         type="button"
                         className="absolute inset-0 bg-slate-900/50"
@@ -1285,48 +1814,99 @@ export default function CategorySliderPage() {
                     </div>
                   ) : null}
 
-                  {/* Search Products */}
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
-                      Search Products
+                    <label className="mb-2 block text-sm font-bold text-gray-700">
+                      Add products
                     </label>
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search..."
-                      className="w-full border-2 border-gray-200 rounded-lg p-2.5 focus:outline-none focus:border-blue-500 text-sm"
-                    />
+                    <div className="mb-3 grid grid-cols-3 gap-2">
+                      {[
+                        { id: 'manual', label: 'Manual' },
+                        { id: 'category', label: 'Category' },
+                        { id: 'brand', label: 'Brand' },
+                      ].map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => setProductPickMode(option.id)}
+                          className={`rounded-lg border-2 px-2 py-2 text-sm font-semibold ${
+                            productPickMode === option.id
+                              ? 'border-blue-600 bg-blue-50 text-blue-700'
+                              : 'border-gray-200 bg-white text-gray-700'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                    {productPickMode === 'manual' ? (
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search name or SKU"
+                        className="w-full rounded-lg border-2 border-gray-200 p-2.5 text-sm focus:border-blue-500 focus:outline-none"
+                      />
+                    ) : null}
+                    {productPickMode === 'category' ? (
+                      <StoreDropdown
+                        value={pickCategoryId}
+                        onChange={setPickCategoryId}
+                        options={categoryIdOptions}
+                        placeholder="Choose a category"
+                        searchable
+                      />
+                    ) : null}
+                    {productPickMode === 'brand' ? (
+                      <StoreDropdown
+                        value={pickBrand}
+                        onChange={setPickBrand}
+                        options={brandOptions}
+                        placeholder="Choose a brand"
+                        searchable
+                      />
+                    ) : null}
+                    {pickerResults.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => addPickerProducts(pickerResults, { replace: true })}
+                        className="mt-3 w-full rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700"
+                      >
+                        Add all shown ({pickerResults.length})
+                      </button>
+                    ) : null}
                   </div>
 
-                  {/* Products List */}
-                  <div className="border-2 border-gray-200 rounded-lg p-3 max-h-64 overflow-y-auto space-y-2">
-                    {filteredProducts.length > 0 ? (
-                      filteredProducts.map((product, idx) => (
+                  <div className="max-h-64 space-y-2 overflow-y-auto rounded-lg border-2 border-gray-200 p-3">
+                    {pickerLoading ? (
+                      <p className="py-4 text-center text-sm text-gray-400">Loading products…</p>
+                    ) : pickerResults.length > 0 ? (
+                      pickerResults.map((product) => (
                         <label
-                          key={product.id || idx}
-                          className="flex items-start gap-3 p-2 cursor-pointer hover:bg-gray-50 rounded transition"
+                          key={product.id}
+                          className="flex cursor-pointer items-start gap-3 rounded p-2 transition hover:bg-gray-50"
                         >
                           <input
                             type="checkbox"
                             checked={formData.productIds.includes(product.id)}
                             onChange={() => toggleProductSelection(product.id)}
-                            className="w-4 h-4 mt-1 cursor-pointer"
+                            className="mt-1 h-4 w-4 cursor-pointer"
                           />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-gray-800 line-clamp-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="line-clamp-2 text-xs font-semibold text-gray-800">
                               {product.name}
                             </p>
-                            {product.basePrice && (
-                              <p className="text-xs text-green-600 font-bold mt-1">
-                                AED{product.basePrice?.toLocaleString()}
-                              </p>
-                            )}
+                            <p className="mt-0.5 text-[11px] text-gray-400">{product.sku || ''}</p>
                           </div>
                         </label>
                       ))
                     ) : (
-                      <p className="text-center text-gray-400 text-sm py-4">No products found</p>
+                      <p className="py-4 text-center text-sm text-gray-400">
+                        {productPickMode === 'manual'
+                          ? 'Type at least 2 letters to search.'
+                          : productPickMode === 'category'
+                            ? 'Choose a category to list its products.'
+                            : 'Choose a brand to list its products.'}
+                      </p>
                     )}
                   </div>
 
@@ -1359,9 +1939,10 @@ export default function CategorySliderPage() {
                     </button>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           </div>
+          ) : null}
         </div>
       </div>
     </div>

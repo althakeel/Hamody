@@ -46,6 +46,7 @@ function classicPresets() {
 }
 
 export async function GET(request) {
+  // Gallery presets include announce-1010-sale (SALE10).
   try {
     const storeId = await getStoreId(request);
     if (!storeId) {

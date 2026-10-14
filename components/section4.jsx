@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import ProductCarousel from '@/components/ProductCarousel'
 import {
   CAROUSEL_PRODUCT_CARD_CLASS,
@@ -130,7 +131,7 @@ function resolveSectionProducts(section) {
 }
 
 const HorizontalSlider = ({ section }) => {
-  const { language } = useStorefrontI18n()
+  const { language, t } = useStorefrontI18n()
   const title = getLocalizedCategorySliderTitle(section, language)
   const subtitle = getLocalizedCategorySliderSubtitle(section, language)
   const embeddedProducts = useMemo(() => resolveSectionProducts(section), [section.products])
@@ -204,6 +205,9 @@ const HorizontalSlider = ({ section }) => {
   const imageFirst = sideImagePosition === 'left'
   const cardsPerRow = getSideImageLayoutCardsPerRow(hasSideImage, section.cardsPerRow)
   const panelBackground = normalizeCategorySliderBackground(section.backgroundColor)
+  const viewAllHref = String(section.viewAllHref || '').trim()
+  const viewAllExternal = /^https?:\/\//i.test(viewAllHref)
+  const viewAllClass = 'inline-flex shrink-0 items-center gap-1 pt-0.5 text-sm font-semibold text-slate-900 hover:text-blue-700'
   const shouldAutoSlide =
     sectionProducts.length > 1 &&
     normalizeCategorySliderAutoSlide(section.autoSlide)
@@ -227,9 +231,24 @@ const HorizontalSlider = ({ section }) => {
       style={{ backgroundColor: panelBackground }}
     >
       <div className={`${hasSideImage ? 'mb-3 lg:mb-2 lg:shrink-0' : 'mb-3 lg:mb-5'}`}>
-        <h2 className={`text-start font-bold text-gray-900 ${hasSideImage ? 'text-lg lg:line-clamp-1 lg:text-base xl:text-lg' : 'text-xl lg:text-2xl'}`}>
-          <bdi dir={getContentDirection(title)}>{title}</bdi>
-        </h2>
+        <div className="flex items-start justify-between gap-3">
+          <h2 className={`min-w-0 text-start font-bold text-gray-900 ${hasSideImage ? 'text-lg lg:line-clamp-1 lg:text-base xl:text-lg' : 'text-xl lg:text-2xl'}`}>
+            <bdi dir={getContentDirection(title)}>{title}</bdi>
+          </h2>
+          {viewAllHref ? (
+            viewAllExternal ? (
+              <a href={viewAllHref} className={viewAllClass}>
+                {t('navbar.viewAll')}
+                <span aria-hidden="true">›</span>
+              </a>
+            ) : (
+              <Link href={viewAllHref} className={viewAllClass}>
+                {t('navbar.viewAll')}
+                <span aria-hidden="true">›</span>
+              </Link>
+            )
+          ) : null}
+        </div>
         {subtitle ? (
           <p
             className={`text-start text-gray-500 ${hasSideImage ? 'mt-0.5 line-clamp-2 text-xs lg:line-clamp-1 lg:text-[10px] xl:text-xs' : 'mt-0.5 text-xs lg:text-sm'}`}

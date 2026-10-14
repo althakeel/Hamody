@@ -4,19 +4,21 @@ import Product from '@/models/Product';
 import { NextResponse } from 'next/server';
 import { getCachedData, setCachedData } from '@/lib/cache';
 import { FEATURED_SECTIONS_CACHE_KEY } from '@/lib/categorySliderCache';
-import { normalizeCategorySliderBackground, normalizeCategorySliderSideImagePosition, normalizeCategorySliderAutoSlide, normalizeCategorySliderAutoSlideInterval, normalizeCategorySliderShowOutOfStock, filterCategorySliderProducts } from '@/lib/categorySliderTheme';
+import { normalizeCategorySliderBackground, normalizeCategorySliderSideImagePosition, normalizeCategorySliderAutoSlide, normalizeCategorySliderAutoSlideInterval, normalizeCategorySliderShowOutOfStock, filterCategorySliderProducts, serializeCategorySliderMobileImageRatio } from '@/lib/categorySliderTheme';
+import { serializeCategorySliderViewAll } from '@/lib/categorySliderViewAll';
+import { ensureCategorySliderSlug } from '@/lib/categorySliderSlug';
 import { sortCategorySliders, backfillCategorySliderSortOrdersIfNeeded } from '@/lib/categorySliderOrder';
 import mongoose from 'mongoose';
 import { attachProductRatings } from '@/lib/attachProductRatings';
 
 const CACHE_KEY = FEATURED_SECTIONS_CACHE_KEY;
-const SERVER_CACHE_TTL_SECONDS = 30;
+const SERVER_CACHE_TTL_SECONDS = 120;
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const STOREFRONT_CACHE_HEADERS = {
-  'Cache-Control': 'public, max-age=0, s-maxage=30, must-revalidate',
+  'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
 };
 
 function orderProductsByIds(products, ids) {
@@ -45,9 +47,15 @@ export async function GET() {
 
     const sections = sortCategorySliders(
       await CategorySlider.find({})
-        .select('title titleAr subtitle subtitleAr sideImage sideImageAr sideImagePosition cardsPerRow backgroundColor autoSlide autoSlideIntervalMs showOutOfStock productIds storeId sortOrder createdAt updatedAt')
+        .select('title titleAr subtitle subtitleAr slug sideImage sideImageAr mobileImage mobileImageAr mobileImageRatio sideImagePosition cardsPerRow backgroundColor autoSlide autoSlideIntervalMs showOutOfStock viewAllEnabled viewAllTarget viewAllValue productIds storeId sortOrder createdAt updatedAt')
         .lean()
     );
+
+    for (const section of sections) {
+      if (!section.slug) {
+        section.slug = await ensureCategorySliderSlug(CategorySlider, section);
+      }
+    }
 
     const allProductIds = [
       ...new Set(
@@ -79,6 +87,9 @@ export async function GET() {
           titleAr: section.titleAr || '',
           subtitleAr: section.subtitleAr || '',
           sideImageAr: section.sideImageAr || '',
+          mobileImage: section.mobileImage || '',
+          mobileImageAr: section.mobileImageAr || '',
+          ...serializeCategorySliderMobileImageRatio(section.mobileImageRatio),
           cardsPerRow: section.cardsPerRow === 5 ? 5 : 6,
           sideImagePosition: normalizeCategorySliderSideImagePosition(section.sideImagePosition),
           sortOrder: Number.isFinite(Number(section.sortOrder)) ? Number(section.sortOrder) : 0,
@@ -86,6 +97,7 @@ export async function GET() {
           autoSlide: normalizeCategorySliderAutoSlide(section.autoSlide),
           autoSlideIntervalMs: normalizeCategorySliderAutoSlideInterval(section.autoSlideIntervalMs),
           showOutOfStock: normalizeCategorySliderShowOutOfStock(section.showOutOfStock),
+          ...serializeCategorySliderViewAll(section),
           products: filterCategorySliderProducts(
             orderProductsByIds(products, productIds),
             false,

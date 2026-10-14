@@ -192,7 +192,7 @@ function isIconImageUrl(value) {
 function ShopShowcaseSkeleton() {
   return (
     <section className={`${HOME_SECTION_CLASS} max-w-[1400px] mx-auto px-0 sm:px-6`} aria-label="Loading shop showcase">
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-stretch">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[224px_minmax(0,1fr)] lg:items-stretch">
         <div className="relative hidden h-full min-h-0 lg:col-start-1 lg:row-start-1 lg:block">
           <aside className="absolute inset-0 flex min-h-0 flex-col overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center gap-2 border-b border-slate-200 px-4 py-3">
@@ -870,7 +870,7 @@ export default function ShopShowcaseSection({
         </div>
       ) : null}
       <section className="max-w-[1400px] mx-auto px-4 sm:px-6">
-      <div className={`grid grid-cols-1 gap-3 overflow-visible lg:items-stretch ${hideCategorySidebar ? '' : 'lg:grid-cols-[280px_minmax(0,1fr)]'}`}>
+      <div className={`grid grid-cols-1 gap-3 overflow-visible lg:items-stretch ${hideCategorySidebar ? '' : 'lg:grid-cols-[224px_minmax(0,1fr)]'}`}>
         {hideCategorySidebar ? null : (
         <div className={`relative z-30 hidden lg:col-start-1 lg:row-start-1 lg:block ${bannerBlocks.length ? 'h-full min-h-0' : ''}`}>
           <div

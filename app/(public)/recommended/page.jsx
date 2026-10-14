@@ -277,7 +277,7 @@ function RecommendedContent() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-[250px_1fr] lg:gap-4">
+        <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-[224px_1fr] lg:gap-4">
           <aside className={`${showMobileFilters ? 'block' : 'hidden'} space-y-3 lg:block lg:sticky lg:top-24`}>
             {rootCategories.length > 0 && (
               <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">

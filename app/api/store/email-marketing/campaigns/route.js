@@ -42,9 +42,27 @@ export async function GET(request) {
     const campaigns = await EmailMarketingCampaign.find(query)
       .sort({ updatedAt: -1 })
       .limit(50)
+      .select('name subject status scheduleMode onceAtList dailyTimes timezone totalSent totalFailed lastRunAt sendingSlotKey finishedSlots sentSlots customerEmails createdAt updatedAt')
       .lean();
 
-    return NextResponse.json({ success: true, campaigns });
+    return NextResponse.json({
+      success: true,
+      campaigns: campaigns.map((campaign) => {
+        const recipientCount = Array.isArray(campaign.customerEmails) ? campaign.customerEmails.length : 0;
+        const sent = Number(campaign.totalSent || 0);
+        const failed = Number(campaign.totalFailed || 0);
+        const slot = String(campaign.sendingSlotKey || '');
+        const finished = slot && (campaign.finishedSlots || []).includes(slot);
+        return {
+          ...campaign,
+          customerEmails: undefined,
+          recipientCount,
+          sentCount: sent,
+          failedCount: failed,
+          sending: Boolean(slot) && !finished && campaign.status === 'active',
+        };
+      }),
+    });
   } catch (error) {
     console.error('[email-marketing campaigns GET]', error);
     return NextResponse.json({ error: error.message || 'Failed to load campaigns' }, { status: 500 });

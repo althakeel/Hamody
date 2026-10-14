@@ -24,6 +24,7 @@ import { useAuth } from "@/lib/useAuth";
 import { trackViewCartDual } from "@/lib/ecommerceTracking";
 import { ensureGa4CategoryCache } from "@/lib/ga4CategoryLookup";
 import { pushGtmEcommerceEvent, toGtmItem } from "@/lib/pushGtmEcommerceEvent";
+import { cartLinesToGtmItems, cartLinesToMetaItems } from "@/lib/gtmEcommerceHelpers";
 import { GTM_EVENTS, gtmDedupeKey } from "@/lib/gtmEvents";
 import { STORE_CURRENCY } from "@/lib/storeCurrency";
 import { getCartEntryProductId, getCartEntryQuantity, isFreeGiftEntry } from "@/lib/freeGiftUtils";
@@ -517,20 +518,20 @@ function CartContent() {
         if (!inStockCartArray.length) return;
         if (viewCartTrackedRef.current) return;
 
+        const gtmItems = cartLinesToGtmItems(inStockCartArray);
+        if (!gtmItems.length) return;
+        const itemsValue = gtmItems.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 1)), 0);
+        const cartValue = Number(totalPrice > 0 ? totalPrice : itemsValue);
+        if (!(cartValue > 0)) return;
+
         viewCartTrackedRef.current = true;
 
-        const cartValue = Number(totalPrice || 0);
-        const gtmItems = inStockCartArray.map((item) => toGtmItem(item));
-
         trackViewCartDual({
-            value: cartValue,
+            value: Number(cartValue.toFixed(2)),
             currency: STORE_CURRENCY,
             gtmItems,
-            metaItems: inStockCartArray.map((item) => ({
-                productId: String(item?._id || item?._cartKey || ''),
-                quantity: Number(item?.quantity || 0),
-            })),
-            numItems: inStockCartArray.reduce((sum, item) => sum + Number(item?.quantity || 0), 0),
+            metaItems: cartLinesToMetaItems(inStockCartArray),
+            numItems: gtmItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
             pageKey: '/cart',
         });
     }, [productsLoaded, inStockCartArray, totalPrice]);

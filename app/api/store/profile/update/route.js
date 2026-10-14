@@ -158,6 +158,7 @@ export async function POST(request) {
       smtpSettings,
       newTagSettings,
       dashboardWelcomeEnabled,
+      customerPickupEnabled,
       dashboardTheme,
       dashboardScale,
       dashboardDisplayOnly,
@@ -226,9 +227,10 @@ export async function POST(request) {
         smtpSettings,
         newTagSettings,
         dashboardWelcomeEnabled,
+        customerPickupEnabled,
       ].some((value) => value !== undefined);
 
-      const welcomeOnly = dashboardWelcomeEnabled !== undefined && [
+      const storeFieldsBesidesFlags = [
         storeName,
         storePhone,
         storeWebsite,
@@ -241,10 +243,21 @@ export async function POST(request) {
         currencyPreference,
         smtpSettings,
         newTagSettings,
-      ].every((value) => value === undefined);
+      ];
+      const welcomeOnly = dashboardWelcomeEnabled !== undefined
+        && customerPickupEnabled === undefined
+        && storeFieldsBesidesFlags.every((value) => value === undefined);
+      const pickupOnly = customerPickupEnabled !== undefined
+        && dashboardWelcomeEnabled === undefined
+        && storeFieldsBesidesFlags.every((value) => value === undefined);
       const canSaveWelcome = welcomeOnly && isAdminEmail(decodedToken.email);
+      const canSavePickup = pickupOnly && (
+        isAdminEmail(decodedToken.email)
+        || access.isOwner
+        || access.permissions?.customerPickup === true
+      );
 
-      if (hasStoreFieldUpdates && !canSaveWelcome && !access.isOwner && !canAccessDashboardArea(access.permissions, 'settings', { isOwner: false })) {
+      if (hasStoreFieldUpdates && !canSaveWelcome && !canSavePickup && !access.isOwner && !canAccessDashboardArea(access.permissions, 'settings', { isOwner: false })) {
         return NextResponse.json({ error: 'You do not have permission to update store settings' }, { status: 403 });
       }
 
@@ -276,6 +289,16 @@ export async function POST(request) {
           return NextResponse.json({ error: 'Only the super admin can change the welcome popup' }, { status: 403 });
         }
         updateStoreData.dashboardWelcomeEnabled = Boolean(dashboardWelcomeEnabled);
+      }
+
+      if (customerPickupEnabled !== undefined) {
+        const canChangePickup = isAdminEmail(decodedToken.email)
+          || access.isOwner
+          || access.permissions?.customerPickup === true;
+        if (!canChangePickup) {
+          return NextResponse.json({ error: 'Only the super admin can change store pickup, unless that access was granted' }, { status: 403 });
+        }
+        updateStoreData.customerPickupEnabled = Boolean(customerPickupEnabled);
       }
 
       if (Object.keys(updateStoreData).length > 0) {
@@ -343,6 +366,7 @@ export async function GET(request) {
         currencyPreference: store?.currencyPreference || 'AED',
         newTagSettings: normalizeNewTagSettings(store?.newTagSettings),
         dashboardWelcomeEnabled: store?.dashboardWelcomeEnabled !== false,
+        customerPickupEnabled: store?.customerPickupEnabled !== false,
       },
       smtpSettings: {
         transactional: {

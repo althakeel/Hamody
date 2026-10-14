@@ -9,11 +9,17 @@ const FIELD_MAP = [
   ['productIds', 'same', 'embedded products[]', 'ProductCarousel cards'],
   ['sideImage', 'same', 'same', 'desktop English side image'],
   ['sideImageAr', 'same', 'same', 'desktop Arabic side image'],
+  ['mobileImage', 'same', 'same', 'app only, not the website'],
+  ['mobileImageAr', 'same', 'same', 'app only, Arabic, not the website'],
+  ['mobileImageRatio', 'same', '3:4 | 2:4 | 4:5 | 1:1 | 9:16', 'app frame; width and height are also sent'],
   ['sideImagePosition', 'same', 'left | right', 'image left/right layout'],
   ['cardsPerRow', 'same', '5 or 6', 'product card width per row'],
   ['backgroundColor', 'same', 'hex color', 'slider panel backgroundColor style'],
   ['autoSlide', 'same', 'boolean', 'ProductCarousel autoSlide'],
   ['autoSlideIntervalMs', 'same', '2000–8000', 'scroll speed'],
+  ['viewAllEnabled', 'same', 'boolean', 'View all button on the slider'],
+  ['viewAllTarget', 'same', 'default | category | landing | page | custom', 'where View all opens'],
+  ['viewAllHref', 'derived', 'path or https URL', 'homepage link; default is /slider/title-slug'],
   ['sortOrder', 'POST /api/store/category-slider/reorder', 'section order', 'homepage slider order'],
 ];
 

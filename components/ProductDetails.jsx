@@ -31,6 +31,7 @@ import ProductNotifyMeForm from "./ProductNotifyMeForm";
 import ProductShareButton from "./ProductShareButton";
 import NewProductTagBadge from "./NewProductTagBadge";
 import ProductWhatsAppWidget from "./ProductWhatsAppWidget";
+import TimeDeliveryBadge from "./TimeDeliveryBadge";
 import ProductCard from "./ProductCard";
 import ProductCarousel from "./ProductCarousel";
 import ProductDescription from "./ProductDescription";
@@ -54,6 +55,7 @@ import {
 } from '@/lib/productMedia';
 import { useHorizontalCarouselDrag } from '@/lib/useHorizontalCarouselDrag';
 import { resolveCategoryHref } from '@/lib/categoryTreeUtils';
+import { slugifyCategory } from '@/lib/categorySlug';
 import { getProductPageHeading, resolveProductCategoryChainFromMap } from '@/lib/productSeo';
 import { PRODUCT_RICH_CONTENT_CLASS, sanitizeProductRichHtml } from '@/lib/productRichContent';
 import { useNavbarColor } from '@/lib/useNavbarColor';
@@ -1718,6 +1720,8 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
       ? product.brandAr
       : (product?.brand || '')
   );
+  const brandSlug = slugifyCategory(product?.brand || '');
+  const brandPageHref = brandSlug ? `/brand/${brandSlug}` : '';
   const mobileArrivalDate = deliveryWindow.primaryArrivalText;
   const qualifiesForFreeMobileDelivery = Boolean(product?.freeShippingEligible)
     || (
@@ -3347,6 +3351,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                 <p dir={isArabic ? 'rtl' : 'ltr'} className="w-full min-w-0 text-[18px] font-semibold leading-snug text-gray-900 break-words whitespace-normal [overflow-wrap:anywhere] lg:hidden">
                   {productHeading}
                 </p>
+                <TimeDeliveryBadge productId={product?._id} arabic={isArabic} page="productPage" />
                 {mobileShortDescription ? (
                   <p className="w-full min-w-0 text-[13px] leading-relaxed text-gray-600">
                     {mobileShortDescription}
@@ -3355,7 +3360,13 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                 {mobileProductBrand ? (
                   <p className="text-[13px] leading-snug text-gray-600">
                     <span className="text-gray-500">{t('product.brandLabel')}: </span>
-                    <span className="font-medium text-gray-800">{mobileProductBrand}</span>
+                    {brandPageHref ? (
+                      <Link href={brandPageHref} className="font-medium text-gray-800 underline-offset-2 hover:underline">
+                        {mobileProductBrand}
+                      </Link>
+                    ) : (
+                      <span className="font-medium text-gray-800">{mobileProductBrand}</span>
+                    )}
                   </p>
                 ) : null}
                 {displaySku ? (
@@ -3527,6 +3538,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
             <div className="hidden lg:block bg-white space-y-4" dir={isArabic ? 'rtl' : 'ltr'}>
               <div>
                 <h1 dir={isArabic ? 'rtl' : 'ltr'} className="min-w-0 text-2xl font-medium leading-snug text-gray-900">{productHeading}</h1>
+                <TimeDeliveryBadge productId={product?._id} arabic={isArabic} page="productPage" className="mt-2" />
                 {localizedShortDescription ? (
                   <p className="mt-2 text-sm leading-relaxed text-gray-600">
                     {localizedShortDescription}
@@ -3535,7 +3547,13 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                 {mobileProductBrand ? (
                   <p className="mt-2 text-sm leading-snug text-gray-600">
                     <span className="text-gray-500">{t('product.brandLabel')}: </span>
-                    <span className="font-medium text-gray-800">{mobileProductBrand}</span>
+                    {brandPageHref ? (
+                      <Link href={brandPageHref} className="font-medium text-gray-800 underline-offset-2 hover:underline">
+                        {mobileProductBrand}
+                      </Link>
+                    ) : (
+                      <span className="font-medium text-gray-800">{mobileProductBrand}</span>
+                    )}
                   </p>
                 ) : null}
                 {displaySku ? (

@@ -86,6 +86,29 @@ export default function EmailGalleryPresetCard({
     onPreview,
   };
 
+  if (style === 'sale1010') {
+    return (
+      <div className="group relative overflow-hidden rounded-2xl border border-violet-200 bg-white shadow-sm">
+        <div className="relative h-52 overflow-hidden bg-[#3b1d6e]">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#f3e9ff] via-[#efe4ff] to-[#6d4cc4]" />
+          <div className="absolute start-3 top-3 rounded-md bg-[#6d4cc4] px-2 py-1 text-[10px] font-black uppercase tracking-wide text-white">
+            10.10
+          </div>
+          <div className="absolute bottom-3 start-3 end-3 text-[#3b1d6e]">
+            <div className="text-3xl font-black tracking-tight">10.10 SALE</div>
+            <div className="mt-0.5 text-sm font-semibold">{name}</div>
+            <div className="mt-1 line-clamp-1 text-[11px] text-[#3b1d6e]/80">{subject}</div>
+          </div>
+          <ActionOverlay {...actions} />
+        </div>
+        <div className="flex items-center justify-between gap-2 bg-[#6d4cc4] px-3 py-2 text-white">
+          <span className="text-xs font-bold uppercase tracking-wide">Code SALE10</span>
+          <Sparkles className="h-3.5 w-3.5" />
+        </div>
+      </div>
+    );
+  }
+
   if (style === 'sale') {
     return (
       <div className="group relative overflow-hidden rounded-2xl border border-red-200 bg-white shadow-sm">

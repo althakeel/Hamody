@@ -11,6 +11,9 @@ import { getDisplayOrderNumber, getDisplayOrderLabel, getPublicTrackingDisplayId
 import { isWaslahCourierTerminal } from "@/lib/waslahTracking";
 import { useStorefrontI18n } from "@/lib/useStorefrontI18n";
 import { AedText } from "@/components/CurrencySymbol";
+import { isCustomerPickupOrder } from "@/lib/customerPickup";
+
+const PICKUP_LOCATION_LINE = "18 Maleha St - Warehouses Land - Industrial Area - Sharjah";
 
 const TRACK_ORDER_COPY = {
   en: {
@@ -68,6 +71,8 @@ const TRACK_ORDER_COPY = {
     price: 'Price',
     total: 'Total',
     shippingAddress: 'Shipping Address',
+    pickupLocation: 'Pickup location',
+    pickupCollect: 'Collect your order from this address.',
     phone: 'Phone',
     alternate: 'Alternate',
     loginPromptPrefix: 'For full order details and history, please ',
@@ -100,6 +105,8 @@ const TRACK_ORDER_COPY = {
     stepShipped: 'SHIPPED',
     stepOutForDelivery: 'OUT FOR DELIVERY',
     stepDelivered: 'DELIVERED',
+    stepWaitingForPickup: 'WAITING FOR PICKUP',
+    pickupNote: 'This order is for store pickup. It moves from placed, to processing, to packed, then waiting for pickup.',
     statusPackedAwaiting: 'Packed — awaiting pickup',
     statusPickupRequested: 'Pickup requested',
     statusPickedUp: 'Picked up',
@@ -176,6 +183,8 @@ const TRACK_ORDER_COPY = {
     price: 'السعر',
     total: 'الإجمالي',
     shippingAddress: 'عنوان الشحن',
+    pickupLocation: 'موقع الاستلام',
+    pickupCollect: 'استلم طلبك من هذا العنوان.',
     phone: 'الهاتف',
     alternate: 'بديل',
     loginPromptPrefix: 'للتفاصيل الكاملة وسجل الطلبات، يُرجى ',
@@ -208,6 +217,8 @@ const TRACK_ORDER_COPY = {
     stepShipped: 'تم الشحن',
     stepOutForDelivery: 'خرج للتسليم',
     stepDelivered: 'تم التسليم',
+    stepWaitingForPickup: 'بانتظار الاستلام',
+    pickupNote: 'هذا الطلب للاستلام من المتجر. ينتقل من تقديم الطلب، إلى المعالجة، ثم التجهيز، ثم بانتظار الاستلام.',
     statusPackedAwaiting: 'جاهز — بانتظار استلام شركة الشحن',
     statusPickupRequested: 'تم طلب الاستلام',
     statusPickedUp: 'تم الاستلام',
@@ -599,15 +610,46 @@ function TrackOrderPageInner() {
     }
   }
 
-  const getPublicStatusLabel = (status, packed = false) => {
+  const getPublicStatusLabel = (status, packed = false, pickup = false) => {
     const normalized = String(status || 'ORDER_PLACED').toUpperCase();
+    if (pickup) {
+      if (['WAITING_FOR_PICKUP', 'PICKUP_REQUESTED', 'DELIVERED', 'PICKED_UP'].includes(normalized)) {
+        return copy.stepWaitingForPickup;
+      }
+      if (packed) return copy.stepPacked;
+      return copy.statuses[normalized] || copy.statuses.ORDER_PLACED;
+    }
     if (packed || normalized === 'WAITING_FOR_PICKUP') return copy.statusPackedAwaiting;
     if (normalized === 'PICKUP_REQUESTED') return copy.statusPickupRequested;
     if (normalized === 'PICKED_UP') return copy.statusPickedUp;
     return copy.statuses[normalized] || normalized.replace(/_/g, ' ');
   };
 
-  const getStatusSteps = (status, packed = false) => {
+  const getStatusSteps = (status, packed = false, pickup = false) => {
+    if (pickup) {
+      const steps = [
+        { name: 'ORDER PLACED', label: copy.stepOrderPlaced },
+        { name: 'PROCESSING', label: copy.stepProcessing },
+        { name: 'PACKED', label: copy.stepPacked },
+        { name: 'WAITING FOR PICKUP', label: copy.stepWaitingForPickup },
+      ];
+      const normalizedStatus = String(status || 'ORDER_PLACED').toUpperCase();
+      const progressStatus = ['WAITING_FOR_PICKUP', 'PICKUP_REQUESTED', 'DELIVERED', 'PICKED_UP'].includes(normalizedStatus)
+        ? 'WAITING FOR PICKUP'
+        : packed
+          ? 'PACKED'
+          : ['PROCESSING', 'CONFIRMED'].includes(normalizedStatus)
+            ? 'PROCESSING'
+            : 'ORDER PLACED';
+      const currentIndex = steps.findIndex((step) => step.name === progressStatus);
+      const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+      return steps.map((step, idx) => ({
+        name: step.name,
+        label: step.label,
+        completed: idx <= safeIndex,
+        active: idx === safeIndex,
+      }));
+    }
     const steps = [
       { name: 'ORDER PLACED', label: copy.stepOrderPlaced },
       { name: 'PROCESSING', label: copy.stepProcessing },
@@ -762,11 +804,15 @@ function TrackOrderPageInner() {
                 </div>
               )}
               {/* Tracking not ready notice */}
-              {!getActiveTrackingDisplayId(order) && !order.c3x && !order.waslah && (
+              {isCustomerPickupOrder(order) ? (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+                  {copy.pickupNote}
+                </div>
+              ) : !getActiveTrackingDisplayId(order) && !order.c3x && !order.waslah ? (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-yellow-800 text-sm">
                   {copy.shipmentNotReady}
                 </div>
-              )}
+              ) : null}
               {/* Order Status */}
               <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -784,11 +830,11 @@ function TrackOrderPageInner() {
                     )}
                   </div>
                   <span className={`w-fit rounded-full px-4 py-2 text-sm font-semibold ${getStatusColor(order.status)}`}>
-                    {getPublicStatusLabel(order.status, order?.warehousePacking?.packed === true)}
+                    {getPublicStatusLabel(order.status, order?.warehousePacking?.packed === true, isCustomerPickupOrder(order))}
                   </span>
                 </div>
 
-                {order?.warehousePacking?.packed ? (
+                {order?.warehousePacking?.packed && !isCustomerPickupOrder(order) ? (
                   <div className="mb-5 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
                     <p className="font-semibold">{copy.packedReady}</p>
                     {order.warehousePacking.packedAt ? (
@@ -800,11 +846,11 @@ function TrackOrderPageInner() {
                 ) : null}
 
                 {/* Progress Tracker */}
-                <AnimatedProgressTracker steps={getStatusSteps(order.status, order?.warehousePacking?.packed === true)} />
+                <AnimatedProgressTracker steps={getStatusSteps(order.status, order?.warehousePacking?.packed === true, isCustomerPickupOrder(order))} />
               </div>
 
-              {/* Tracking Info */}
-              {(order.trackingId || order.trackingUrl || order.courier || order.c3x || order.waslah) && (
+              {/* Tracking Info — pickup orders have no courier shipment */}
+              {!isCustomerPickupOrder(order) && (order.trackingId || order.trackingUrl || order.courier || order.c3x || order.waslah) && (
                 <>
                   <div className="rounded-xl border border-blue-100 bg-blue-50 p-6">
                     <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
@@ -1003,8 +1049,16 @@ function TrackOrderPageInner() {
               </div>
               )}
 
-              {/* Shipping Address */}
-              {order.shippingAddress && (
+              {isCustomerPickupOrder(order) ? (
+                <div className="bg-white rounded-xl shadow-sm border border-amber-200 p-6">
+                  <h3 className="text-lg font-semibold text-slate-800 mb-2">{copy.pickupLocation}</h3>
+                  <p className="text-sm text-slate-600">{copy.pickupCollect}</p>
+                  <p className="mt-3 font-medium leading-relaxed text-slate-900">{PICKUP_LOCATION_LINE}</p>
+                  {order.shippingAddress?.phone ? (
+                    <p className="mt-3 text-slate-700">{copy.phone}: {(order.shippingAddress.phoneCode || '+971')} {order.shippingAddress.phone}</p>
+                  ) : null}
+                </div>
+              ) : order.shippingAddress ? (
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                   <h3 className="text-lg font-semibold text-slate-800 mb-4">{copy.shippingAddress}</h3>
                   <div className="text-slate-700 space-y-1">
@@ -1013,14 +1067,14 @@ function TrackOrderPageInner() {
                     <p>{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}</p>
                     <p>{order.shippingAddress.country}</p>
                     {order.shippingAddress.phone && (
-                      <p className="mt-2">{copy.phone}: {(order.shippingAddress.phoneCode || '+91')} {order.shippingAddress.phone}</p>
+                      <p className="mt-2">{copy.phone}: {(order.shippingAddress.phoneCode || '+971')} {order.shippingAddress.phone}</p>
                     )}
                     {order.shippingAddress.alternatePhone && (
-                      <p className="text-slate-600">{copy.alternate}: {(order.shippingAddress.alternatePhoneCode || order.shippingAddress.phoneCode || '+91')} {order.shippingAddress.alternatePhone}</p>
+                      <p className="text-slate-600">{copy.alternate}: {(order.shippingAddress.alternatePhoneCode || order.shippingAddress.phoneCode || '+971')} {order.shippingAddress.alternatePhone}</p>
                     )}
                   </div>
                 </div>
-              )}
+              ) : null}
               {/* Info about login for order details/history */}
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-6 text-center">
                 <p className="text-blue-700 font-medium">{copy.loginPromptPrefix}<a href="/sign-in" className="underline text-blue-800">{copy.login}</a>{copy.loginPromptSuffix}</p>

@@ -256,7 +256,7 @@ The phone grid is **2 columns** with a **12px** gap.
 | Image | Square, image fills the box (`cover`, centered). White behind it | Same. Use the image URL from the API |
 | Second image | Swaps in on desktop hover only | Phone has no hover. Show the first image |
 | Name | **12px**, semibold, `#0f172a`, **2 lines**, then ellipsis. Left in English, right in Arabic | Arabic name when the language is Arabic. If that field is empty, use the English name |
-| Sale price | **14px**, semibold, `#020617`. Whole number, no decimals. Currency mark then the number | AED unless the market API says otherwise |
+| Sale price | **14px**, semibold, `#020617`. Whole number, no decimals. Dirham symbol, then the number. Do not print the letters AED | Symbol file `https://www.store1920.com/currency/aed-dirham.png`. Tint it to the price color |
 | Old price | Struck through, **10px**, `#94a3b8`. Show only when it is higher than the sale price | Field is `AED` (compare-at) |
 | Discount | **10px**, semibold, `#047857`. English `10% off`. Arabic `خصم 10٪` | `round((compare − sale) / compare × 100)` when compare is higher |
 | Stars | 5 stars, **9px**. Filled `#facc15`, empty `#d1d5db`. Then `(count)` in **9px** gray | Show only when the review count is greater than 0 |

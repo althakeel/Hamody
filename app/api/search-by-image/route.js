@@ -3,112 +3,37 @@ import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
 import Category from '@/models/Category';
 import ProductVisualIndex from '@/models/ProductVisualIndex';
-import { isGeminiConfigured } from '@/configs/gemini';
-import { parseAutofillJson } from '@/lib/productAiAutofill';
 import { shrinkImageForVision } from '@/lib/normalizeImageForAi';
 import {
+  describeShopperImage,
   extractFilenameKeywords,
   findCategoryProductsForImage,
   findProductsForImageKeywords,
-  imageQueryFamilyTerm,
-  judgeImageSearchCandidates,
-  pickBestAndRecommended,
-  shouldSkipImageSearchJudge,
   uniqueSearchTerms,
 } from '@/lib/imageSearch';
 import {
   embedImageBuffer,
   findProductsByVisualEmbedding,
   mergeVisualAndKeywordProducts,
+  rankProductsByQueryImage,
 } from '@/lib/productVisualIndex';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-const GEMINI_MODELS = [
-  process.env.GEMINI_PRODUCT_VISION_MODEL,
-  process.env.GEMINI_PRODUCT_AUTOFILL_MODEL,
-  'gemini-2.5-flash',
-  'gemini-flash-latest',
-].filter(Boolean).filter((model, index, list) => list.indexOf(model) === index).slice(0, 2);
+const VISUAL_SURE_SCORE = 0.9;
+let visualIndexProbe = { at: 0, ready: false };
 
-const GEMINI_TIMEOUT_MS = 12000;
-
-function extractGeminiText(payload) {
-  const parts = payload?.candidates?.[0]?.content?.parts;
-  if (!Array.isArray(parts)) return '';
-  return parts.map((part) => String(part?.text || '')).join('\n').trim();
+async function visualIndexReady() {
+  const now = Date.now();
+  if (now - visualIndexProbe.at < 60_000) return visualIndexProbe.ready;
+  const count = await ProductVisualIndex.estimatedDocumentCount();
+  visualIndexProbe = { at: now, ready: count > 0 };
+  return visualIndexProbe.ready;
 }
 
-async function describeProductImage(buffer, mimeType) {
-  const apiKey = String(process.env.GEMINI_API_KEY || '').trim();
-  if (!apiKey) return null;
-
-  let lastError = null;
-  for (const model of GEMINI_MODELS) {
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                {
-                  text: `Identify the EXACT product in this shopper photo for a UAE ecommerce store.
-Return raw JSON only:
-{"name":"","type":"","category":"","keywords":[],"exclude":[]}
-Rules:
-- name is a specific 4-8 word catalog label (shape + use).
-- type is one of: kick scooter, electric scooter, desk stand, car mount, air pump, oud burner, humidifier, coffee grinder, lint remover, shower pump, bowl, luggage tag, watch, bag, light, speaker, earbuds, charger, other.
-- A bowl, plate, or dish is type bowl. A square/round tracker with a loop is a luggage tag. Never mix those two.
-- A black cylinder with a metal/gold lid or top nozzle for incense or steam is an oud burner or humidifier, NEVER an air pump.
-- An air pump has a pistol/gun head, hose, or inflation nozzle. Do not guess air pump for every black cylinder.
-- A hopper on top is a coffee grinder. A round fabric shaver is a lint remover.
-- If it is a foot-powered kick scooter, type must be kick scooter.
-- If it is an electric scooter, type must be electric scooter.
-- keywords are extra specific terms. exclude is lookalike products that are NOT this item.
-- category is one catalog word.`,
-                },
-                {
-                  inline_data: {
-                    mime_type: mimeType || 'image/jpeg',
-                    data: buffer.toString('base64'),
-                  },
-                },
-              ],
-            }],
-            generationConfig: { temperature: 0.1 },
-          }),
-          signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
-        },
-      );
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(payload?.error?.message || `Gemini failed (${response.status})`);
-      }
-      const parsed = parseAutofillJson(extractGeminiText(payload));
-      const keywords = uniqueSearchTerms([
-        parsed?.name,
-        parsed?.category,
-        ...(Array.isArray(parsed?.keywords) ? parsed.keywords : []),
-      ]);
-      if (!keywords.length) throw new Error('Gemini returned no keywords');
-      return {
-        keywords,
-        category: String(parsed?.category || '').trim(),
-        name: String(parsed?.name || '').trim(),
-        type: String(parsed?.type || '').trim(),
-        exclude: uniqueSearchTerms(parsed?.exclude || []),
-      };
-    } catch (error) {
-      lastError = error;
-    }
-  }
-
-  if (lastError) console.warn('[search-by-image] vision fallback:', lastError.message);
-  return null;
+function emptyVisual() {
+  return { products: [], relatedProducts: [], candidates: [], scores: [] };
 }
 
 export async function POST(request) {
@@ -125,97 +50,103 @@ export async function POST(request) {
     }
 
     const startedAt = Date.now();
-    const shrunk = await shrinkImageForVision(rawBuffer, image.type || 'image/jpeg');
+    const shrunk = await shrinkImageForVision(rawBuffer, image.type || 'image/jpeg', {
+      maxSize: 512,
+      quality: 68,
+    });
     const buffer = shrunk.buffer;
     const mimeType = shrunk.mimeType;
 
     await dbConnect();
-
-    const [vision, queryEmbedding] = await Promise.all([
-      isGeminiConfigured() ? describeProductImage(buffer, mimeType) : null,
+    const indexReady = await visualIndexReady();
+    const [queryEmbedding, vision] = await Promise.all([
       embedImageBuffer(buffer, mimeType),
+      describeShopperImage(buffer, mimeType),
     ]);
+    const visual = indexReady && queryEmbedding.length
+      ? await findProductsByVisualEmbedding(Product, ProductVisualIndex, queryEmbedding, {
+        limit: 16,
+        lenient: true,
+        includeOutOfStock: true,
+        minScore: 0.6,
+      })
+      : emptyVisual();
+    const topScore = Number(visual.scores?.[0]?.score) || 0;
     const identifyMs = Date.now() - startedAt;
+
+    if (topScore >= VISUAL_SURE_SCORE && visual.products.length && !vision?.name) {
+      return NextResponse.json({
+        keyword: visual.products[0]?.name || '',
+        keywords: [],
+        products: visual.products.slice(0, 8),
+        relatedProducts: visual.relatedProducts.slice(0, 12),
+        recommendedProducts: visual.relatedProducts.slice(0, 12),
+        resultCount: Math.min(visual.products.length, 8),
+        searchMethod: 'visual',
+        message: `Found ${Math.min(visual.products.length, 8)} product${visual.products.length === 1 ? '' : 's'}`,
+      });
+    }
 
     const filenameKeywords = extractFilenameKeywords(image.name);
     const keywords = uniqueSearchTerms([
       vision?.name,
+      vision?.type,
       vision?.category,
       ...(vision?.keywords || []),
       ...filenameKeywords,
     ]);
 
-    const [visual, keywordResult, categoryProducts] = await Promise.all([
-      queryEmbedding.length
-        ? findProductsByVisualEmbedding(Product, ProductVisualIndex, queryEmbedding, {
-          limit: 24,
-          visionText: `${vision?.type || ''} ${vision?.name || ''}`,
-        })
-        : { products: [], relatedProducts: [], candidates: [], scores: [] },
+    const [keywordResult, categoryProducts] = await Promise.all([
       keywords.length
         ? findProductsForImageKeywords(Product, {
           keywords,
-          name: vision?.name || '',
+          name: vision?.name || keywords[0] || '',
           type: vision?.type || '',
           category: vision?.category || '',
           exclude: vision?.exclude || [],
-          limit: 12,
+          limit: 8,
         })
         : { products: [], relatedProducts: [], keyword: '', keywords: [] },
-      findCategoryProductsForImage(Product, Category, {
-        name: vision?.name || '',
-        type: vision?.type || '',
-        category: vision?.category || '',
-        keywords,
-      }, { limit: 20 }),
+      vision
+        ? findCategoryProductsForImage(Product, Category, {
+          name: vision?.name || '',
+          type: vision?.type || '',
+          category: vision?.category || '',
+          keywords,
+        }, { limit: 12 })
+        : [],
     ]);
 
-    const candidates = mergeVisualAndKeywordProducts(
-      categoryProducts,
-      [
-        ...(visual.candidates || []),
-        ...(visual.products || []),
-        ...keywordResult.products,
-        ...keywordResult.relatedProducts,
-      ],
-      20,
-    );
-
-    const catalogMs = Date.now() - startedAt;
-    let verdict = null;
-    if (isGeminiConfigured() && candidates.length && !shouldSkipImageSearchJudge(visual.scores)) {
-      verdict = await judgeImageSearchCandidates({
-        buffer,
-        mimeType,
-        vision,
-        candidates,
-      });
-    }
-
-    const picked = pickBestAndRecommended(candidates, verdict, {
-      allowFallback: Boolean(imageQueryFamilyTerm({
-        name: vision?.name || '',
-        type: vision?.type || '',
-        category: vision?.category || '',
-        keywords,
-      })),
-    });
-    const products = picked.products;
-    const relatedProducts = picked.relatedProducts;
+    const textProducts = keywordResult.products.slice(0, 8);
+    const textRelated = mergeVisualAndKeywordProducts(
+      keywordResult.relatedProducts,
+      [...categoryProducts, ...(visual.relatedProducts || [])],
+      12,
+    ).filter((product) => !textProducts.some((row) => String(row._id) === String(product._id)));
+    const pool = mergeVisualAndKeywordProducts(textProducts, textRelated, 6);
+    const visualRank = queryEmbedding.length && pool.length > 1
+      ? await rankProductsByQueryImage(queryEmbedding, pool)
+      : [];
+    const topVisual = visualRank[0]?.score || 0;
+    const nextVisual = visualRank[1]?.score || 0;
+    const visualWins = topVisual >= 0.5 && topVisual - nextVisual >= 0.015;
+    const products = visualWins
+      ? [visualRank[0].product]
+      : (visualRank.length ? visualRank.map((row) => row.product) : textProducts);
+    const relatedProducts = (visualWins ? visualRank.slice(1).map((row) => row.product) : textRelated)
+      .filter((product) => !products.some((row) => String(row._id) === String(product._id)));
 
     console.info('[search-by-image]', {
+      providers: vision?.providers || [],
       vision: vision?.name || '',
       type: vision?.type || '',
       exact: products.map((product) => product.name),
       related: relatedProducts.map((product) => product.name).slice(0, 8),
-      scores: (visual.scores || []).slice(0, 8),
-      ms: {
-        identify: identifyMs,
-        catalog: catalogMs - identifyMs,
-        judge: Date.now() - startedAt - catalogMs,
-        total: Date.now() - startedAt,
-      },
-      judged: Boolean(verdict),
+      photoScores: visualRank.slice(0, 4).map((row) => ({
+        name: row.product.name,
+        score: Number(row.score.toFixed(3)),
+      })),
+      ms: { identify: identifyMs, total: Date.now() - startedAt },
     });
 
     return NextResponse.json({
@@ -225,7 +156,9 @@ export async function POST(request) {
       relatedProducts,
       recommendedProducts: relatedProducts,
       resultCount: products.length,
-      searchMethod: products.length ? 'visual+gemini' : (relatedProducts.length ? 'gemini-related' : 'none'),
+      searchMethod: products.length
+        ? ((vision?.providers || []).join('+') || 'catalog')
+        : (relatedProducts.length ? 'related' : 'none'),
       message: products.length
         ? `Found ${products.length} product${products.length === 1 ? '' : 's'}`
         : (relatedProducts.length

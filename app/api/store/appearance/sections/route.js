@@ -12,6 +12,8 @@ import {
 } from '@/lib/whatsappProductWidget'
 import { DEFAULT_SCROLL_TO_TOP, normalizeScrollToTop } from '@/lib/scrollToTopSettings'
 import { DEFAULT_HOME_WELCOME_POPUP, mergeHomePopupStats, normalizeHomeWelcomePopup } from '@/lib/homeWelcomePopup'
+import { DEFAULT_FOOTER, normalizeFooter } from '@/lib/footerSettings'
+import { DEFAULT_TIME_BADGES, normalizeTimeBadges } from '@/lib/timeBadgeSettings'
 
 const DEFAULT_APPEARANCE = {
   categorySliders: { enabled: true, title: 'Featured Collections', description: 'Browse our curated collections' },
@@ -26,6 +28,8 @@ const DEFAULT_APPEARANCE = {
   whatsappProductWidget: DEFAULT_WHATSAPP_PRODUCT_WIDGET,
   scrollToTop: DEFAULT_SCROLL_TO_TOP,
   homeWelcomePopup: DEFAULT_HOME_WELCOME_POPUP,
+  footer: DEFAULT_FOOTER,
+  timeBadges: DEFAULT_TIME_BADGES,
   productPageInfo: {
     returnsText: 'Easy Returns',
     vatText: 'All prices include VAT.',
@@ -242,7 +246,9 @@ function normalizeAppearance(data = {}) {
         badges: normalizeBadgeDefinitions(productPageInfo.badgeSettings?.badges)
       }
     },
-    pageSeo
+    pageSeo,
+    footer: normalizeFooter(data.footer || DEFAULT_APPEARANCE.footer),
+    timeBadges: normalizeTimeBadges(data.timeBadges || DEFAULT_APPEARANCE.timeBadges),
   }
 }
 
@@ -313,6 +319,8 @@ export async function POST(request) {
     deleteCacheKey('public:appearance-sections:v8')
     deleteCacheKey('public:appearance-sections:v9')
     deleteCacheKey('public:appearance-sections:v10')
+    deleteCacheKey('public:appearance-sections:v11')
+    deleteCacheKey('public:appearance-sections:v12')
     invalidateCachePattern('public:appearance-sections')
     invalidateCachePattern('public:offers')
 

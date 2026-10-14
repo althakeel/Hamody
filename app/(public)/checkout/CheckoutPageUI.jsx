@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Check, Tag, Truck, Zap, AlertTriangle } from "lucide-react";
+import { Check, MapPin, Tag, Truck, Zap, AlertTriangle } from "lucide-react";
 import axios from "axios";
 import { countryCodes, UAE_PHONE_CODE, UAE_PHONE_CODE_OPTIONS } from "@/assets/countryCodes";
 import { indiaStatesAndDistricts } from "@/assets/indiaStatesAndDistricts";
@@ -78,6 +78,12 @@ import ApplePayLogo from '../../../assets/creditcards/apple-pay.png';
 import AmexLogo from '../../../assets/creditcards/11.webp';
 import { STORE_CURRENCY } from '@/lib/storeCurrency';
 import { AedText } from '@/components/CurrencySymbol';
+import {
+  CUSTOMER_PICKUP_ADDRESS,
+  customerPickupLocationFields,
+  customerPickupMapEmbedUrl,
+  customerPickupMapLink,
+} from '@/lib/customerPickup';
 import { getProductSubtitle } from '@/lib/productDisplay';
 import { getProductPath } from '@/lib/productUrl';
 import { collectCheckoutValidationIssues, scrollToCheckoutField } from '@/lib/checkoutValidation';
@@ -182,6 +188,10 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   const [checkoutAlert, setCheckoutAlert] = useState(initialCheckoutAlert);
   const [shipping, setShipping] = useState(0);
   const [shippingMethod, setShippingMethod] = useState('');
+  const [pickupEnabled, setPickupEnabled] = useState(false);
+  const [fulfillmentChoice, setFulfillmentChoice] = useState('delivery');
+  const [showPickupMap, setShowPickupMap] = useState(false);
+  const isCustomerPickup = pickupEnabled && fulfillmentChoice === 'pickup';
   const [showSignIn, setShowSignIn] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [showAllOrderItemsModal, setShowAllOrderItemsModal] = useState(false);
@@ -628,129 +638,44 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     form.pincode,
   ]);
   
-  // Fetch available coupons
+  // Coupons are optional. A network failure must not take down checkout.
   useEffect(() => {
+    const controller = new AbortController();
+    let cancelled = false;
+
     const fetchCoupons = async () => {
       try {
-        console.log('=== COUPON FETCH START ===');
-        
-        // Try to fetch store info first to get storeId
-        console.log('Fetching store info...');
-        const storeRes = await fetch('/api/store-info');
-        
-        if (!storeRes.ok) {
-          console.error('Store-info API returned status:', storeRes.status);
-          const storeResText = await storeRes.text();
-          console.error('Store-info response:', storeResText.substring(0, 200));
-          return;
-        }
-        
-        let storeData;
-        try {
-          storeData = await storeRes.json();
-        } catch (parseError) {
-          console.error('Failed to parse store-info response:', parseError);
-          return;
-        }
-        
-        console.log('Store data response:', storeData);
-        
-        if (!storeData.store || !storeData.store._id) {
-          console.error('Failed to get store ID from store-info, trying debug endpoint...');
-          
-          // Fallback: try debug endpoint to see what's happening
-          const debugRes = await fetch('/api/coupons-debug');
-          if (!debugRes.ok) {
-            console.error('Coupons-debug API returned status:', debugRes.status);
-            return;
-          }
-          let debugData;
-          try {
-            debugData = await debugRes.json();
-          } catch (parseError) {
-            console.error('Failed to parse coupons-debug response:', parseError);
-            return;
-          }
-          console.log('Debug data:', debugData);
-          
-          return;
-        }
-        
-        const storeIdValue = storeData.store._id;
-        console.log('Store ID found:', storeIdValue);
+        const storeRes = await fetch('/api/store-info', { signal: controller.signal });
+        if (!storeRes.ok) return;
+        const storeData = await storeRes.json();
+        const storeIdValue = storeData?.store?._id;
+        if (!storeIdValue || cancelled) return;
         setStoreId(storeIdValue);
-        
-        console.log('Fetching coupons for store:', storeIdValue);
-        const couponUrl = `/api/coupons?storeId=${storeIdValue}`;
-        console.log('Coupon URL:', couponUrl);
 
         const token = user ? await getToken() : null;
-        const res = await fetch(couponUrl, {
+        if (cancelled) return;
+        const res = await fetch(`/api/coupons?storeId=${storeIdValue}`, {
+          signal: controller.signal,
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-        
-        if (!res.ok) {
-          console.error('Coupons API returned status:', res.status);
-          const resText = await res.text();
-          console.error('Coupons response:', resText.substring(0, 200));
+        if (!res.ok || cancelled) {
           setAvailableCoupons([]);
           return;
         }
-        
-        let data;
-        try {
-          data = await res.json();
-        } catch (parseError) {
-          console.error('Failed to parse coupons response:', parseError);
-          setAvailableCoupons([]);
-          return;
-        }
-        
-        console.log('Coupons API response:', data);
-        console.log('Response status:', res.status);
-        console.log('Coupons array:', data.coupons);
-        
-        if (data.coupons && Array.isArray(data.coupons)) {
-          console.log(`Found ${data.coupons.length} coupons`);
-          
-          if (data.coupons.length > 0) {
-            console.log('Setting available coupons:', data.coupons);
-            setAvailableCoupons(data.coupons);
-          } else {
-            console.log('Coupons array is empty - calling debug endpoint to check DB');
-            // Call debug endpoint to see what coupons actually exist
-            const debugRes = await fetch('/api/coupons-debug');
-            if (debugRes.ok) {
-              const debugData = await debugRes.json();
-              console.log('=== DEBUG INFO ===');
-              console.log('Total coupons in DB:', debugData.totalCoupons);
-              console.log('Store ID from DB:', debugData.storeId);
-              console.log('Requested Store ID:', storeIdValue);
-              console.log('All coupons:', debugData.coupons);
-              console.log('Active coupons:', debugData.activeCoupons);
-              console.log('==================');
-            }
-            setAvailableCoupons([]);
-          }
-        } else {
-          console.log('No coupons array in response');
-          setAvailableCoupons([]);
-        }
-        
-        console.log('=== COUPON FETCH END ===');
+        const data = await res.json();
+        setAvailableCoupons(Array.isArray(data?.coupons) ? data.coupons : []);
       } catch (error) {
-        console.error('Error fetching coupons:', error);
-        console.error('Error details:', error.message || error);
+        if (cancelled || error?.name === 'AbortError') return;
         setAvailableCoupons([]);
       }
     };
-    
-    // Add small delay to ensure page is ready
-    const timer = setTimeout(() => {
-      fetchCoupons();
-    }, 500);
-    
-    return () => clearTimeout(timer);
+
+    const timer = setTimeout(fetchCoupons, 500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [user, getToken]);
 
   // Check if Razorpay is already loaded (in case script loaded before state update)
@@ -892,11 +817,13 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     getShippingOptionById(shippingSetting, shippingMethod)
     || getDefaultShippingOption(shippingSetting, form.state);
   const summaryDeliveryDays = formatDeliveryDays(selectedShippingOption?.estimatedDays, '2-5');
-  const summaryDeliveryLabel = selectedShippingOption?.name || t('checkout.standardDelivery');
+  const summaryDeliveryLabel = isCustomerPickup
+    ? t('checkout.storePickup')
+    : (selectedShippingOption?.name || t('checkout.standardDelivery'));
   const totalSavings = couponDiscount + shippingDiscount + walletRedeemAmount;
   const needsPaymentSelection = totalAfterWallet > 0;
   const paymentMethodSummary = (() => {
-    if (form.payment === 'cod') return t('checkout.cashOnDelivery');
+    if (form.payment === 'cod') return isCustomerPickup ? t('checkout.cashOnPickup') : t('checkout.cashOnDelivery');
     if (form.payment === 'card' || form.payment === 'vaultspay') return t('checkout.creditDebitCard');
     if (form.payment === 'googlepay') return t('checkout.googlePay');
     if (form.payment === 'applepay') return t('checkout.applePay');
@@ -935,6 +862,31 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   const applyWalletToPayload = (payload) => {
     if (user && walletRedeemAmount > 0) {
       payload.coinsToRedeem = walletRedeemAmount;
+    }
+    if (isCustomerPickup) {
+      const location = customerPickupLocationFields();
+      payload.shippingFee = 0;
+      payload.shippingMethod = 'customer_pickup';
+      payload.fulfillmentMode = 'customer_pickup';
+      if (payload.guestInfo) {
+        payload.guestInfo = { ...payload.guestInfo, ...location };
+      }
+      if (payload.addressData) {
+        payload.addressData = { ...payload.addressData, ...location };
+      } else if (user && !payload.addressId) {
+        payload.addressData = {
+          name: form.name || user.displayName || user.name || '',
+          email: form.email || user.email || '',
+          phone: String(form.phone || user.phoneNumber || user.phone || '').replace(/\D/g, ''),
+          phoneCode: form.phoneCode || '+971',
+          street: location.street,
+          city: location.city,
+          state: location.state,
+          district: location.district,
+          country: location.country,
+          zip: '',
+        };
+      }
     }
     return payload;
   };
@@ -1006,7 +958,14 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   const renderPlaceOrderButtonContent = () => {
     if (form.payment === 'tamara') return renderPayByMethodLabel('Tamara');
     if (form.payment === 'tabby') return renderPayByMethodLabel('Tabby');
-    if (form.payment === 'cod') return renderPayByMethodLabel('Cod');
+    if (form.payment === 'cod') {
+      return (
+        <span className="font-normal">
+          {t('checkout.payBy')}{' '}
+          <span className="font-bold">{isCustomerPickup ? t('checkout.cashOnPickup') : t('checkout.methodCod')}</span>
+        </span>
+      );
+    }
     if (form.payment === 'card' || form.payment === 'vaultspay') return renderPayByMethodLabel('Card');
     if (form.payment === 'googlepay') return renderPayByMethodLabel('GooglePay');
     if (form.payment === 'applepay') return renderPayByMethodLabel('ApplePay');
@@ -1132,11 +1091,17 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     if (!form.payment) return;
     if (cartArray.length === 0) return;
 
-    const contentIds = cartArray
-      .map((item) => String(item?._id || item?._cartKey || ''))
-      .filter(Boolean);
-
+    const gtmItems = cartLinesToGtmItems(cartArray);
+    const metaItems = cartLinesToMetaItems(cartArray);
+    const contentIds = metaItems.map((item) => String(item.id || '').trim()).filter(Boolean);
     if (contentIds.length === 0) return;
+
+    const itemsValue = metaItems.reduce(
+      (sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 1)),
+      0,
+    );
+    const amount = Number(totalAfterWallet > 0 ? totalAfterWallet : itemsValue);
+    if (!(amount > 0)) return;
 
     const paymentMethod = String(form.payment).toLowerCase();
     const eventKey = `meta_add_payment_info_${paymentMethod}`;
@@ -1144,21 +1109,25 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     if (sessionStorage.getItem(eventKey)) return;
     sessionStorage.setItem(eventKey, '1');
 
-    const gtmItems = cartLinesToGtmItems(cartArray);
     pushGtmEcommerceEvent(GTM_EVENTS.ADD_PAYMENT_INFO, {
       currency: GA4_CURRENCY,
-      value: Number(totalAfterWallet || 0),
+      value: Number(amount.toFixed(2)),
       payment_type: toGa4PaymentType(form.payment),
       coupon: String(appliedCoupon?.code || '').trim(),
       items: gtmItems,
     }, gtmDedupeKey(GTM_EVENTS.ADD_PAYMENT_INFO, paymentMethod));
 
     trackMetaEvent('AddPaymentInfo', {
-      value: Number(totalAfterWallet || 0),
+      value: Number(amount.toFixed(2)),
       currency: 'AED',
       content_type: 'product',
       content_ids: contentIds,
-      num_items: cartArray.reduce((sum, item) => sum + Number(item?.quantity || 0), 0),
+      contents: metaItems.map((item) => ({
+        id: item.id,
+        quantity: Number(item.quantity || 1),
+        item_price: Number(item.price || 0),
+      })),
+      num_items: metaItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
       payment_method: String(form.payment).toUpperCase(),
     }, {
       eventID: `api:${paymentMethod}`,
@@ -1224,6 +1193,24 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   });
 
   useEffect(() => {
+    let cancelled = false;
+    fetch('/api/public/customer-pickup')
+      .then((response) => response.json())
+      .then((data) => {
+        if (cancelled) return;
+        const enabled = data?.enabled !== false;
+        setPickupEnabled(enabled);
+        if (!enabled) setFulfillmentChoice('delivery');
+      })
+      .catch(() => {
+        if (!cancelled) setPickupEnabled(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!shippingSetting) return;
     const available = getAvailableShippingOptions(shippingSetting, form.state);
     if (!available.length) return;
@@ -1239,6 +1226,10 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   }, [shippingSetting, form.state, shippingMethod]);
 
   useEffect(() => {
+    if (isCustomerPickup) {
+      setShipping(0);
+      return;
+    }
     if (shippingSetting && cartArray.length > 0) {
       const option =
         getShippingOptionById(shippingSetting, shippingMethod)
@@ -1254,7 +1245,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     } else {
       setShipping(0);
     }
-  }, [shippingSetting, cartArray, form.payment, form.state, shippingMethod]);
+  }, [shippingSetting, cartArray, form.payment, form.state, shippingMethod, isCustomerPickup]);
 
   // Empty cart must never show delivery/payment. Send the shopper to /cart.
   useEffect(() => {
@@ -1407,6 +1398,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
       resolvedCountry,
       resolvedPincode,
       needsPaymentSelection,
+      customerPickup: isCustomerPickup,
     });
 
     if (!rawIssues.length) {
@@ -1434,6 +1426,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
       resolvedCountry,
       resolvedPincode,
       needsPaymentSelection,
+      customerPickup: isCustomerPickup,
     });
 
     if (rawIssues.length > 0) {
@@ -1980,7 +1973,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
           const addressId = form.addressId || (addressList[0] && addressList[0]._id);
           if (addressId) payload.addressId = addressId;
         } else {
-          if (!form.name || !form.email || !resolvedPhone || !form.street || !resolveGuestCity(form) || !form.state || !resolvedCountry) {
+          if (!form.name || !form.email || !resolvedPhone || (!isCustomerPickup && (!form.street || !resolveGuestCity(form) || !form.state || !resolvedCountry))) {
             setFormError('Please fill all required shipping details.');
             setPlacingOrder(false);
             return;
@@ -2045,7 +2038,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
             payload.addressId = addressId;
           }
         } else {
-          if (!form.name || !form.email || !resolvedPhone || !form.street || !resolveGuestCity(form) || !form.state || !resolvedCountry) {
+          if (!form.name || !form.email || !resolvedPhone || (!isCustomerPickup && (!form.street || !resolveGuestCity(form) || !form.state || !resolvedCountry))) {
             setFormError("Please fill all required shipping details.");
             setPlacingOrder(false);
             return;
@@ -2092,7 +2085,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
           const addressId = form.addressId || (addressList[0] && addressList[0]._id);
           if (addressId) payload.addressId = addressId;
         } else {
-          if (!form.name || !form.email || !resolvedPhone || !form.street || !resolveGuestCity(form) || !form.state || !resolvedCountry) {
+          if (!form.name || !form.email || !resolvedPhone || (!isCustomerPickup && (!form.street || !resolveGuestCity(form) || !form.state || !resolvedCountry))) {
             setFormError("Please fill all required shipping details.");
             setPlacingOrder(false);
             return;
@@ -2139,7 +2132,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
           const addressId = form.addressId || (addressList[0] && addressList[0]._id);
           if (addressId) payload.addressId = addressId;
         } else {
-          if (!form.name || !form.email || !resolvedPhone || !form.street || !resolveGuestCity(form) || !form.state || !resolvedCountry) {
+          if (!form.name || !form.email || !resolvedPhone || (!isCustomerPickup && (!form.street || !resolveGuestCity(form) || !form.state || !resolvedCountry))) {
             setFormError("Please fill all required shipping details.");
             setPlacingOrder(false);
             return;
@@ -2914,7 +2907,74 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                 </span>
               </div>
               <div className="space-y-3">
-                {availableShippingOptions.map((option) => {
+                {pickupEnabled ? (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => setFulfillmentChoice('delivery')}
+                      className={`rounded-xl border-2 p-4 text-left transition-colors ${
+                        !isCustomerPickup
+                          ? 'border-slate-900 bg-slate-50'
+                          : 'border-slate-200 bg-white hover:border-slate-400'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                          <Truck className="h-5 w-5" strokeWidth={2} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="font-semibold text-slate-900">{t('checkout.deliverToYou')}</span>
+                          <p className="mt-0.5 text-sm text-slate-500">{t('checkout.deliverToYouHint')}</p>
+                        </div>
+                        <span className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
+                          !isCustomerPickup ? 'border-slate-900 bg-slate-900' : 'border-slate-300 bg-white'
+                        }`}>
+                          {!isCustomerPickup ? <Check className="h-3 w-3 text-white" strokeWidth={3} /> : null}
+                        </span>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFulfillmentChoice('pickup')}
+                      className={`rounded-xl border-2 p-4 text-left transition-colors ${
+                        isCustomerPickup
+                          ? 'border-amber-600 bg-amber-50'
+                          : 'border-slate-200 bg-white hover:border-slate-400'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                          <MapPin className="h-5 w-5" strokeWidth={2} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="font-semibold text-slate-900">{t('checkout.storePickup')}</span>
+                          <p className="mt-0.5 text-sm text-slate-500">{t('checkout.storePickupHint')}</p>
+                        </div>
+                        <span className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
+                          isCustomerPickup ? 'border-amber-600 bg-amber-600' : 'border-slate-300 bg-white'
+                        }`}>
+                          {isCustomerPickup ? <Check className="h-3 w-3 text-white" strokeWidth={3} /> : null}
+                        </span>
+                      </div>
+                    </button>
+                  </div>
+                ) : null}
+                {isCustomerPickup ? (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">{t('checkout.pickupAddressLabel')}</p>
+                    <p className="mt-2 text-base font-semibold leading-relaxed text-slate-900">{CUSTOMER_PICKUP_ADDRESS.line}</p>
+                    <p className="mt-1 text-sm text-slate-600">{t('checkout.pickupCollect')}</p>
+                    <button
+                      type="button"
+                      onClick={() => setShowPickupMap(true)}
+                      className="mt-3 inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      {t('checkout.viewLocation')}
+                    </button>
+                  </div>
+                ) : null}
+                {!isCustomerPickup && availableShippingOptions.map((option) => {
                   const optionFee = calculateShipping({
                     cartItems: cartArray,
                     shippingSetting,
@@ -2967,7 +3027,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                     </button>
                   );
                 })}
-                {!availableShippingOptions.length ? (
+                {!isCustomerPickup && !availableShippingOptions.length ? (
                   <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                     No delivery options are available for the selected location.
                   </p>
@@ -2975,7 +3035,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
               </div>
               
               {/* State-wise charge note */}
-              {form.state && shippingSetting?.stateCharges && Array.isArray(shippingSetting.stateCharges) && (() => {
+              {!isCustomerPickup && form.state && shippingSetting?.stateCharges && Array.isArray(shippingSetting.stateCharges) && (() => {
                 const stateCharge = shippingSetting.stateCharges.find(
                   (entry) => String(entry?.state || '').trim().toLowerCase() === String(form.state || '').trim().toLowerCase()
                 );
@@ -3019,11 +3079,11 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                 </div>
               )}
               
-              {!user ? (
+              {!isCustomerPickup && !user ? (
                 <p className="mb-4 text-sm text-slate-600">{t('checkout.shippingDetails')}</p>
-              ) : (
+              ) : !isCustomerPickup ? (
                 <h2 className="text-xl font-bold mb-3 mt-1 text-gray-900">{t('checkout.shippingDetails')}</h2>
-              )}
+              ) : null}
               {/* ...existing code for address/guest form... */}
               {/* Show address fetch error if present */}
               {user && addressFetchError && (
@@ -3035,7 +3095,25 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                   ) : addressFetchError}
                 </div>
               )}
-              {checkoutAddressList.length > 0 && !(user && addressFetchError) ? (
+              {isCustomerPickup && user && !hasValidPhone(form.phone) && !hasValidPhone(user?.phoneNumber || user?.phone) ? (
+                <div id="guest-phone" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                  <p className="mb-3 text-sm font-semibold text-amber-900">{t('checkout.phoneNumber')}</p>
+                  <PhoneNumberField
+                    phone={form.phone}
+                    phoneCode={form.phoneCode}
+                    onPhoneChange={(value) => setForm((f) => ({ ...f, phone: value }))}
+                    onPhoneCodeChange={handleChange}
+                    countryOptions={UAE_PHONE_CODE_OPTIONS}
+                    selectClassName="border border-amber-300 bg-white rounded px-2 py-2"
+                    inputClassName="border border-amber-300 bg-white rounded px-4 py-2 flex-1"
+                    errorClassName="text-red-500 text-xs mt-2"
+                    showLabel={false}
+                    showHint={false}
+                  />
+                  {fieldRequiredHint('guest-phone')}
+                </div>
+              ) : null}
+              {!isCustomerPickup && checkoutAddressList.length > 0 && !(user && addressFetchError) ? (
                 <div id="checkout-address">
                   {/* Shipping Address Section - Noon.com Style */}
                   <div className={`bg-white rounded-lg border ${
@@ -3165,7 +3243,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                   </div>
                 )}
                 </div>
-              ) : (checkoutAddressList.length === 0 && user) ? (
+              ) : (!isCustomerPickup && checkoutAddressList.length === 0 && user) ? (
                 <button 
                   type="button"
                   className="w-full border-2 border-dashed border-blue-400 rounded-lg p-4 text-blue-600 font-semibold hover:bg-blue-50 transition"
@@ -3236,6 +3314,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                     </div>
                   </div>
 
+                  {!isCustomerPickup ? (
                   <div className={guestSectionClass}>
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="min-w-0">
@@ -3405,6 +3484,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                       {fieldRequiredHint('guest-country')}
                     </div>
                   </div>
+                  ) : null}
                 </div>
               ) : null}
               <h2 className="text-xl font-bold mb-3 mt-4 text-gray-900">{t('checkout.paymentMethods')}</h2>
@@ -3558,8 +3638,8 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                             <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
                           </svg>
                           <div>
-                            <span className="font-semibold text-gray-900">{t('checkout.cashOnDelivery')}</span>
-                            <div className="text-xs text-gray-600">{t('checkout.codSubtitle')}</div>
+                            <span className="font-semibold text-gray-900">{isCustomerPickup ? t('checkout.cashOnPickup') : t('checkout.cashOnDelivery')}</span>
+                            <div className="text-xs text-gray-600">{isCustomerPickup ? t('checkout.cashOnPickupSubtitle') : t('checkout.codSubtitle')}</div>
                           </div>
                         </div>
                         {isCODDisabled && maxCODAmount > 0 && remainingAmount > maxCODAmount && (
@@ -3746,7 +3826,9 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                 <div className="min-w-0">
                   <p className="font-medium text-slate-900">{t('checkout.shippingHandling')}</p>
                   <p className="mt-0.5 text-xs text-slate-500">
-                    {summaryDeliveryLabel} · {t('checkout.deliveredInDays', { days: summaryDeliveryDays })}
+                    {isCustomerPickup
+                      ? t('checkout.pickupCollect')
+                      : `${summaryDeliveryLabel} · ${t('checkout.deliveredInDays', { days: summaryDeliveryDays })}`}
                   </p>
                   {hasFreeShippingProduct && effectiveShipping === 0 && !isFreeShippingCouponApplied ? (
                     <p className="mt-1 text-xs text-emerald-700">{t('checkout.productFreeShippingNote')}</p>
@@ -4371,6 +4453,46 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
         </div>
       )}
       
+      {showPickupMap ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4" onClick={() => setShowPickupMap(false)}>
+          <div
+            className="flex max-h-[90dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+            dir={isArabic ? 'rtl' : 'ltr'}
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">{t('checkout.pickupAddressLabel')}</p>
+                <p className="mt-1 text-base font-semibold text-slate-900">{CUSTOMER_PICKUP_ADDRESS.line}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPickupMap(false)}
+                className="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                {t('checkout.closeMap')}
+              </button>
+            </div>
+            <iframe
+              title={CUSTOMER_PICKUP_ADDRESS.line}
+              src={customerPickupMapEmbedUrl()}
+              className="h-[42dvh] min-h-[180px] w-full border-0 sm:h-[360px]"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+            <div className="flex justify-end px-5 py-3">
+              <a
+                href={customerPickupMapLink()}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm font-semibold text-amber-800 hover:underline"
+              >
+                {t('checkout.viewLocation')}
+              </a>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {/* Razorpay Script */}
       <Script
         src="https://checkout.razorpay.com/v1/checkout.js"

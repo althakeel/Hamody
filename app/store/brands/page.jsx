@@ -35,6 +35,18 @@ const EMPTY_PAGE = {
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
+function formatLogoUpdated(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
 function getVisiblePageNumbers(currentPage, totalPages) {
   const pages = new Set([1, totalPages, currentPage]);
   if (currentPage > 1) pages.add(currentPage - 1);
@@ -581,6 +593,7 @@ export default function StoreBrandsPage() {
           <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
               <th className="px-4 py-3">Brand</th>
+              <th className="px-4 py-3">Logo</th>
               <th className="px-4 py-3">Products</th>
               <th className="px-4 py-3 text-end">Actions</th>
             </tr>
@@ -588,7 +601,7 @@ export default function StoreBrandsPage() {
           <tbody>
             {filteredBrands.length === 0 ? (
               <tr>
-                <td colSpan={3} className="px-4 py-10 text-center text-slate-500">
+                <td colSpan={4} className="px-4 py-10 text-center text-slate-500">
                   No brands found. Brands appear here after products have a brand name set.
                 </td>
               </tr>
@@ -603,6 +616,26 @@ export default function StoreBrandsPage() {
                     <p className="mt-1 text-[11px] text-slate-400">
                       {brand.page?.path || `/brand/${slugifyBrand(brand.name)}`}
                     </p>
+                  </td>
+                  <td className="px-4 py-3">
+                    {brand.page?.image ? (
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={brand.page.image}
+                          alt=""
+                          className="h-10 w-10 rounded-lg border border-slate-200 bg-white object-contain"
+                        />
+                        <p className="text-[11px] leading-snug text-slate-500">
+                          {brand.page.imageUpdatedAt
+                            ? `Logo updated ${formatLogoUpdated(brand.page.imageUpdatedAt)}`
+                            : brand.page.updatedAt
+                              ? `Last saved ${formatLogoUpdated(brand.page.updatedAt)}`
+                              : 'Logo set'}
+                        </p>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-400">No logo</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-slate-600">{brand.productCount}</td>
                   <td className="px-4 py-3">
@@ -759,6 +792,19 @@ export default function StoreBrandsPage() {
                 {imagePreview ? (
                   <img src={imagePreview} alt="" className="mt-2 h-20 w-20 rounded-lg border border-slate-200 object-contain" />
                 ) : null}
+                {imageFile ? (
+                  <p className="mt-2 text-xs font-medium text-teal-700">This logo is saved when you click Save brand page.</p>
+                ) : editingBrand.page?.imageUpdatedAt ? (
+                  <p className="mt-2 text-xs text-slate-500">
+                    Logo updated {formatLogoUpdated(editingBrand.page.imageUpdatedAt)}
+                  </p>
+                ) : pageForm.image && editingBrand.page?.updatedAt ? (
+                  <p className="mt-2 text-xs text-slate-500">
+                    Last saved {formatLogoUpdated(editingBrand.page.updatedAt)}. The next logo change records its own time.
+                  </p>
+                ) : (
+                  <p className="mt-2 text-xs text-slate-400">No logo yet.</p>
+                )}
               </div>
 
               <div>

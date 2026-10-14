@@ -1,4 +1,5 @@
 import dbConnect from "@/lib/mongodb";
+import mongoose from "mongoose";
 import Product from "@/models/Product";
 import Rating from "@/models/Rating";
 import Category from "@/models/Category";
@@ -140,7 +141,15 @@ export async function GET(request){
     const priceFilter = searchParams.get('priceFilter') || 'all';
     const minPrice = searchParams.get('minPrice') || '';
     const maxPrice = searchParams.get('maxPrice') || '';
-    const slim = searchParams.get('slim') === 'true' || (!fetchAll && limit <= 50);
+    const badge = String(searchParams.get('badge') || '').trim().slice(0, 40);
+    const tag = String(searchParams.get('tag') || '').trim().slice(0, 40);
+    const minRating = Number(searchParams.get('minRating') || 0);
+    const selectedIds = String(searchParams.get('ids') || '')
+        .split(',')
+        .map((id) => id.trim())
+        .filter((id) => /^[a-fA-F0-9]{24}$/.test(id))
+        .slice(0, 250);
+    const slim = searchParams.get('slim') === 'true' || (!fetchAll && limit <= 50 && !(minRating > 0));
     const cacheKey = generateCacheKey('products', {
         limit,
         offset,
@@ -155,12 +164,16 @@ export async function GET(request){
         priceFilter,
         minPrice,
         maxPrice,
+        badge,
+        tag,
+        minRating: minRating > 0 ? String(minRating) : '',
+        ids: selectedIds.join(','),
         slim: slim ? 'true' : 'false',
         language,
         paginated: paginated ? 'true' : 'false',
         skuDedupe: 'true',
     });
-    const skipProductCache = selectedCategories.length > 0;
+    const skipProductCache = selectedCategories.length > 0 || selectedIds.length > 0 || minRating > 0;
 
     try {
         const cachedProducts = skipProductCache ? null : getCachedData(cacheKey);
@@ -191,6 +204,30 @@ export async function GET(request){
         }
 
         // OPTIMIZED: Use simple find with field selection (aggregation was causing errors)
+        let ratedIds = null;
+        if (minRating > 0) {
+            const rows = await Rating.aggregate([
+                { $match: { approved: true } },
+                { $group: { _id: '$productId', averageRating: { $avg: '$rating' } } },
+                { $match: { averageRating: { $gte: minRating } } },
+                { $limit: 2000 },
+            ]);
+            ratedIds = rows
+                .map((row) => String(row?._id || ''))
+                .filter((id) => /^[a-fA-F0-9]{24}$/.test(id));
+        }
+
+        const idFilter = selectedIds.length
+            ? selectedIds.filter((id) => !ratedIds || ratedIds.includes(id))
+            : ratedIds;
+
+        if (idFilter && idFilter.length === 0) {
+            const emptyPayload = (paginated || fetchAll)
+                ? { products: [], total: 0, page: fetchAll ? 1 : page, limit: fetchAll ? 0 : limit, totalPages: 1 }
+                : [];
+            return createProductsResponse(emptyPayload, { 'Cache-Control': 'no-store' });
+        }
+
         const matchStage = applyStorefrontVisibilityFilters(buildShopMatchStage({
             includeOutOfStock,
             fastDelivery: fastDelivery === 'true',
@@ -199,7 +236,13 @@ export async function GET(request){
             priceFilter,
             minPrice,
             maxPrice,
+            badge,
+            tag,
         }));
+
+        if (idFilter) {
+            matchStage._id = { $in: idFilter.map((id) => new mongoose.Types.ObjectId(id)) };
+        }
 
         if (selectedCategories.length > 0) {
             await applyCategoriesFilter(matchStage, selectedCategories, Category);
@@ -345,15 +388,27 @@ export async function GET(request){
             }
         });
 
+        if (sortBy === 'discount') {
+            enrichedProducts.sort((a, b) => (Number(b.discount) || 0) - (Number(a.discount) || 0));
+        } else if (sortBy === 'rating') {
+            enrichedProducts.sort((a, b) => (
+                (Number(b.averageRating) || 0) - (Number(a.averageRating) || 0)
+                || (Number(b.ratingCount) || 0) - (Number(a.ratingCount) || 0)
+            ));
+        }
+        const orderedProducts = sortBy === 'discount' || sortBy === 'rating'
+            ? sortOutOfStockLast(enrichedProducts)
+            : enrichedProducts;
+
         const responsePayload = (paginated || fetchAll)
             ? {
-                products: enrichedProducts,
+                products: orderedProducts,
                 total: total ?? enrichedProducts.length,
                 page: fetchAll ? 1 : page,
                 limit: fetchAll ? enrichedProducts.length : limit,
                 totalPages: fetchAll ? 1 : Math.max(1, Math.ceil((total || 0) / limit)),
             }
-            : enrichedProducts;
+            : orderedProducts;
 
         // CACHE RESULTS - Store in memory for 10 minutes (with error handling)
         if (!skipProductCache) {

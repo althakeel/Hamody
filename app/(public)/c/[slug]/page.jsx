@@ -366,7 +366,7 @@ export default function CampaignLandingPage() {
         </div>
 
         <div className="flex gap-6">
-          <div className="hidden w-72 shrink-0 lg:block">
+          <div className="hidden w-56 shrink-0 lg:block">
             <ProductFilterSidebar
               products={products}
               onFilterChange={handleFilterChange}

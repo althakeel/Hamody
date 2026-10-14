@@ -92,6 +92,7 @@ const StoreSchema = new mongoose.Schema({
     }],
   },
   dashboardWelcomeEnabled: { type: Boolean, default: true },
+  customerPickupEnabled: { type: Boolean, default: true },
   exploreInterestsEnabled: { type: Boolean, default: true },
   exploreInterestsProductIds: { type: [String], default: [] },
   carouselProductIds: { type: [String], default: [] }, // Array of product IDs for carousel slider
@@ -116,6 +117,11 @@ const Store = mongoose.models.Store || mongoose.model("Store", StoreSchema);
 if (!Store.schema.path('dashboardWelcomeEnabled')) {
   Store.schema.add({
     dashboardWelcomeEnabled: { type: Boolean, default: true },
+  });
+}
+if (!Store.schema.path('customerPickupEnabled')) {
+  Store.schema.add({
+    customerPickupEnabled: { type: Boolean, default: true },
   });
 }
 const badgeSchema = Store.schema.path('newTagSettings')?.schema?.path('badges')?.schema;

@@ -68,6 +68,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
         { name: 'Product Badges', href: '/store/badges', icon: Tags },
 
+        { name: 'Time Badge', href: '/store/time-badges', icon: CalendarClock },
+
         { name: 'Inventory', href: '/store/inventory', icon: Warehouse },
 
         { name: 'Database Import', href: '/store/settings/database-import', icon: RefreshCw },
@@ -184,6 +186,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
                 '/store/product-cost',
 
                 '/store/badges',
+
+                '/store/time-badges',
 
                 '/store/settings/database-import',
 

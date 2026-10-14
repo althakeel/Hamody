@@ -3,7 +3,9 @@ import CategorySlider from '@/models/CategorySlider';
 import { NextResponse } from 'next/server';
 import { invalidateCategorySliderCaches } from '@/lib/categorySliderCache';
 import { resolveCategorySliderAccess, buildCategorySliderFilter } from '@/lib/categorySliderAccess';
-import { normalizeCategorySliderBackground, normalizeCategorySliderSideImagePosition, normalizeCategorySliderAutoSlide, normalizeCategorySliderAutoSlideInterval, normalizeCategorySliderShowOutOfStock } from '@/lib/categorySliderTheme';
+import { normalizeCategorySliderBackground, normalizeCategorySliderSideImagePosition, normalizeCategorySliderAutoSlide, normalizeCategorySliderAutoSlideInterval, normalizeCategorySliderShowOutOfStock, normalizeCategorySliderMobileImageRatio } from '@/lib/categorySliderTheme';
+import { normalizeCategorySliderViewAll } from '@/lib/categorySliderViewAll';
+import { allocateCategorySliderSlug, nextCategorySliderSlugAliases } from '@/lib/categorySliderSlug';
 import { isTestSliderCopy } from '@/lib/categorySliderCopy';
 
 function parseAuthHeader(req) {
@@ -36,7 +38,7 @@ export async function PUT(req, { params }) {
       return NextResponse.json({ error: 'Slider ID is required' }, { status: 400 });
     }
 
-    const { title, subtitle, titleAr, subtitleAr, productIds, sideImage, sideImageAr, sideImagePosition, cardsPerRow, backgroundColor, autoSlide, autoSlideIntervalMs, showOutOfStock } = await req.json();
+    const { title, subtitle, titleAr, subtitleAr, productIds, sideImage, sideImageAr, mobileImage, mobileImageAr, mobileImageRatio, sideImagePosition, cardsPerRow, backgroundColor, autoSlide, autoSlideIntervalMs, showOutOfStock, viewAllEnabled, viewAllTarget, viewAllValue, slug: requestedSlug } = await req.json();
     console.log('=== 💾 PUT SLIDER START ===');
     console.log('💾 Received ID:', id);
     console.log('💾 Received title:', title);
@@ -73,6 +75,15 @@ export async function PUT(req, { params }) {
     const sideImageArValue = sideImageAr !== undefined && sideImageAr !== null
       ? String(sideImageAr).trim()
       : '';
+    const mobileImageValue = mobileImage !== undefined && mobileImage !== null
+      ? String(mobileImage).trim()
+      : '';
+    const mobileImageArValue = mobileImageAr !== undefined && mobileImageAr !== null
+      ? String(mobileImageAr).trim()
+      : '';
+
+    const current = await CategorySlider.findOne(buildCategorySliderFilter(id, scope)).select('slug slugAliases').lean();
+    const slug = await allocateCategorySliderSlug(CategorySlider, String(requestedSlug || '').trim() || title.trim(), id);
 
     const updateData = {
       title: title.trim(),
@@ -82,12 +93,18 @@ export async function PUT(req, { params }) {
       productIds: productIdsValue,
       sideImage: sideImageValue,
       sideImageAr: sideImageArValue,
+      mobileImage: mobileImageValue,
+      mobileImageAr: mobileImageArValue,
+      mobileImageRatio: normalizeCategorySliderMobileImageRatio(mobileImageRatio),
       sideImagePosition: normalizeCategorySliderSideImagePosition(sideImagePosition),
       cardsPerRow: Number(cardsPerRow) === 5 ? 5 : 6,
       backgroundColor: normalizeCategorySliderBackground(backgroundColor),
       autoSlide: normalizeCategorySliderAutoSlide(autoSlide),
       autoSlideIntervalMs: normalizeCategorySliderAutoSlideInterval(autoSlideIntervalMs),
       showOutOfStock: normalizeCategorySliderShowOutOfStock(showOutOfStock),
+      ...normalizeCategorySliderViewAll({ viewAllEnabled, viewAllTarget, viewAllValue }),
+      slug,
+      slugAliases: nextCategorySliderSlugAliases(current?.slug, current?.slugAliases, slug),
     };
 
     console.log('💾 About to update with:', JSON.stringify(updateData));

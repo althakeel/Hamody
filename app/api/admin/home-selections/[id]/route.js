@@ -3,6 +3,7 @@ import HomeSection from "@/models/HomeSection";
 import { NextResponse } from "next/server";
 import { getAuth } from "@/lib/firebase-admin";
 import authAdmin from "@/middlewares/authAdmin";
+import { invalidateCachePattern } from '@/lib/cache';
 
 export async function GET(_req, { params }) {
   // Firebase Auth: get Bearer token from header
@@ -52,6 +53,7 @@ export async function PUT(req, { params }) {
       body,
       { new: true }
     );
+    invalidateCachePattern('public:home-sections');
     return NextResponse.json({ selection: updated });
   } catch (error) {
     console.error("Update selection error", error);
@@ -79,6 +81,7 @@ export async function DELETE(_req, { params }) {
   try {
     await dbConnect();
     await HomeSection.findByIdAndDelete(params.id);
+    invalidateCachePattern('public:home-sections');
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Delete selection error", error);

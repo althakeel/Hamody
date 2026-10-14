@@ -128,10 +128,10 @@ function ShowcaseDeviceImages({
   keepOriginal = false,
 }) {
   const images = [
-    { key: 'mobile', src: sources.mobile, className: 'block md:hidden', width: widths.mobile },
-    { key: 'tablet', src: sources.tablet, className: 'hidden md:block lg:hidden', width: widths.tablet },
-    { key: 'desktop', src: sources.desktop, className: sources.wide ? 'hidden lg:block min-[1401px]:hidden' : 'hidden lg:block', width: widths.desktop },
-    { key: 'wide', src: sources.wide, className: 'hidden min-[1401px]:block', width: widths.wide || 2560 },
+    { key: 'mobile', src: sources.mobile, className: 'block md:hidden', width: widths.mobile, naturalWidth: 768, naturalHeight: 280 },
+    { key: 'tablet', src: sources.tablet, className: 'hidden md:block lg:hidden', width: widths.tablet, naturalWidth: 1024, naturalHeight: 240 },
+    { key: 'desktop', src: sources.desktop, className: sources.wide ? 'hidden lg:block min-[1401px]:hidden' : 'hidden lg:block', width: widths.desktop, naturalWidth: 1920, naturalHeight: 400 },
+    { key: 'wide', src: sources.wide, className: 'hidden min-[1401px]:block', width: widths.wide || 2560, naturalWidth: 1920, naturalHeight: 400 },
   ];
 
   return images.map((image) => {
@@ -142,6 +142,8 @@ function ShowcaseDeviceImages({
         key={image.key}
         src={displaySrc}
         alt={alt}
+        width={natural ? image.naturalWidth : undefined}
+        height={natural ? image.naturalHeight : undefined}
         loading={loading}
         fetchPriority={fetchPriority}
         decoding="async"
@@ -309,8 +311,8 @@ export default function ShowcaseLargeBannerSlider({
               <ShowcaseDeviceImages
                 sources={slide.sources}
                 alt={slide.alt || fallback?.title || 'Showcase banner'}
-                loading={slideIndex <= 1 ? 'eager' : 'lazy'}
-                fetchPriority={slideIndex === 0 ? 'high' : 'auto'}
+                loading={slideIndex === (visibleSlides.length > 1 ? 1 : 0) ? 'eager' : 'lazy'}
+                fetchPriority={slideIndex === (visibleSlides.length > 1 ? 1 : 0) ? 'high' : 'auto'}
                 widths={deviceWidths}
                 onError={handleImageError}
                 fillHeight={bannerVariant === 'lower'}

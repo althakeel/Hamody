@@ -32,6 +32,7 @@ test('aggregates duplicate product and selected-variant quantities', () => {
     productId: PRODUCT_ID,
     totalQuantity: 4,
     stockQuantity: 6,
+    sharedPool: false,
     variants: [
       { index: 0, quantity: 3, stock: 4 },
       { index: 1, quantity: 1, stock: 2 },
@@ -79,8 +80,9 @@ test('bundle of 2 stored as 1 pack removes 2 inventory units', () => {
     productId: PRODUCT_ID,
     totalQuantity: 2,
     stockQuantity: 6,
+    sharedPool: true,
     variants: [
-      { index: 0, quantity: 2, stock: 8 },
+      { index: 0, quantity: 2, stock: 6 },
     ],
   }]);
 });
@@ -103,6 +105,7 @@ test('bundle packs share one unit pool so Buy 1 and Bundle of 3 cannot oversell'
     productId: PRODUCT_ID,
     totalQuantity: 5,
     stockQuantity: 8,
+    sharedPool: true,
     variants: [
       { index: 0, quantity: 5, stock: 8 },
       { index: 1, quantity: 5, stock: 8 },

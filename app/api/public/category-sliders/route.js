@@ -2,8 +2,11 @@ import dbConnect from '@/lib/mongodb';
 import CategorySlider from '@/models/CategorySlider';
 import { getCachedData, setCachedData } from '@/lib/cache';
 import { NextResponse } from 'next/server';
+import { serializeCategorySliderMobileImageRatio } from '@/lib/categorySliderTheme';
+import { serializeCategorySliderViewAll } from '@/lib/categorySliderViewAll';
+import { ensureCategorySliderSlug } from '@/lib/categorySliderSlug';
 
-const CACHE_KEY = 'public:category-sliders:v1';
+const CACHE_KEY = 'public:category-sliders:v5';
 const CACHE_TTL = 120;
 
 export async function GET() {
@@ -23,15 +26,25 @@ export async function GET() {
 
     await dbConnect();
 
-    const sliders = await CategorySlider.find({})
-      .select('title subtitle productIds storeId createdAt updatedAt')
+    const sliders = (await CategorySlider.find({})
+      .select('title subtitle titleAr subtitleAr slug productIds mobileImage mobileImageAr mobileImageRatio viewAllEnabled viewAllTarget viewAllValue storeId createdAt updatedAt')
       .sort({ createdAt: -1 })
-      .lean();
+      .lean());
+    for (const slider of sliders) {
+      if (!slider.slug) slider.slug = await ensureCategorySliderSlug(CategorySlider, slider);
+    }
+    const payload = sliders.map((slider) => ({
+      ...slider,
+      mobileImage: slider.mobileImage || '',
+      mobileImageAr: slider.mobileImageAr || '',
+      ...serializeCategorySliderMobileImageRatio(slider.mobileImageRatio),
+      ...serializeCategorySliderViewAll(slider),
+    }));
 
-    setCachedData(CACHE_KEY, sliders, CACHE_TTL);
+    setCachedData(CACHE_KEY, payload, CACHE_TTL);
 
     return NextResponse.json(
-      { sliders: sliders || [] },
+      { sliders: payload },
       {
         status: 200,
         headers: {

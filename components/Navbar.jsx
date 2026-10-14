@@ -2152,7 +2152,7 @@ const Navbar = () => {
             {renderNavbarLogoImage({
               width: navbarAppearance.logoWidth,
               height: navbarAppearance.logoHeight,
-              className: 'h-7 w-auto max-w-[72px] object-contain sm:max-w-[96px]',
+              className: 'h-7 w-[72px] max-w-[72px] object-contain sm:w-[96px] sm:max-w-[96px]',
               style: { maxHeight: '32px' },
               priority: true,
             })}

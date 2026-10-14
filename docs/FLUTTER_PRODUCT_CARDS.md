@@ -115,11 +115,19 @@ Match the phone shop at `https://www.store1920.com/shop`.
 | Card | White, 1px border `#e2e8f0`, corner radius **2px** |
 | Image | Square, image fills the box |
 | Name | **12px**, semibold, `#0f172a`, 2 lines |
-| Sale price | **14px**, semibold, `#020617` |
-| Old price | **10px**, `#94a3b8`, struck through |
+| Sale price | **14px**, semibold, `#020617`. The mark is the dirham symbol, then the number. Do not print the letters AED |
+| Old price | **10px**, `#94a3b8`, struck through. Same dirham symbol, same color as the old price |
 | Discount | **10px**, semibold, `#047857` |
 | Stars | **9px**. Filled `#facc15`, empty `#d1d5db`. Count is **9px** gray |
 | Padding under the image | **8px** |
+
+The currency mark is this file, not the letters AED:
+
+```
+https://www.store1920.com/currency/aed-dirham.png
+```
+
+Draw it just before the number, about **0.68em** tall, with a small gap. Tint it to the price color: `#020617` on the sale price, `#94a3b8` on the old price. The JSON field named `AED` is the old price number. It is not the label.
 
 **Add button**, 12px from the bottom and the end edge of the image (right in English, left in Arabic):
 

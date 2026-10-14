@@ -284,7 +284,7 @@ export default function CategoryProductsPanel({
       </div>
 
       <div className="flex gap-6">
-        <div className="hidden w-72 shrink-0 lg:block">
+        <div className="hidden w-56 shrink-0 lg:block">
           <ProductFilterSidebar {...sidebarProps} />
         </div>
 

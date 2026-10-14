@@ -14,6 +14,15 @@ This folder is the **full API documentation set** — from public storefront / m
 |---|----------|--------------|----------|
 | **0** | **[FLUTTER_ENTIRE_APP.md](./FLUTTER_ENTIRE_APP.md)** | **Flutter shopper app** | **Entire customer app: every website screen, API, and what not to build** |
 | **0b** | [FLUTTER_MOBILE_BOTTOM_BUTTON.md](./FLUTTER_MOBILE_BOTTOM_BUTTON.md) | Flutter | Phone center circle only (part of the app doc) |
+| **0g** | [ANDROID_MOBILE_NAVBAR.md](./ANDROID_MOBILE_NAVBAR.md) | Android | Phone top navbar and menu drawer: every API |
+| **0h** | [ANDROID_BRAND_PAGE.md](./ANDROID_BRAND_PAGE.md) | Android | Brand page design and brand APIs |
+| **0i** | [ANDROID_BANNER_2.md](./ANDROID_BANNER_2.md) | Android | Home Banner 2 slider: design and API |
+| **0j** | [ANDROID_HOME_PAGE.md](./ANDROID_HOME_PAGE.md) | Android | Home page only: section order, design, and APIs |
+| **0k** | [ANDROID_SHOP_PAGE.md](./ANDROID_SHOP_PAGE.md) | Android | Shop tab: category rail, banner size, spotlight |
+| **0l** | [ANDROID_CATEGORY_BAR.md](./ANDROID_CATEGORY_BAR.md) | Android | Black category strip: settings API and category API |
+| **0m** | [ANDROID_PRODUCT_PAGE.md](./ANDROID_PRODUCT_PAGE.md) | Android | Product page: every API, including Notify Me, reviews, cart, wishlist |
+| **0n** | [ANDROID_CATEGORY_SLIDER.md](./ANDROID_CATEGORY_SLIDER.md) | Android | Home category slider: app image, ratio, and products |
+| **0o** | [ANDROID_CHECKOUT_PAGE.md](./ANDROID_CHECKOUT_PAGE.md) | Android | Checkout screen: delivery, store pickup, payments, place order |
 | **0d** | [FLUTTER_HOME_HERO.md](./FLUTTER_HOME_HERO.md) | Flutter | Home hero banner: slides, arrows, dots, mobile image |
 | **0e** | [FLUTTER_CATEGORY_APIS.md](./FLUTTER_CATEGORY_APIS.md) | Flutter | Category tree, category page, home icons, category sliders |
 | **0f** | [FLUTTER_PRODUCT_CARDS.md](./FLUTTER_PRODUCT_CARDS.md) | Flutter | Product card APIs, fields, and the phone card layout |

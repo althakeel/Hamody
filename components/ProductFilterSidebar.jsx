@@ -14,6 +14,7 @@ export default function ProductFilterSidebar({
   subcategoryLinks = [],
   showCategoryFilter = true,
   className = '',
+  categoryOptions = null,
 }) {
   const { t, language } = useStorefrontI18n();
   const isArabic = language === 'ar';
@@ -68,6 +69,13 @@ export default function ProductFilterSidebar({
   }, [sortOpen]);
 
   useEffect(() => {
+    if (Array.isArray(categoryOptions) && categoryOptions.length > 0) {
+      setAvailableFilters((prev) => ({
+        ...prev,
+        categories: categoryOptions,
+      }));
+      return;
+    }
     if (products && products.length > 0) {
       const categories = new Set();
       let maxPrice = 0;
@@ -112,7 +120,7 @@ export default function ProductFilterSidebar({
         };
       });
     }
-  }, [products]);
+  }, [products, categoryOptions]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -220,7 +228,7 @@ export default function ProductFilterSidebar({
   return (
     <div
       dir={isArabic ? 'rtl' : 'ltr'}
-      className={`sticky top-40 flex h-fit w-full max-h-[calc(100vh-12rem)] flex-col overflow-visible rounded-xl border border-gray-200 bg-white lg:w-72 ${className}`.trim()}
+      className={`sticky top-40 flex h-fit w-full max-h-[calc(100vh-12rem)] flex-col overflow-visible rounded-xl border border-gray-200 bg-white lg:w-56 ${className}`.trim()}
     >
       <div className="shrink-0 border-b border-gray-100 p-4 pb-3">
         {subcategoryLinks.length > 0 ? (

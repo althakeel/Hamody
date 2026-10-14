@@ -26,6 +26,17 @@ import { getMetaPurchaseDedupeKey } from '@/lib/metaPurchase';
 import { getDisplayOrderNumber } from '@/lib/orderDisplay';
 import { resolveOrderLineLineTotal, resolveOrderLinePackQuantity, resolveOrderLineQuantity } from '@/lib/gtmEcommerceHelpers';
 import { clearPendingCheckoutOrder } from '@/lib/pendingCheckoutOrder';
+import {
+  CUSTOMER_PICKUP_ADDRESS,
+  customerPickupMapEmbedUrl,
+  customerPickupMapLink,
+  isCustomerPickupOrder,
+} from '@/lib/customerPickup';
+import {
+  STORE1920_CUSTOMER_SUPPORT_PHONE,
+  STORE1920_CUSTOMER_SUPPORT_TEL,
+  formatCustomerSupportPhoneDisplay,
+} from '@/lib/storeContact';
 
 export default function OrderSuccess() {
   return (
@@ -272,6 +283,7 @@ function OrderSuccessContent() {
   }, [params, router]);
 
   const order = orders && orders.length > 0 ? orders[0] : null;
+  const isPickup = isCustomerPickupOrder(order);
   const orderRef = useRef(order);
   const userRef = useRef(user);
   orderRef.current = order;
@@ -362,7 +374,7 @@ function OrderSuccessContent() {
   const dueAmount = isPaid ? 0 : total;
 
   const paymentLabel = paymentMethod === 'COD'
-    ? 'Cash on Delivery'
+    ? (isPickup ? 'Cash on Pickup' : 'Cash on Delivery')
     : paymentMethod === 'CARD' || paymentMethod === 'STRIPE'
       ? 'Card Payment'
       : paymentMethod === 'VAULTSPAY'
@@ -430,7 +442,9 @@ function OrderSuccessContent() {
                 Thank you for your order
               </h1>
               <p className="mt-2 text-base text-slate-600">
-                We&apos;ve received your order and will start preparing it shortly.
+                {isPickup
+                  ? 'You chose store pickup. Collect your order from our Sharjah warehouse.'
+                  : 'We\'ve received your order and will start preparing it shortly.'}
               </p>
             </div>
 
@@ -494,7 +508,7 @@ function OrderSuccessContent() {
                       </div>
                       {dueAmount > 0 && (
                         <div className="flex justify-between gap-3 rounded-lg bg-amber-50 px-3 py-2">
-                          <dt className="font-medium text-amber-800">Due on delivery</dt>
+                          <dt className="font-medium text-amber-800">{isPickup ? 'Due when you collect' : 'Due on delivery'}</dt>
                           <dd className="font-bold text-amber-700">
                             {currency} {dueAmount.toLocaleString()}
                           </dd>
@@ -504,31 +518,83 @@ function OrderSuccessContent() {
                   </div>
 
                   {order?.shippingAddress && (
-                    <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                    <div className={`rounded-2xl border bg-white p-5 shadow-sm ${isPickup ? 'border-amber-200' : 'border-slate-100'}`}>
                       <div className="mb-4 flex items-center gap-2">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${isPickup ? 'bg-amber-100 text-amber-700' : 'bg-violet-50 text-violet-600'}`}>
                           <MapPin className="h-4 w-4" />
                         </div>
-                        <h3 className="font-semibold text-slate-900">Delivery address</h3>
+                        <h3 className="font-semibold text-slate-900">{isPickup ? 'Pickup location' : 'Delivery address'}</h3>
                       </div>
-                      <div className="space-y-1 text-sm text-slate-700">
-                        <p className="font-semibold text-slate-900">{order.shippingAddress.name}</p>
-                        <p>{order.shippingAddress.street}</p>
-                        <p>
-                          {order.shippingAddress.city}
-                          {order.shippingAddress.state ? `, ${order.shippingAddress.state}` : ''}
-                          {order.shippingAddress.zip ? ` ${order.shippingAddress.zip}` : ''}
-                        </p>
-                        <p>{order.shippingAddress.country}</p>
-                        {order.shippingAddress.phone && (
-                          <p className="pt-2 text-slate-500">
-                            {(order.shippingAddress.phoneCode || '+971')} {order.shippingAddress.phone}
+                      {isPickup ? (
+                        <div className="space-y-2 text-sm text-slate-700">
+                          <p className="inline-flex rounded-full bg-amber-500 px-2.5 py-0.5 text-[11px] font-bold text-white">
+                            Customer pickup chosen
                           </p>
-                        )}
-                      </div>
+                          <p className="font-semibold leading-relaxed text-slate-900">{CUSTOMER_PICKUP_ADDRESS.line}</p>
+                          <p className="text-slate-600">
+                            For any location doubt, call toll-free{' '}
+                            <a href={STORE1920_CUSTOMER_SUPPORT_TEL} className="font-semibold text-amber-800 underline">
+                              {formatCustomerSupportPhoneDisplay(STORE1920_CUSTOMER_SUPPORT_PHONE)}
+                            </a>
+                          </p>
+                          {order.shippingAddress.phone ? (
+                            <p className="pt-1 text-slate-500">
+                              We will contact {(order.shippingAddress.phoneCode || '+971')} {order.shippingAddress.phone}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <div className="space-y-1 text-sm text-slate-700">
+                          <p className="font-semibold text-slate-900">{order.shippingAddress.name}</p>
+                          <p>{order.shippingAddress.street}</p>
+                          <p>
+                            {order.shippingAddress.city}
+                            {order.shippingAddress.state ? `, ${order.shippingAddress.state}` : ''}
+                            {order.shippingAddress.zip ? ` ${order.shippingAddress.zip}` : ''}
+                          </p>
+                          <p>{order.shippingAddress.country}</p>
+                          {order.shippingAddress.phone && (
+                            <p className="pt-2 text-slate-500">
+                              {(order.shippingAddress.phoneCode || '+971')} {order.shippingAddress.phone}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
+
+                {isPickup ? (
+                  <div className="overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm">
+                    <div className="flex items-start justify-between gap-3 px-5 py-4">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Pickup location</p>
+                        <p className="mt-1 font-semibold text-slate-900">{CUSTOMER_PICKUP_ADDRESS.line}</p>
+                        <p className="mt-2 text-sm text-slate-600">
+                          For any location doubt, call toll-free{' '}
+                          <a href={STORE1920_CUSTOMER_SUPPORT_TEL} className="font-semibold text-amber-800 underline">
+                            {formatCustomerSupportPhoneDisplay(STORE1920_CUSTOMER_SUPPORT_PHONE)}
+                          </a>
+                        </p>
+                      </div>
+                      <a
+                        href={customerPickupMapLink()}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="shrink-0 rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        Open in Maps
+                      </a>
+                    </div>
+                    <iframe
+                      title={CUSTOMER_PICKUP_ADDRESS.line}
+                      src={customerPickupMapEmbedUrl()}
+                      className="h-[240px] w-full border-0 sm:h-[300px]"
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  </div>
+                ) : null}
 
                 {/* Items */}
                 <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
@@ -599,8 +665,10 @@ function OrderSuccessContent() {
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <dt className="text-slate-500">Shipping</dt>
-                      <dd className="font-medium text-slate-900">{currency} {shipping.toLocaleString()}</dd>
+                      <dt className="text-slate-500">{isPickup ? 'Store pickup' : 'Shipping'}</dt>
+                      <dd className="font-medium text-slate-900">
+                        {isPickup && shipping === 0 ? 'Free' : `${currency} ${shipping.toLocaleString()}`}
+                      </dd>
                     </div>
                     {walletDiscount > 0 && (
                       <div className="flex justify-between text-emerald-700">
@@ -616,12 +684,14 @@ function OrderSuccessContent() {
                     </div>
                   </dl>
 
-                  <div className="mt-5 flex items-start gap-3 rounded-xl bg-sky-50 p-4 text-sm text-sky-900">
+                  <div className={`mt-5 flex items-start gap-3 rounded-xl p-4 text-sm ${isPickup ? 'bg-amber-50 text-amber-950' : 'bg-sky-50 text-sky-900'}`}>
                     <Truck className="mt-0.5 h-4 w-4 shrink-0" />
                     <p>
-                      {dueAmount > 0
-                        ? 'Your order is confirmed. Please keep the due amount ready for delivery.'
-                        : 'Payment received. We will notify you when your order ships.'}
+                      {isPickup
+                        ? `Customer pickup chosen. Collect from ${CUSTOMER_PICKUP_ADDRESS.line}.${dueAmount > 0 ? ' Please keep the due amount ready when you collect.' : ''}`
+                        : dueAmount > 0
+                          ? 'Your order is confirmed. Please keep the due amount ready for delivery.'
+                          : 'Payment received. We will notify you when your order ships.'}
                     </p>
                   </div>
 
@@ -652,7 +722,7 @@ function OrderSuccessContent() {
                 <div>
                   <p className="font-semibold text-slate-900">Want to track this order later?</p>
                   <p className="mt-1 text-sm text-slate-600">
-                    Sign in to save your order history and get delivery updates.
+                    Sign in to save your order history and get order updates.
                   </p>
                 </div>
                 <Link

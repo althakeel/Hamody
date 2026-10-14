@@ -33,6 +33,7 @@ import { STORE_CURRENCY } from '@/lib/storeCurrency'
 import { getProductPath } from '@/lib/productUrl'
 import CurrencySymbol, { StruckPrice } from '@/components/CurrencySymbol'
 import NewProductTagBadge from '@/components/NewProductTagBadge'
+import TimeDeliveryBadge from '@/components/TimeDeliveryBadge'
 
 const parseAmount = (value) => {
   const num = Number(String(value ?? '').replace(/[^0-9.]/g, ''))
@@ -469,6 +470,10 @@ const ProductCard = ({
               ) : null}
             </div>
           ) : null}
+
+          <div className="mt-2 mb-1 flex min-w-0 max-w-full justify-start">
+            <TimeDeliveryBadge productId={product?._id} arabic={language === 'ar'} className="max-w-full" />
+          </div>
 
           {!compactAll ? (
             <div className={`flex min-h-[14px] min-w-0 justify-start ${compactLg ? 'lg:hidden' : ''}`}>

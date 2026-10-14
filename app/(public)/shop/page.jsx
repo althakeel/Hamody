@@ -440,7 +440,7 @@ function ShopContent() {
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-3 lg:gap-4 items-start">
+                        <div className="grid grid-cols-1 lg:grid-cols-[224px_1fr] gap-3 lg:gap-4 items-start">
                             <aside className={`${showMobileFilters ? 'block' : 'hidden'} lg:block space-y-3 lg:sticky lg:top-24`}>
                             {rootCategories.length > 0 && (
                                 <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">

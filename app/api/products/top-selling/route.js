@@ -4,7 +4,13 @@ import dbConnect from '@/lib/mongodb';
 import Order from '@/models/Order';
 import Product from '@/models/Product';
 import { getCachedData, setCachedData, generateCacheKey } from '@/lib/cache';
-import { STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility';
+import { sortOutOfStockLast, STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility';
+import { attachProductRatings } from '@/lib/attachProductRatings';
+import {
+  productMatchesCatalogQuery,
+  readCatalogQuery,
+  sortCatalogProducts,
+} from '@/lib/catalogFilters';
 
 export const dynamic = 'force-dynamic';
 
@@ -204,8 +210,17 @@ export async function GET(request) {
     await dbConnect();
 
     const { source, ranked } = await getRankedCatalog({ days, storeId, bustCache });
-    const total = ranked.length;
-    const page = ranked.slice(offset, offset + limit);
+    const catalogQuery = readCatalogQuery(searchParams);
+    let rankedList = ranked;
+    if (catalogQuery.minRating > 0) {
+      rankedList = await attachProductRatings(rankedList);
+    }
+    rankedList = rankedList.filter((product) => productMatchesCatalogQuery(product, catalogQuery));
+    if (catalogQuery.sortBy && catalogQuery.sortBy !== 'popularity') {
+      rankedList = sortOutOfStockLast(sortCatalogProducts(rankedList, catalogQuery.sortBy));
+    }
+    const total = rankedList.length;
+    const page = rankedList.slice(offset, offset + limit);
     const nextOffset = offset + page.length;
 
     const payload = {

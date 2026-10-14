@@ -556,9 +556,28 @@ export async function GET(request) {
             const maxPrice = String(searchParams.get('maxPrice') || '').trim();
             const sku = String(searchParams.get('sku') || '').trim();
             const brand = String(searchParams.get('brand') || '').trim();
+            const brandsRaw = String(searchParams.get('brands') || '').trim();
+            let brandValues = [];
+            if (brandsRaw.startsWith('[')) {
+                try {
+                    const parsed = JSON.parse(brandsRaw);
+                    if (Array.isArray(parsed)) brandValues = parsed;
+                } catch {
+                    brandValues = [];
+                }
+            } else if (brandsRaw) {
+                brandValues = brandsRaw.split(',');
+            }
+            const brands = brandValues
+                .map((name) => String(name || '').trim())
+                .filter(Boolean)
+                .slice(0, 40);
             const supplierId = String(searchParams.get('supplierId') || '').trim();
             const inStock = String(searchParams.get('inStock') || '').trim();
             const skuStatus = String(searchParams.get('skuStatus') || '').trim();
+            const minSold = String(searchParams.get('minSold') || '').trim();
+            const minStock = String(searchParams.get('minStock') || '').trim();
+            const priceAbove = String(searchParams.get('priceAbove') || '').trim();
             const pickerResult = await fetchPickerPage(Product, {
                 storeId: String(storeId || '').trim(),
                 page,
@@ -575,9 +594,13 @@ export async function GET(request) {
                 maxPrice,
                 sku,
                 brand,
+                brands,
                 supplierId,
                 inStock,
                 skuStatus,
+                minSold,
+                minStock,
+                priceAbove,
             });
 
             if (manage) {

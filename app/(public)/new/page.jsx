@@ -5,7 +5,7 @@ import axios from 'axios'
 import ProductCard from '@/components/ProductCard'
 import ProductFilterSidebar from '@/components/ProductFilterSidebar'
 import { PRODUCT_CARD_GRID_CLASS_5 } from '@/lib/storefrontCarousel'
-import { sortOutOfStockLast } from '@/lib/productVisibility'
+import { appendCatalogFilters } from '@/lib/catalogFilters'
 
 const NEW_ARRIVALS_LIMIT = 50
 const PAGE_SIZE = 25
@@ -40,6 +40,8 @@ export default function NewProductsPage() {
   const sentinelRef = useRef(null)
   const loadingMoreRef = useRef(false)
 
+  const filterKey = useMemo(() => JSON.stringify(activeFilters), [activeFilters])
+
   useEffect(() => {
     let cancelled = false
 
@@ -48,11 +50,12 @@ export default function NewProductsPage() {
       setLoadError('')
       try {
         const params = new URLSearchParams({
-          sortBy: 'newest',
+          paginated: 'true',
           limit: String(NEW_ARRIVALS_LIMIT),
-          slim: 'true',
-          includeOutOfStock: 'true',
+          page: '1',
+          slim: activeFilters.sortBy === 'rating' || activeFilters.rating > 0 ? 'false' : 'true',
         })
+        appendCatalogFilters(params, { ...activeFilters, sortBy: activeFilters.sortBy || 'newest' })
         const { data } = await axios.get(`/api/products?${params.toString()}`)
         const list = Array.isArray(data?.products)
           ? data.products
@@ -75,83 +78,13 @@ export default function NewProductsPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [filterKey, activeFilters])
 
-  const newProducts = useMemo(() => {
-    return [...products].sort((a, b) => {
-      const dateA = new Date(a.createdAt || 0)
-      const dateB = new Date(b.createdAt || 0)
-      return dateB - dateA
-    })
-  }, [products])
-
-  const applyFilters = useCallback((productsToFilter) => {
-    return productsToFilter.filter((product) => {
-      if (activeFilters.categories.length > 0) {
-        const productCategories = [
-          product.category,
-          ...(Array.isArray(product.categories) ? product.categories : []),
-        ].filter(Boolean)
-
-        const hasMatchingCategory = productCategories.some((cat) =>
-          activeFilters.categories.includes(cat),
-        )
-        if (!hasMatchingCategory) return false
-      }
-
-      if (product.price < activeFilters.priceRange.min || product.price > activeFilters.priceRange.max) {
-        return false
-      }
-
-      if (activeFilters.rating > 0) {
-        const avgRating = product.averageRating || 0
-        if (avgRating < activeFilters.rating) return false
-      }
-
-      if (activeFilters.inStock && product.inStock === false) {
-        return false
-      }
-
-      return true
-    })
-  }, [activeFilters])
-
-  const sortProducts = useCallback((productsToSort) => {
-    const sorted = [...productsToSort]
-
-    switch (activeFilters.sortBy) {
-      case 'price-low-high':
-        return sorted.sort((a, b) => a.price - b.price)
-      case 'price-high-low':
-        return sorted.sort((a, b) => b.price - a.price)
-      case 'rating':
-        return sorted.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0))
-      case 'discount':
-        return sorted.sort((a, b) => {
-          const discountA = a.AED > a.price ? ((a.AED - a.price) / a.AED * 100) : 0
-          const discountB = b.AED > b.price ? ((b.AED - b.price) / b.AED * 100) : 0
-          return discountB - discountA
-        })
-      case 'newest':
-      default:
-        return sorted.sort((a, b) => {
-          const dateA = new Date(a.createdAt || 0)
-          const dateB = new Date(b.createdAt || 0)
-          return dateB - dateA
-        })
-    }
-  }, [activeFilters.sortBy])
-
-  const filteredAndSortedProducts = useMemo(() => {
-    const filtered = applyFilters(newProducts)
-    return sortOutOfStockLast(sortProducts(filtered)).slice(0, NEW_ARRIVALS_LIMIT)
-  }, [newProducts, applyFilters, sortProducts])
-
-  const totalProducts = filteredAndSortedProducts.length
+  const totalProducts = products.length
   const safeVisibleCount = Math.min(visibleCount, totalProducts)
   const visibleProducts = useMemo(
-    () => filteredAndSortedProducts.slice(0, safeVisibleCount || PAGE_SIZE),
-    [filteredAndSortedProducts, safeVisibleCount]
+    () => products.slice(0, safeVisibleCount || PAGE_SIZE),
+    [products, safeVisibleCount]
   )
   const hasMore = safeVisibleCount < totalProducts
 
@@ -197,7 +130,7 @@ export default function NewProductsPage() {
         <div className="flex gap-6">
           <div className="hidden flex-shrink-0 lg:block">
             <ProductFilterSidebar
-              products={newProducts}
+              products={products}
               onFilterChange={handleFilterChange}
               initialFilters={activeFilters}
             />

@@ -3,6 +3,7 @@ import HomeSection from "@/models/HomeSection";
 import authAdmin from "@/middlewares/authAdmin";
 import { getAuth } from "@/lib/firebase-admin";
 import { NextResponse } from "next/server";
+import { invalidateCachePattern } from '@/lib/cache';
 
 export async function GET(request) {
   try {
@@ -77,6 +78,7 @@ export async function PUT(request) {
       saved = await HomeSection.create({ section, category, tag, productIds });
     }
 
+    invalidateCachePattern('public:home-sections');
     return NextResponse.json({ message: "Saved", selection: saved });
   } catch (error) {
     console.error(error);

@@ -1,11 +1,11 @@
 'use client';
 
-import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import axios from 'axios';
 import ProductCard from '@/components/ProductCard';
 import ProductFilterSidebar from '@/components/ProductFilterSidebar';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
-import { sortOutOfStockLast } from '@/lib/productVisibility';
+import { appendCatalogFilters } from '@/lib/catalogFilters';
 
 const PAGE_SIZE = 25;
 
@@ -72,12 +72,18 @@ export default function TopSellingPage() {
     if (!append) abortRef.current = controller;
 
     try {
+      const params = {
+        limit: PAGE_SIZE,
+        offset,
+        ...(bust ? { bust: 1 } : {}),
+      };
+      const filterParams = new URLSearchParams();
+      appendCatalogFilters(filterParams, activeFilters);
+      filterParams.forEach((value, key) => {
+        params[key] = value;
+      });
       const { data } = await axios.get('/api/products/top-selling', {
-        params: {
-          limit: PAGE_SIZE,
-          offset,
-          ...(bust ? { bust: 1 } : {}),
-        },
+        params,
         signal: controller.signal,
       });
 
@@ -127,7 +133,7 @@ export default function TopSellingPage() {
         setLoading(false);
       }
     }
-  }, []);
+  }, [activeFilters]);
 
   useEffect(() => {
     fetchPage({ offset: 0, append: false });
@@ -154,77 +160,6 @@ export default function TopSellingPage() {
     observer.observe(node);
     return () => observer.disconnect();
   }, [fetchPage, loading, products.length]);
-
-  const applyFilters = useCallback((productsToFilter) => {
-    const min = Number(activeFilters.priceRange?.min) || 0;
-    const maxRaw = Number(activeFilters.priceRange?.max);
-    // Treat missing/tiny max as "no price cap" so a sidebar glitch cannot blank the grid.
-    const max = Number.isFinite(maxRaw) && maxRaw >= 10 ? maxRaw : 100000;
-
-    return productsToFilter.filter((product) => {
-      if (activeFilters.categories.length > 0) {
-        const productCategories = [
-          product.category,
-          ...(Array.isArray(product.categories) ? product.categories : []),
-        ].filter(Boolean);
-
-        const hasMatchingCategory = productCategories.some((cat) =>
-          activeFilters.categories.includes(cat)
-          || activeFilters.categories.includes(String(cat?._id || cat)),
-        );
-        if (!hasMatchingCategory) return false;
-      }
-
-      const price = Number(product.price) || Number(product.AED) || 0;
-      if (price < min || price > max) return false;
-
-      if (activeFilters.rating > 0) {
-        const avgRating = product.averageRating || 0;
-        if (avgRating < activeFilters.rating) return false;
-      }
-
-      if (activeFilters.inStock && product.inStock === false) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [activeFilters]);
-
-  const sortProducts = useCallback((productsToSort) => {
-    const sorted = [...productsToSort];
-
-    switch (activeFilters.sortBy) {
-      case 'price-low-high':
-        return sorted.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
-      case 'price-high-low':
-        return sorted.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
-      case 'newest':
-        return sorted.sort(
-          (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
-        );
-      case 'rating':
-        return sorted.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
-      case 'discount':
-        return sorted.sort((a, b) => {
-          const discountA = a.AED > a.price ? ((a.AED - a.price) / a.AED) * 100 : 0;
-          const discountB = b.AED > b.price ? ((b.AED - b.price) / b.AED) * 100 : 0;
-          return discountB - discountA;
-        });
-      case 'popularity':
-      default:
-        return sorted.sort((a, b) => {
-          const soldA = Number(a.unitsSold ?? a.soldCount) || 0;
-          const soldB = Number(b.unitsSold ?? b.soldCount) || 0;
-          return soldB - soldA;
-        });
-    }
-  }, [activeFilters.sortBy]);
-
-  const filteredAndSortedProducts = useMemo(() => {
-    const filtered = applyFilters(products);
-    return sortOutOfStockLast(sortProducts(filtered));
-  }, [products, applyFilters, sortProducts]);
 
   const handleFilterChange = useCallback((filters) => {
     setActiveFilters(filters);
@@ -271,7 +206,7 @@ export default function TopSellingPage() {
                   {isArabic ? 'إعادة المحاولة' : 'Retry'}
                 </button>
               </div>
-            ) : filteredAndSortedProducts.length === 0 ? (
+            ) : products.length === 0 ? (
               <div className="rounded-lg border border-gray-200 bg-white py-16 text-center">
                 <p className="text-lg text-gray-500">
                   {products.length === 0
@@ -305,7 +240,7 @@ export default function TopSellingPage() {
                 ) : null}
 
                 <div className="grid grid-cols-2 items-stretch gap-3 md:grid-cols-3 lg:grid-cols-5">
-                  {filteredAndSortedProducts.map((product) => (
+                  {products.map((product) => (
                     <ProductCard key={product._id || product.id} product={product} />
                   ))}
                 </div>

@@ -70,6 +70,11 @@ import {
   matchVariantByOptions,
 } from '@/lib/productVariantOptions';
 import { checkoutOrderCreateSchema } from '@/lib/apiSchemas';
+import {
+    CUSTOMER_PICKUP_METHOD,
+    buildCustomerPickupShippingAddress,
+    isCustomerPickupOrder,
+} from '@/lib/customerPickup';
 import { parseWithSchema } from '@/lib/apiValidate';
 
 const PaymentMethod = {
@@ -601,6 +606,17 @@ export async function POST(request) {
 
         // Shipping: use from payload, fallback to 0
         let shippingFee = typeof body.shippingFee === 'number' ? body.shippingFee : 0;
+        const customerPickupRequested = String(body.fulfillmentMode || body.shippingMethod || '') === CUSTOMER_PICKUP_METHOD;
+        if (customerPickupRequested) {
+            const pickupStoreId = [...ordersByStore.keys()][0];
+            const pickupStore = pickupStoreId
+                ? await Store.findById(pickupStoreId).select('customerPickupEnabled').lean()
+                : null;
+            if (pickupStore?.customerPickupEnabled === false) {
+                return NextResponse.json({ error: 'Store pickup is not available right now.' }, { status: 400 });
+            }
+            shippingFee = 0;
+        }
         let isShippingFeeAdded = false;
 
         // Wallet redemption (logged-in users only)
@@ -741,9 +757,11 @@ export async function POST(request) {
                 coinsRedeemed,
                 walletDiscount,
                 waslah: {
-                    autoShipEnrolled: isWaslahAutoShipEnabled(),
-                    autoShipEnrolledAt: isWaslahAutoShipEnabled() ? new Date() : null,
+                    autoShipEnrolled: customerPickupRequested ? false : isWaslahAutoShipEnabled(),
+                    autoShipEnrolledAt: customerPickupRequested || !isWaslahAutoShipEnabled() ? null : new Date(),
                 },
+                customerPickup: customerPickupRequested,
+                shippingMethod: customerPickupRequested ? CUSTOMER_PICKUP_METHOD : String(body.shippingMethod || ''),
                 orderItems: sellerItems.map(item => {
                     const product = productById.get(String(item.id));
                     const matchedVariant = matchVariantByOptions(product?.variants || [], item.variantOptions || {});
@@ -960,6 +978,25 @@ export async function POST(request) {
                     };
                     orderData.alternatePhone = addressData.alternatePhone || '';
                     orderData.alternatePhoneCode = addressData.alternatePhoneCode || addressData.phoneCode || '';
+                }
+            }
+
+            if (customerPickupRequested || isCustomerPickupOrder(orderData)) {
+                const contact = orderData.shippingAddress || {};
+                orderData.customerPickup = true;
+                orderData.shippingMethod = CUSTOMER_PICKUP_METHOD;
+                orderData.shippingFee = 0;
+                orderData.shippingAddress = buildCustomerPickupShippingAddress({
+                    name: contact.name || orderData.guestName || guestInfo?.name || '',
+                    email: contact.email || orderData.guestEmail || guestInfo?.email || '',
+                    phone: contact.phone || orderData.guestPhone || guestInfo?.phone || '',
+                    phoneCode: contact.phoneCode || guestInfo?.phoneCode || '+971',
+                    alternatePhone: contact.alternatePhone || orderData.alternatePhone || '',
+                    alternatePhoneCode: contact.alternatePhoneCode || orderData.alternatePhoneCode || '',
+                });
+                if (orderData.waslah) {
+                    orderData.waslah.autoShipEnrolled = false;
+                    orderData.waslah.autoShipEnrolledAt = null;
                 }
             }
 

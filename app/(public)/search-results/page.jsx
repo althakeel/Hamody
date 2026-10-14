@@ -68,7 +68,7 @@ function SearchResultsInner() {
               setSelectedPreview((parsed.products || []).length ? 'result' : 'upload');
               setError((parsed.products || []).length || (parsed.relatedProducts || []).length
                 ? ''
-                : t('searchResults.noExact'));
+                : t('searchResults.none'));
             } catch (err) {
               console.error(err);
               setError(t('searchResults.expired'));
@@ -198,7 +198,7 @@ function SearchResultsInner() {
               <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-slate-800" />
             </div>
           ) : (
-            <div className="grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+            <div className="grid items-start gap-6 lg:grid-cols-[224px_minmax(0,1fr)]">
               <aside className="lg:sticky lg:top-24">
                 <p className="mb-3 text-lg font-semibold text-slate-900">{t('searchResults.chooseItem')}</p>
                 <div className="overflow-hidden rounded-xl bg-white shadow-sm">
@@ -329,7 +329,7 @@ function SearchResultsInner() {
                 {!loading && !exactList.length && !recommendedList.length && !error ? (
                   <div className="py-16 text-center text-slate-500">
                     <PackageIcon size={56} className="mx-auto mb-3 text-slate-300" />
-                    <p>{t('searchResults.noExact')}</p>
+                    <p>{t('searchResults.none')}</p>
                   </div>
                 ) : null}
               </section>

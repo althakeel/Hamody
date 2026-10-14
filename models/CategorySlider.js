@@ -45,6 +45,21 @@ const CategorySliderSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    mobileImage: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    mobileImageAr: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    mobileImageRatio: {
+      type: String,
+      default: '3:4',
+      trim: true,
+    },
     sideImagePosition: {
       type: String,
       default: 'left',
@@ -77,12 +92,36 @@ const CategorySliderSchema = new mongoose.Schema(
       default: 0,
       index: true,
     },
+    viewAllEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    viewAllTarget: {
+      type: String,
+      default: 'default',
+      enum: ['default', 'category', 'landing', 'page', 'custom'],
+    },
+    viewAllValue: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    slug: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    slugAliases: {
+      type: [String],
+      default: [],
+    },
   },
   { timestamps: true }
 );
 
 // Create compound index for efficient querying
 CategorySliderSchema.index({ storeId: 1, createdAt: -1 });
+CategorySliderSchema.index({ slug: 1 });
 
 if (mongoose.models.CategorySlider && !mongoose.models.CategorySlider.schema.paths.sortOrder) {
   delete mongoose.models.CategorySlider;
@@ -105,6 +144,22 @@ if (mongoose.models.CategorySlider && !mongoose.models.CategorySlider.schema.pat
 }
 
 if (mongoose.models.CategorySlider && !mongoose.models.CategorySlider.schema.paths.showOutOfStock) {
+  delete mongoose.models.CategorySlider;
+}
+
+if (mongoose.models.CategorySlider && !mongoose.models.CategorySlider.schema.paths.mobileImage) {
+  delete mongoose.models.CategorySlider;
+}
+
+if (mongoose.models.CategorySlider && !mongoose.models.CategorySlider.schema.paths.mobileImageRatio) {
+  delete mongoose.models.CategorySlider;
+}
+
+if (mongoose.models.CategorySlider && !mongoose.models.CategorySlider.schema.paths.viewAllEnabled) {
+  delete mongoose.models.CategorySlider;
+}
+
+if (mongoose.models.CategorySlider && !mongoose.models.CategorySlider.schema.paths.slug) {
   delete mongoose.models.CategorySlider;
 }
 

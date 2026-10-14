@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import StorePreference from '@/models/StorePreference'
 import authSeller from '@/middlewares/authSeller'
+import { deleteCacheKey } from '@/lib/cache'
 
 const DEFAULT_TOP_BAR = {
   enabled: true,
@@ -102,6 +103,8 @@ export async function PUT(request) {
       { $set: { topBar: normalizedTopBar } },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     ).lean()
+
+    deleteCacheKey('public:top-bar:v1')
 
     return NextResponse.json({
       message: 'Top bar preferences saved',

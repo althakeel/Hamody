@@ -8,6 +8,7 @@ const BrandPageSchema = new mongoose.Schema({
   description: { type: String, default: '' },
   descriptionAr: { type: String, default: '' },
   image: { type: String, default: '' },
+  imageUpdatedAt: { type: Date, default: null },
   bannerEn: { type: String, default: '' },
   bannerAr: { type: String, default: '' },
   bannerTabletEn: { type: String, default: '' },

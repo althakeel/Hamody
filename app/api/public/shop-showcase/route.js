@@ -12,6 +12,8 @@ import { resolvePublicStorePreference } from '@/lib/storePreferencePublic'
 import { STOREFRONT_IN_STOCK_FILTER, STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility'
 
 const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v23'
+const SHOWCASE_CACHE_TTL = 180
+let showcaseInflight = null
 
 const DEFAULT_SHOWCASE = {
   enabled: true,
@@ -289,18 +291,7 @@ function orderByIds(items, ids) {
   })
 }
 
-export async function GET() {
-  try {
-    const cached = getCachedData(SHOWCASE_CACHE_KEY)
-    if (cached) {
-      return NextResponse.json(cached, {
-        headers: {
-          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-          'X-Cache': 'HIT',
-        },
-      })
-    }
-
+async function loadShopShowcase() {
     await connectDB()
 
     const preference = await resolvePublicStorePreference(Store, Product)
@@ -351,13 +342,34 @@ export async function GET() {
       categories: orderByIds(categories, validCategoryIds)
     }
 
-    setCachedData(SHOWCASE_CACHE_KEY, payload, 60)
+    setCachedData(SHOWCASE_CACHE_KEY, payload, SHOWCASE_CACHE_TTL)
+    return payload
+}
+
+export async function GET() {
+  try {
+    const cached = getCachedData(SHOWCASE_CACHE_KEY)
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=180, stale-while-revalidate=300',
+          'X-Cache': 'HIT',
+        },
+      })
+    }
+
+    if (!showcaseInflight) {
+      showcaseInflight = loadShopShowcase().finally(() => {
+        showcaseInflight = null
+      })
+    }
+    const payload = await showcaseInflight
 
     return NextResponse.json(
       payload,
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+          'Cache-Control': 'public, s-maxage=180, stale-while-revalidate=300',
           'X-Cache': 'MISS',
         }
       }

@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import StorePreference from '@/models/StorePreference'
+import { getCachedData, setCachedData } from '@/lib/cache'
+
+const TOP_BAR_CACHE_KEY = 'public:top-bar:v1'
+const TOP_BAR_CACHE_TTL = 180
 
 const DEFAULT_TOP_BAR = {
   enabled: true,
@@ -39,17 +43,32 @@ function normalizeTopBar(payload = {}) {
 
 export async function GET() {
   try {
+    const cached = getCachedData(TOP_BAR_CACHE_KEY)
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=180, stale-while-revalidate=300',
+          'X-Cache': 'HIT',
+        },
+      })
+    }
+
     await connectDB()
 
     const preference = await StorePreference.findOne({})
       .sort({ updatedAt: -1 })
+      .select('topBar')
       .lean()
 
-    if (!preference?.topBar) {
-      return NextResponse.json({ topBar: normalizeTopBar(DEFAULT_TOP_BAR) })
-    }
+    const payload = { topBar: normalizeTopBar(preference?.topBar || DEFAULT_TOP_BAR) }
+    setCachedData(TOP_BAR_CACHE_KEY, payload, TOP_BAR_CACHE_TTL)
 
-    return NextResponse.json({ topBar: normalizeTopBar(preference.topBar) })
+    return NextResponse.json(payload, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=180, stale-while-revalidate=300',
+        'X-Cache': 'MISS',
+      },
+    })
   } catch (error) {
     console.error('[Public TopBar Settings GET] Error:', error)
     return NextResponse.json({ topBar: normalizeTopBar(DEFAULT_TOP_BAR) })

@@ -22,7 +22,11 @@ export default function StoreDashboardDisplay() {
       applyStoreDashboardDisplay(event.detail || {});
     };
     window.addEventListener('store-dashboard-display', onDisplay);
-    return () => window.removeEventListener('store-dashboard-display', onDisplay);
+    return () => {
+      window.removeEventListener('store-dashboard-display', onDisplay);
+      delete document.documentElement.dataset.storeTheme;
+      delete document.documentElement.dataset.dashTone;
+    };
   }, []);
 
   useEffect(() => {

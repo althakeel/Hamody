@@ -3,6 +3,10 @@ import HomeSection from "@/models/HomeSection";
 import Product from "@/models/Product";
 import { NextResponse } from "next/server";
 import { STOREFRONT_IN_STOCK_FILTER, STOREFRONT_PUBLISHED_FILTER, isStorefrontProductInStock } from '@/lib/productVisibility';
+import { getCachedData, setCachedData } from '@/lib/cache';
+
+const HOME_SECTIONS_CACHE_KEY = 'public:home-sections:v1';
+const HOME_SECTIONS_CACHE_TTL = 120;
 
 const PRODUCT_SELECT = '_id name price mrp AED images inStock stockQuantity';
 
@@ -27,6 +31,16 @@ export async function GET() {
   try {
     if (!process.env.MONGODB_URI) {
       return NextResponse.json({ sections: [] });
+    }
+
+    const cached = getCachedData(HOME_SECTIONS_CACHE_KEY);
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
+          'X-Cache': 'HIT',
+        },
+      });
     }
 
     await dbConnect();
@@ -66,13 +80,15 @@ export async function GET() {
       products: mapSectionProducts(selection.productIds, productMap),
     }));
 
+    const body = { sections: payload };
+    setCachedData(HOME_SECTIONS_CACHE_KEY, body, HOME_SECTIONS_CACHE_TTL);
+
     return NextResponse.json(
-      { sections: payload },
+      body,
       {
         headers: {
-          'Cache-Control': process.env.NODE_ENV === 'production'
-            ? 'public, s-maxage=120, stale-while-revalidate=300'
-            : 'no-store',
+          'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
+          'X-Cache': 'MISS',
         },
       }
     );

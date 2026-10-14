@@ -48,7 +48,7 @@ export async function GET(request) {
     const cached = getCachedData(cacheKey);
     if (cached) {
       return NextResponse.json(cached, {
-        headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+        headers: { 'Cache-Control': 'public, s-maxage=180, stale-while-revalidate=300' },
       });
     }
 
@@ -63,10 +63,10 @@ export async function GET(request) {
       ),
     };
 
-    setCachedData(cacheKey, payload, 60);
+    setCachedData(cacheKey, payload, 180);
 
     return NextResponse.json(payload, {
-      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+      headers: { 'Cache-Control': 'public, s-maxage=180, stale-while-revalidate=300' },
     });
   } catch (error) {
     console.error('[public/mobile-features GET]', error);

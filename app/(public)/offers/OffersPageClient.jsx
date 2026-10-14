@@ -246,7 +246,7 @@ export default function OffersPageClient({ initialData = null }) {
             </div>
 
             <div className="flex gap-6">
-              <aside className="hidden w-72 shrink-0 lg:block">
+              <aside className="hidden w-56 shrink-0 lg:block">
                 {filterSidebar}
               </aside>
 

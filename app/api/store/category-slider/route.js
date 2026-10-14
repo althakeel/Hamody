@@ -3,7 +3,9 @@ import CategorySlider from '@/models/CategorySlider';
 import { NextResponse } from 'next/server';
 import { invalidateCategorySliderCaches } from '@/lib/categorySliderCache';
 import { resolveCategorySliderAccess, buildCategorySliderFilter } from '@/lib/categorySliderAccess';
-import { normalizeCategorySliderBackground, normalizeCategorySliderSideImagePosition, normalizeCategorySliderAutoSlide, normalizeCategorySliderAutoSlideInterval, normalizeCategorySliderShowOutOfStock } from '@/lib/categorySliderTheme';
+import { normalizeCategorySliderBackground, normalizeCategorySliderSideImagePosition, normalizeCategorySliderAutoSlide, normalizeCategorySliderAutoSlideInterval, normalizeCategorySliderShowOutOfStock, normalizeCategorySliderMobileImageRatio, serializeCategorySliderMobileImageRatio } from '@/lib/categorySliderTheme';
+import { normalizeCategorySliderViewAll, serializeCategorySliderViewAll } from '@/lib/categorySliderViewAll';
+import { allocateCategorySliderSlug, ensureCategorySliderSlug, nextCategorySliderSlugAliases } from '@/lib/categorySliderSlug';
 import { sortCategorySliders, backfillCategorySliderSortOrdersIfNeeded } from '@/lib/categorySliderOrder';
 import { isTestSliderCopy } from '@/lib/categorySliderCopy';
 
@@ -37,6 +39,9 @@ export async function GET(req) {
     const sliders = sortCategorySliders(
       await CategorySlider.find({ storeId: { $in: scope.storeIds } }).lean()
     );
+    for (const slider of sliders) {
+      if (!slider.slug) slider.slug = await ensureCategorySliderSlug(CategorySlider, slider);
+    }
     
     // Ensure all fields including subtitle are present
     const slidersWithDefaults = sliders.map(slider => ({
@@ -46,12 +51,16 @@ export async function GET(req) {
       subtitleAr: slider.subtitleAr || '',
       sideImage: slider.sideImage || '',
       sideImageAr: slider.sideImageAr || '',
+      mobileImage: slider.mobileImage || '',
+      mobileImageAr: slider.mobileImageAr || '',
+      ...serializeCategorySliderMobileImageRatio(slider.mobileImageRatio),
       sideImagePosition: normalizeCategorySliderSideImagePosition(slider.sideImagePosition),
       cardsPerRow: slider.cardsPerRow === 5 ? 5 : 6,
       backgroundColor: normalizeCategorySliderBackground(slider.backgroundColor),
       autoSlide: normalizeCategorySliderAutoSlide(slider.autoSlide),
       autoSlideIntervalMs: normalizeCategorySliderAutoSlideInterval(slider.autoSlideIntervalMs),
       showOutOfStock: normalizeCategorySliderShowOutOfStock(slider.showOutOfStock),
+      ...serializeCategorySliderViewAll(slider),
       sortOrder: Number.isFinite(Number(slider.sortOrder)) ? Number(slider.sortOrder) : 0,
     }));
     
@@ -81,7 +90,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
     }
 
-    const { title, subtitle, titleAr, subtitleAr, productIds, sideImage, sideImageAr, sideImagePosition, cardsPerRow, backgroundColor, autoSlide, autoSlideIntervalMs, showOutOfStock } = await req.json();
+    const { title, subtitle, titleAr, subtitleAr, productIds, sideImage, sideImageAr, mobileImage, mobileImageAr, mobileImageRatio, sideImagePosition, cardsPerRow, backgroundColor, autoSlide, autoSlideIntervalMs, showOutOfStock, viewAllEnabled, viewAllTarget, viewAllValue, slug: requestedSlug } = await req.json();
     console.log('=== 💾 POST SLIDER START ===');
     console.log('💾 Raw request body - subtitle:', subtitle);
     console.log('💾 Subtitle is null:', subtitle === null);
@@ -118,6 +127,12 @@ export async function POST(req) {
     const sideImageArValue = sideImageAr !== undefined && sideImageAr !== null
       ? String(sideImageAr).trim()
       : '';
+    const mobileImageValue = mobileImage !== undefined && mobileImage !== null
+      ? String(mobileImage).trim()
+      : '';
+    const mobileImageArValue = mobileImageAr !== undefined && mobileImageAr !== null
+      ? String(mobileImageAr).trim()
+      : '';
 
     if (!scope.storeId) {
       return NextResponse.json(
@@ -141,12 +156,18 @@ export async function POST(req) {
       productIds,
       sideImage: sideImageValue,
       sideImageAr: sideImageArValue,
+      mobileImage: mobileImageValue,
+      mobileImageAr: mobileImageArValue,
+      mobileImageRatio: normalizeCategorySliderMobileImageRatio(mobileImageRatio),
       sideImagePosition: normalizeCategorySliderSideImagePosition(sideImagePosition),
       cardsPerRow: Number(cardsPerRow) === 5 ? 5 : 6,
       backgroundColor: normalizeCategorySliderBackground(backgroundColor),
       autoSlide: normalizeCategorySliderAutoSlide(autoSlide),
       autoSlideIntervalMs: normalizeCategorySliderAutoSlideInterval(autoSlideIntervalMs),
       showOutOfStock: normalizeCategorySliderShowOutOfStock(showOutOfStock),
+      ...normalizeCategorySliderViewAll({ viewAllEnabled, viewAllTarget, viewAllValue }),
+      slug: await allocateCategorySliderSlug(CategorySlider, String(requestedSlug || '').trim() || title.trim()),
+      slugAliases: [],
       sortOrder: nextSortOrder,
     };
     console.log('💾 About to save with:', JSON.stringify(sliderData));

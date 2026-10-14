@@ -140,11 +140,22 @@ GET /api/public/category-sliders
       "_id": "…",
       "title": "Kitchen",
       "subtitle": "",
-      "productIds": ["…", "…"]
+      "productIds": ["…", "…"],
+      "mobileImage": "https://…/en-app.jpg",
+      "mobileImageAr": "",
+      "mobileImageRatio": "3:4",
+      "mobileImageWidth": 3,
+      "mobileImageHeight": 4
     }
   ]
 }
 ```
+
+`mobileImage` and `mobileImageAr` are the app photos. They are not the website side image. English uses `mobileImage`, then `mobileImageAr`. Arabic uses `mobileImageAr`, then `mobileImage`. Hide the image when both are empty.
+
+Draw the frame from `mobileImageRatio`. Allowed values are `3:4`, `2:4`, `4:5`, `1:1`, and `9:16`. `mobileImageWidth` and `mobileImageHeight` are those two numbers, so a `2:4` image is 2 wide and 4 tall. Do not draw `sideImage` on a phone.
+
+The home page list with products already attached is `GET /api/public/featured-sections`. Each section there includes the same image and ratio fields.
 
 One horizontal row per slider. Title, then the products. Load the products with:
 

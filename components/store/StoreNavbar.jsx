@@ -11,6 +11,7 @@ import Logo from '@/assets/logo/Store1920.png';
 import SellerSignOutArt from '@/assets/seller-sign-out-door.webp';
 import { useAuth } from '@/lib/useAuth';
 import { signOut } from 'firebase/auth';
+import { clearServerCookies } from '@/lib/authClient';
 import { auth } from '@/lib/firebase';
 import { useStoreOrderNotifications } from './StoreOrderNotificationProvider';
 
@@ -126,6 +127,7 @@ const StoreNavbar = ({
             } catch {
                 // Ignore storage failures.
             }
+            await clearServerCookies();
             await signOut(auth);
             window.location.href = '/';
         } catch (error) {

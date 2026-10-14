@@ -41,6 +41,7 @@ import {
 } from "@/lib/newProductTag";
 import {
   DASHBOARD_SCALES,
+  DASHBOARD_THEMES,
   normalizeDashboardScale,
   normalizeDashboardTheme,
   publishStoreDashboardDisplay,
@@ -217,7 +218,10 @@ export default function SettingsPage() {
   });
   const [newTagSettings, setNewTagSettings] = useState(() => normalizeNewTagSettings(DEFAULT_NEW_TAG_SETTINGS));
   const [dashboardWelcomeEnabled, setDashboardWelcomeEnabled] = useState(true);
+  const [customerPickupEnabled, setCustomerPickupEnabled] = useState(true);
   const [savingWelcomePopup, setSavingWelcomePopup] = useState(false);
+  const [savingCustomerPickup, setSavingCustomerPickup] = useState(false);
+  const [canManageCustomerPickup, setCanManageCustomerPickup] = useState(false);
   const [paymentMethodsLoaded, setPaymentMethodsLoaded] = useState(false);
   const [loadingPayments, setLoadingPayments] = useState(false);
 
@@ -285,6 +289,7 @@ export default function SettingsPage() {
       setCurrencyPreference(store.currencyPreference || "AED");
       setNewTagSettings(normalizeNewTagSettings(store.newTagSettings || DEFAULT_NEW_TAG_SETTINGS));
       setDashboardWelcomeEnabled(store.dashboardWelcomeEnabled !== false);
+      setCustomerPickupEnabled(store.customerPickupEnabled !== false);
       setEmailNotifications(profile.emailNotifications !== false);
       setTwoFactorEnabled(Boolean(profile.twoFactorEnabled));
       setDashboardTheme(normalizeDashboardTheme(profile.dashboardTheme));
@@ -373,6 +378,9 @@ export default function SettingsPage() {
           Boolean(data?.isOwner) ||
           Boolean(data?.isSuperAdmin) ||
           data?.permissions?.settings === true
+        );
+        setCanManageCustomerPickup(
+          Boolean(data?.isSuperAdmin) || data?.permissions?.customerPickup === true
         );
       } catch {
         setIsStoreOwner(false);
@@ -647,6 +655,27 @@ export default function SettingsPage() {
       toast.error(error?.response?.data?.error || error.message || "Could not save display settings");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveCustomerPickup = async (enabled) => {
+    const previous = customerPickupEnabled;
+    setCustomerPickupEnabled(enabled);
+    setSavingCustomerPickup(true);
+    try {
+      const token = await getToken(true);
+      if (!token) throw new Error("Your session expired. Please sign in again.");
+      await axios.post(
+        "/api/store/profile/update",
+        { customerPickupEnabled: enabled },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(enabled ? "Store pickup is on at checkout" : "Store pickup is hidden at checkout");
+    } catch (error) {
+      setCustomerPickupEnabled(previous);
+      toast.error(error?.response?.data?.error || error.message || "Could not save store pickup");
+    } finally {
+      setSavingCustomerPickup(false);
     }
   };
 
@@ -976,6 +1005,21 @@ export default function SettingsPage() {
               </Field>
             </div>
           </SettingsCard>
+
+          {(isSuperAdmin || isStoreOwner || canManageCustomerPickup) ? (
+            <SettingsCard
+              title="Delivery"
+              description="Turn location pickup on or off for checkout. Only the super admin, the store owner, or a team member with Customer pickup access can change this."
+            >
+              <ToggleRow
+                title="Location pickup"
+                description="When this is on, customers can choose store pickup at 18 Maleha St - Warehouses Land - Industrial Area - Sharjah. Turn it off to show delivery only."
+                checked={customerPickupEnabled}
+                disabled={savingCustomerPickup}
+                onChange={(event) => saveCustomerPickup(event.target.checked)}
+              />
+            </SettingsCard>
+          ) : null}
         </div>
       )}
 
@@ -988,22 +1032,23 @@ export default function SettingsPage() {
             <div className="space-y-5">
               <div>
                 <p className="text-sm font-medium text-slate-800">Appearance</p>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  {[
-                    ["light", "Light"],
-                    ["dark", "Black"],
-                  ].map(([value, label]) => (
+                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
+                  {DASHBOARD_THEMES.map((theme) => (
                     <button
-                      key={value}
+                      key={theme.id}
                       type="button"
-                      onClick={() => saveDashboardDisplay({ theme: value, scale: dashboardScale })}
+                      onClick={() => saveDashboardDisplay({ theme: theme.id, scale: dashboardScale })}
                       className={`rounded-xl border px-3 py-3 text-sm font-semibold ${
-                        dashboardTheme === value
+                        dashboardTheme === theme.id
                           ? "border-indigo-600 bg-indigo-600 text-white"
                           : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                       }`}
                     >
-                      {label}
+                      <span
+                        className="mx-auto mb-2 block h-5 w-5 rounded-full border border-slate-300"
+                        style={{ backgroundColor: theme.swatch }}
+                      />
+                      {theme.label}
                     </button>
                   ))}
                 </div>

@@ -3,6 +3,7 @@ import HomeSection from "@/models/HomeSection";
 import { NextResponse } from "next/server";
 import { getAuth } from "@/lib/firebase-admin";
 import authAdmin from "@/middlewares/authAdmin";
+import { invalidateCachePattern } from '@/lib/cache';
 
 // GET: list all selections (admin)
 export async function GET() {
@@ -77,6 +78,7 @@ export async function POST(req) {
       sortOrder,
     });
 
+    invalidateCachePattern('public:home-sections');
     return NextResponse.json({ selection: created });
   } catch (error) {
     console.error("Create home selection error", error);

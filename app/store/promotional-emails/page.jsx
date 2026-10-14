@@ -10,6 +10,7 @@ import EmailGalleryPresetCard from '@/components/store/EmailGalleryPresetCard';
 import { getPresetBlocks } from '@/lib/emailCampaignPresets';
 import { listStockImagesForPicker } from '@/lib/emailTemplateStockImages';
 import { renderEmailFromBlocks, toEmailPreviewSrcDoc } from '@/lib/emailCampaignBuilder';
+import { isMjmlMarkup } from '@/lib/emailMjmlDetect';
 import { formatDubaiDateTime, parseDubaiDateTimeLocal } from '@/lib/emailMarketingSchedule';
 import StorePagination from '@/components/store/StorePagination';
 
@@ -320,13 +321,19 @@ export default function PromotionalEmailsPage() {
     }
   };
 
+  const anyCampaignSending = activeCampaigns.some((campaign) => {
+    const total = Number(campaign.recipientCount || 0);
+    const sent = Number(campaign.sentCount ?? campaign.totalSent ?? 0);
+    return campaign.sending || (total > 0 && sent > 0 && sent < total);
+  });
+
   useEffect(() => {
     if (tab !== 'send') return undefined;
     const timerId = window.setInterval(() => {
       loadActiveCampaigns({ silent: true });
-    }, 45000);
+    }, anyCampaignSending ? 4000 : 20000);
     return () => window.clearInterval(timerId);
-  }, [tab]);
+  }, [tab, anyCampaignSending]);
 
   const classicTemplates = useMemo(
     () => presets.filter((item) => item.category === 'Classic'),
@@ -425,27 +432,83 @@ export default function PromotionalEmailsPage() {
     ));
   }, [customTemplates, gallerySearch]);
 
-  const templatePreviewHtml = useMemo(() => {
-    if (!previewModal) return '';
-    let blocks = [];
-    if (previewModal.type === 'preset') {
-      blocks = getPresetBlocks(previewModal.id) || previewModal.blocks || [];
-    } else if (previewModal.type === 'saved') {
-      const saved = customTemplates.find((item) => String(item._id) === String(previewModal.id));
-      blocks = Array.isArray(saved?.blocks) ? saved.blocks : (previewModal.blocks || []);
-    } else {
-      blocks = previewModal.blocks || [];
+  const [templatePreviewHtml, setTemplatePreviewHtml] = useState('');
+
+  useEffect(() => {
+    if (!previewModal) {
+      setTemplatePreviewHtml('');
+      return undefined;
     }
-    if (!Array.isArray(blocks) || blocks.length === 0) {
-      return '<div style="padding:40px;text-align:center;color:#64748b;font-family:Arial,sans-serif;">No preview available for this template.</div>';
-    }
-    return renderEmailFromBlocks(blocks, {
-      products: previewProducts,
-      recipientEmail: 'preview@example.com',
-      preheader: previewModal.preheader || '',
-      fontFamily: previewModal.fontFamily || builderFontFamily || 'helvetica',
-      previewMode: true,
-    });
+    let cancelled = false;
+    const renderPreview = async () => {
+      let blocks = [];
+      if (previewModal.type === 'preset') {
+        blocks = getPresetBlocks(previewModal.id) || previewModal.blocks || [];
+      } else if (previewModal.type === 'saved') {
+        const saved = customTemplates.find((item) => String(item._id) === String(previewModal.id));
+        blocks = Array.isArray(saved?.blocks) ? saved.blocks : (previewModal.blocks || []);
+      } else {
+        blocks = previewModal.blocks || [];
+      }
+      if (!Array.isArray(blocks) || blocks.length === 0) {
+        setTemplatePreviewHtml('<div style="padding:40px;text-align:center;color:#64748b;font-family:Arial,sans-serif;">No preview available for this template.</div>');
+        return;
+      }
+
+      const needsMjml = blocks.some((block) => block?.type === 'html' && isMjmlMarkup(block.html));
+      if (needsMjml) {
+        setTemplatePreviewHtml('<div style="padding:48px;text-align:center;color:#64748b;font-family:Arial,sans-serif;">Building the email design…</div>');
+        try {
+          const headers = await authHeaders();
+          const { data } = await axios.post('/api/store/email-marketing/mjml', { blocks }, { headers });
+          if (Array.isArray(data?.blocks) && data.blocks.length) blocks = data.blocks;
+        } catch (error) {
+          console.error('MJML preview compile failed:', error);
+        }
+      }
+
+      let products = previewProducts;
+      const pinnedIds = [...new Set(
+        blocks.flatMap((block) => (Array.isArray(block?.productIds) ? block.productIds : []))
+          .map((id) => String(id || '').trim())
+          .filter(Boolean),
+      )].slice(0, 8);
+      const campaignSlug = blocks.map((block) => String(block?.campaignSlug || '').trim()).find(Boolean);
+      if (pinnedIds.length) {
+        try {
+          const headers = await authHeaders();
+          const { data } = await axios.get(`/api/store/email-marketing/products?ids=${pinnedIds.join(',')}`, { headers });
+          const byId = new Map((Array.isArray(data?.products) ? data.products : []).map((product) => [
+            String(product?.id || product?._id || ''),
+            product,
+          ]));
+          const ordered = pinnedIds.map((id) => byId.get(id)).filter(Boolean);
+          if (ordered.length) products = ordered;
+        } catch (error) {
+          console.error('Pinned product preview failed:', error);
+        }
+      } else if (campaignSlug) {
+        try {
+          const { data } = await axios.get(`/api/public/campaign-pages/${encodeURIComponent(campaignSlug)}?limit=8`);
+          if (Array.isArray(data?.products) && data.products.length) products = data.products;
+        } catch (error) {
+          console.error('Campaign product preview failed:', error);
+        }
+      }
+
+      if (cancelled) return;
+      setTemplatePreviewHtml(renderEmailFromBlocks(blocks, {
+        products,
+        recipientEmail: 'preview@example.com',
+        preheader: previewModal.preheader || '',
+        fontFamily: previewModal.fontFamily || builderFontFamily || 'helvetica',
+        previewMode: true,
+      }));
+    };
+    renderPreview();
+    return () => {
+      cancelled = true;
+    };
   }, [previewModal, customTemplates, previewProducts, builderFontFamily]);
 
   const selectedGalleryPreset = useMemo(
@@ -453,17 +516,70 @@ export default function PromotionalEmailsPage() {
     [presets, selectedPresetId],
   );
 
-  const sendTabMiniPreviewHtml = useMemo(() => {
-    if (templateSource !== 'gallery' || !selectedPresetId) return '';
-    const blocks = getPresetBlocks(selectedPresetId);
-    if (!Array.isArray(blocks) || !blocks.length) return '';
-    return renderEmailFromBlocks(blocks, {
-      products: previewProducts,
-      recipientEmail: 'preview@example.com',
-      preheader: '',
-      fontFamily: selectedGalleryPreset?.fontFamily || 'helvetica',
-      previewMode: true,
-    });
+  const [sendTabMiniPreviewHtml, setSendTabMiniPreviewHtml] = useState('');
+
+  useEffect(() => {
+    if (templateSource !== 'gallery' || !selectedPresetId) {
+      setSendTabMiniPreviewHtml('');
+      return undefined;
+    }
+    let cancelled = false;
+    const renderMini = async () => {
+      let blocks = getPresetBlocks(selectedPresetId);
+      if (!Array.isArray(blocks) || !blocks.length) {
+        setSendTabMiniPreviewHtml('');
+        return;
+      }
+      if (blocks.some((block) => block?.type === 'html' && isMjmlMarkup(block.html))) {
+        try {
+          const headers = await authHeaders();
+          const { data } = await axios.post('/api/store/email-marketing/mjml', { blocks }, { headers });
+          if (Array.isArray(data?.blocks) && data.blocks.length) blocks = data.blocks;
+        } catch (error) {
+          console.error('MJML mini preview compile failed:', error);
+        }
+      }
+      let products = previewProducts;
+      const pinnedIds = [...new Set(
+        blocks.flatMap((block) => (Array.isArray(block?.productIds) ? block.productIds : []))
+          .map((id) => String(id || '').trim())
+          .filter(Boolean),
+      )].slice(0, 8);
+      const campaignSlug = blocks.map((block) => String(block?.campaignSlug || '').trim()).find(Boolean);
+      if (pinnedIds.length) {
+        try {
+          const headers = await authHeaders();
+          const { data } = await axios.get(`/api/store/email-marketing/products?ids=${pinnedIds.join(',')}`, { headers });
+          const byId = new Map((Array.isArray(data?.products) ? data.products : []).map((product) => [
+            String(product?.id || product?._id || ''),
+            product,
+          ]));
+          const ordered = pinnedIds.map((id) => byId.get(id)).filter(Boolean);
+          if (ordered.length) products = ordered;
+        } catch {
+          // keep the general product list
+        }
+      } else if (campaignSlug) {
+        try {
+          const { data } = await axios.get(`/api/public/campaign-pages/${encodeURIComponent(campaignSlug)}?limit=8`);
+          if (Array.isArray(data?.products) && data.products.length) products = data.products;
+        } catch {
+          // keep the general product list
+        }
+      }
+      if (cancelled) return;
+      setSendTabMiniPreviewHtml(renderEmailFromBlocks(blocks, {
+        products,
+        recipientEmail: 'preview@example.com',
+        preheader: '',
+        fontFamily: selectedGalleryPreset?.fontFamily || 'helvetica',
+        previewMode: true,
+      }));
+    };
+    renderMini();
+    return () => {
+      cancelled = true;
+    };
   }, [templateSource, selectedPresetId, previewProducts, selectedGalleryPreset]);
 
   const openTemplatePreview = (payload) => {
@@ -1578,11 +1694,18 @@ export default function PromotionalEmailsPage() {
                 <div className="mt-3 text-sm text-slate-500">No active scheduled campaigns</div>
               ) : (
                 <div className="mt-3 space-y-2">
-                  {activeCampaigns.map((campaign) => (
+                  {activeCampaigns.map((campaign) => {
+                    const total = Number(campaign.recipientCount ?? (campaign.customerEmails || []).length);
+                    const sent = Number(campaign.sentCount ?? campaign.totalSent ?? 0);
+                    const failed = Number(campaign.failedCount ?? campaign.totalFailed ?? 0);
+                    const percent = total > 0 ? Math.min(100, Math.round((sent / total) * 100)) : 0;
+                    const showProgress = campaign.sending || sent > 0 || failed > 0;
+                    return (
                     <div
                       key={campaign._id}
-                      className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                      className="rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-3"
                     >
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div className="min-w-0">
                         <div className="truncate text-sm font-semibold text-slate-900">{campaign.name || campaign.subject}</div>
                         <div className="mt-0.5 text-xs text-slate-500">
@@ -1592,7 +1715,7 @@ export default function PromotionalEmailsPage() {
                               .join(' · ') || '—'}`
                             : `Daily at ${(campaign.dailyTimes || []).join(', ') || '—'}`}
                           {' · '}
-                          {(campaign.customerEmails || []).length} recipients
+                          {total.toLocaleString()} recipients
                           {campaign.lastRunAt ? ` · last run ${formatDubaiDateTime(campaign.lastRunAt)}` : ''}
                         </div>
                       </div>
@@ -1603,8 +1726,30 @@ export default function PromotionalEmailsPage() {
                       >
                         Disable
                       </button>
+                      </div>
+                      {showProgress ? (
+                        <div className="mt-3">
+                          <div className="mb-1 flex items-center justify-between gap-3 text-xs text-slate-600">
+                            <span>
+                              {campaign.sending ? 'Sending' : 'Sent'}{' '}
+                              <strong className="tabular-nums text-slate-900">{sent.toLocaleString()}</strong>
+                              {' / '}
+                              <span className="tabular-nums">{total.toLocaleString()}</span>
+                              {failed > 0 ? ` · ${failed.toLocaleString()} failed` : ''}
+                            </span>
+                            <span className="tabular-nums font-semibold text-slate-900">{percent}%</span>
+                          </div>
+                          <div className="h-2 overflow-hidden rounded-full bg-white" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
+                            <div
+                              className="h-full rounded-full bg-teal-600 transition-all"
+                              style={{ width: `${percent}%` }}
+                            />
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </section>
@@ -2340,7 +2485,7 @@ export default function PromotionalEmailsPage() {
             <div className="min-h-0 flex-1 overflow-auto bg-slate-100 p-4">
               <iframe
                 title="Template preview"
-                className="mx-auto h-[70vh] w-full max-w-[640px] rounded-lg border border-slate-200 bg-white shadow-sm"
+                className="mx-auto h-[70vh] w-full max-w-[600px] rounded-lg border border-slate-200 bg-white shadow-sm"
                 srcDoc={toEmailPreviewSrcDoc(templatePreviewHtml, { padding: '16px' })}
               />
             </div>

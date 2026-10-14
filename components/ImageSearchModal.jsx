@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { Camera, ImagePlus, Loader2, Upload, X } from 'lucide-react';
+import { Camera, ClipboardPaste, ImagePlus, Loader2, Upload, X } from 'lucide-react';
 import { compressImageForUpload } from '@/lib/compressImageForUpload';
 import { recordStorefrontSearch } from '@/lib/recordStorefrontSearch';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
@@ -101,6 +101,23 @@ export default function ImageSearchModal({ open, onClose, initialFile = null }) 
       setBusy(false);
     }
   }, [onClose, router, t]);
+
+  const pasteFromClipboard = useCallback(async () => {
+    try {
+      const items = await navigator.clipboard?.read?.();
+      for (const item of items || []) {
+        const type = item.types.find((entry) => entry.startsWith('image/'));
+        if (!type) continue;
+        const blob = await item.getType(type);
+        const file = new File([blob], 'pasted-image.jpg', { type: blob.type || type });
+        void searchFile(file);
+        return;
+      }
+      setError(t('navbar.imageSearchPaste'));
+    } catch {
+      setError(t('navbar.imageSearchPaste'));
+    }
+  }, [searchFile, t]);
 
   useEffect(() => {
     setMounted(true);
@@ -226,8 +243,16 @@ export default function ImageSearchModal({ open, onClose, initialFile = null }) 
                     </button>
                     <button
                       type="button"
+                      onClick={() => void pasteFromClipboard()}
+                      className="hidden items-center gap-1.5 rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 md:inline-flex"
+                    >
+                      <ClipboardPaste size={15} />
+                      {t('navbar.imageSearchPasteBtn')}
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => cameraRef.current?.click()}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 md:hidden"
                     >
                       <Camera size={15} />
                       {t('navbar.imageSearchCamera')}

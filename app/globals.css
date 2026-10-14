@@ -207,6 +207,19 @@ html:has([data-store-language-scope]) #store1920-root {
     .navbar-btn-anim-glow { animation: navbarBtnGlow 1.6s ease-in-out infinite; }
     .navbar-btn-anim-float { animation: navbarBtnFloat 2s ease-in-out infinite; }
 
+    @keyframes timeBadgePulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.045); }
+    }
+
+    @keyframes timeBadgeFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-2px); }
+    }
+
+    .time-badge-pulse { animation: timeBadgePulse 1.6s ease-in-out infinite; }
+    .time-badge-float { animation: timeBadgeFloat 1.8s ease-in-out infinite; }
+
     .navbar-deals-btn[data-font="poppins"],
     .navbar-deals-btn[data-font="poppins"] * {
         font-family: var(--font-poppins), Poppins, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", system-ui, sans-serif !important;
@@ -528,7 +541,19 @@ html:has([data-store-language-scope]) #store1920-root {
         border-radius: 0;
         height: auto;
         max-height: none;
-        aspect-ratio: auto;
+        aspect-ratio: 768 / 280;
+    }
+
+    @media (min-width: 768px) {
+        .shop-showcase-banner-row--full {
+            aspect-ratio: 1024 / 240;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .shop-showcase-banner-row--full {
+            aspect-ratio: 1920 / 400;
+        }
     }
 
     .shop-showcase-banner-row--lower {
@@ -553,12 +578,6 @@ html:has([data-store-language-scope]) #store1920-root {
         .shop-showcase-banner-row--secondary,
         .shop-showcase-banner-grid > .shop-showcase-banner-row:nth-child(2) {
             aspect-ratio: 6 / 1;
-        }
-
-        .shop-showcase-banner-row--full {
-            height: auto;
-            max-height: none;
-            aspect-ratio: auto;
         }
 
         .shop-showcase-banner-grid .shop-showcase-banner-row:nth-child(2) {

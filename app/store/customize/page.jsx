@@ -98,6 +98,12 @@ const designPages = [
     icon: Truck,
   },
   {
+    title: 'Footer',
+    description: 'Edit the customer footer: text, columns, contact, payments, and social links.',
+    href: '/store/customize/footer',
+    icon: Rows3,
+  },
+  {
     title: 'WhatsApp Product Widget',
     description: 'Set the WhatsApp number and choose which product pages show a chat button.',
     href: '/store/customize/whatsapp-widget',

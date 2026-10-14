@@ -171,6 +171,7 @@ import { isWaslahLabelReadyOrder, isWaslahLabelNotPrinted, isWaslahLabelPrinted,
 import { downloadTodayOrdersProductPdf } from '@/lib/storeTodayOrdersPdf';
 import { downloadPickupManifestExcel, canExportPickupExcel, orderHasPickupRequested, isPackedPickupOrPickedUpOrder, isSentToEmxInRange, isSentToEmxOrder, refreshPickupOrdersForExcel } from '@/lib/storePickupExcel';
 import { getOrderFulfillmentBadge, getOriginalReturnRequestTag, isReturnFollowUpOrder, excludeReturnPickupCloneOrders } from '@/lib/storeReturnLabels';
+import { CUSTOMER_PICKUP_ADDRESS, isCustomerPickupOrder } from '@/lib/customerPickup';
 import TrackingTimeline from '@/components/TrackingTimeline';
 
 function formatPaymentRecheckReason(reason = '', paymentMethod = '') {
@@ -5270,6 +5271,14 @@ export default function StoreOrders() {
                                     <td className="px-4 py-3">
                                         <div className="flex flex-col gap-1">
                                             <span className="font-mono text-xs text-slate-700">{getDisplayOrderNumber(order) || 'Pending'}</span>
+                                            {isCustomerPickupOrder(order) ? (
+                                                <span
+                                                    className="w-fit rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white"
+                                                    title={CUSTOMER_PICKUP_ADDRESS.line}
+                                                >
+                                                    Customer pickup chosen
+                                                </span>
+                                            ) : null}
                                             {(() => {
                                                 const fulfillmentBadge = getOrderFulfillmentBadge(order);
                                                 const originalTag = getOriginalReturnRequestTag(order);
@@ -5570,6 +5579,11 @@ export default function StoreOrders() {
                                 <div className="min-w-0 flex-1 pe-2">
                                     <h2 className="mb-1 text-xl font-bold sm:text-2xl">Order Details</h2>
                                     <p className="text-xs text-blue-100">Order No: <span className='font-mono text-white'>{getDisplayOrderNumber(selectedOrder) || 'Pending'}</span></p>
+                                    {isCustomerPickupOrder(selectedOrder) ? (
+                                        <p className="mt-2 inline-flex items-center rounded-full bg-amber-400 px-2.5 py-1 text-[11px] font-bold text-amber-950" title={CUSTOMER_PICKUP_ADDRESS.line}>
+                                            Customer pickup chosen
+                                        </p>
+                                    ) : null}
                                     {(() => {
                                         const fulfillmentBadge = getOrderFulfillmentBadge(selectedOrder);
                                         const originalTag = getOriginalReturnRequestTag(selectedOrder);
@@ -6637,6 +6651,11 @@ export default function StoreOrders() {
                                             GUEST ORDER
                                         </span>
                                     )}
+                                    {isCustomerPickupOrder(selectedOrder) ? (
+                                        <span className="ml-2 px-2 py-1 bg-amber-500 text-white text-xs font-bold rounded-full" title={CUSTOMER_PICKUP_ADDRESS.line}>
+                                            CUSTOMER PICKUP CHOSEN
+                                        </span>
+                                    ) : null}
                                     {isManualOrder ? (
                                         <span className="ml-2 px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full">
                                             ADMIN CREATED
@@ -6693,8 +6712,12 @@ export default function StoreOrders() {
                                         </div>
                                     )}
                                     <div>
-                                        <p className="text-slate-500">Street</p>
-                                        <p className="font-medium text-slate-900">{selectedOrder.shippingAddress?.street || '—'}</p>
+                                        <p className="text-slate-500">{isCustomerPickupOrder(selectedOrder) ? 'Pickup location' : 'Street'}</p>
+                                        <p className="font-medium text-slate-900">
+                                            {isCustomerPickupOrder(selectedOrder)
+                                                ? CUSTOMER_PICKUP_ADDRESS.line
+                                                : (selectedOrder.shippingAddress?.street || '—')}
+                                        </p>
                                     </div>
                                     <div>
                                         <p className="text-slate-500">City</p>

@@ -2830,6 +2830,7 @@ export default function EmailCampaignBuilder({
   const [mjmlCompiledBlocks, setMjmlCompiledBlocks] = useState(null);
   const [mjmlErrors, setMjmlErrors] = useState([]);
   const [mjmlCompiling, setMjmlCompiling] = useState(false);
+  const [campaignPageProducts, setCampaignPageProducts] = useState([]);
   const userChoseBlockRef = useRef(false);
   const blockEditorRefs = useRef({});
   const previewFrameRef = useRef(null);
@@ -2909,8 +2910,81 @@ export default function EmailCampaignBuilder({
     });
   }, [blocks]);
 
+  const campaignSlug = useMemo(
+    () => (Array.isArray(blocks) ? blocks : [])
+      .map((block) => String(block?.campaignSlug || '').trim())
+      .find(Boolean) || '',
+    [blocks],
+  );
+
+  const pinnedProductIds = useMemo(() => {
+    const ids = [];
+    (Array.isArray(blocks) ? blocks : []).forEach((block) => {
+      (Array.isArray(block?.productIds) ? block.productIds : []).forEach((id) => {
+        const value = String(id || '').trim();
+        if (value && !ids.includes(value)) ids.push(value);
+      });
+    });
+    return ids.slice(0, 8);
+  }, [blocks]);
+
+  useEffect(() => {
+    if (!campaignSlug && !pinnedProductIds.length) {
+      setCampaignPageProducts([]);
+      return undefined;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        if (pinnedProductIds.length && getToken) {
+          const token = await getToken();
+          if (token) {
+            const response = await fetch(`/api/store/email-marketing/products?ids=${pinnedProductIds.join(',')}`, {
+              cache: 'no-store',
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const data = await response.json().catch(() => ({}));
+            const byId = new Map((Array.isArray(data.products) ? data.products : []).map((product) => [
+              String(product?.id || product?._id || ''),
+              product,
+            ]));
+            const ordered = pinnedProductIds.map((id) => byId.get(id)).filter(Boolean);
+            if (!cancelled && ordered.length) {
+              setCampaignPageProducts(ordered);
+              return;
+            }
+          }
+        }
+        if (!campaignSlug) {
+          if (!cancelled) setCampaignPageProducts([]);
+          return;
+        }
+        const response = await fetch(`/api/public/campaign-pages/${encodeURIComponent(campaignSlug)}?limit=8`, {
+          cache: 'no-store',
+        });
+        const data = await response.json().catch(() => ({}));
+        if (cancelled) return;
+        setCampaignPageProducts(Array.isArray(data.products) ? data.products : []);
+      } catch {
+        if (!cancelled) setCampaignPageProducts([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [campaignSlug, pinnedProductIds, getToken]);
+
   const productsForPreview = useMemo(() => {
     const byId = new Map();
+    (Array.isArray(campaignPageProducts) ? campaignPageProducts : []).forEach((product) => {
+      const id = String(product?.id || product?._id || '').trim();
+      if (!id) return;
+      byId.set(id, {
+        ...product,
+        id,
+        image: resolveEmailProductImage(product) || product.image || '',
+      });
+    });
     (Array.isArray(previewProducts) ? previewProducts : []).forEach((product) => {
       const id = String(product?.id || product?._id || '').trim();
       if (!id) return;
@@ -2943,7 +3017,7 @@ export default function EmailCampaignBuilder({
       });
     });
     return Array.from(byId.values());
-  }, [blocks, previewProducts]);
+  }, [blocks, previewProducts, campaignPageProducts]);
 
   const hasMjmlBlocks = useMemo(
     () => (Array.isArray(blocks) ? blocks : []).some((block) => (

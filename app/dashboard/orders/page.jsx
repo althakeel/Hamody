@@ -995,7 +995,9 @@ export default function DashboardOrdersPage() {
                                   <div>
                                     <p className="text-xs text-slate-500 mb-1">Payment Method</p>
                                     <p className="text-sm font-semibold text-slate-800">
-                                      {order.paymentMethod === 'cod' || order.paymentMethod === 'COD' ? '💵 Cash on Delivery' : order.paymentMethod || 'Not specified'}
+                                      {order.paymentMethod === 'cod' || order.paymentMethod === 'COD'
+                                        ? (order.customerPickup ? '💵 Cash on Pickup' : '💵 Cash on Delivery')
+                                        : order.paymentMethod || 'Not specified'}
                                     </p>
                                   </div>
                                   <span className={`inline-block px-3 py-1.5 text-xs font-bold rounded-full whitespace-nowrap ${

@@ -5,6 +5,7 @@ import Logo from "../../assets/logo/Store1920.png";
 
 
 import { auth } from "@/lib/firebase";
+import { clearServerCookies } from "@/lib/authClient";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LogOut } from "lucide-react";
@@ -20,6 +21,7 @@ const AdminNavbar = () => {
 
     const handleSignOut = async () => {
         try {
+            await clearServerCookies();
             await auth.signOut();
             router.push("/admin/sign-in");
         } catch (error) {

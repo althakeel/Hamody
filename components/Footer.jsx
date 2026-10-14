@@ -5,29 +5,17 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 import { HOME_SECTION_INNER_CLASS } from '@/lib/storefrontCarousel';
-import {
-    STORE1920_SUPPORT_EMAIL,
-    STORE1920_CUSTOMER_SUPPORT_PHONE,
-    STORE1920_CUSTOMER_SUPPORT_TEL,
-    formatCustomerSupportPhoneDisplay,
-} from '@/lib/storeContact';
-import {
-    STORE1920_LEGAL_NAME,
-    getRegisteredOfficeLines,
-    getFulfilmentAddressLines,
-    STORE1920_SOCIAL_LINKS,
-} from '@/lib/businessIdentity';
 import { useAuth } from '@/lib/useAuth';
 import { auth } from '@/lib/firebase';
 import { STORE1920_LOGO_PATH } from '@/lib/brandLogo';
-
-const FOOTER_PAYMENT_METHODS = [
-    { id: 'visa', label: 'Visa', src: '/payments/visa.png' },
-    { id: 'mastercard', label: 'Mastercard', src: '/payments/mastercard.png' },
-    { id: 'tabby', label: 'Tabby', src: '/payments/tabby.png' },
-    { id: 'tamara', label: 'Tamara', src: '/payments/tamara.png' },
-    { id: 'cod', label: 'Cash on Delivery', src: '/payments/cod.png' },
-];
+import {
+    DEFAULT_FOOTER,
+    applyFooterTokens,
+    footerLines,
+    footerPhoneHref,
+    footerPhoneLabel,
+    normalizeFooter,
+} from '@/lib/footerSettings';
 
 /** Same key as Navbar — never flash a bundled static logo while loading. */
 const NAVBAR_APPEARANCE_CACHE_KEY = 'navbarAppearanceCache';
@@ -63,6 +51,7 @@ const Footer = () => {
         logoHeight: 72,
     });
     const [footerLogoLoading, setFooterLogoLoading] = useState(true);
+    const [footerContent, setFooterContent] = useState(DEFAULT_FOOTER);
     const [appComingSoonOpen, setAppComingSoonOpen] = useState(false);
     const [portalReady, setPortalReady] = useState(false);
 
@@ -114,6 +103,19 @@ const Footer = () => {
 
         fetchNavbarAppearance();
 
+        const fetchFooterContent = async () => {
+            try {
+                const response = await fetch('/api/store/appearance/sections/public', { cache: 'no-store' });
+                if (!response.ok) return;
+                const data = await response.json();
+                setFooterContent(normalizeFooter(data?.footer || DEFAULT_FOOTER));
+            } catch {
+                setFooterContent(DEFAULT_FOOTER);
+            }
+        };
+
+        fetchFooterContent();
+
         const handleNavbarAppearanceUpdate = (event) => {
             const detail = event?.detail || {};
             setFooterLogo((prev) => resolveFooterLogoFromAppearance({
@@ -163,59 +165,56 @@ const Footer = () => {
     const GooglePlayIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.25 2.8L13.88 13.43L3.28 20.05C3.1 19.76 3 19.42 3 19.05V3.79C3 3.43 3.09 3.09 3.25 2.8Z" fill="#22D3EE"/><path d="M16.22 10.95L19.8 8.74C20.29 8.44 20.29 7.72 19.8 7.42L15.5 4.75L13.88 13.43L16.22 10.95Z" fill="#F59E0B"/><path d="M15.5 4.75L3.25 2.8C3.42 2.52 3.68 2.29 4 2.11L16.22 10.95L13.88 13.43L15.5 4.75Z" fill="#34D399"/><path d="M16.22 10.95L4 21.73C3.67 21.55 3.41 21.31 3.23 21.02L13.88 13.43L16.22 10.95Z" fill="#F43F5E"/></svg>)
     const AppleIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15.93 3.54C16.6 2.73 17.09 1.62 17 0.5C16 0.54 14.8 1.16 14.11 1.97C13.49 2.69 12.94 3.83 13.06 4.92C14.18 5.01 15.25 4.37 15.93 3.54Z" fill="#E2E8F0"/><path d="M20.4 17.15C19.98 18.08 19.79 18.49 19.25 19.32C18.5 20.49 17.45 21.95 16.15 21.97C15 21.98 14.7 21.2 13.15 21.21C11.59 21.22 11.26 21.99 10.1 21.98C8.8 21.96 7.81 20.64 7.06 19.47C4.96 16.2 4.74 12.36 6.03 10.38C6.94 8.96 8.38 8.13 9.74 8.13C11.13 8.13 12 8.93 13.12 8.93C14.22 8.93 14.9 8.13 16.49 8.13C17.7 8.13 18.98 8.79 19.89 9.94C16.91 11.58 17.39 15.83 20.4 17.15Z" fill="#E2E8F0"/></svg>)
 
-    const linkSections = [
-        {
-            title: t('footer.shop'),
-            links: [
-                { text: t('footer.allProducts'), path: '/shop' },
-                { text: t('footer.todaysDeals'), path: '/offers' },
-                { text: t('footer.newArrivals'), path: '/new-arrivals' },
-            ],
-        },
-        {
-            title: t('footer.customerCare'),
-            links: [
-                { text: t('footer.trackOrder'), path: '/track-order' },
-                { text: t('footer.myOrders'), path: '/dashboard/orders', requiresAuth: true },
-                { text: t('footer.myWishlist'), path: '/wishlist' },
-                { text: t('footer.faq'), path: '/faq' },
-                { text: t('footer.support'), path: '/support' },
-                { text: t('footer.contactUs'), path: '/contact-us' },
-            ],
-        },
-        {
-            title: t('footer.legalInfo'),
-            links: [
-                { text: t('footer.termsAndConditions'), path: '/terms-and-conditions' },
-                { text: t('footer.termsOfSale'), path: '/terms-of-sale' },
-                { text: t('footer.shippingPolicy'), path: '/shipping-policy' },
-                { text: t('footer.privacyPolicy'), path: '/privacy-policy' },
-                { text: t('footer.returnRefund'), path: '/return-policy' },
-                { text: t('footer.warrantyPolicy'), path: '/warranty-policy' },
-                { text: t('footer.sitemap'), path: '/sitemap' },
-            ],
-        },
-        {
-            title: t('footer.aboutStore'),
-            links: [
-                { text: t('footer.aboutUs'), path: '/about-us' },
-                { text: t('footer.blog'), path: '/blogs' },
-                { text: t('footer.businessInformation'), path: '/business-information' },
-                { text: t('footer.careers'), path: '/careers' },
-            ],
-        },
-    ];
-
-    const socialIcons = [
-        { icon: FacebookIcon, link: STORE1920_SOCIAL_LINKS.facebook, label: 'Facebook' },
-        { icon: InstagramIcon, link: STORE1920_SOCIAL_LINKS.instagram, label: 'Instagram' },
-        { icon: TikTokIcon, link: STORE1920_SOCIAL_LINKS.tiktok, label: 'TikTok' },
-        // Pinterest hidden for now
-        { icon: SnapchatIcon, link: STORE1920_SOCIAL_LINKS.snapchat, label: 'Snapchat' },
-    ];
-    const phoneDisplay = formatCustomerSupportPhoneDisplay(STORE1920_CUSTOMER_SUPPORT_PHONE);
-    const registeredOfficeLines = getRegisteredOfficeLines();
-    const fulfilmentAddressLines = getFulfilmentAddressLines();
+    const pickFooterText = (english, arabic) => (
+        isArabic && String(arabic || '').trim() ? arabic : english
+    );
+    const legalName = pickFooterText(footerContent.legalName, footerContent.legalNameAr);
+    const footerDescription = pickFooterText(footerContent.description, footerContent.descriptionAr);
+    const operatedByLine = applyFooterTokens(
+        pickFooterText(footerContent.operatedBy, footerContent.operatedByAr),
+        { legalName },
+    );
+    const copyrightLine = applyFooterTokens(
+        pickFooterText(footerContent.copyright, footerContent.copyrightAr),
+        { year: new Date().getFullYear(), legalName },
+    );
+    const registeredOfficeLines = footerLines(
+        pickFooterText(footerContent.registeredOffice, footerContent.registeredOfficeAr),
+    );
+    const fulfilmentAddressLines = footerLines(
+        pickFooterText(footerContent.fulfilmentAddress, footerContent.fulfilmentAddressAr),
+    );
+    const phoneDisplay = footerPhoneLabel(footerContent.phone);
+    const phoneHref = footerPhoneHref(footerContent.phone);
+    const visiblePaymentMethods = (footerContent.paymentMethods || [])
+        .filter((item) => item.enabled !== false && item.image);
+    const socialIconById = {
+        facebook: FacebookIcon,
+        instagram: InstagramIcon,
+        tiktok: TikTokIcon,
+        pinterest: PinterestIcon,
+        snapchat: SnapchatIcon,
+    };
+    const socialIcons = (footerContent.socialLinks || [])
+        .filter((item) => item.enabled !== false && item.url && socialIconById[item.id])
+        .map((item) => ({
+            icon: socialIconById[item.id],
+            link: item.url,
+            label: item.id,
+        }));
+    const linkSections = (footerContent.columns || [])
+        .filter((column) => column.enabled !== false)
+        .map((column) => ({
+            title: pickFooterText(column.title, column.titleAr),
+            links: (column.links || [])
+                .filter((link) => link.enabled !== false && link.label && link.href)
+                .map((link) => ({
+                    text: pickFooterText(link.label, link.labelAr),
+                    path: link.href,
+                    requiresAuth: link.requiresAuth === true,
+                })),
+        }))
+        .filter((column) => column.title && column.links.length);
 
     const appDownloadLinks = [
         {
@@ -291,35 +290,41 @@ const Footer = () => {
                             </Link>
                         )}
                         <p className="text-sm text-slate-400 leading-relaxed mb-3 max-w-sm">
-                            {t('footer.description')}
+                            {footerDescription}
                         </p>
-                        <p className="text-xs text-slate-500 mb-6 max-w-sm">
-                            {t('footer.operatedBy', { legalName: STORE1920_LEGAL_NAME })}
-                        </p>
+                        {operatedByLine ? (
+                            <p className="text-xs text-slate-500 mb-6 max-w-sm">
+                                {operatedByLine}
+                            </p>
+                        ) : null}
                         <div className="space-y-3 mb-6">
+                            {phoneHref ? (
                             <div className="flex items-center gap-2 text-sm">
                                 <PhoneIcon />
-                                <a href={STORE1920_CUSTOMER_SUPPORT_TEL} className="text-slate-400 hover:text-white transition">
+                                <a href={phoneHref} className="text-slate-400 hover:text-white transition">
                                     {phoneDisplay}
                                 </a>
                             </div>
+                            ) : null}
+                            {footerContent.email ? (
                             <div className="flex items-center gap-2 text-sm">
                                 <MailIcon />
-                                <a href={`mailto:${STORE1920_SUPPORT_EMAIL}`} className="text-slate-400 hover:text-white transition">
-                                    {STORE1920_SUPPORT_EMAIL}
+                                <a href={`mailto:${footerContent.email}`} className="text-slate-400 hover:text-white transition">
+                                    {footerContent.email}
                                 </a>
                             </div>
+                            ) : null}
                             <div className="flex items-start gap-2 text-sm">
                                 <MapPinIcon />
                                 <span className="text-slate-400 leading-relaxed">
                                     <span className="block text-[11px] uppercase tracking-wide text-slate-500">
-                                        {t('footer.registeredOffice')}
+                                        {pickFooterText(footerContent.registeredOfficeLabel, footerContent.registeredOfficeLabelAr)}
                                     </span>
                                     {registeredOfficeLines.map((line) => (
                                         <span key={`office-${line}`} className="block">{line}</span>
                                     ))}
                                     <span className="mt-2 block text-[11px] uppercase tracking-wide text-slate-500">
-                                        {t('footer.fulfilmentReturns')}
+                                        {pickFooterText(footerContent.fulfilmentLabel, footerContent.fulfilmentLabelAr)}
                                     </span>
                                     {fulfilmentAddressLines.map((line) => (
                                         <span key={`fulfilment-${line}`} className="block">{line}</span>
@@ -328,17 +333,15 @@ const Footer = () => {
                             </div>
                         </div>
                         <div className="mb-6 flex flex-wrap items-center gap-2.5" aria-label={t('footer.paymentMethods')}>
-                            {FOOTER_PAYMENT_METHODS.map((method) => (
+                            {visiblePaymentMethods.map((method) => (
                                 <span
                                     key={method.id}
                                     className="inline-flex h-8 items-center justify-center sm:h-9"
                                     title={method.label}
                                 >
-                                    <Image
-                                        src={method.src}
-                                        alt={method.label}
-                                        width={88}
-                                        height={36}
+                                    <img
+                                        src={method.image}
+                                        alt={method.label || 'Payment'}
                                         className="h-8 w-auto max-w-[96px] object-contain sm:h-9"
                                     />
                                 </span>
@@ -410,7 +413,7 @@ const Footer = () => {
                             ))}
                         </div>
                         <p className="text-sm text-slate-500 text-center">
-                            {t('footer.copyright', { year: new Date().getFullYear() })}
+                            {copyrightLine}
                         </p>
                     </div>
                 </div>
