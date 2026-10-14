@@ -121,11 +121,23 @@ GET /api/public/customer-pickup
 ```json
 {
   "enabled": true,
+  "scope": "all",
+  "skus": [],
   "address": "18 Maleha St - Warehouses Land - Industrial Area - Sharjah"
 }
 ```
 
-Show the two choice cards when `enabled` is not false. When it is false, skip the choice cards and show delivery only.
+`scope` is `all`, `include`, or `exclude`. `skus` is an uppercase list. Pickup is one choice for the whole cart.
+
+| `scope` | Show the pickup card when |
+|---|---|
+| `all` | `enabled` is not false |
+| `include` | every cart line SKU (product or selected variant) is in `skus`. An empty list hides pickup |
+| `exclude` | no cart line SKU is in `skus`. An empty list shows pickup for every product |
+
+If the shopper already chose pickup and then the cart no longer matches, switch back to delivery. `POST /api/orders` rejects pickup for a cart that does not match.
+
+Show the two choice cards only when that rule passes. When it does not, skip the choice cards and show delivery only.
 
 | Card | Title | Hint |
 |---|---|---|

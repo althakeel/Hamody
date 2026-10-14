@@ -73,7 +73,9 @@ import { checkoutOrderCreateSchema } from '@/lib/apiSchemas';
 import {
     CUSTOMER_PICKUP_METHOD,
     buildCustomerPickupShippingAddress,
+    isCustomerPickupAllowedForLines,
     isCustomerPickupOrder,
+    normalizeCustomerPickupRule,
 } from '@/lib/customerPickup';
 import { parseWithSchema } from '@/lib/apiValidate';
 
@@ -610,10 +612,18 @@ export async function POST(request) {
         if (customerPickupRequested) {
             const pickupStoreId = [...ordersByStore.keys()][0];
             const pickupStore = pickupStoreId
-                ? await Store.findById(pickupStoreId).select('customerPickupEnabled').lean()
+                ? await Store.findById(pickupStoreId).select('customerPickupEnabled customerPickupScope customerPickupSkus').lean()
                 : null;
-            if (pickupStore?.customerPickupEnabled === false) {
-                return NextResponse.json({ error: 'Store pickup is not available right now.' }, { status: 400 });
+            const pickupLines = items.map((item) => {
+                const product = productById.get(String(item.id));
+                const matchedVariant = matchVariantByOptions(product?.variants || [], item.variantOptions || {});
+                return {
+                    sku: product?.sku,
+                    variantSku: matchedVariant?.sku,
+                };
+            });
+            if (!isCustomerPickupAllowedForLines(normalizeCustomerPickupRule(pickupStore || {}), pickupLines)) {
+                return NextResponse.json({ error: 'Store pickup is not available for these products.' }, { status: 400 });
             }
             shippingFee = 0;
         }

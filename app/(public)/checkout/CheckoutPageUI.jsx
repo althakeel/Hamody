@@ -83,7 +83,9 @@ import {
   customerPickupLocationFields,
   customerPickupMapEmbedUrl,
   customerPickupMapLink,
+  isCustomerPickupAllowedForLines,
 } from '@/lib/customerPickup';
+import { matchVariantByOptions } from '@/lib/productVariantOptions';
 import { getProductSubtitle } from '@/lib/productDisplay';
 import { getProductPath } from '@/lib/productUrl';
 import { collectCheckoutValidationIssues, scrollToCheckoutField } from '@/lib/checkoutValidation';
@@ -188,10 +190,10 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   const [checkoutAlert, setCheckoutAlert] = useState(initialCheckoutAlert);
   const [shipping, setShipping] = useState(0);
   const [shippingMethod, setShippingMethod] = useState('');
-  const [pickupEnabled, setPickupEnabled] = useState(false);
+  const [pickupRule, setPickupRule] = useState({ enabled: false, scope: 'all', skus: [] });
   const [fulfillmentChoice, setFulfillmentChoice] = useState('delivery');
   const [showPickupMap, setShowPickupMap] = useState(false);
-  const isCustomerPickup = pickupEnabled && fulfillmentChoice === 'pickup';
+  const isCustomerPickupSelected = fulfillmentChoice === 'pickup';
   const [showSignIn, setShowSignIn] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [showAllOrderItemsModal, setShowAllOrderItemsModal] = useState(false);
@@ -791,6 +793,15 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     }
   }
 
+  const pickupAvailable = isCustomerPickupAllowedForLines(
+    pickupRule,
+    cartArray.map((item) => {
+      const matchedVariant = matchVariantByOptions(item.variants || [], item.variantOptions || {});
+      return { sku: item.sku, variantSku: matchedVariant?.sku };
+    }),
+  );
+  const isCustomerPickup = pickupAvailable && isCustomerPickupSelected;
+
   const subtotal = cartArray.reduce((sum, item) => sum + (item._lineTotal ?? ((item._cartPrice ?? item.price ?? 0) * item.quantity)), 0);
   
   // Calculate coupon discount
@@ -1198,17 +1209,25 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
       .then((response) => response.json())
       .then((data) => {
         if (cancelled) return;
-        const enabled = data?.enabled !== false;
-        setPickupEnabled(enabled);
-        if (!enabled) setFulfillmentChoice('delivery');
+        setPickupRule({
+          enabled: data?.enabled !== false,
+          scope: ['all', 'include', 'exclude'].includes(data?.scope) ? data.scope : 'all',
+          skus: Array.isArray(data?.skus) ? data.skus : [],
+        });
       })
       .catch(() => {
-        if (!cancelled) setPickupEnabled(true);
+        if (!cancelled) setPickupRule({ enabled: true, scope: 'all', skus: [] });
       });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!pickupAvailable && fulfillmentChoice === 'pickup') {
+      setFulfillmentChoice('delivery');
+    }
+  }, [pickupAvailable, fulfillmentChoice]);
 
   useEffect(() => {
     if (!shippingSetting) return;
@@ -2907,7 +2926,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                 </span>
               </div>
               <div className="space-y-3">
-                {pickupEnabled ? (
+                {pickupAvailable ? (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <button
                       type="button"

@@ -10,6 +10,7 @@ import { normalizeNewTagSettings } from "@/lib/newProductTag";
 import { normalizeDashboardScale, normalizeDashboardTheme } from "@/lib/storeDashboardDisplay";
 import { clearNewTagSettingsCache } from "@/lib/storeNewTagSettings";
 import { isAdminEmail } from "@/lib/adminEmails";
+import { CUSTOMER_PICKUP_SCOPES, normalizeCustomerPickupSkus } from "@/lib/customerPickup";
 
 export const runtime = "nodejs";
 
@@ -159,6 +160,8 @@ export async function POST(request) {
       newTagSettings,
       dashboardWelcomeEnabled,
       customerPickupEnabled,
+      customerPickupScope,
+      customerPickupSkus,
       dashboardTheme,
       dashboardScale,
       dashboardDisplayOnly,
@@ -228,6 +231,8 @@ export async function POST(request) {
         newTagSettings,
         dashboardWelcomeEnabled,
         customerPickupEnabled,
+        customerPickupScope,
+        customerPickupSkus,
       ].some((value) => value !== undefined);
 
       const storeFieldsBesidesFlags = [
@@ -246,8 +251,13 @@ export async function POST(request) {
       ];
       const welcomeOnly = dashboardWelcomeEnabled !== undefined
         && customerPickupEnabled === undefined
+        && customerPickupScope === undefined
+        && customerPickupSkus === undefined
         && storeFieldsBesidesFlags.every((value) => value === undefined);
-      const pickupOnly = customerPickupEnabled !== undefined
+      const pickupTouched = customerPickupEnabled !== undefined
+        || customerPickupScope !== undefined
+        || customerPickupSkus !== undefined;
+      const pickupOnly = pickupTouched
         && dashboardWelcomeEnabled === undefined
         && storeFieldsBesidesFlags.every((value) => value === undefined);
       const canSaveWelcome = welcomeOnly && isAdminEmail(decodedToken.email);
@@ -291,14 +301,23 @@ export async function POST(request) {
         updateStoreData.dashboardWelcomeEnabled = Boolean(dashboardWelcomeEnabled);
       }
 
-      if (customerPickupEnabled !== undefined) {
+      if (customerPickupEnabled !== undefined || customerPickupScope !== undefined || customerPickupSkus !== undefined) {
         const canChangePickup = isAdminEmail(decodedToken.email)
           || access.isOwner
           || access.permissions?.customerPickup === true;
         if (!canChangePickup) {
           return NextResponse.json({ error: 'Only the super admin can change store pickup, unless that access was granted' }, { status: 403 });
         }
-        updateStoreData.customerPickupEnabled = Boolean(customerPickupEnabled);
+        if (customerPickupEnabled !== undefined) {
+          updateStoreData.customerPickupEnabled = Boolean(customerPickupEnabled);
+        }
+        if (customerPickupScope !== undefined) {
+          const scope = String(customerPickupScope || '').trim();
+          updateStoreData.customerPickupScope = CUSTOMER_PICKUP_SCOPES.includes(scope) ? scope : 'all';
+        }
+        if (customerPickupSkus !== undefined) {
+          updateStoreData.customerPickupSkus = normalizeCustomerPickupSkus(customerPickupSkus);
+        }
       }
 
       if (Object.keys(updateStoreData).length > 0) {
@@ -367,6 +386,8 @@ export async function GET(request) {
         newTagSettings: normalizeNewTagSettings(store?.newTagSettings),
         dashboardWelcomeEnabled: store?.dashboardWelcomeEnabled !== false,
         customerPickupEnabled: store?.customerPickupEnabled !== false,
+        customerPickupScope: ['all', 'include', 'exclude'].includes(store?.customerPickupScope) ? store.customerPickupScope : 'all',
+        customerPickupSkus: Array.isArray(store?.customerPickupSkus) ? store.customerPickupSkus : [],
       },
       smtpSettings: {
         transactional: {

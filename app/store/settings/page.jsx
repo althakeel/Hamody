@@ -28,6 +28,7 @@ import StoreCacheSettings from "@/components/store/StoreCacheSettings";
 import SuperAdminPasswordReset from "@/components/store/SuperAdminPasswordReset";
 import AccountBlockDialog from "@/components/store/AccountBlockDialog";
 import { isAdminEmail } from "@/lib/adminEmails";
+import { normalizeCustomerPickupSkus } from "@/lib/customerPickup";
 import {
   SIDEBAR_ACCESS_COMPONENTS,
   countEnabledPermissions,
@@ -219,6 +220,12 @@ export default function SettingsPage() {
   const [newTagSettings, setNewTagSettings] = useState(() => normalizeNewTagSettings(DEFAULT_NEW_TAG_SETTINGS));
   const [dashboardWelcomeEnabled, setDashboardWelcomeEnabled] = useState(true);
   const [customerPickupEnabled, setCustomerPickupEnabled] = useState(true);
+  const [pickupScope, setPickupScope] = useState("all");
+  const [pickupSkus, setPickupSkus] = useState([]);
+  const [pickupSkuDraft, setPickupSkuDraft] = useState("");
+  const [pickupSearch, setPickupSearch] = useState("");
+  const [pickupSearchResults, setPickupSearchResults] = useState([]);
+  const [pickupSearchLoading, setPickupSearchLoading] = useState(false);
   const [savingWelcomePopup, setSavingWelcomePopup] = useState(false);
   const [savingCustomerPickup, setSavingCustomerPickup] = useState(false);
   const [canManageCustomerPickup, setCanManageCustomerPickup] = useState(false);
@@ -290,6 +297,8 @@ export default function SettingsPage() {
       setNewTagSettings(normalizeNewTagSettings(store.newTagSettings || DEFAULT_NEW_TAG_SETTINGS));
       setDashboardWelcomeEnabled(store.dashboardWelcomeEnabled !== false);
       setCustomerPickupEnabled(store.customerPickupEnabled !== false);
+      setPickupScope(["all", "include", "exclude"].includes(store.customerPickupScope) ? store.customerPickupScope : "all");
+      setPickupSkus(normalizeCustomerPickupSkus(store.customerPickupSkus));
       setEmailNotifications(profile.emailNotifications !== false);
       setTwoFactorEnabled(Boolean(profile.twoFactorEnabled));
       setDashboardTheme(normalizeDashboardTheme(profile.dashboardTheme));
@@ -434,6 +443,36 @@ export default function SettingsPage() {
       setActiveTab("profile");
     }
   }, [canManageCache, activeTab]);
+
+  useEffect(() => {
+    const query = pickupSearch.trim();
+    if (query.length < 2) {
+      setPickupSearchResults([]);
+      setPickupSearchLoading(false);
+      return undefined;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setPickupSearchLoading(true);
+      try {
+        const token = await getToken();
+        if (!token || cancelled) return;
+        const res = await axios.get("/api/store/product", {
+          params: { picker: "true", search: query, limit: 8 },
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!cancelled) setPickupSearchResults(Array.isArray(res.data?.products) ? res.data.products : []);
+      } catch {
+        if (!cancelled) setPickupSearchResults([]);
+      } finally {
+        if (!cancelled) setPickupSearchLoading(false);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [pickupSearch, getToken]);
 
   const fetchTeamMembers = async () => {
     setLoadingTeam(true);
@@ -658,21 +697,36 @@ export default function SettingsPage() {
     }
   };
 
-  const saveCustomerPickup = async (enabled) => {
-    const previous = customerPickupEnabled;
+  const saveCustomerPickup = async (next = {}) => {
+    const previous = {
+      enabled: customerPickupEnabled,
+      scope: pickupScope,
+      skus: pickupSkus,
+    };
+    const enabled = next.enabled ?? customerPickupEnabled;
+    const scope = ["all", "include", "exclude"].includes(next.scope) ? next.scope : pickupScope;
+    const skus = normalizeCustomerPickupSkus(next.skus ?? pickupSkus);
     setCustomerPickupEnabled(enabled);
+    setPickupScope(scope);
+    setPickupSkus(skus);
     setSavingCustomerPickup(true);
     try {
       const token = await getToken(true);
       if (!token) throw new Error("Your session expired. Please sign in again.");
       await axios.post(
         "/api/store/profile/update",
-        { customerPickupEnabled: enabled },
+        {
+          customerPickupEnabled: enabled,
+          customerPickupScope: scope,
+          customerPickupSkus: skus,
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success(enabled ? "Store pickup is on at checkout" : "Store pickup is hidden at checkout");
+      toast.success(enabled ? "Location pickup saved" : "Store pickup is hidden at checkout");
     } catch (error) {
-      setCustomerPickupEnabled(previous);
+      setCustomerPickupEnabled(previous.enabled);
+      setPickupScope(previous.scope);
+      setPickupSkus(previous.skus);
       toast.error(error?.response?.data?.error || error.message || "Could not save store pickup");
     } finally {
       setSavingCustomerPickup(false);
@@ -1016,8 +1070,139 @@ export default function SettingsPage() {
                 description="When this is on, customers can choose store pickup at 18 Maleha St - Warehouses Land - Industrial Area - Sharjah. Turn it off to show delivery only."
                 checked={customerPickupEnabled}
                 disabled={savingCustomerPickup}
-                onChange={(event) => saveCustomerPickup(event.target.checked)}
+                onChange={(event) => saveCustomerPickup({ enabled: event.target.checked })}
               />
+              {customerPickupEnabled ? (
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <p className="text-sm font-medium text-slate-800">Which products can be picked up</p>
+                    <p className="mt-0.5 text-xs text-slate-500">Pickup is one choice for the whole cart. It appears at checkout only when every item matches this rule.</p>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    {[
+                      { id: "all", label: "All products", hint: "Every product in the cart" },
+                      { id: "include", label: "Only these products", hint: "Pickup only for the SKUs you add" },
+                      { id: "exclude", label: "Ignore these products", hint: "Pickup for every product except these SKUs" },
+                    ].map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        disabled={savingCustomerPickup}
+                        onClick={() => {
+                          if (option.id !== pickupScope) saveCustomerPickup({ scope: option.id });
+                        }}
+                        className={`rounded-xl border px-3 py-3 text-left ${
+                          pickupScope === option.id
+                            ? "border-indigo-600 bg-indigo-50"
+                            : "border-slate-200 bg-white hover:bg-slate-50"
+                        }`}
+                      >
+                        <span className="block text-sm font-semibold text-slate-900">{option.label}</span>
+                        <span className="mt-1 block text-xs text-slate-500">{option.hint}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {pickupScope === "all" ? null : (
+                    <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
+                      <p className="text-sm font-medium text-slate-800">
+                        {pickupScope === "include" ? "Products that can be picked up" : "Products to ignore"}
+                      </p>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {pickupScope === "include"
+                          ? "Add one product or many. Search by name or SKU, or paste SKUs."
+                          : "Customers cannot choose pickup when the cart contains one of these SKUs."}
+                      </p>
+                      {pickupSkus.length ? (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {pickupSkus.map((sku) => (
+                            <button
+                              key={sku}
+                              type="button"
+                              disabled={savingCustomerPickup}
+                              onClick={() => saveCustomerPickup({ skus: pickupSkus.filter((item) => item !== sku) })}
+                              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700"
+                            >
+                              {sku}
+                              <span className="text-slate-400">×</span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="mt-3 text-xs text-slate-500">
+                          {pickupScope === "include"
+                            ? "No SKUs yet. Pickup stays hidden at checkout until you add at least one."
+                            : "No SKUs ignored. Pickup is available for every product."}
+                        </p>
+                      )}
+                      <div className="relative mt-3">
+                        <input
+                          type="search"
+                          value={pickupSearch}
+                          onChange={(event) => setPickupSearch(event.target.value)}
+                          className={inputClass}
+                          placeholder="Search product name or SKU"
+                          disabled={savingCustomerPickup}
+                        />
+                        {pickupSearch.trim().length >= 2 ? (
+                          <div className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+                            {pickupSearchLoading ? (
+                              <p className="px-3 py-2 text-xs text-slate-500">Searching…</p>
+                            ) : pickupSearchResults.length ? (
+                              pickupSearchResults.map((product) => {
+                                const sku = normalizeCustomerPickupSkus([product.sku])[0] || "";
+                                const already = sku && pickupSkus.includes(sku);
+                                return (
+                                  <button
+                                    key={product._id}
+                                    type="button"
+                                    disabled={savingCustomerPickup || !sku || already}
+                                    onClick={() => {
+                                      saveCustomerPickup({ skus: [...pickupSkus, sku] });
+                                      setPickupSearch("");
+                                      setPickupSearchResults([]);
+                                    }}
+                                    className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-slate-50 disabled:opacity-50"
+                                  >
+                                    <span className="min-w-0 truncate text-slate-800">{product.name}</span>
+                                    <span className="shrink-0 text-xs font-semibold text-slate-500">{sku || "No SKU"}</span>
+                                  </button>
+                                );
+                              })
+                            ) : (
+                              <p className="px-3 py-2 text-xs text-slate-500">No products found.</p>
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                        <textarea
+                          value={pickupSkuDraft}
+                          onChange={(event) => setPickupSkuDraft(event.target.value)}
+                          className={`${inputClass} min-h-[72px] resize-y`}
+                          placeholder="Paste SKUs, separated by commas or new lines"
+                          disabled={savingCustomerPickup}
+                        />
+                        <button
+                          type="button"
+                          disabled={savingCustomerPickup || !pickupSkuDraft.trim()}
+                          onClick={() => {
+                            const next = normalizeCustomerPickupSkus([...pickupSkus, pickupSkuDraft]);
+                            if (next.length === pickupSkus.length) {
+                              toast.error("Those SKUs are already on the list");
+                              return;
+                            }
+                            setPickupSkuDraft("");
+                            saveCustomerPickup({ skus: next });
+                          }}
+                          className="h-10 shrink-0 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50 sm:self-end"
+                        >
+                          Add SKUs
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </SettingsCard>
           ) : null}
         </div>
