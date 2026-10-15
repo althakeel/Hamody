@@ -42,7 +42,7 @@ const Section4 = ({ sections: initialSections = null, loading: loadingProp = fal
     let cancelled = false
 
     const loadSections = () => {
-      fetch('/api/public/featured-sections', { cache: 'no-store' })
+      fetch('/api/public/featured-sections')
         .then((response) => (response.ok ? response.json() : { sections: [] }))
         .then((data) => {
           if (!cancelled) {

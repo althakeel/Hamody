@@ -87,6 +87,8 @@ ProductSchema.index({ published: 1, createdAt: -1 });
 ProductSchema.index({ inStock: 1, createdAt: -1 });
 ProductSchema.index({ storeId: 1, stockUpdatedAt: -1 });
 ProductSchema.index({ category: 1, inStock: 1 }); // For category filtering
+ProductSchema.index({ category: 1, createdAt: -1 });
+ProductSchema.index({ categories: 1, createdAt: -1 });
 ProductSchema.index({ price: 1, AED: 1 }); // For discount calculations and price sorting
 ProductSchema.index({ tags: 1, inStock: 1 }); // For tag-based filtering
 ProductSchema.index({ fastDelivery: 1, inStock: 1 }); // For fast delivery filter

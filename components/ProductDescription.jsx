@@ -10,7 +10,7 @@ import { PRODUCT_RICH_CONTENT_CLASS, sanitizeProductRichHtml } from "@/lib/produ
 import { pickAPlusModules } from "@/lib/aPlusContent"
 import { useStorefrontI18n } from "@/lib/useStorefrontI18n"
 import { getProductAbsoluteUrl } from "@/lib/productUrl"
-import { toPublicCategoryPath } from "@/lib/categorySlug"
+import { slugifyCategory, toPublicCategoryPath } from "@/lib/categorySlug"
 
 const formatReviewDate = (dateString) => {
     if (!dateString) return ''
@@ -24,6 +24,14 @@ const maskReviewerName = (name) => {
     if (safeName.length <= 2) return `${safeName[0] || 'U'}***`
     if (safeName.length <= 5) return `${safeName.slice(0, 2)}***`
     return `${safeName.slice(0, 3)}***${safeName.slice(-1)}`
+}
+
+const isBrandSpecLabel = (label) => {
+    const normalized = String(label || '').trim().toLowerCase()
+    return normalized === 'brand'
+        || normalized === 'العلامة'
+        || normalized === 'العلامة التجارية'
+        || normalized === 'الماركة'
 }
 
 const toTitleCase = (value) => value
@@ -371,7 +379,21 @@ const ProductDescription = ({
                                         key={`spec-cell-${rowIdx}-${colIdx}`}
                                         className="px-4 py-3 text-[14px] text-gray-700 leading-6 align-top break-words border-l border-gray-100"
                                     >
-                                        {row[colIdx] || '-'}
+                                        {(() => {
+                                            const value = row[colIdx]
+                                            if (!value) return '-'
+                                            if (!isBrandSpecLabel(row[0])) return value
+                                            const slug = slugifyCategory(value) || slugifyCategory(product?.brand || '')
+                                            if (!slug) return value
+                                            return (
+                                                <Link
+                                                    href={`/brand/${slug}`}
+                                                    className="font-medium text-slate-900 underline decoration-slate-300 underline-offset-2 hover:text-[#E52721] hover:decoration-[#E52721]"
+                                                >
+                                                    {value}
+                                                </Link>
+                                            )
+                                        })()}
                                     </td>
                                 )
                             ))}

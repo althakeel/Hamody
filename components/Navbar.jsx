@@ -958,7 +958,7 @@ const Navbar = () => {
           try {
             const res = await fetch(endpoint, {
               method: 'GET',
-              cache: 'no-store',
+              cache: endpoint === '/api/categories' ? 'default' : 'no-store',
               signal: controller.signal,
             });
 

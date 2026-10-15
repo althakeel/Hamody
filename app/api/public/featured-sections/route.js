@@ -13,12 +13,13 @@ import { attachProductRatings } from '@/lib/attachProductRatings';
 
 const CACHE_KEY = FEATURED_SECTIONS_CACHE_KEY;
 const SERVER_CACHE_TTL_SECONDS = 120;
+const HOME_SECTION_PRODUCT_LIMIT = 24;
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const STOREFRONT_CACHE_HEADERS = {
-  'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
+  'Cache-Control': 'public, max-age=120, s-maxage=120, stale-while-revalidate=300',
 };
 
 function orderProductsByIds(products, ids) {
@@ -60,7 +61,7 @@ export async function GET() {
     const allProductIds = [
       ...new Set(
         sections
-          .flatMap((section) => (Array.isArray(section.productIds) ? section.productIds : []))
+          .flatMap((section) => (Array.isArray(section.productIds) ? section.productIds : []).slice(0, HOME_SECTION_PRODUCT_LIMIT * 3))
           .map((id) => String(id || '').trim())
           .filter((id) => mongoose.Types.ObjectId.isValid(id))
       ),
@@ -101,7 +102,10 @@ export async function GET() {
           products: filterCategorySliderProducts(
             orderProductsByIds(products, productIds),
             false,
-          ),
+          ).slice(0, HOME_SECTION_PRODUCT_LIMIT).map((product) => ({
+            ...product,
+            images: Array.isArray(product.images) ? product.images.slice(0, 4) : [],
+          })),
         };
       }),
     };

@@ -5,7 +5,7 @@ import axios from 'axios'
 import { ChevronDown, ChevronUp, Loader2, Plus, Save, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/lib/useAuth'
-import { DEFAULT_FOOTER, FOOTER_PAYMENT_METHOD_IDS, normalizeFooter } from '@/lib/footerSettings'
+import { DEFAULT_FOOTER, DEFAULT_PAYMENT_MARKS, FOOTER_PAYMENT_METHOD_IDS, normalizeFooter } from '@/lib/footerSettings'
 
 const inputClass = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900'
 const PAYMENT_LABELS = {
@@ -39,6 +39,7 @@ export default function FooterCustomizePage() {
   const { getToken } = useAuth()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploadingPaymentId, setUploadingPaymentId] = useState('')
   const [form, setForm] = useState(DEFAULT_FOOTER)
 
   const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }))
@@ -69,6 +70,13 @@ export default function FooterCustomizePage() {
   const save = async () => {
     try {
       setSaving(true)
+      const missingImage = form.paymentMethods.some((item) => (
+        !FOOTER_PAYMENT_METHOD_IDS.includes(item.id) && !String(item.image || '').trim()
+      ))
+      if (missingImage) {
+        toast.error('Upload an image for each added payment mark')
+        return
+      }
       const token = await getToken()
       const footer = normalizeFooter(form)
       await axios.post('/api/store/appearance/sections', { footer }, {
@@ -81,6 +89,68 @@ export default function FooterCustomizePage() {
       console.error(error)
     } finally {
       setSaving(false)
+    }
+  }
+
+  const updatePaymentMethod = (id, patch) => {
+    setForm((prev) => ({
+      ...prev,
+      paymentMethods: prev.paymentMethods.map((item) => (
+        item.id === id ? { ...item, ...patch } : item
+      )),
+    }))
+  }
+
+  const addPaymentMethod = () => {
+    setForm((prev) => {
+      const extraCount = prev.paymentMethods.filter((item) => !FOOTER_PAYMENT_METHOD_IDS.includes(item.id)).length
+      if (extraCount >= 12) return prev
+      const id = `custom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
+      return {
+        ...prev,
+        paymentMethods: [
+          ...prev.paymentMethods,
+          { id, label: '', image: '', enabled: true },
+        ],
+      }
+    })
+  }
+
+  const removePaymentMethod = (id) => {
+    setForm((prev) => ({
+      ...prev,
+      paymentMethods: prev.paymentMethods.filter((item) => item.id !== id),
+    }))
+  }
+
+  const uploadPaymentImage = async (id, file) => {
+    if (!file) return
+    if (!String(file.type || '').startsWith('image/')) {
+      toast.error('Choose an image file')
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be 2MB or smaller')
+      return
+    }
+
+    try {
+      setUploadingPaymentId(id)
+      const token = await getToken()
+      const formData = new FormData()
+      formData.append('image', file)
+      formData.append('type', 'footer-payment')
+      const { data } = await axios.post('/api/store/upload-image', formData, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const url = String(data?.url || '').trim()
+      if (!url) throw new Error('Upload returned no URL')
+      updatePaymentMethod(id, { image: url })
+      toast.success('Image uploaded. Save the footer to publish it.')
+    } catch (error) {
+      toast.error(error?.response?.data?.error || error?.message || 'Image upload failed')
+    } finally {
+      setUploadingPaymentId('')
     }
   }
 
@@ -199,32 +269,133 @@ export default function FooterCustomizePage() {
       </section>
 
       <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Payment marks</h2>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Payment marks</h2>
+            <p className="mt-1 text-xs text-slate-500">Replace the built-in logos, or add more. Save the footer after uploading.</p>
+          </div>
+          <button
+            type="button"
+            onClick={addPaymentMethod}
+            disabled={form.paymentMethods.filter((item) => !FOOTER_PAYMENT_METHOD_IDS.includes(item.id)).length >= 12}
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          >
+            <Plus size={14} /> Add payment mark
+          </button>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
           {FOOTER_PAYMENT_METHOD_IDS.map((id) => {
-            const enabled = form.paymentMethods.find((item) => item.id === id)?.enabled !== false
+            const method = form.paymentMethods.find((item) => item.id === id)
+            const fallback = DEFAULT_PAYMENT_MARKS.find((item) => item.id === id)
+            const image = method?.image || fallback?.image || ''
+            const enabled = method?.enabled !== false
+            const isDefaultImage = image === fallback?.image
+            const uploading = uploadingPaymentId === id
             return (
-              <label key={id} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  checked={enabled}
-                  onChange={(event) => {
-                    const checked = event.target.checked
-                    setForm((prev) => ({
-                      ...prev,
-                      paymentMethods: FOOTER_PAYMENT_METHOD_IDS.map((methodId) => ({
-                        id: methodId,
-                        enabled: methodId === id
-                          ? checked
-                          : prev.paymentMethods.find((item) => item.id === methodId)?.enabled !== false,
-                      })),
-                    }))
-                  }}
-                />
-                {PAYMENT_LABELS[id]}
-              </label>
+              <div key={id} className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+                <div className="flex h-14 w-24 shrink-0 items-center justify-center rounded-md bg-black px-2">
+                  {image ? (
+                    <img src={image} alt={PAYMENT_LABELS[id]} className="h-9 w-auto max-w-full object-contain" />
+                  ) : null}
+                </div>
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-slate-800">{PAYMENT_LABELS[id]}</span>
+                    <label className="inline-flex items-center gap-2 text-xs text-slate-600">
+                      <input
+                        type="checkbox"
+                        checked={enabled}
+                        onChange={(event) => updatePaymentMethod(id, { enabled: event.target.checked })}
+                      />
+                      Show
+                    </label>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="inline-flex cursor-pointer items-center rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                      {uploading ? 'Uploading...' : 'Replace image'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        disabled={uploading}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0]
+                          event.target.value = ''
+                          uploadPaymentImage(id, file)
+                        }}
+                      />
+                    </label>
+                    {!isDefaultImage ? (
+                      <button
+                        type="button"
+                        onClick={() => updatePaymentMethod(id, { image: fallback?.image || '' })}
+                        className="text-xs font-semibold text-slate-500 hover:text-slate-800"
+                      >
+                        Use original
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
             )
           })}
+          {form.paymentMethods
+            .filter((item) => !FOOTER_PAYMENT_METHOD_IDS.includes(item.id))
+            .map((method) => {
+              const uploading = uploadingPaymentId === method.id
+              return (
+                <div key={method.id} className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+                  <div className="flex h-14 w-24 shrink-0 items-center justify-center rounded-md bg-black px-2">
+                    {method.image ? (
+                      <img src={method.image} alt={method.label || 'Payment'} className="h-9 w-auto max-w-full object-contain" />
+                    ) : (
+                      <span className="text-[10px] text-slate-400">No image</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <input
+                        value={method.label || ''}
+                        onChange={(event) => updatePaymentMethod(method.id, { label: event.target.value })}
+                        className={inputClass}
+                        placeholder="Name, for example Apple Pay"
+                      />
+                      <label className="inline-flex shrink-0 items-center gap-2 text-xs text-slate-600">
+                        <input
+                          type="checkbox"
+                          checked={method.enabled !== false}
+                          onChange={(event) => updatePaymentMethod(method.id, { enabled: event.target.checked })}
+                        />
+                        Show
+                      </label>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="inline-flex cursor-pointer items-center rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                        {uploading ? 'Uploading...' : method.image ? 'Replace image' : 'Upload image'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="sr-only"
+                          disabled={uploading}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0]
+                            event.target.value = ''
+                            uploadPaymentImage(method.id, file)
+                          }}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => removePaymentMethod(method.id)}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-red-600"
+                      >
+                        <Trash2 size={14} /> Remove
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
         </div>
       </section>
 

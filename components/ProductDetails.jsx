@@ -1,6 +1,6 @@
 'use client'
 
-import { StarIcon, HeartIcon, MinusIcon, PlusIcon, ShoppingCartIcon, Trash2, Check, ChevronLeft, ChevronRight, ChevronDown, X, Truck } from "lucide-react";
+import { StarIcon, HeartIcon, MinusIcon, PlusIcon, ShoppingCartIcon, Trash2, Check, ChevronLeft, ChevronRight, X, Truck } from "lucide-react";
 import Image from "@/components/SafeNextImage";
 import Link from "next/link";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
@@ -259,171 +259,188 @@ const DEFAULT_BADGE_STYLES = [
   { label: 'Free Shipping', backgroundColor: '#007185', textColor: '#ffffff', borderRadius: 0 }
 ];
 
+function EditableQuantityInput({ quantity, maxOrderQty, onCommit, onExceed, label, className = '' }) {
+  const [draft, setDraft] = useState(String(quantity ?? 1));
+  const max = Math.max(1, Number(maxOrderQty) || 1);
+
+  useEffect(() => {
+    setDraft(String(quantity ?? 1));
+  }, [quantity]);
+
+  const applyDigits = (raw, input) => {
+    const digits = String(raw || '').replace(/[^\d]/g, '');
+    if (!digits || Number(digits) < 1) {
+      if (input) input.value = '1';
+      setDraft('1');
+      if (Number(quantity) !== 1) onCommit(1);
+      return;
+    }
+    const parsed = Number(digits);
+    const overStock = digits.length > String(max).length || parsed > max;
+    if (overStock) {
+      if (input) input.value = String(max);
+      setDraft(String(max));
+      onExceed?.(max);
+      if (max !== Number(quantity)) onCommit(max);
+      return;
+    }
+    setDraft(String(parsed));
+  };
+
+  const commit = () => {
+    const digits = String(draft).replace(/[^\d]/g, '');
+    const parsed = Number(digits);
+    const next = !digits || parsed < 1 ? 1 : Math.min(max, parsed);
+    if (parsed > max) onExceed?.(max);
+    setDraft(String(next));
+    if (next !== Number(quantity)) onCommit(next);
+  };
+
+  const step = (delta) => {
+    const current = Number(String(draft).replace(/[^\d]/g, '')) || Number(quantity) || 1;
+    const next = current + delta;
+    if (next > max) {
+      setDraft(String(max));
+      onExceed?.(max);
+      if (max !== Number(quantity)) onCommit(max);
+      return;
+    }
+    const clamped = Math.max(1, next);
+    setDraft(String(clamped));
+    if (clamped !== Number(quantity)) onCommit(clamped);
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      aria-label={label || 'Quantity'}
+      value={draft}
+      onChange={(event) => applyDigits(event.target.value, event.target)}
+      onBlur={commit}
+      onKeyDown={(event) => {
+        if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          step(1);
+          return;
+        }
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          step(-1);
+          return;
+        }
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          event.currentTarget.blur();
+        }
+      }}
+      className={`h-full w-full bg-white text-center text-base font-semibold text-slate-900 outline-none ${className}`.trim()}
+    />
+  );
+}
+
+function useStockLimitPopup(message) {
+  const anchorRef = useRef(null);
+  const [stockNotice, setStockNotice] = useState(null);
+  const stockNoticeTimerRef = useRef(null);
+
+  useEffect(() => () => {
+    if (stockNoticeTimerRef.current) clearTimeout(stockNoticeTimerRef.current);
+  }, []);
+
+  const showStockNotice = useCallback(() => {
+    if (!message || typeof document === 'undefined') return;
+    const rect = anchorRef.current?.getBoundingClientRect();
+    const center = rect ? rect.left + rect.width / 2 : 160;
+    setStockNotice({
+      message,
+      top: rect?.top || 80,
+      left: center,
+    });
+    if (stockNoticeTimerRef.current) clearTimeout(stockNoticeTimerRef.current);
+    stockNoticeTimerRef.current = setTimeout(() => {
+      setStockNotice(null);
+      stockNoticeTimerRef.current = null;
+    }, 2800);
+  }, [message]);
+
+  const noticeNode = stockNotice && typeof document !== 'undefined'
+    ? createPortal(
+        <div
+          role="status"
+          style={{ top: stockNotice.top, left: stockNotice.left }}
+          className="fixed z-[2147483000] -translate-x-1/2 -translate-y-[calc(100%+10px)]"
+        >
+          <div className="flex items-center gap-2 whitespace-nowrap rounded-full border border-amber-200 bg-white px-3 py-1.5 text-[13px] font-semibold text-slate-800 shadow-[0_8px_24px_rgba(15,23,42,0.12)]">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 text-[11px] font-bold text-amber-700">!</span>
+            {stockNotice.message}
+          </div>
+          <span className="absolute left-1/2 top-full -mt-1 h-2.5 w-2.5 -translate-x-1/2 rotate-45 border-b border-r border-amber-200 bg-white" />
+        </div>,
+        document.body,
+      )
+    : null;
+
+  return { anchorRef, showStockNotice, noticeNode };
+}
+
 function ProductQuantitySelector({
   quantity,
   maxOrderQty,
   onChange,
+  stockLimitMessage = '',
   quantityLabel,
-  variant = 'buybox',
   className = '',
   isArabic = false,
-  formatCount,
-  formatOptionLabel,
-  options,
 }) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef(null);
-  const quantityOptions = useMemo(
-    () => (
-      Array.isArray(options) && options.length > 0
-        ? options
-        : Array.from({ length: Math.max(1, maxOrderQty) }, (_, i) => i + 1)
-    ),
-    [maxOrderQty, options]
-  );
-  const isBuyBox = variant === 'buybox';
-
-  useEffect(() => {
-    if (!open) return undefined;
-
-    const handlePointerDown = (event) => {
-      if (!rootRef.current?.contains(event.target)) {
-        setOpen(false);
-      }
-    };
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') setOpen(false);
-    };
-
-    document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [open]);
-
-  const handleSelect = (value) => {
-    onChange(value);
-    setOpen(false);
-  };
-
-  const getOptionLabel = (val) => (
-    formatOptionLabel ? formatOptionLabel(val) : formatCount(val)
-  );
-
   const currentQty = Number(quantity) || 1;
+  const maxQty = Math.max(1, Number(maxOrderQty) || 1);
   const canDecrease = currentQty > 1;
-  const canIncrease = currentQty < Math.max(1, maxOrderQty);
-
-  if (!isBuyBox) {
-    return (
-      <div
-        className={`flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 ${className}`.trim()}
-        dir={isArabic ? 'rtl' : 'ltr'}
-      >
-        <span className="shrink-0 text-sm font-semibold text-gray-900">
-          {quantityLabel}
-        </span>
-
-        <div className="flex h-11 w-[150px] shrink-0 items-stretch overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
-          <button
-            type="button"
-            onClick={() => canDecrease && onChange(currentQty - 1)}
-            disabled={!canDecrease}
-            aria-label={isArabic ? 'إنقاص الكمية' : 'Decrease quantity'}
-            className="flex w-12 shrink-0 items-center justify-center text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
-          >
-            <MinusIcon size={18} strokeWidth={2.25} aria-hidden="true" />
-          </button>
-
-          <div
-            className="flex min-w-0 flex-1 items-center justify-center border-x border-slate-200 px-2 text-sm font-semibold text-slate-900"
-            aria-live="polite"
-            aria-atomic="true"
-          >
-            <span className="truncate text-center">{formatCount(currentQty)}</span>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => canIncrease && onChange(currentQty + 1)}
-            disabled={!canIncrease}
-            aria-label={isArabic ? 'زيادة الكمية' : 'Increase quantity'}
-            className="flex w-12 shrink-0 items-center justify-center text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
-          >
-            <PlusIcon size={18} strokeWidth={2.25} aria-hidden="true" />
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const canIncrease = currentQty < maxQty;
+  const { anchorRef, showStockNotice, noticeNode } = useStockLimitPopup(stockLimitMessage);
 
   return (
-    <div
-      ref={rootRef}
-      className={
-        isBuyBox
-          ? `mt-5 space-y-2 ${className}`.trim()
-          : `space-y-2 rounded-xl border border-gray-200 bg-white px-4 py-3 ${className}`.trim()
-      }
-      dir={isArabic ? 'rtl' : 'ltr'}
-    >
-      <span
-        className={
-          isBuyBox
-            ? 'block text-xs font-semibold uppercase tracking-wide text-slate-500'
-            : 'block text-sm font-semibold text-gray-900'
-        }
-      >
+    <div className={`relative mt-5 ${className}`.trim()} dir={isArabic ? 'rtl' : 'ltr'}>
+      <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
         {quantityLabel}
-      </span>
-
-      <div className="relative w-full">
+      </label>
+      <div ref={anchorRef} className="flex h-12 items-stretch overflow-hidden rounded-lg border border-slate-300 bg-white">
         <button
           type="button"
-          onClick={() => setOpen((current) => !current)}
-          aria-haspopup="listbox"
-          aria-expanded={open}
-          aria-label={quantityLabel}
-          className="flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900 shadow-sm transition hover:border-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+          onClick={() => canDecrease && onChange(currentQty - 1)}
+          disabled={!canDecrease}
+          aria-label={isArabic ? 'إنقاص الكمية' : 'Decrease quantity'}
+          className="flex w-12 shrink-0 items-center justify-center border-r border-slate-200 text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
         >
-          <span className="min-w-0 truncate text-left">{getOptionLabel(quantity)}</span>
-          <ChevronDown
-            size={16}
-            className={`shrink-0 text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`}
-            aria-hidden="true"
-          />
+          <MinusIcon size={18} aria-hidden="true" />
         </button>
-
-        {open ? (
-          <ul
-            role="listbox"
-            aria-label={quantityLabel}
-            className="absolute left-0 right-0 z-30 mt-1.5 max-h-52 overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
-          >
-            {quantityOptions.map((val) => {
-              const isSelected = Number(quantity) === val;
-              return (
-                <li key={val} role="option" aria-selected={isSelected}>
-                  <button
-                    type="button"
-                    onClick={() => handleSelect(val)}
-                    className={`flex w-full items-center justify-between gap-2 px-3 py-2.5 text-sm font-medium transition ${
-                      isSelected
-                        ? 'bg-orange-50 text-orange-700'
-                        : 'text-slate-800 hover:bg-slate-50'
-                    }`}
-                  >
-                    <span className="min-w-0 flex-1 text-left">{getOptionLabel(val)}</span>
-                    {isSelected ? <Check size={14} className="text-orange-600" aria-hidden="true" /> : null}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        ) : null}
+        <EditableQuantityInput
+          quantity={currentQty}
+          maxOrderQty={maxQty}
+          onCommit={onChange}
+          onExceed={showStockNotice}
+          label={quantityLabel}
+        />
+        <button
+          type="button"
+          onClick={() => {
+            if (!canIncrease) {
+              showStockNotice();
+              return;
+            }
+            onChange(currentQty + 1);
+          }}
+          aria-disabled={!canIncrease}
+          aria-label={isArabic ? 'زيادة الكمية' : 'Increase quantity'}
+          className={`flex w-12 shrink-0 items-center justify-center border-l border-slate-200 transition hover:bg-slate-50 ${
+            canIncrease ? 'text-slate-700' : 'cursor-not-allowed text-slate-300'
+          }`}
+        >
+          <PlusIcon size={18} aria-hidden="true" />
+        </button>
       </div>
+      {noticeNode}
     </div>
   );
 }
@@ -1255,6 +1272,12 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
     product.inStock,
   ]);
   const maxOrderQty = availableStock;
+  const stockLimitMessage = t('product.onlyStockAvailable', { count: maxOrderQty });
+  const {
+    anchorRef: cartQtyAnchorRef,
+    showStockNotice: showCartStockNotice,
+    noticeNode: cartStockNotice,
+  } = useStockLimitPopup(stockLimitMessage);
 
   const upsertProductCartLines = useCallback((requestedQty) => {
     const normalizedQty = Math.max(1, Number(requestedQty) || 1);
@@ -1383,6 +1406,15 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
     cartProductId,
     dispatch,
   ]);
+
+  const handleCartQuantityInput = useCallback(async (value) => {
+    const next = Math.max(1, Number(value) || 1);
+    upsertProductCartLines(next);
+    setQuantity(Math.min(next, Math.max(1, maxOrderQty || 1)));
+    if (isSignedIn) {
+      try { await dispatch(uploadCart()).unwrap(); } catch (_) {}
+    }
+  }, [upsertProductCartLines, maxOrderQty, isSignedIn, dispatch]);
 
   const handleProductQuantityChange = useCallback((value) => {
     const next = Math.max(1, Number(value) || 1);
@@ -3439,10 +3471,9 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                   quantity={quantity}
                   maxOrderQty={maxOrderQty}
                   onChange={handleProductQuantityChange}
+                  stockLimitMessage={stockLimitMessage}
                   quantityLabel={t('product.quantityLabel').replace(':', '')}
-                  variant="card"
                   isArabic={isArabic}
-                  formatCount={formatCount}
                 />
               ) : null}
 
@@ -3852,10 +3883,9 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                 quantity={quantity}
                 maxOrderQty={maxOrderQty}
                 onChange={handleProductQuantityChange}
+                stockLimitMessage={stockLimitMessage}
                 quantityLabel={t('product.quantityLabel').replace(':', '')}
-                variant="buybox"
                 isArabic={isArabic}
-                formatCount={formatCount}
               />
             ) : null}
 
@@ -3911,7 +3941,8 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                     </p>
                   </div>
 
-                  <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+                  <div ref={cartQtyAnchorRef} className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+                    {cartStockNotice}
                     <div className="grid grid-cols-[1fr_auto_1fr] items-stretch">
                       <button
                         type="button"
@@ -3948,13 +3979,20 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                           : <MinusIcon size={16} />}
                       </button>
 
-                      <div className="flex min-w-[88px] flex-col items-center justify-center border-r border-gray-200 bg-gray-50 px-4">
+                      <div className="flex min-w-[88px] flex-col items-center justify-center border-r border-gray-200 bg-gray-50 px-2">
                         <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
                           {t('product.qty')}
                         </span>
-                        <span className="text-lg font-bold leading-none text-gray-900">
-                          {formatCount(cartDisplayQty)}
-                        </span>
+                        <div className="h-6 w-full">
+                          <EditableQuantityInput
+                            quantity={cartDisplayQty || 1}
+                            maxOrderQty={maxOrderQty}
+                            onCommit={handleCartQuantityInput}
+                            onExceed={showCartStockNotice}
+                            label={t('product.qty')}
+                            className="bg-transparent text-lg font-bold leading-none"
+                          />
+                        </div>
                       </div>
 
                       <button
@@ -3984,15 +4022,23 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                           }
                           if (isSignedIn) { try { await dispatch(uploadCart()).unwrap(); } catch (_) {} }
                         }}
-                        className="flex h-11 items-center justify-center text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        className={`flex h-11 items-center justify-center transition hover:bg-gray-50 ${
+                          (isBulkBundleProduct
+                            ? (isBulkSingleTierPack ? isAtMaxBulkTier : cartQty >= Math.max(1, maxOrderQty))
+                            : cartQty >= Math.max(1, maxOrderQty))
+                            ? 'cursor-not-allowed text-slate-300'
+                            : 'text-gray-700'
+                        }`}
                         aria-label="Increase quantity"
-                        disabled={
-                          isBulkBundleProduct
-                            ? (isBulkSingleTierPack
-                              ? isAtMaxBulkTier
-                              : cartQty >= Math.max(1, maxOrderQty))
-                            : cartQty >= Math.max(1, maxOrderQty)
-                        }
+                        onClickCapture={(event) => {
+                          const atMax = isBulkBundleProduct
+                            ? (isBulkSingleTierPack ? isAtMaxBulkTier : cartQty >= Math.max(1, maxOrderQty))
+                            : cartQty >= Math.max(1, maxOrderQty);
+                          if (!atMax) return;
+                          event.preventDefault();
+                          event.stopPropagation();
+                          showCartStockNotice();
+                        }}
                       >
                         <PlusIcon size={16} />
                       </button>

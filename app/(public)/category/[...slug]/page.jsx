@@ -13,7 +13,6 @@ import {
 } from '@/lib/categorySeo';
 import { buildCategoryUrl } from '@/lib/categorySlug';
 
-export const dynamic = 'force-dynamic';
 export const revalidate = 300;
 
 /**

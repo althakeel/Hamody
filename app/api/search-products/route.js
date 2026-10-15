@@ -20,6 +20,7 @@ import {
   countProductsDedupedBySku,
   dedupeProductsBySku,
   fetchProductsDedupedBySku,
+  STOREFRONT_CARD_FIELDS,
 } from '@/lib/productSkuDedupe';
 
 export async function GET(request) {
@@ -58,6 +59,7 @@ export async function GET(request) {
         sort: { createdAt: -1 },
         skip: offset,
         limit,
+        fields: STOREFRONT_CARD_FIELDS,
       });
 
       return NextResponse.json({
@@ -110,6 +112,7 @@ export async function GET(request) {
       sort: { createdAt: -1 },
       skip: offset,
       limit,
+      fields: STOREFRONT_CARD_FIELDS,
     });
     const resultCap = limit ?? total;
     if (!usedPhraseOnly && products.length < resultCap && page === 1) {

@@ -16,7 +16,7 @@ export async function GET(req) {
             return NextResponse.json(cached, {
                 status: 200,
                 headers: {
-                    'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+                    'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=600',
                     'X-Cache': 'HIT',
                 },
             });
@@ -87,7 +87,7 @@ export async function GET(req) {
         return NextResponse.json(payload, {
             status: 200,
             headers: {
-                'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+                'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=600',
                 'X-Cache': 'MISS',
             },
         });

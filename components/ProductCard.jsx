@@ -58,25 +58,6 @@ const getAEDPrice = (product) => parseAmount(
   product.regularPrice ?? product.regular_price
 )
 
-function getAspectRatioClass(ratio) {
-  switch (ratio) {
-    case '1:1': return 'aspect-square'
-    case '4:6': return 'aspect-[2/3]'
-    case '2:3': return 'aspect-[2/3]'
-    case '3:4': return 'aspect-[3/4]'
-    case '16:9': return 'aspect-[16/9]'
-    case '9:16': return 'aspect-[9/16]'
-    case '4:5': return 'aspect-[4/5]'
-    case '5:7': return 'aspect-[5/7]'
-    case '7:10': return 'aspect-[7/10]'
-    case '5:8': return 'aspect-[5/8]'
-    case '3:2': return 'aspect-[3/2]'
-    case '8:10': return 'aspect-[8/10]'
-    case '11:14': return 'aspect-[11/14]'
-    default: return 'aspect-square'
-  }
-}
-
 const ProductCard = ({
   product,
   priorityImages = false,
@@ -334,11 +315,7 @@ const ProductCard = ({
   const useCompactLayout = compact && hasCarouselWidth
   const compactLg = useCompactLayout && compactDesktopOnly
   const compactAll = useCompactLayout && !compactDesktopOnly
-  const imageAspectClass = compactAll
-    ? 'aspect-square w-full shrink-0'
-    : hasCarouselWidth
-      ? getAspectRatioClass(product.imageAspectRatio || product.aspectRatio)
-      : 'aspect-square'
+  const imageAspectClass = 'aspect-square w-full shrink-0'
 
   return (
     <Link
@@ -365,7 +342,7 @@ const ProductCard = ({
               src={cardPreview.imageSrc}
               alt={productName}
               fill
-              className="object-cover object-center"
+              className="object-cover object-center scale-110"
               sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 16vw"
               priority={priorityImages}
               loading={priorityImages ? undefined : 'lazy'}
@@ -389,7 +366,7 @@ const ProductCard = ({
           <video
             ref={cardPreview.type === 'delayed-video' ? cardVideoRef : undefined}
             src={cardPreview.videoSrc}
-            className="absolute inset-0 h-full w-full min-h-full min-w-full object-cover object-center"
+            className="absolute inset-0 h-full w-full min-h-full min-w-full object-cover object-center scale-110"
             muted
             loop
             autoPlay
@@ -402,7 +379,7 @@ const ProductCard = ({
               src={primaryImage}
               alt={productName}
               fill
-              className={`object-cover object-center ${hasSecondary ? 'transition-opacity duration-500' : ''} ${hasSecondary && hovered ? 'opacity-0' : 'opacity-100'}`}
+              className={`object-cover object-center scale-110 ${hasSecondary ? 'transition-opacity duration-500' : ''} ${hasSecondary && hovered ? 'opacity-0' : 'opacity-100'}`}
               sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 16vw"
               priority={priorityImages}
               loading={priorityImages ? undefined : 'lazy'}
@@ -417,7 +394,7 @@ const ProductCard = ({
                 src={secondaryImage}
                 alt={productName}
                 fill
-                className={`absolute inset-0 object-cover object-center transition-opacity duration-500 ${hovered ? 'opacity-100' : 'opacity-0'}`}
+                className={`absolute inset-0 object-cover object-center scale-110 transition-opacity duration-500 ${hovered ? 'opacity-100' : 'opacity-0'}`}
                 sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 16vw"
                 loading="lazy"
                 onError={(e) => {

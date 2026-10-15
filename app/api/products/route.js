@@ -264,6 +264,7 @@ export async function GET(request){
                     sort: sortStage,
                     skip: fetchAll ? 0 : offset,
                     limit: fetchAll ? null : limit,
+                    fields: listProjection,
                 });
             } else {
                 let query = Product.find(matchStage)
@@ -285,6 +286,7 @@ export async function GET(request){
                     sort: sortStage,
                     skip: fetchAll ? 0 : offset,
                     limit: fetchAll ? null : limit,
+                    fields: listProjection,
                 });
             } else {
                 let query = Product.find(matchStage)
