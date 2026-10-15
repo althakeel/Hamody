@@ -147,7 +147,7 @@ export default function CategorySliderPage() {
             ? axios.get('/api/store/email-marketing/pages', { headers })
             : Promise.resolve({ data: { pages: [] } }),
           token
-            ? axios.get('/api/store/product', { headers, params: { manage: 'true', distinct: 'brands' } })
+            ? axios.get('/api/store/product', { headers, params: { manage: 'true', distinct: 'brands', page: 1 } })
             : Promise.resolve({ data: { brands: [] } }),
         ]);
         if (!active) return;
@@ -708,30 +708,61 @@ export default function CategorySliderPage() {
       return undefined;
     }
 
+    const categoryBranchIds = (() => {
+      if (productPickMode !== 'category' || !pickCategoryId) return [];
+      const ids = [];
+      const walk = (id) => {
+        const normalized = String(id || '').trim();
+        if (!normalized || ids.includes(normalized)) return;
+        ids.push(normalized);
+        categories.forEach((item) => {
+          if (String(item?.parentId || '') === normalized) walk(item._id || item.id);
+        });
+      };
+      walk(pickCategoryId);
+      return ids.slice(0, 200);
+    })();
+
     let active = true;
     const timer = setTimeout(async () => {
       try {
         setPickerLoading(true);
         const token = await getToken();
-        const params = { limit: 200, sort: 'name', manage: 'true' };
+        const params = { limit: productPickMode === 'manual' ? 200 : 500, sort: 'name', manage: 'true', page: 1 };
         if (productPickMode === 'manual') params.search = term;
-        if (productPickMode === 'category') params.category = pickCategoryId;
+        if (productPickMode === 'category') params.categories = categoryBranchIds.join(',');
         if (productPickMode === 'brand') params.brand = pickBrand;
-        const { data } = await axios.get('/api/store/product', {
-          headers: { Authorization: `Bearer ${token}` },
-          params,
-        });
+        const collected = [];
+        let page = 1;
+        let totalPages = 1;
+        do {
+          const { data } = await axios.get('/api/store/product', {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { ...params, page },
+          });
+          const batch = (data.products || []).map((product) => ({
+            ...product,
+            id: normalizeId(product.id || product._id),
+          })).filter((product) => product.id);
+          collected.push(...batch);
+          totalPages = Number(data.pagination?.totalPages || 1);
+          page += 1;
+        } while (productPickMode !== 'manual' && page <= totalPages && page <= 10);
         if (!active) return;
-        const list = (data.products || []).map((product) => ({
-          ...product,
-          id: normalizeId(product.id || product._id),
-        })).filter((product) => product.id);
         setProducts((prev) => {
           const map = new Map(prev.map((product) => [normalizeId(product.id), product]));
-          list.forEach((product) => map.set(product.id, product));
+          collected.forEach((product) => map.set(product.id, product));
           return Array.from(map.values());
         });
-        setPickerResults(list);
+        setPickerResults(collected);
+        if (productPickMode !== 'manual') {
+          addPickerProducts(collected, { replace: true });
+          if (collected.length) {
+            toast.success(`Added ${collected.length} product${collected.length === 1 ? '' : 's'}`);
+          } else {
+            toast.error(productPickMode === 'brand' ? 'No products found for this brand' : 'No products found for this category');
+          }
+        }
       } catch (error) {
         console.error('Product picker failed', error);
         if (active) setPickerResults([]);
@@ -744,7 +775,7 @@ export default function CategorySliderPage() {
       active = false;
       clearTimeout(timer);
     };
-  }, [showForm, productPickMode, pickCategoryId, pickBrand, searchQuery, getToken]);
+  }, [showForm, productPickMode, pickCategoryId, pickBrand, searchQuery, getToken, categories]);
 
   const toggleProductSelection = (productId) => {
     const normalizedId = normalizeId(productId);

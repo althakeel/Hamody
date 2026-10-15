@@ -4,7 +4,7 @@ import Product from '@/models/Product';
 import Category from '@/models/Category';
 import authSeller from '@/middlewares/authSeller';
 import { getAuth } from '@/lib/firebase-admin';
-import { buildProductCategoriesAfterAddition } from '@/lib/productCategoryRefs';
+import { buildProductCategoriesAfterAddition, withAncestorCategoryIds } from '@/lib/productCategoryRefs';
 import { invalidateStorefrontProductCaches } from '@/lib/cache';
 
 export const runtime = 'nodejs';
@@ -40,10 +40,11 @@ export async function POST(request) {
 
     await connectDB();
 
-    const categoryDoc = await Category.findById(categoryId).select('_id name').lean();
+    const categoryDoc = await Category.findById(categoryId).select('_id name parentId').lean();
     if (!categoryDoc) {
       return NextResponse.json({ error: 'Category not found.' }, { status: 404 });
     }
+    const categoryIds = await withAncestorCategoryIds(Category, [categoryId]);
 
     const products = await Product.find({
       _id: { $in: productIds },
@@ -58,8 +59,20 @@ export async function POST(request) {
     let addedCount = 0;
 
     for (const product of products) {
-      const next = buildProductCategoriesAfterAddition(product, categoryId);
-      if (next.alreadyHad || !next.changed) {
+      let next = {
+        category: product.category,
+        categories: product.categories,
+      };
+      let changed = false;
+      categoryIds.forEach((id) => {
+        const step = buildProductCategoriesAfterAddition(
+          { category: next.category, categories: next.categories },
+          id,
+        );
+        next = step;
+        if (step.changed) changed = true;
+      });
+      if (!changed) {
         skipped.push({
           productId: String(product._id),
           name: product.name,

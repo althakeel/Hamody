@@ -13,7 +13,7 @@ import {
 } from '@/lib/storeProductPicker';
 import { NextResponse } from "next/server";
 import { getAuth } from '@/lib/firebase-admin';
-import { sanitizeCategoryIdsForSave } from '@/lib/productCategoryRefs';
+import { sanitizeCategoryIdsForSave, withAncestorCategoryIds } from '@/lib/productCategoryRefs';
 import { createProductFromJson, updateProductFromJson } from '@/lib/productJsonSave';
 import { resolveProductSupplierFields } from '@/lib/supplierServer';
 import { resolveDashboardAccess } from '@/lib/storeAccessControl';
@@ -283,7 +283,7 @@ export async function POST(request) {
         }
         
         console.log('POST: Final categories to save:', categories, 'count:', categories.length);
-        categories = sanitizeCategoryIdsForSave(categories);
+        categories = await withAncestorCategoryIds(Category, sanitizeCategoryIdsForSave(categories));
 
         let variants = [];
         if (hasVariants) {
@@ -509,33 +509,34 @@ export async function GET(request) {
             );
         }
 
+        if (searchParams.get('manage') === 'true' && searchParams.get('distinct') === 'brands') {
+            const storeKey = String(storeId || '').trim();
+            const [brands, brandsAr] = await Promise.all([
+                Product.distinct('brand', {
+                    storeId: storeKey,
+                    brand: { $nin: [null, ''] },
+                }),
+                Product.distinct('brandAr', {
+                    storeId: storeKey,
+                    brandAr: { $nin: [null, ''] },
+                }),
+            ]);
+            const cleaned = Array.from(
+                new Set(
+                    [...(brands || []), ...(brandsAr || [])]
+                        .map((brand) => String(brand || '').trim())
+                        .filter(Boolean),
+                ),
+            ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+            return NextResponse.json(
+                { brands: cleaned },
+                { headers: { 'Cache-Control': 'private, no-cache, no-store, must-revalidate' } },
+            );
+        }
+
         if (isPaginated) {
             const page = Math.max(1, Number.parseInt(pageParam || '1', 10) || 1);
             const manage = searchParams.get('manage') === 'true';
-            if (manage && searchParams.get('distinct') === 'brands') {
-                const storeKey = String(storeId || '').trim();
-                const [brands, brandsAr] = await Promise.all([
-                    Product.distinct('brand', {
-                        storeId: storeKey,
-                        brand: { $nin: [null, ''] },
-                    }),
-                    Product.distinct('brandAr', {
-                        storeId: storeKey,
-                        brandAr: { $nin: [null, ''] },
-                    }),
-                ]);
-                const cleaned = Array.from(
-                    new Set(
-                        [...(brands || []), ...(brandsAr || [])]
-                            .map((brand) => String(brand || '').trim())
-                            .filter(Boolean),
-                    ),
-                ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-                return NextResponse.json(
-                    { brands: cleaned },
-                    { headers: { 'Cache-Control': 'private, no-cache, no-store, must-revalidate' } },
-                );
-            }
             const maxLimit = manage ? 500 : 48;
             const limit = Math.min(maxLimit, Math.max(1, Number.parseInt(searchParams.get('limit') || '24', 10) || 24));
             const sort = searchParams.get('sort') || 'newest';
@@ -544,7 +545,7 @@ export async function GET(request) {
                 .split(',')
                 .map((id) => id.trim())
                 .filter(Boolean)
-                .slice(0, 80);
+                .slice(0, 200);
             const filterTags = String(searchParams.get('tags') || '')
                 .split(',')
                 .map((tag) => tag.trim())
@@ -954,7 +955,7 @@ export async function PUT(request) {
         }
         
         console.log('PUT: Final categories to save:', categories, 'count:', categories.length);
-        categories = sanitizeCategoryIdsForSave(categories);
+        categories = await withAncestorCategoryIds(Category, sanitizeCategoryIdsForSave(categories));
 
         // If slug is provided and changed, check uniqueness
         let updateData = {

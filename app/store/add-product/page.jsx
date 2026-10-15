@@ -76,7 +76,7 @@ function reorderImageSlots(images, fromKey, toKey) {
     next.splice(to, 0, moved)
     return fillImageSlotsFromList(next, keys.length)
 }
-import { sanitizeCategoryIdsForSave } from '@/lib/productCategoryRefs';
+import { expandCategoryIdsWithAncestors, sanitizeCategoryIdsForSave } from '@/lib/productCategoryRefs';
 
 const VARIANT_MATRIX_SELECTION_FIELDS = ['title', 'optionLabel', 'option', 'color', 'size'];
 const getVariantMatrixKey = (options = {}) =>
@@ -1181,7 +1181,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
             }
             
             console.log('Setting selected categories:', categoriesToSet)
-            setSelectedCategories(categoriesToSet)
+            setSelectedCategories(expandCategoryIdsWithAncestors(categoriesToSet, dbCategories))
             setIsSlugManuallyEdited(true)
             
             const pv = Array.isArray(product.variants) ? product.variants : []
@@ -1413,12 +1413,20 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
     const toggleCategorySelection = (categoryId, checked) => {
         const normalizedId = String(categoryId)
         setSelectedCategories(prev => {
-            if (checked) {
-                return prev.includes(normalizedId) ? prev : [...prev, normalizedId]
-            }
-            return prev.filter(id => id !== normalizedId)
+            const next = checked
+                ? [...prev, normalizedId]
+                : prev.filter(id => id !== normalizedId)
+            return expandCategoryIdsWithAncestors(next, dbCategories)
         })
     }
+
+    useEffect(() => {
+        if (!dbCategories.length) return
+        setSelectedCategories((prev) => {
+            const expanded = expandCategoryIdsWithAncestors(prev, dbCategories)
+            return expanded.join('|') === prev.join('|') ? prev : expanded
+        })
+    }, [dbCategories])
 
     const dedupeCategoryIds = (ids = []) => (
         Array.from(new Set(ids.map((id) => String(id)).filter(Boolean)))
@@ -1709,7 +1717,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
         }
 
         if (Array.isArray(data?.suggestedCategoryIds) && data.suggestedCategoryIds.length > 0) {
-            setSelectedCategories(dedupeCategoryIds(data.suggestedCategoryIds))
+            setSelectedCategories(expandCategoryIdsWithAncestors(data.suggestedCategoryIds, dbCategories))
             filledGroups.push('Suggested categories')
             setAiProgress({
                 percent: 100,
@@ -1952,7 +1960,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                 ? data.suggestedCategoryIds
                 : suggestCategoryIdsFromImport(imported, dbCategories);
             if (suggestedCategoryIds.length > 0) {
-                setSelectedCategories((prev) => dedupeCategoryIds([...prev, ...suggestedCategoryIds]));
+                setSelectedCategories((prev) => expandCategoryIdsWithAncestors([...prev, ...suggestedCategoryIds], dbCategories));
             }
 
             toast.success(
@@ -2407,7 +2415,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                 specTableEnabled: Boolean(productInfo.specTableEnabled),
                 specTableColumns: productInfo.specTableColumns || ['Property', 'Value'],
                 specTableRows: productInfo.specTableRows || [],
-                categories: sanitizeCategoryIdsForSave(selectedCategories),
+                categories: expandCategoryIdsWithAncestors(selectedCategories, dbCategories),
                 attributes,
                 hasVariants: hasVariantsFlag,
                 variants: hasVariantsFlag ? variantsToSend : [],
@@ -2806,7 +2814,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                         </div>
                         {selectedCategories.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-1.5">
-                                {dedupeCategoryIds(selectedCategories).map(catId => { const cat = dbCategories.find(c => String(c._id) === String(catId)); return cat ? (<span key={catId} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">{cat.name}<button type="button" onClick={() => setSelectedCategories(prev => prev.filter(id => String(id) !== String(catId)))} className="ml-1 hover:text-indigo-900 font-bold">×</button></span>) : null })}
+                                {dedupeCategoryIds(selectedCategories).map(catId => { const cat = dbCategories.find(c => String(c._id) === String(catId)); return cat ? (<span key={catId} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">{cat.name}<button type="button" onClick={() => setSelectedCategories(prev => expandCategoryIdsWithAncestors(prev.filter(id => String(id) !== String(catId)), dbCategories))} className="ml-1 hover:text-indigo-900 font-bold">×</button></span>) : null })}
                             </div>
                         )}
                     </div>

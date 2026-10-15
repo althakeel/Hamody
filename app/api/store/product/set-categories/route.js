@@ -7,6 +7,7 @@ import { getAuth } from '@/lib/firebase-admin';
 import {
   buildProductCategoriesAfterSet,
   sanitizeCategoryIdsForSave,
+  withAncestorCategoryIds,
 } from '@/lib/productCategoryRefs';
 import { invalidateStorefrontProductCaches } from '@/lib/cache';
 
@@ -32,19 +33,20 @@ export async function POST(request) {
     const productIds = Array.isArray(body?.productIds)
       ? [...new Set(body.productIds.map((productId) => String(productId).trim()).filter(Boolean))]
       : [];
-    const categoryIds = sanitizeCategoryIdsForSave(
+    const requestedCategoryIds = sanitizeCategoryIdsForSave(
       Array.isArray(body?.categoryIds) ? body.categoryIds : [body?.categoryId],
     );
-    const primaryCategoryId = String(body?.primaryCategoryId || categoryIds[0] || '').trim();
 
     if (!productIds.length) {
       return NextResponse.json({ error: 'Select at least one product.' }, { status: 400 });
     }
-    if (!categoryIds.length) {
+    if (!requestedCategoryIds.length) {
       return NextResponse.json({ error: 'Select at least one category.' }, { status: 400 });
     }
 
     await connectDB();
+    const categoryIds = await withAncestorCategoryIds(Category, requestedCategoryIds);
+    const primaryCategoryId = String(body?.primaryCategoryId || categoryIds[0] || '').trim();
 
     const categories = await Category.find({ _id: { $in: categoryIds } }).select('_id').lean();
     const foundCategoryIds = new Set(categories.map((category) => String(category._id)));
