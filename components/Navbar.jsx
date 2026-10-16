@@ -208,7 +208,7 @@ const Navbar = () => {
   const [storefrontLanguage, setStorefrontLanguage] = useState('en');
   // Skeleton until cache/API provides logo + background (no static logo/bg flash).
   const [navbarAppearance, setNavbarAppearance] = useState(EMPTY_NAVBAR_APPEARANCE);
-  const [navbarAppearanceLoading, setNavbarAppearanceLoading] = useState(true);
+  const [navbarAppearanceLoading, setNavbarAppearanceLoading] = useState(false);
   const [dealsNavLabels, setDealsNavLabels] = useState({
     en: DEFAULT_OFFERS_NAV_LABEL,
     ar: DEFAULT_OFFERS_NAV_LABEL_AR,

@@ -1,64 +1,32 @@
 'use client';
 
 import { useMemo } from 'react';
-import dynamic from 'next/dynamic';
 import { HOME_SECTION_STACK_CLASS } from '@/lib/storefrontCarousel';
 import { hasShowcaseBannerImage } from '@/lib/showcaseBannerImages';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
+import { findTopDealsSection } from '@/lib/homeTopDeals';
 
 import HeroBannerSlider from '@/components/HeroBannerSlider';
 import LatestProducts from '@/components/LatestProducts';
 import ShopShowcaseSection from '@/components/ShopShowcaseSection';
-const HomeCategories = dynamic(() => import('@/components/HomeCategories'), {
-  ssr: false,
-  loading: () => <HomeCategoryRowSkeleton />,
-});
-import DeferredSection from '@/components/DeferredSection';
-import {
-  HomeBannerSkeleton,
-  HomeCategorySlidersSkeleton,
-  HomeExploreInterestsSkeleton,
-  HomeProductCarouselSkeleton,
-  HomeProductGridSkeleton,
-  HomeCategoryRowSkeleton,
-} from '@/components/home/HomeSectionSkeletons';
-
-const BannerSlider = dynamic(() => import('@/components/BannerSlider'), {
-  ssr: false,
-  loading: () => <HomeBannerSkeleton />,
-});
-const BannerSlider2 = dynamic(() => import('@/components/BannerSlider2'), {
-  ssr: false,
-  loading: () => <HomeBannerSkeleton />,
-});
-const Section3 = dynamic(() => import('@/components/section3'), {
-  ssr: false,
-  loading: () => <HomeProductGridSkeleton count={6} />,
-});
-const Section4 = dynamic(() => import('@/components/section4'), {
-  ssr: false,
-  loading: () => <HomeCategorySlidersSkeleton sections={2} />,
-});
-const CategoryInterestSection = dynamic(() => import('@/components/CategoryInterestSection'), {
-  ssr: false,
-  loading: () => <HomeExploreInterestsSkeleton productCount={6} />,
-});
-const RecentSearchProducts = dynamic(() => import('@/components/RecentSearchProducts'), {
-  ssr: false,
-  loading: () => <HomeProductGridSkeleton count={6} />,
-});
-const RecommendedProducts = dynamic(() => import('@/components/RecommendedProducts'), {
-  ssr: false,
-  loading: () => <HomeProductCarouselSkeleton count={6} />,
-});
+import HomeCategories from '@/components/HomeCategories';
+import BannerSlider from '@/components/BannerSlider';
+import BannerSlider2 from '@/components/BannerSlider2';
+import Section3 from '@/components/section3';
+import Section4 from '@/components/section4';
+import CategoryInterestSection from '@/components/CategoryInterestSection';
+import RecentSearchProducts from '@/components/RecentSearchProducts';
+import RecommendedProducts from '@/components/RecommendedProducts';
 
 export default function HomePageClient({ initialData }) {
   const { isArabic } = useStorefrontI18n();
   const {
     shopShowcase = { config: null, sectionProducts: [], products: [], categories: [] },
     homeSections = [],
+    featuredSections = [],
     featuredSectionsCount = 0,
     featuredProducts = { products: [], sectionTitle: '', sectionDescription: '' },
+    topDealsProducts = [],
     appearance = {},
     storeSettings = {},
   } = initialData || {};
@@ -109,11 +77,7 @@ export default function HomePageClient({ initialData }) {
           skipInitialFetch
         />
         {showSecondaryBannerAt('below_small_banners') && <BannerSlider2 config={shopShowcaseConfig} />}
-        {showHeroCategories ? (
-          <DeferredSection minHeight={96} placeholder={<HomeCategoryRowSkeleton />}>
-            <HomeCategories />
-          </DeferredSection>
-        ) : null}
+        {showHeroCategories ? <HomeCategories /> : null}
         <LatestProducts
           initialProducts={featuredProducts.products}
           initialSectionTitle={featuredProducts.sectionTitleEn || featuredProducts.sectionTitle}
@@ -127,30 +91,22 @@ export default function HomePageClient({ initialData }) {
         {featuredSectionsCount === 0 && <BannerSlider config={shopShowcaseConfig} />}
         {showSecondaryBannerAt('above_top_deals') && <BannerSlider2 config={shopShowcaseConfig} />}
 
-        <DeferredSection minHeight={320} placeholder={<HomeProductGridSkeleton count={6} />}>
-          <Section3 homeSections={homeSections} sectionsLoading={false} />
-        </DeferredSection>
+        <Section3
+          homeSections={homeSections}
+          sectionsLoading={false}
+          initialProducts={topDealsProducts}
+          initialTitle={findTopDealsSection(homeSections)?.title || ''}
+        />
 
         {showSecondaryBannerAt('below_top_deals') && <BannerSlider2 config={shopShowcaseConfig} />}
 
         {featuredSectionsCount > 0 && (
-          <DeferredSection
-            minHeight={280}
-            placeholder={<HomeCategorySlidersSkeleton sections={2} />}
-          >
-            <Section4 />
-          </DeferredSection>
+          <Section4 sections={featuredSections} loading={false} />
         )}
 
-        <DeferredSection minHeight={260} placeholder={<HomeExploreInterestsSkeleton productCount={6} />}>
-          <CategoryInterestSection />
-        </DeferredSection>
-        <DeferredSection minHeight={220} placeholder={<HomeProductGridSkeleton count={6} />}>
-          <RecentSearchProducts />
-        </DeferredSection>
-        <DeferredSection minHeight={220} placeholder={<HomeProductCarouselSkeleton count={6} />}>
-          <RecommendedProducts />
-        </DeferredSection>
+        <CategoryInterestSection />
+        <RecentSearchProducts />
+        <RecommendedProducts />
       </div>
     </div>
   );
