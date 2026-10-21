@@ -61,8 +61,7 @@ export default function ExploreInterestsCustomizeCard() {
             Choose Recommended products manually
           </h2>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
-            Pick exactly which products appear when customers click the <strong>Recommended</strong> tab on your homepage.
-            Other category chips still use your catalog automatically.
+            Pick the Recommended products and the category chips that sit beside them on the homepage.
           </p>
           <p className="mt-3 text-xs font-medium text-slate-500">
             {loading ? (

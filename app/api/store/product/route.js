@@ -14,6 +14,7 @@ import {
 import { NextResponse } from "next/server";
 import { getAuth } from '@/lib/firebase-admin';
 import { sanitizeCategoryIdsForSave, withAncestorCategoryIds } from '@/lib/productCategoryRefs';
+import { collectCategoryBranchIds } from '@/lib/categoryProductStats';
 import { createProductFromJson, updateProductFromJson } from '@/lib/productJsonSave';
 import { resolveProductSupplierFields } from '@/lib/supplierServer';
 import { resolveDashboardAccess } from '@/lib/storeAccessControl';
@@ -502,7 +503,17 @@ export async function GET(request) {
         }
 
         if (idsOnly) {
-            const { productIds, total } = await fetchPickerProductIds(Product, storeId, search);
+            const category = String(searchParams.get('category') || '').trim();
+            const filterCategoryIds = String(searchParams.get('categories') || '')
+                .split(',')
+                .map((id) => id.trim())
+                .filter(Boolean)
+                .slice(0, 200);
+            const inStock = String(searchParams.get('inStock') || '').trim();
+            const { productIds, total } = await fetchPickerProductIds(Product, storeId, search, category, {
+                filterCategoryIds,
+                inStock,
+            });
             return NextResponse.json(
                 { productIds, total },
                 { headers: { 'Cache-Control': 'private, no-cache, no-store, must-revalidate' } }
@@ -541,11 +552,16 @@ export async function GET(request) {
             const limit = Math.min(maxLimit, Math.max(1, Number.parseInt(searchParams.get('limit') || '24', 10) || 24));
             const sort = searchParams.get('sort') || 'newest';
             const category = String(searchParams.get('category') || '').trim();
-            const filterCategoryIds = String(searchParams.get('categories') || '')
+            const includeDescendants = searchParams.get('includeDescendants') === 'true';
+            let filterCategoryIds = String(searchParams.get('categories') || '')
                 .split(',')
                 .map((id) => id.trim())
                 .filter(Boolean)
                 .slice(0, 200);
+            if (includeDescendants && /^[a-fA-F0-9]{24}$/.test(category)) {
+                const categoryDocs = await Category.find({}).select('_id parentId').lean();
+                filterCategoryIds = collectCategoryBranchIds(categoryDocs, category);
+            }
             const filterTags = String(searchParams.get('tags') || '')
                 .split(',')
                 .map((tag) => tag.trim())

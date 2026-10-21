@@ -32,17 +32,6 @@ function productImage(product) {
   return '';
 }
 
-function collectCategoryIds(category) {
-  const ids = [];
-  const walk = (node) => {
-    const id = String(node?._id || '').trim();
-    if (id) ids.push(id);
-    (node?.children || []).forEach(walk);
-  };
-  walk(category);
-  return ids;
-}
-
 export default function CategoryMerchandiseModal({ category, getToken, onClose, onSaved }) {
   const categoryId = String(category?._id || '').trim();
   const [ordered, setOrdered] = useState([]);
@@ -59,20 +48,26 @@ export default function CategoryMerchandiseModal({ category, getToken, onClose, 
       try {
         const token = await getToken();
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const categoryIds = collectCategoryIds(category).join(',');
         const products = [];
+        const seenIds = new Set();
         let page = 1;
         let totalPages = 1;
-        while (page <= totalPages && products.length < MAX_ORDERED) {
+        while (page <= totalPages && page <= 40) {
           const params = new URLSearchParams({
             manage: 'true',
             page: String(page),
-            limit: '500',
-            categories: categoryIds,
+            limit: '200',
+            category: categoryId,
+            includeDescendants: 'true',
             sort: 'name',
           });
           const { data } = await axios.get(`/api/store/product?${params}`, { headers });
-          products.push(...(Array.isArray(data.products) ? data.products : []));
+          for (const product of Array.isArray(data.products) ? data.products : []) {
+            const id = productId(product);
+            if (!id || seenIds.has(id)) continue;
+            seenIds.add(id);
+            products.push(product);
+          }
           totalPages = Number(data.pagination?.totalPages) || 1;
           if (!data.products?.length) break;
           page += 1;
@@ -171,7 +166,10 @@ export default function CategoryMerchandiseModal({ category, getToken, onClose, 
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Merchandise products</h2>
             <p className="mt-1 text-sm text-slate-500">
-              {category?.name || 'Category'}. Drag a row to move it, or use the arrows. Remove takes one out. Then Save order.
+              {category?.name || 'Category'}. This list includes products in subcategories and child categories.
+              {catalog.length ? ` ${catalog.length} products.` : ''}
+              {catalog.length > ordered.length ? ` The page order keeps the first ${ordered.length}.` : ''}
+              {' '}Drag a row to move it, or use the arrows. Then Save order.
             </p>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Close">

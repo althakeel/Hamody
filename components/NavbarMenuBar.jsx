@@ -719,12 +719,16 @@ export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
         ...getNavbarBottomBorderStyle(menuStyle),
       }}
     >
+      <div
+        className="mx-auto flex w-full min-w-0 items-center"
+        style={{ maxWidth: `min(100%, ${Math.min(1400, Number(navbarMaxWidth) || 1400)}px)` }}
+      >
       {canScrollLeft ? (
         <button
           type="button"
           aria-label="Scroll categories left"
           onClick={() => scrollCategoryBar(-1)}
-          className="absolute left-1 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border shadow-sm lg:inline-flex"
+          className="relative z-10 ms-2 hidden h-8 w-8 shrink-0 items-center justify-center rounded-full border shadow-sm lg:inline-flex"
           style={{
             backgroundColor: 'var(--menu-bar-bg)',
             color: 'var(--menu-bar-text)',
@@ -733,28 +737,12 @@ export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
         >
           <ChevronLeft size={16} />
         </button>
-      ) : null}
-      {canScrollRight ? (
-        <button
-          type="button"
-          aria-label="Scroll categories right"
-          onClick={() => scrollCategoryBar(1)}
-          className="absolute right-1 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border shadow-sm lg:inline-flex"
-          style={{
-            backgroundColor: 'var(--menu-bar-bg)',
-            color: 'var(--menu-bar-text)',
-            borderColor: 'var(--menu-bar-border)',
-          }}
-        >
-          <ChevronRight size={16} />
-        </button>
-      ) : null}
+      ) : <span className="w-4 shrink-0" />}
       <div
         ref={sliderRef}
-        className={`${NAVBAR_CONTAINER_CLASS} min-w-0 w-full max-w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-px-4 scrollbar-hide select-none ${isSliderDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-        style={{ maxWidth: `min(100%, ${Math.min(1400, Number(navbarMaxWidth) || 1400)}px)` }}
+        className={`min-w-0 flex-1 overflow-x-auto overscroll-x-contain scrollbar-hide select-none ${isSliderDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
       >
-        <div className="relative flex w-max min-w-full items-center pb-2 pe-10 pt-3.5 whitespace-nowrap lg:pt-4">
+        <div className="relative flex w-max min-w-full items-center whitespace-nowrap px-2 pb-2 pt-3.5 lg:pt-4">
           {effectiveMenuItems.map((item, index) => {
             const dropdownLinks = Array.isArray(item?.megaMenu?.links) ? item.megaMenu.links : [];
             const featuredImages = Array.isArray(item?.megaMenu?.images) ? item.megaMenu.images.filter((img) => img?.url) : [];
@@ -927,6 +915,22 @@ export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
             );
           })}
         </div>
+      </div>
+      {canScrollRight ? (
+        <button
+          type="button"
+          aria-label="Scroll categories right"
+          onClick={() => scrollCategoryBar(1)}
+          className="relative z-10 me-2 hidden h-8 w-8 shrink-0 items-center justify-center rounded-full border shadow-sm lg:inline-flex"
+          style={{
+            backgroundColor: 'var(--menu-bar-bg)',
+            color: 'var(--menu-bar-text)',
+            borderColor: 'var(--menu-bar-border)',
+          }}
+        >
+          <ChevronRight size={16} />
+        </button>
+      ) : <span className="w-4 shrink-0" />}
       </div>
     </div>
   );

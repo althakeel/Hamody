@@ -89,116 +89,6 @@ function isDisplayableCategoryName(name) {
   return true;
 }
 
-function normalizeCategoryId(value) {
-  return String(value || '').trim().toLowerCase();
-}
-
-function collectDescendantCategoryIds(rootId, childrenByParentId) {
-  const root = normalizeCategoryId(rootId);
-  const ids = new Set([root]);
-  const queue = [root];
-
-  while (queue.length > 0) {
-    const current = queue.shift();
-    const children = childrenByParentId.get(current) || [];
-    children.forEach((childId) => {
-      const normalized = normalizeCategoryId(childId);
-      if (!ids.has(normalized)) {
-        ids.add(normalized);
-        queue.push(normalized);
-      }
-    });
-  }
-
-  return ids;
-}
-
-function buildCategoryTreeMaps(categories = []) {
-  const childrenByParentId = new Map();
-
-  categories.forEach((category) => {
-    const parentKey = category?.parentId ? normalizeCategoryId(category.parentId) : '';
-    if (!parentKey) return;
-
-    const childId = normalizeCategoryId(category._id);
-    if (!childrenByParentId.has(parentKey)) {
-      childrenByParentId.set(parentKey, []);
-    }
-    childrenByParentId.get(parentKey).push(childId);
-  });
-
-  return { childrenByParentId };
-}
-
-function getProductCategoryCandidates(product) {
-  const values = [];
-
-  const pushValue = (value) => {
-    const normalized = normalizeCategoryId(value);
-    if (normalized) {
-      values.push(normalized);
-    }
-  };
-
-  const pushMaybeObject = (value) => {
-    if (!value) return;
-
-    if (typeof value === 'object') {
-      pushValue(value?._id);
-      pushValue(value?.name);
-      pushValue(value?.slug);
-      return;
-    }
-
-    pushValue(value);
-  };
-
-  pushMaybeObject(product?.category);
-  pushValue(product?.categoryName);
-  pushValue(product?.subcategory);
-
-  if (Array.isArray(product?.categories)) {
-    product.categories.forEach((item) => {
-      if (typeof item === 'object' && item !== null) {
-        pushValue(item?._id);
-        pushValue(item?.name);
-        pushValue(item?.slug);
-        return;
-      }
-      pushValue(item);
-    });
-  }
-
-  return Array.from(new Set(values));
-}
-
-const normalizeImages = (images) => {
-  if (Array.isArray(images)) {
-    return images.filter((img) => {
-      if (typeof img === 'string') return img.trim().length > 0;
-      if (typeof img === 'object' && img !== null) {
-        return img.url || img.src || img.path || img.data || false;
-      }
-      return false;
-    });
-  }
-
-  if (images === null || images === undefined) return [];
-
-  if (typeof images === 'object') {
-    if (images.url || images.src || images.path || images.data) {
-      return [images];
-    }
-    return [];
-  }
-
-  if (typeof images === 'string') {
-    return images.trim().length > 0 ? [images] : [];
-  }
-
-  return [];
-};
-
 function isRenderableProduct(product) {
   if (!product || typeof product !== 'object') return false;
   if (!product.name || !product.slug) return false;
@@ -217,14 +107,13 @@ function sortByLatest(products) {
 
 export default function CategoryInterestSection() {
   const { t, language, isArabic } = useStorefrontI18n();
-  const [apiCategories, setApiCategories] = useState([]);
-  const [categoryChildrenByParentId, setCategoryChildrenByParentId] = useState(new Map());
+  const [categoryRecords, setCategoryRecords] = useState([]);
+  const [manualCategoryIds, setManualCategoryIds] = useState([]);
   const [sectionEnabled, setSectionEnabled] = useState(true);
   const [manualRecommendedIds, setManualRecommendedIds] = useState([]);
   const [manualRecommendedProducts, setManualRecommendedProducts] = useState([]);
   const [catalogProducts, setCatalogProducts] = useState([]);
   const [categoryCatalogProducts, setCategoryCatalogProducts] = useState([]);
-  const [categoryCatalogLoaded, setCategoryCatalogLoaded] = useState(false);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [manualRecommendedLoading, setManualRecommendedLoading] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
@@ -268,6 +157,11 @@ export default function CategoryInterestSection() {
 
         setSectionEnabled(typeof data?.enabled === 'boolean' ? data.enabled : true);
         setManualRecommendedIds(ids);
+        setManualCategoryIds(
+          Array.isArray(data?.categoryIds)
+            ? data.categoryIds.map((id) => String(id || '').trim()).filter(Boolean)
+            : []
+        );
       } catch {
         // Settings failure falls back to automatic catalog below.
       } finally {
@@ -295,6 +189,9 @@ export default function CategoryInterestSection() {
           ? payload.productIds.map((id) => String(id || '').trim()).filter(Boolean)
           : []
       );
+      if (Array.isArray(payload.categoryIds)) {
+        setManualCategoryIds(payload.categoryIds.map((id) => String(id || '').trim()).filter(Boolean));
+      }
     };
 
     window.addEventListener('exploreInterestsUpdated', handleLiveUpdate);
@@ -403,21 +300,7 @@ export default function CategoryInterestSection() {
         if (!isActive) return;
 
         const categoryList = Array.isArray(data?.categories) ? data.categories : [];
-        const { childrenByParentId } = buildCategoryTreeMaps(categoryList);
-
-        const normalized = categoryList
-          .filter((cat) => cat && isRootParentCategory(cat) && isDisplayableCategoryName(cat.name))
-          .map((cat) => ({
-            key: `api:${String(cat._id || cat.slug || cat.name)}`,
-            label: normalizeCategory(cat.name),
-            nameAr: normalizeCategory(cat.nameAr),
-            id: String(cat._id || ''),
-            slug: normalizeToken(cat.slug),
-          }))
-          .sort((left, right) => left.label.localeCompare(right.label));
-
-        setCategoryChildrenByParentId(childrenByParentId);
-        setApiCategories(normalized.slice(0, MAX_CATEGORIES));
+        setCategoryRecords(categoryList);
       } catch {
         // Chips fall back to Recommended only if categories fail to load.
       }
@@ -430,42 +313,30 @@ export default function CategoryInterestSection() {
     };
   }, []);
 
-  useEffect(() => {
-    if (isRecommendedTab || categoryCatalogLoaded) return undefined;
+  const apiCategories = useMemo(() => {
+    const toChip = (cat) => ({
+      key: `api:${String(cat._id || cat.slug || cat.name)}`,
+      label: normalizeCategory(cat.name),
+      nameAr: normalizeCategory(cat.nameAr),
+      id: String(cat._id || ''),
+      slug: normalizeToken(cat.slug),
+    });
 
-    let isActive = true;
+    const records = categoryRecords.filter((cat) => cat && isDisplayableCategoryName(cat.name));
+    if (manualCategoryIds.length) {
+      const byId = new Map(records.map((cat) => [String(cat._id || ''), cat]));
+      return manualCategoryIds
+        .map((id) => byId.get(String(id)))
+        .filter(Boolean)
+        .map(toChip);
+    }
 
-    const loadCategoryProducts = async () => {
-      setCategoryDataLoading(true);
-
-      try {
-        const response = await fetch(`/api/products?limit=${MAX_CATEGORY_PRODUCTS}&slim=true`);
-        if (!response.ok || !isActive) return;
-
-        const data = await response.json();
-        if (!isActive) return;
-
-        const products = Array.isArray(data?.products)
-          ? data.products
-          : Array.isArray(data)
-            ? data
-            : [];
-
-        setCategoryCatalogProducts(products.filter(isRenderableProduct));
-        setCategoryCatalogLoaded(true);
-      } catch {
-        // Category tab can retry on next selection.
-      } finally {
-        if (isActive) setCategoryDataLoading(false);
-      }
-    };
-
-    loadCategoryProducts();
-
-    return () => {
-      isActive = false;
-    };
-  }, [isRecommendedTab, categoryCatalogLoaded]);
+    return records
+      .filter((cat) => isRootParentCategory(cat))
+      .map(toChip)
+      .sort((left, right) => left.label.localeCompare(right.label))
+      .slice(0, MAX_CATEGORIES);
+  }, [categoryRecords, manualCategoryIds]);
 
   const categoriesToRender = useMemo(() => {
     return [
@@ -490,6 +361,41 @@ export default function CategoryInterestSection() {
   const selectedCategoryOption = useMemo(() => {
     return categoriesToRender.find((category) => category.key === selectedCategoryKey) || categoriesToRender[0];
   }, [categoriesToRender, selectedCategoryKey]);
+
+  useEffect(() => {
+    const categoryId = String(selectedCategoryOption?.id || '').trim();
+    if (isRecommendedTab || !categoryId) return undefined;
+
+    let isActive = true;
+
+    const loadCategoryProducts = async () => {
+      setCategoryDataLoading(true);
+      setCategoryCatalogProducts([]);
+
+      try {
+        const response = await fetch(
+          `/api/public/category-products?categoryId=${encodeURIComponent(categoryId)}&limit=${MAX_CATEGORY_PRODUCTS}`,
+        );
+        if (!response.ok || !isActive) return;
+
+        const data = await response.json();
+        if (!isActive) return;
+
+        const products = Array.isArray(data?.products) ? data.products : [];
+        setCategoryCatalogProducts(products.filter(isRenderableProduct));
+      } catch {
+        if (isActive) setCategoryCatalogProducts([]);
+      } finally {
+        if (isActive) setCategoryDataLoading(false);
+      }
+    };
+
+    loadCategoryProducts();
+
+    return () => {
+      isActive = false;
+    };
+  }, [isRecommendedTab, selectedCategoryOption?.id]);
 
   useEffect(() => {
     const exists = categoriesToRender.some((category) => category.key === selectedCategoryKey);
@@ -528,34 +434,12 @@ export default function CategoryInterestSection() {
       return latestProducts;
     }
 
-    const selectedLabel = normalizeToken(selectedCategoryOption.matchName || selectedCategoryOption.label);
-    const selectedId = normalizeCategoryId(selectedCategoryOption.id);
-    const selectedSlug = normalizeToken(selectedCategoryOption.slug);
-    const matchCategoryIds = selectedId
-      ? collectDescendantCategoryIds(selectedId, categoryChildrenByParentId)
-      : new Set();
-
-    return categoryCatalogProducts
-      .filter((product) => {
-        const candidates = getProductCategoryCandidates(product);
-        if (candidates.length === 0) return false;
-
-        if (selectedId) {
-          return candidates.some((candidate) => matchCategoryIds.has(normalizeCategoryId(candidate)));
-        }
-        if (selectedSlug && candidates.includes(selectedSlug)) return true;
-        if (selectedLabel && candidates.includes(selectedLabel)) return true;
-
-        return false;
-      })
-      .slice(0, MAX_CATEGORY_PRODUCTS);
+    return categoryCatalogProducts.slice(0, MAX_CATEGORY_PRODUCTS);
   }, [
     categoryCatalogProducts,
     selectedCategoryOption,
-    categoryChildrenByParentId,
     manualRecommendedProducts,
     latestProducts,
-    manualRecommendedIds,
   ]);
 
   const displayLimit = useMemo(

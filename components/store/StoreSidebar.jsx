@@ -725,7 +725,7 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
     return (
 
-        <aside className={`sticky top-0 flex h-full min-h-0 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-gradient-to-br from-slate-50 via-white to-slate-50 shadow-sm ${expanded ? 'w-[236px]' : 'w-[60px] md:w-[68px]'}`}>
+        <aside data-store-sidebar className={`sticky top-0 flex h-full min-h-0 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-gradient-to-br from-slate-50 via-white to-slate-50 shadow-sm ${expanded ? 'w-[236px]' : 'w-[60px] md:w-[68px]'}`}>
                 <div className={`flex shrink-0 border-b border-slate-200 px-1.5 py-2 ${expanded ? 'justify-end px-2' : 'justify-center'}`}>
                     <button
                         type="button"

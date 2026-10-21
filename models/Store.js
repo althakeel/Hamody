@@ -97,6 +97,7 @@ const StoreSchema = new mongoose.Schema({
   customerPickupSkus: { type: [String], default: [] },
   exploreInterestsEnabled: { type: Boolean, default: true },
   exploreInterestsProductIds: { type: [String], default: [] },
+  exploreInterestsCategoryIds: { type: [String], default: [] },
   carouselProductIds: { type: [String], default: [] }, // Array of product IDs for carousel slider
   emailMarketingImageLibrary: { type: [String], default: [] },
   homeMenuCategories: {
@@ -124,6 +125,11 @@ if (!Store.schema.path('dashboardWelcomeEnabled')) {
 if (!Store.schema.path('customerPickupEnabled')) {
   Store.schema.add({
     customerPickupEnabled: { type: Boolean, default: true },
+  });
+}
+if (!Store.schema.path('exploreInterestsCategoryIds')) {
+  Store.schema.add({
+    exploreInterestsCategoryIds: { type: [String], default: [] },
   });
 }
 if (!Store.schema.path('customerPickupScope')) {

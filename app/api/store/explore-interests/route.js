@@ -25,6 +25,14 @@ function normalizeIds(arr) {
   ))
 }
 
+function normalizeCategoryIds(arr) {
+  return Array.from(new Set(
+    (Array.isArray(arr) ? arr : [])
+      .map((id) => String(id || '').trim())
+      .filter((id) => /^[a-fA-F0-9]{24}$/.test(id))
+  )).slice(0, 40)
+}
+
 export async function GET(request) {
   try {
     const userId = await getUserIdFromRequest(request)
@@ -34,12 +42,13 @@ export async function GET(request) {
 
     await connectDB()
     const store = await Store.findById(storeId)
-      .select('exploreInterestsEnabled exploreInterestsProductIds')
+      .select('exploreInterestsEnabled exploreInterestsProductIds exploreInterestsCategoryIds')
       .lean()
 
     return NextResponse.json({
       enabled: typeof store?.exploreInterestsEnabled === 'boolean' ? store.exploreInterestsEnabled : true,
       productIds: normalizeIds(store?.exploreInterestsProductIds),
+      categoryIds: normalizeCategoryIds(store?.exploreInterestsCategoryIds),
     })
   } catch (error) {
     console.error('[explore interests GET] error:', error)
@@ -57,11 +66,16 @@ export async function POST(request) {
     const body = await request.json()
     const enabled = typeof body.enabled === 'boolean' ? body.enabled : true
     const productIds = normalizeIds(body.productIds)
+    const categoryIds = normalizeCategoryIds(body.categoryIds)
 
     await connectDB()
     const updated = await Store.findByIdAndUpdate(
       storeId,
-      { $set: { exploreInterestsEnabled: enabled, exploreInterestsProductIds: productIds } },
+      { $set: {
+        exploreInterestsEnabled: enabled,
+        exploreInterestsProductIds: productIds,
+        exploreInterestsCategoryIds: categoryIds,
+      } },
       { new: true }
     )
 
@@ -71,6 +85,7 @@ export async function POST(request) {
       message: 'Saved',
       enabled,
       productIds,
+      categoryIds,
       _storeId: updated?._id ? String(updated._id) : storeId,
     })
   } catch (error) {

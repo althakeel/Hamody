@@ -6,6 +6,7 @@ import {
     SIDEBAR_ACCESS_COMPONENTS,
     countEnabledPermissions,
     getComponentById,
+    isPermissionEnabled,
     setAllPermissions,
     setGroupPermissions,
 } from '@/lib/storeDashboardPermissions';
@@ -55,7 +56,7 @@ export default function PermissionPicker({ value = {}, onChange, compact = false
                     const groupComponents = group.componentIds
                         .map((id) => getComponentById(id))
                         .filter(Boolean);
-                    const groupEnabled = groupComponents.filter((component) => value[component.id] !== false).length;
+                    const groupEnabled = groupComponents.filter((component) => isPermissionEnabled(value, component.id)).length;
                     const isOpen = openGroups[group.id];
 
                     return (
@@ -98,9 +99,7 @@ export default function PermissionPicker({ value = {}, onChange, compact = false
                                             >
                                                 <input
                                                     type="checkbox"
-                                                    checked={component.action
-                                                      ? value[component.id] === true
-                                                      : value[component.id] !== false}
+                                                    checked={isPermissionEnabled(value, component.id)}
                                                     onChange={(e) => togglePermission(component.id, e.target.checked)}
                                                     className="h-4 w-4 rounded border-slate-300"
                                                 />

@@ -1883,23 +1883,8 @@ const Navbar = () => {
     }
 
     if (itemId === 'search') {
-      const searchSide = resolveNavbarItemSide(
-        'search',
-        navbarAppearance.itemAlign?.search,
-        navbarAppearance.searchAlign,
-      );
-      const searchSlot = getNavbarSearchSlotProps(
-        resolveNavbarSearchSlotAlign(searchSide, navbarAppearance.searchAlign),
-        navbarAppearance.searchMaxWidth,
-      ) || {
-        innerClassName: 'relative min-w-0',
-        innerStyle: { width: Number(navbarAppearance.searchMaxWidth) || 600 },
-      };
       return (
-        <div
-          className={searchSlot.innerClassName}
-          style={searchSlot.innerStyle}
-        >
+        <div className="relative min-w-0 w-full" style={{ maxWidth: Number(navbarAppearance.searchMaxWidth) || 600 }}>
             <form onSubmit={handleSearch} className="w-full">
               <div
                 className="flex h-[44px] w-full min-w-0 items-center overflow-hidden px-2 shadow-sm xl:px-3"
@@ -2300,32 +2285,32 @@ const Navbar = () => {
               navbarAppearance.searchAlign,
             );
             const rowSlots = getNavbarDesktopRowSlots(sides, navbarAppearance.itemGap);
-            const renderSide = (itemIds = [], side) => (
-              <div className="flex shrink-0 items-center" style={rowSlots.clusterStyle}>
-                {(Array.isArray(itemIds) ? itemIds : []).map((itemId) => {
+            const searchOnSide = (sides.left || []).includes('search') || (sides.right || []).includes('search');
+            const renderSide = (itemIds = []) => {
+              const ids = Array.isArray(itemIds) ? itemIds : [];
+              const holdsSearch = ids.includes('search');
+              const searchMax = Number(navbarAppearance.searchMaxWidth) || 600;
+              return (
+              <div className={`flex items-center ${holdsSearch ? 'min-w-0 flex-1' : 'shrink-0'}`} style={rowSlots.clusterStyle}>
+                {ids.map((itemId) => {
                   const node = renderDesktopNavbarItem(itemId);
                   if (!node) return null;
-                  const searchSlot = itemId === 'search'
-                    ? getNavbarSearchSlotProps(
-                      resolveNavbarSearchSlotAlign(side, navbarAppearance.searchAlign),
-                      navbarAppearance.searchMaxWidth,
-                    )
-                    : null;
                   return (
                     <div
                       key={itemId}
-                      className={itemId === 'search' ? 'relative z-[70] shrink-0' : 'shrink-0'}
-                      style={itemId === 'search' ? { width: searchSlot?.innerStyle?.maxWidth || navbarAppearance.searchMaxWidth || 600 } : undefined}
+                      className={itemId === 'search' ? 'relative z-[70] min-w-0 flex-1' : 'shrink-0'}
+                      style={itemId === 'search' ? { maxWidth: searchMax } : undefined}
                     >
                       {node}
                     </div>
                   );
                 })}
               </div>
-            );
+              );
+            };
             return (
               <div className={rowSlots.rowClassName}>
-                {renderSide(sides.left, 'left')}
+                {renderSide(sides.left)}
                 {rowSlots.hasCenter ? (
                   <div className={rowSlots.centerClassName} style={rowSlots.centerStyle}>
                     {(sides.center || []).map((itemId) => {
@@ -2347,10 +2332,10 @@ const Navbar = () => {
                       );
                     })}
                   </div>
-                ) : (
+                ) : searchOnSide ? null : (
                   <div className={rowSlots.spacerClassName} style={rowSlots.spacerStyle} aria-hidden="true" />
                 )}
-                {renderSide(sides.right, 'right')}
+                {renderSide(sides.right)}
               </div>
             );
           } catch (error) {

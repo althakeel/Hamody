@@ -14,6 +14,7 @@ export default function MobileProductActions({
   notifyProductId = '',
   notifySku = '',
   notifyEmail = '',
+  noonHref = '',
 }) {
   const { t, isArabic } = useStorefrontI18n()
 
@@ -25,6 +26,18 @@ export default function MobileProductActions({
 
   return (
     <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white shadow-[0_-4px_24px_rgba(15,23,42,0.08)] safe-area-bottom" dir={isArabic ? 'rtl' : 'ltr'}>
+      {noonHref ? (
+        <div className="px-3 pt-3">
+          <a
+            href={noonHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-11 w-full items-center justify-center rounded-lg bg-[#FEEE00] px-4 text-sm font-semibold text-black shadow-sm active:bg-[#FFE14A]"
+          >
+            {t('product.orderOnNoon')}
+          </a>
+        </div>
+      ) : null}
       <div className={`flex items-center gap-2.5 px-3 py-3 ${isArabic ? '' : 'flex-row-reverse'}`} dir="ltr">
         {!isOutOfStock ? (
           <button
@@ -43,33 +56,35 @@ export default function MobileProductActions({
           </button>
         ) : null}
 
-        {isOutOfStock ? (
-          <ProductNotifyMeForm
-            productId={notifyProductId}
-            sku={notifySku}
-            defaultEmail={notifyEmail}
-            buttonClassName="flex h-12 flex-1 items-center justify-center rounded-lg bg-[#E52D27] text-base font-bold text-white active:bg-[#CC261F]"
-          />
-        ) : (
-          <button
-            onClick={onOrderNow}
-            disabled={isOrdering}
-            className={`flex h-12 flex-1 items-center justify-center rounded-lg text-base font-bold text-white transition-all ${
-              isOrdering
-                ? 'cursor-not-allowed bg-gray-400 opacity-70'
-                : 'bg-[#E52D27] active:bg-[#CC261F]'
-            }`}
-          >
-            {isOrdering ? (
-              <span className="inline-flex items-center gap-2">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-t-white" />
-                {orderLabel}
-              </span>
-            ) : (
-              orderLabel
-            )}
-          </button>
-        )}
+        <div className="relative flex h-12 min-w-0 flex-1 items-center">
+          {isOutOfStock ? (
+            <ProductNotifyMeForm
+              productId={notifyProductId}
+              sku={notifySku}
+              defaultEmail={notifyEmail}
+              buttonClassName="flex h-12 w-full items-center justify-center rounded-lg bg-[#E52D27] text-base font-bold text-white active:bg-[#CC261F]"
+            />
+          ) : (
+            <button
+              onClick={onOrderNow}
+              disabled={isOrdering}
+              className={`flex h-12 w-full items-center justify-center rounded-lg text-base font-bold text-white transition-all ${
+                isOrdering
+                  ? 'cursor-not-allowed bg-gray-400 opacity-70'
+                  : 'bg-[#E52D27] active:bg-[#CC261F]'
+              }`}
+            >
+              {isOrdering ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-t-white" />
+                  {orderLabel}
+                </span>
+              ) : (
+                orderLabel
+              )}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )

@@ -4064,6 +4064,17 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                 </div>
               )}
 
+              {String(product?.slug || '').trim().toLowerCase() === 'mansory-special-edition-scooter-sm10' ? (
+                <a
+                  href="https://www.noon.com/uae-en/mansory-electric-scooter-sm10-special-edition/Z8DD81D65F9B4C82D2DA8Z/p/?o=a2c207db1205b88e"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 flex h-11 w-full items-center justify-center rounded-lg bg-[#FEEE00] px-4 text-sm font-semibold text-black shadow-sm transition hover:bg-[#FFE14A]"
+                >
+                  {t('product.orderOnNoon')}
+                </a>
+              ) : null}
+
               <button
                 type="button"
                 onClick={handleWishlist}
@@ -4191,6 +4202,11 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
         notifyProductId={product._id}
         notifySku={String(selectedVariant?.sku || product.sku || '').trim()}
         notifyEmail={user?.email || ''}
+        noonHref={
+          String(product?.slug || '').trim().toLowerCase() === 'mansory-special-edition-scooter-sm10'
+            ? 'https://www.noon.com/uae-en/mansory-electric-scooter-sm10-special-edition/Z8DD81D65F9B4C82D2DA8Z/p/?o=a2c207db1205b88e'
+            : ''
+        }
       />
 
       <style jsx>{`

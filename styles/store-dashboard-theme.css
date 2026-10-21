@@ -7,7 +7,7 @@
   --dash-raised: #161616;
   --dash-text: #ffffff;
   --dash-muted: #f5f5f5;
-  --dash-border: #d4d4d4;
+  --dash-border: rgba(255, 255, 255, 0.08);
   --dash-hover: #262626;
   --dash-input: #000000;
 }
@@ -19,7 +19,7 @@
   --dash-raised: #334155;
   --dash-text: #ffffff;
   --dash-muted: #e2e8f0;
-  --dash-border: #cbd5e1;
+  --dash-border: rgba(148, 163, 184, 0.16);
   --dash-hover: #475569;
   --dash-input: #0f172a;
 }
@@ -31,7 +31,7 @@
   --dash-raised: #1a4070;
   --dash-text: #ffffff;
   --dash-muted: #dbeafe;
-  --dash-border: #93c5fd;
+  --dash-border: rgba(147, 197, 253, 0.14);
   --dash-hover: #1e4b86;
   --dash-input: #0b1f3a;
 }
@@ -43,7 +43,7 @@
   --dash-raised: #166534;
   --dash-text: #ffffff;
   --dash-muted: #dcfce7;
-  --dash-border: #86efac;
+  --dash-border: rgba(167, 243, 208, 0.14);
   --dash-hover: #15803d;
   --dash-input: #052e16;
 }
@@ -61,12 +61,12 @@
   color: var(--dash-text);
 }
 
-:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) aside a,
-:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) aside button,
-:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) aside span,
-:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) aside p,
-:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) aside svg {
-  color: var(--dash-text) !important;
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) [data-store-sidebar] a,
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) [data-store-sidebar] button,
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) [data-store-sidebar] span,
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) [data-store-sidebar] p,
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) [data-store-sidebar] svg {
+  color: #ffffff !important;
 }
 
 :is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) aside a.border,
@@ -404,7 +404,13 @@
 :is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) button.bg-white {
   background-color: var(--dash-raised) !important;
   color: var(--dash-text) !important;
-  border-color: #ffffff !important;
+  border-color: var(--dash-border) !important;
+}
+
+/* Title rules under card headings are too bright on dark themes. */
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) .border-b.border-slate-100,
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) .border-b.border-slate-200 {
+  border-bottom-color: transparent !important;
 }
 
 /* Pale panels and dark labels used on the rest of the dashboard. */
@@ -532,5 +538,50 @@
 :is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) aside .bg-slate-100 {
   background-color: transparent !important;
   color: #ffffff !important;
-  border-color: #d4d4d4 !important;
+  border-color: transparent !important;
+}
+
+/* Sidebar glyphs stay white on a slightly lifted well. */
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) [data-store-sidebar] div.bg-slate-100,
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) [data-store-sidebar] span.bg-slate-100 {
+  background-color: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) [data-store-sidebar] svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* Settings and card icon chips stay a light tile with a dark glyph. */
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) span.bg-slate-100.text-slate-600,
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) span.bg-slate-100.text-slate-500,
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) span.bg-indigo-50.text-indigo-600,
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) span.bg-indigo-50.text-indigo-700,
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) span.bg-emerald-100.text-emerald-700,
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) span.bg-red-50.text-red-600 {
+  background-color: #f4f4f5 !important;
+  color: #18181b !important;
+  border-color: transparent !important;
+}
+
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) span.bg-slate-100.text-slate-600 svg,
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) span.bg-slate-100.text-slate-500 svg,
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) span.bg-indigo-50.text-indigo-600 svg,
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) span.bg-indigo-50.text-indigo-700 svg,
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) span.bg-emerald-100.text-emerald-700 svg,
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) span.bg-red-50.text-red-600 svg {
+  color: #18181b !important;
+  stroke: #18181b !important;
+  opacity: 1 !important;
+}
+
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) button.bg-white.text-slate-600,
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) button.bg-white.text-slate-700,
+:is([data-store-theme="dark"], [data-store-theme="slate"], [data-store-theme="navy"], [data-store-theme="forest"]) button.bg-white.text-slate-800 {
+  background-color: var(--dash-raised) !important;
+  color: #ffffff !important;
+  border-color: var(--dash-border) !important;
 }

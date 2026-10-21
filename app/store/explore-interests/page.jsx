@@ -40,6 +40,54 @@ function buildPreviewFromSelection(selectedIds, productPool = []) {
     .filter(Boolean)
 }
 
+function buildCategoryIndex(categories = []) {
+  const nodes = []
+  for (const category of categories) {
+    const id = String(category?._id || '').trim()
+    const name = String(category?.name || '').trim()
+    if (!id || !name) continue
+    nodes.push({
+      id,
+      name,
+      parentId: category?.parentId ? String(category.parentId) : '',
+    })
+  }
+
+  const byParent = new Map()
+  for (const node of nodes) {
+    const key = node.parentId
+    if (!byParent.has(key)) byParent.set(key, [])
+    byParent.get(key).push(node)
+  }
+  for (const list of byParent.values()) {
+    list.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+  }
+
+  const flat = []
+  const walk = (parentId, depth) => {
+    for (const node of byParent.get(parentId) || []) {
+      flat.push({ ...node, depth })
+      walk(node.id, depth + 1)
+    }
+  }
+  walk('', 0)
+  return { flat, byParent }
+}
+
+function collectBranchIds(rootId, byParent) {
+  const ids = []
+  const queue = [rootId]
+  const seen = new Set()
+  while (queue.length) {
+    const current = queue.shift()
+    if (!current || seen.has(current)) continue
+    seen.add(current)
+    ids.push(current)
+    for (const child of byParent.get(current) || []) queue.push(child.id)
+  }
+  return ids
+}
+
 function ProductThumb({ product, size = 72 }) {
   const [failed, setFailed] = useState(false)
   const mergedImages = [
@@ -92,6 +140,10 @@ export default function ExploreInterestsPage() {
   const [saving, setSaving] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [categories, setCategories] = useState([])
+  const [selectedCategoryId, setSelectedCategoryId] = useState('')
+  const [homepageCategoryIds, setHomepageCategoryIds] = useState([])
+  const [categoryQuery, setCategoryQuery] = useState('')
   const [sortBy, setSortBy] = useState('name')
   const [stockFilter, setStockFilter] = useState('all')
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
@@ -158,6 +210,7 @@ export default function ExploreInterestsPage() {
     sort = sortBy,
     limit = pageSize,
     stock = stockFilter,
+    categoryIds = '',
     silent = false,
   } = {}) => {
     productsAbortRef.current?.abort()
@@ -175,6 +228,7 @@ export default function ExploreInterestsPage() {
           limit,
           search: search || undefined,
           sort,
+          categories: categoryIds || undefined,
           inStock: stock === 'in' ? 'true' : stock === 'out' ? 'false' : undefined,
         },
         headers: { Authorization: `Bearer ${token}` },
@@ -230,6 +284,11 @@ export default function ExploreInterestsPage() {
         })
         initialSelected = (settingsData?.productIds || []).map(normalizeProductId)
         setSelectedProducts(initialSelected)
+        setHomepageCategoryIds(
+          Array.isArray(settingsData?.categoryIds)
+            ? settingsData.categoryIds.map((id) => String(id || '').trim()).filter(Boolean)
+            : []
+        )
         setEnabled(typeof settingsData?.enabled === 'boolean' ? settingsData.enabled : true)
         settingsLoaded = true
       } catch (error) {
@@ -238,16 +297,23 @@ export default function ExploreInterestsPage() {
       }
 
       try {
-        const { data: productsResponse } = await axios.get('/api/store/product', {
-          params: { page: 1, limit: pageSize, sort: sortBy },
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        const [productsResponse, categoriesResponse] = await Promise.all([
+          axios.get('/api/store/product', {
+            params: { page: 1, limit: pageSize, sort: sortBy },
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get('/api/store/categories', {
+            headers: { Authorization: `Bearer ${token}` },
+          }).catch(() => ({ data: { categories: [] } })),
+        ])
+        const { data: productsData } = productsResponse
+        setCategories(categoriesResponse?.data?.categories || [])
 
-        const initialProducts = productsResponse?.products || []
+        const initialProducts = productsData?.products || []
         setProducts(initialProducts)
         cachePreviewProducts(initialProducts)
         setPreviewProducts(buildPreviewFromSelection(initialSelected, initialProducts))
-        setPagination(productsResponse?.pagination || {
+        setPagination(productsData?.pagination || {
           page: 1,
           limit: pageSize,
           total: initialProducts.length,
@@ -287,6 +353,47 @@ export default function ExploreInterestsPage() {
     }
   }, [searchQuery])
 
+  const categoryIndex = useMemo(() => buildCategoryIndex(categories), [categories])
+
+  const categoryScopeIds = useMemo(
+    () => (selectedCategoryId ? collectBranchIds(selectedCategoryId, categoryIndex.byParent) : []),
+    [selectedCategoryId, categoryIndex]
+  )
+
+  const categoryScopeKey = categoryScopeIds.join(',')
+
+  const selectedCategoryName = categoryIndex.flat.find((category) => category.id === selectedCategoryId)?.name || ''
+
+  const visibleCategories = useMemo(() => {
+    const query = categoryQuery.trim().toLowerCase()
+    if (!query) return categoryIndex.flat
+    return categoryIndex.flat.filter((category) => category.name.toLowerCase().includes(query))
+  }, [categoryIndex, categoryQuery])
+
+  const chooseCategory = (categoryId) => {
+    setSelectedCategoryId(categoryId)
+    setPagination((current) => ({ ...current, page: 1 }))
+  }
+
+  const homepageCategoryRank = useMemo(() => {
+    const ranks = new Map()
+    homepageCategoryIds.forEach((id, index) => {
+      ranks.set(id, index + 1)
+    })
+    return ranks
+  }, [homepageCategoryIds])
+
+  const toggleHomepageCategory = (categoryId) => {
+    setHomepageCategoryIds((current) => {
+      if (current.includes(categoryId)) return current.filter((id) => id !== categoryId)
+      if (current.length >= 40) {
+        toast.error('You can show up to 40 categories on the homepage')
+        return current
+      }
+      return [...current, categoryId]
+    })
+  }
+
   useEffect(() => {
     if (loading) return
     if (skipNextProductsFetchRef.current) {
@@ -299,9 +406,10 @@ export default function ExploreInterestsPage() {
       sort: sortBy,
       limit: pageSize,
       stock: stockFilter,
+      categoryIds: categoryScopeKey,
       silent: pagination.page > 1,
     })
-  }, [loading, pagination.page, debouncedSearch, sortBy, pageSize, stockFilter, fetchProductsPage])
+  }, [loading, pagination.page, debouncedSearch, sortBy, pageSize, stockFilter, categoryScopeKey, fetchProductsPage])
 
   useEffect(() => {
     if (loading || pagination.page <= 1) return
@@ -400,6 +508,8 @@ export default function ExploreInterestsPage() {
         params: {
           idsOnly: 'true',
           search: debouncedSearch || undefined,
+          categories: categoryScopeKey || undefined,
+          inStock: stockFilter === 'in' ? 'true' : stockFilter === 'out' ? 'false' : undefined,
         },
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -419,10 +529,13 @@ export default function ExploreInterestsPage() {
       const normalizedIds = Array.from(
         new Set(selectedProducts.map((id) => String(id || '').trim()).filter(Boolean))
       )
+      const normalizedCategoryIds = Array.from(
+        new Set(homepageCategoryIds.map((id) => String(id || '').trim()).filter(Boolean))
+      )
 
       await axios.post(
         '/api/store/explore-interests',
-        { enabled, productIds: normalizedIds },
+        { enabled, productIds: normalizedIds, categoryIds: normalizedCategoryIds },
         { headers: { Authorization: `Bearer ${token}` } }
       )
 
@@ -430,6 +543,7 @@ export default function ExploreInterestsPage() {
         const payload = {
           enabled,
           productIds: normalizedIds,
+          categoryIds: normalizedCategoryIds,
           updatedAt: Date.now(),
         }
         window.localStorage.setItem('exploreInterestsLive', JSON.stringify(payload))
@@ -690,6 +804,76 @@ export default function ExploreInterestsPage() {
                 </button>
               </div>
             </div>
+
+            <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              <div className="border-b border-slate-100 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Categories</p>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Check a main, sub, or child category to show it beside Recommended. Click the name to filter the product list. Check order is the homepage order.
+                </p>
+                <p className="mt-2 text-[11px] font-medium text-violet-700">
+                  {homepageCategoryIds.length} on the homepage
+                  {homepageCategoryIds.length === 0 ? ' · automatic main categories until you choose some' : ''}
+                </p>
+                <input
+                  type="text"
+                  value={categoryQuery}
+                  onChange={(event) => setCategoryQuery(event.target.value)}
+                  placeholder="Find a category..."
+                  className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
+                />
+              </div>
+              <div className="max-h-[420px] overflow-y-auto p-2">
+                <button
+                  type="button"
+                  onClick={() => chooseCategory('')}
+                  className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm ${
+                    selectedCategoryId
+                      ? 'text-slate-700 hover:bg-slate-50'
+                      : 'bg-violet-50 font-semibold text-violet-800'
+                  }`}
+                >
+                  All categories
+                </button>
+                {visibleCategories.length === 0 ? (
+                  <p className="px-3 py-6 text-center text-xs text-slate-400">No categories match that search.</p>
+                ) : visibleCategories.map((category) => {
+                  const active = category.id === selectedCategoryId
+                  const homepageRank = homepageCategoryRank.get(category.id)
+                  return (
+                    <div
+                      key={category.id}
+                      className={`flex items-center gap-2 rounded-lg py-1.5 pe-2 ${
+                        active ? 'bg-violet-50' : 'hover:bg-slate-50'
+                      }`}
+                      style={{ paddingLeft: `${8 + category.depth * 14}px` }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={Boolean(homepageRank)}
+                        onChange={() => toggleHomepageCategory(category.id)}
+                        aria-label={`Show ${category.name} on the homepage`}
+                        className="h-4 w-4 shrink-0 accent-violet-600"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => chooseCategory(category.id)}
+                        className={`flex min-w-0 flex-1 items-center gap-2 py-1 text-left text-sm ${
+                          active ? 'font-semibold text-violet-800' : 'text-slate-700'
+                        }`}
+                      >
+                        {homepageRank ? (
+                          <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-violet-600 px-1 text-[10px] font-bold text-white">
+                            {homepageRank}
+                          </span>
+                        ) : null}
+                        <span className="line-clamp-2">{category.name}</span>
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           </div>
 
           <div className="min-w-0">
@@ -699,7 +883,8 @@ export default function ExploreInterestsPage() {
                   <div>
                     <h2 className="text-base font-semibold text-slate-900">Recommended products</h2>
                     <p className="text-xs text-slate-500">
-                      {selectedProducts.length} selected · {pagination.total} total in catalog
+                      {selectedProducts.length} selected · {pagination.total}{' '}
+                      {selectedCategoryName ? `in ${selectedCategoryName}` : 'total in catalog'}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -717,7 +902,7 @@ export default function ExploreInterestsPage() {
                       disabled={selectingAll || productsLoading}
                       className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
                     >
-                      {selectingAll ? 'Selecting...' : `Select all${debouncedSearch ? ' matching' : ''}`}
+                      {selectingAll ? 'Selecting...' : `Select all${debouncedSearch || selectedCategoryName ? ' matching' : ''}`}
                     </button>
                     <button
                       type="button"
@@ -811,7 +996,11 @@ export default function ExploreInterestsPage() {
                   <div className="flex flex-col items-center justify-center py-16 text-center">
                     <Package size={40} className="text-slate-300" />
                     <p className="mt-3 text-sm font-medium text-slate-600">No products found</p>
-                    <p className="text-xs text-slate-400">Try a different search term</p>
+                    <p className="text-xs text-slate-400">
+                      {selectedCategoryName
+                        ? `Nothing in ${selectedCategoryName} matches these filters.`
+                        : 'Try a different search term'}
+                    </p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
