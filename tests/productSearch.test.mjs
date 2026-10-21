@@ -43,7 +43,7 @@ test('full title ranks above products that only share some of the words', () => 
   assert.equal(ranked[0].sku, 'A1');
 });
 
-test('title match requires the sentence in the name, not brand + leftover words', () => {
+test('a product matches when every search word is on the title, brand, or sku', () => {
   assert.equal(
     productTitleMatchesKeyword({ name: PHRASE }, PHRASE),
     true,
@@ -53,12 +53,18 @@ test('title match requires the sentence in the name, not brand + leftover words'
       { name: 'Fashion Sneakers', brand: "Women's Multi-Color Chunky Sole" },
       PHRASE,
     ),
-    false,
+    true,
   );
   assert.equal(
     productTitleMatchesKeyword({ name: 'Air Pump', brand: 'Fashion' }, PHRASE),
     false,
   );
+});
+
+test('filler words are not required before a product can match', () => {
+  const filter = buildProductSearchFilter('portable air pump for the car');
+  const andClause = filter.$or.find((clause) => clause.$and);
+  assert.equal(andClause.$and.length, 4);
 });
 
 test('word fallback stays in the product title when there is no phrase hit', () => {
@@ -80,6 +86,8 @@ test('short category searches match name, word, tags, and categories', () => {
   }));
   assert.match(filter, /"tags"/);
   assert.match(filter, /"category"/);
+  assert.match(filter, /"seoKeywords"/);
+  assert.match(filter, /"description"/);
   assert.match(filter, /cat-car/);
 
   const categoryQuery = buildCategoryNameSearch('computer accessories');

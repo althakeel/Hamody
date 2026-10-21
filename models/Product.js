@@ -29,6 +29,9 @@ const ProductSchema = new mongoose.Schema({
   AED: Number,
   price: Number,
   costPrice: { type: Number, default: 0 }, // Actual cost/purchase price for profit calculation
+  appDiscountEnabled: { type: Boolean, default: false },
+  appDiscountType: { type: String, enum: ['percent', 'amount'], default: 'percent' },
+  appDiscountValue: { type: Number, default: 0 },
   images: [String],
   externalImages: { type: [String], default: [] },
   imageImportStatus: { type: Object, default: {} },

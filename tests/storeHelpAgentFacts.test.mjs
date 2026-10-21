@@ -299,6 +299,31 @@ test('category banner questions open Categories', () => {
   assert.match(match.answer, /desktop/);
 });
 
+test('website navbar questions stay on menu management', () => {
+  const match = matchHelpHowTo('where do I change the navbar');
+  assert.equal(match.href, '/store/menu-management');
+});
+
+test('app navbar questions open the mobile navbar', () => {
+  const match = matchHelpHowTo('where is the app navbar');
+  assert.equal(match.href, '/store/mobile-features/navbar');
+});
+
+test('parent categories open menu management', () => {
+  const match = matchHelpHowTo('where are parent categories');
+  assert.equal(match.href, '/store/menu-management');
+});
+
+test('storefront offers do not open the app offers page', () => {
+  const match = matchHelpHowTo('where are offers');
+  assert.equal(match.href, '/store/customize/offers');
+});
+
+test('app only discount opens app discount', () => {
+  const match = matchHelpHowTo('how do I give a discount in the app');
+  assert.equal(match.href, '/store/app-discount');
+});
+
 test('author questions always name Rohith Sagar M', () => {
   const reply = formatStoreHelpReply({}, 'who is the author of Store1920');
   assert.equal(reply.answer, 'The author of Store1920 is Rohith Sagar M.');

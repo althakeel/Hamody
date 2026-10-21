@@ -72,7 +72,7 @@ export async function GET(request) {
                     _id: { $in: validProductIds },
                     ...STOREFRONT_PUBLISHED_FILTER,
                 })
-                    .select('_id name nameAr slug price mrp AED images inStock stockQuantity createdAt')
+                    .select('_id name nameAr slug sku price mrp AED images inStock stockQuantity createdAt shortDescription shortDescriptionAr specTableRows')
                     .lean();
             } catch (productError) {
                 console.error('Error fetching wishlist products:', productError);

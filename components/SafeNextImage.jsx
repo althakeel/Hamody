@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { isRetiredStoreMediaUrl, PLACEHOLDER_IMAGE } from '@/lib/mediaUrls';
 
 /**
  * Hosts we optimize through next/image. Marketplace CDNs (Noon, Amazon, Flipkart,
@@ -9,7 +10,7 @@ import Image from 'next/image';
 const OPTIMIZED_HOSTS = [
   'store1920-images.s3.ap-south-1.amazonaws.com',
   'ik.imagekit.io',
-  'db.store1920.com',
+  'www.store1920.com',
   'store1920.com',
   'placehold.co',
   'lh3.googleusercontent.com',
@@ -40,6 +41,7 @@ export function shouldBypassNextImageOptimizer(src) {
   try {
     const { hostname, protocol } = new URL(value);
     if (protocol !== 'http:' && protocol !== 'https:') return true;
+    if (hostname.toLowerCase() === 'db.store1920.com') return true;
 
     const allowed = OPTIMIZED_HOSTS.some(
       (host) => hostname === host || hostname.endsWith(`.${host}`),
@@ -72,9 +74,11 @@ export default function SafeNextImage({
   loader,
   ...rest
 }) {
+  const resolvedSrc = resolveImageSrc(src);
+  const imageSrc = isRetiredStoreMediaUrl(resolvedSrc) ? PLACEHOLDER_IMAGE : src;
   const bypass = typeof unoptimized === 'boolean'
     ? unoptimized
-    : shouldBypassNextImageOptimizer(src);
+    : shouldBypassNextImageOptimizer(imageSrc);
 
   if (bypass) {
     const imgStyle = fill
@@ -88,12 +92,12 @@ export default function SafeNextImage({
         }
       : style;
 
-    const resolvedSrc = resolveImageSrc(src) || (typeof src === 'string' ? src : '');
+    const renderedSrc = resolveImageSrc(imageSrc) || (typeof imageSrc === 'string' ? imageSrc : '');
 
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={resolvedSrc}
+        src={renderedSrc}
         alt={alt}
         width={fill ? undefined : width}
         height={fill ? undefined : height}
@@ -108,7 +112,7 @@ export default function SafeNextImage({
 
   return (
     <Image
-      src={src}
+      src={imageSrc}
       alt={alt}
       fill={fill}
       sizes={sizes}

@@ -21,7 +21,6 @@ import {
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-const VISUAL_SURE_SCORE = 0.9;
 let visualIndexProbe = { at: 0, ready: false };
 
 async function visualIndexReady() {
@@ -74,16 +73,22 @@ export async function POST(request) {
     const topScore = Number(visual.scores?.[0]?.score) || 0;
     const identifyMs = Date.now() - startedAt;
 
-    if (topScore >= VISUAL_SURE_SCORE && visual.products.length && !vision?.name) {
+    const visualProducts = visual.products || [];
+    const visualRelated = visual.relatedProducts || [];
+    if (topScore >= 0.68 && visualProducts.length) {
+      const products = visualProducts.slice(0, 8);
+      const relatedProducts = visualRelated
+        .filter((product) => !products.some((row) => String(row._id) === String(product._id)))
+        .slice(0, 12);
       return NextResponse.json({
-        keyword: visual.products[0]?.name || '',
-        keywords: [],
-        products: visual.products.slice(0, 8),
-        relatedProducts: visual.relatedProducts.slice(0, 12),
-        recommendedProducts: visual.relatedProducts.slice(0, 12),
-        resultCount: Math.min(visual.products.length, 8),
+        keyword: vision?.name || products[0]?.name || '',
+        keywords: uniqueSearchTerms([vision?.name, vision?.type, ...(vision?.keywords || [])]),
+        products,
+        relatedProducts,
+        recommendedProducts: relatedProducts,
+        resultCount: products.length,
         searchMethod: 'visual',
-        message: `Found ${Math.min(visual.products.length, 8)} product${visual.products.length === 1 ? '' : 's'}`,
+        message: `Found ${products.length} product${products.length === 1 ? '' : 's'}`,
       });
     }
 
@@ -117,10 +122,10 @@ export async function POST(request) {
         : [],
     ]);
 
-    const textProducts = keywordResult.products.slice(0, 8);
+    const textProducts = mergeVisualAndKeywordProducts(visualProducts, keywordResult.products, 8);
     const textRelated = mergeVisualAndKeywordProducts(
       keywordResult.relatedProducts,
-      [...categoryProducts, ...(visual.relatedProducts || [])],
+      [...categoryProducts, ...visualRelated, ...(visual.candidates || [])],
       12,
     ).filter((product) => !textProducts.some((row) => String(row._id) === String(product._id)));
     const pool = mergeVisualAndKeywordProducts(textProducts, textRelated, 6);
@@ -130,9 +135,10 @@ export async function POST(request) {
     const topVisual = visualRank[0]?.score || 0;
     const nextVisual = visualRank[1]?.score || 0;
     const visualWins = topVisual >= 0.5 && topVisual - nextVisual >= 0.015;
-    const products = visualWins
-      ? [visualRank[0].product]
+    const rankedProducts = visualWins
+      ? [visualRank[0].product, ...visualRank.slice(1).map((row) => row.product)]
       : (visualRank.length ? visualRank.map((row) => row.product) : textProducts);
+    const products = mergeVisualAndKeywordProducts(visualProducts, rankedProducts, 8);
     const relatedProducts = (visualWins ? visualRank.slice(1).map((row) => row.product) : textRelated)
       .filter((product) => !products.some((row) => String(row._id) === String(product._id)));
 

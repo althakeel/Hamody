@@ -37,6 +37,8 @@ import { createTabbySession, buildTabbyBuyerHistory, buildTabbyOrderHistoryEntri
 import { formatPaymentProviderOrderReference } from '@/lib/orderPaymentReference';
 import { normalizeEmail } from '@/lib/orderIdentity';
 import { getCouponAccessErrorAsync } from '@/lib/couponAccess';
+import { applyAppProductDiscount, isAppCheckoutRequest } from '@/lib/appProductDiscount';
+import { readAppClientSource } from '@/lib/appClientSource';
 import { linkGuestOrdersToUser, resolveContactForGuestLinking } from '@/lib/linkGuestOrders';
 import { getAuth } from '@/lib/firebase-admin';
 import { recordPurchaseFromOrder, shouldRecordPurchaseOnCreate } from '@/lib/serverCustomerTracking';
@@ -340,7 +342,8 @@ export async function POST(request) {
         const checkoutStoreIds = new Set();
         let grandSubtotal = 0;
 
-        const productSelect = '_id name slug price mrp AED images category sku inStock stockQuantity storeId variants';
+        const productSelect = '_id name slug price mrp AED images category sku inStock stockQuantity storeId variants appDiscountEnabled appDiscountType appDiscountValue';
+        const appCheckout = isAppCheckoutRequest(request);
         const validProductIds = [...new Set(
             items
                 .map((item) => item.id)
@@ -532,6 +535,10 @@ export async function POST(request) {
                 finalPrice = Number(variantMatch.price);
             }
 
+            if (appCheckout && !appliedOffer && !(finalPrice === 0 && item.freeGift?.campaignId)) {
+                finalPrice = applyAppProductDiscount(finalPrice, product);
+            }
+
             // Private recovery-link offer price overrides catalog pricing (incl. bundles),
             // so the recovered checkout matches the discounted total the customer was shown.
             if (
@@ -691,6 +698,7 @@ export async function POST(request) {
         }
 
         // Order creation
+        const appClient = readAppClientSource(request);
         let orderIds = [];
         const createdOrderTotals = new Map();
         let fullAmount = 0;
@@ -785,7 +793,9 @@ export async function POST(request) {
                       bundleUnits: Number(item.bundleUnits) > 1 ? Number(item.bundleUnits) : undefined,
                       variantOptions: item.variantOptions || null,
                     };
-                })
+                }),
+                clientChannel: appClient.clientChannel,
+                clientPlatform: appClient.clientPlatform,
             };
 
             const normalizedPaymentMethod = String(paymentMethod || '').toUpperCase();

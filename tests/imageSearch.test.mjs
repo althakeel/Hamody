@@ -86,6 +86,17 @@ test('gemini verdict drops unrelated catalog products', () => {
   assert.deepEqual(judged.relatedProducts, []);
 });
 
+test('air pump photo matches inflators and catalog pumps', () => {
+  const query = {
+    name: 'portable electric air pump',
+    exclude: inferImageExcludes({ name: 'portable electric air pump', type: 'air pump' }),
+  };
+  assert.equal(productMatchesImageQuery({ name: 'Green Lion Portable Electric Air Pump' }, query), true);
+  assert.equal(productMatchesImageQuery({ name: 'Nano Tire Inflator' }, query), true);
+  assert.equal(productMatchesImageQuery({ name: 'Electronic Oud Bukhoor Burner' }, query), false);
+  assert.equal(productIsRelatedToImageQuery({ name: 'Nano Tire Inflator' }, 'pump'), true);
+});
+
 test('oud burner search excludes air pumps', () => {
   const query = {
     name: 'electronic oud bukhoor burner',

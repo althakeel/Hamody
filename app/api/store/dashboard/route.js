@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { getAuth } from "@/lib/firebase-admin";
 import { visibleStoreOrderMatch } from "@/lib/visibleStoreOrderMatch";
 import { sumCompletedReturnRefunds } from "@/lib/returnSalesAdjustments";
+import AppInstall from "@/models/AppInstall";
 
 export const dynamic = 'force-dynamic';
 
@@ -77,6 +78,17 @@ function buildHourlyBuckets(timezone = 'Asia/Dubai') {
     buckets.push({ hour: h, label, shortLabel: h % 3 === 0 ? label : '', orders: 0, revenue: 0 });
   }
   return buckets;
+}
+
+function foldPlatformCounts(rows = []) {
+  const counts = { total: 0, android: 0, ios: 0, unknown: 0 };
+  for (const row of rows) {
+    const key = row._id === 'android' || row._id === 'ios' ? row._id : 'unknown';
+    const count = Number(row.count || row.orders || 0);
+    counts[key] += count;
+    counts.total += count;
+  }
+  return counts;
 }
 
 function buildPaymentLabel(method = '') {
@@ -158,6 +170,9 @@ export async function GET(request) {
         lastWeekTotalsRows,
         todayHourlyRows,
         paymentMethodRows,
+        appInstallRows,
+        appOrderRows,
+        recentAppOrders,
         awaitingPaymentCount,
         totalProducts,
         abandonedCarts,
@@ -244,6 +259,27 @@ export async function GET(request) {
           },
           { $sort: { count: -1 } },
         ]),
+        AppInstall.aggregate([
+          { $match: { storeId: storeIdString } },
+          { $group: { _id: '$platform', count: { $sum: 1 } } },
+        ]),
+        Order.aggregate([
+          { $match: { ...visibleMatch, clientChannel: 'app' } },
+          {
+            $facet: {
+              all: [{ $group: { _id: '$clientPlatform', orders: { $sum: 1 } } }],
+              today: [
+                { $match: { createdAt: { $gte: today } } },
+                { $group: { _id: '$clientPlatform', orders: { $sum: 1 } } },
+              ],
+            },
+          },
+        ]),
+        Order.find({ ...visibleMatch, clientChannel: 'app' })
+          .sort({ createdAt: -1 })
+          .limit(8)
+          .select('shortOrderNumber clientPlatform total createdAt')
+          .lean(),
         Order.countDocuments({
           storeId: storeIdString,
           $or: [
@@ -410,6 +446,11 @@ export async function GET(request) {
         ? Number((ratingSum / ratingCount).toFixed(1))
         : 0;
 
+      const appOrderFacet = appOrderRows[0] || { all: [], today: [] };
+      const appInstalls = foldPlatformCounts(appInstallRows);
+      const appOrdersAll = foldPlatformCounts(appOrderFacet.all);
+      const appOrdersToday = foldPlatformCounts(appOrderFacet.today);
+
       const dashboardData = {
          totalOrders,
          totalEarnings: Math.round(totalEarnings),
@@ -437,6 +478,17 @@ export async function GET(request) {
            paymentMethodBreakdown,
            weekComparison,
            awaitingPaymentCount,
+           app: {
+             installs: appInstalls,
+             orders: appOrdersAll,
+             ordersToday: appOrdersToday,
+             recent: recentAppOrders.map((order) => ({
+               orderNumber: order.shortOrderNumber || '',
+               platform: order.clientPlatform || 'unknown',
+               total: Math.round(Number(order.total || 0)),
+               createdAt: order.createdAt,
+             })),
+           },
          },
       };
 

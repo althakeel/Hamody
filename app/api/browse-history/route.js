@@ -32,7 +32,7 @@ export async function GET(request) {
       ...STOREFRONT_PUBLISHED_FILTER,
       ...STOREFRONT_IN_STOCK_FILTER,
     })
-      .select('_id name slug images price mrp AED category inStock stockQuantity')
+      .select('_id name nameAr slug sku images price mrp AED category inStock stockQuantity shortDescription shortDescriptionAr specTableRows')
       .lean();
 
     // Build O(1) lookup map instead of O(n*m) Array.find

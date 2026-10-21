@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { usePathname } from "next/navigation"
 
-import { ChevronDown, HomeIcon, LayoutListIcon, SquarePenIcon, SquarePlusIcon, StarIcon, FolderIcon, TicketIcon, TruckIcon, RefreshCw, Users as UsersIcon, MessageSquare, Sparkles, BellIcon, MailIcon, Image as ImageIcon, ShoppingCart, Wallet, BarChart3, Target, Gift, Palette, CircleDashed, PackagePlus, Package, Activity, Layers, LineChart, Warehouse, MousePointerClick, ShieldAlert, Zap, Trash2, Smartphone, FileText, CalendarClock, MessageCircle, AlertTriangle, Download, Tag as TagIcon, Tags, ArrowUp, Search, Factory, CircleDollarSign, Pin, PanelLeftClose, PanelLeftOpen, Percent } from "lucide-react"
+import { ChevronDown, HomeIcon, LayoutListIcon, SquarePenIcon, SquarePlusIcon, StarIcon, FolderIcon, TicketIcon, TruckIcon, RefreshCw, Users as UsersIcon, MessageSquare, Sparkles, BellIcon, MailIcon, Image as ImageIcon, ShoppingCart, Wallet, BarChart3, Target, Gift, Palette, CircleDashed, PackagePlus, Package, Activity, Layers, LineChart, Warehouse, MousePointerClick, ShieldAlert, Zap, Trash2, Smartphone, FileText, CalendarClock, MessageCircle, AlertTriangle, Download, Tag as TagIcon, Tags, ArrowUp, Search, Factory, CircleDollarSign, Pin, PanelLeftClose, PanelLeftOpen, Percent, PanelTop, PanelBottom, Loader, Clapperboard, LayoutGrid } from "lucide-react"
 
 import StoreNavLink from "@/components/store/StoreNavLink"
 
@@ -65,6 +65,7 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
         { name: 'Manage Product', href: '/store/manage-product', icon: SquarePenIcon },
 
         { name: 'Product Cost', href: '/store/product-cost', icon: CircleDollarSign },
+        { name: 'App discount', href: '/store/app-discount', icon: Percent },
 
         { name: 'Product Badges', href: '/store/badges', icon: Tags },
 
@@ -83,7 +84,17 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
         { name: 'Scroll to Top', href: '/store/customize/scroll-to-top', icon: ArrowUp },
         { name: 'Homepage popup', href: '/store/customize/home-popup', icon: Gift },
 
-        { name: 'Mobile Features', href: '/store/mobile-features', icon: Smartphone },
+        { name: 'Mobile', href: '/store/mobile-features', icon: Smartphone },
+        { name: 'Navbar', href: '/store/mobile-features/navbar', icon: PanelTop },
+        { name: 'Footer', href: '/store/mobile-features/footer', icon: PanelBottom },
+        { name: 'Loader', href: '/store/mobile-features/loader', icon: Loader },
+        { name: 'Splash screens', href: '/store/mobile-features/splash-screens', icon: Clapperboard },
+        { name: 'Banners', href: '/store/mobile-features/banners', icon: ImageIcon },
+        { name: 'Offers', href: '/store/mobile-features/offers', icon: Zap },
+        { name: 'Shop blocks', href: '/store/mobile-features/shop-blocks', icon: LayoutGrid },
+        { name: 'Deal bar', href: '/store/mobile-features/deal-bar', icon: Gift },
+        { name: 'Coupon banner', href: '/store/mobile-features/coupon-banner', icon: TicketIcon },
+        { name: 'Push notification', href: '/store/mobile-features/push', icon: BellIcon },
 
         { name: 'Blogs', href: '/store/blogs', icon: FileText },
 
@@ -185,6 +196,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
                 '/store/product-cost',
 
+                '/store/app-discount',
+
                 '/store/badges',
 
                 '/store/time-badges',
@@ -213,13 +226,43 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
                 '/store/customize/home-popup',
 
-                '/store/mobile-features',
-
                 '/store/blogs',
 
                 '/store/landing-pages',
 
                 '/store/media',
+
+            ]
+
+        },
+
+        {
+
+            name: 'Mobile',
+
+            links: [
+
+                '/store/mobile-features',
+
+                '/store/mobile-features/navbar',
+
+                '/store/mobile-features/footer',
+
+                '/store/mobile-features/loader',
+
+                '/store/mobile-features/splash-screens',
+
+                '/store/mobile-features/banners',
+
+                '/store/mobile-features/offers',
+
+                '/store/mobile-features/shop-blocks',
+
+                '/store/mobile-features/deal-bar',
+
+                '/store/mobile-features/coupon-banner',
+
+                '/store/mobile-features/push',
 
             ]
 
@@ -381,6 +424,10 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
                 return Sparkles;
 
+            case 'Mobile':
+
+                return Smartphone;
+
             case 'Marketing':
 
                 return Gift;
@@ -460,6 +507,32 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
                     hoverIconText: 'group-hover:text-emerald-700',
 
                     dot: 'bg-emerald-600'
+
+                }
+
+            case 'Mobile':
+
+                return {
+
+                    headerText: 'text-sky-700',
+
+                    headerIconBg: 'bg-sky-100',
+
+                    headerIconText: 'text-sky-700',
+
+                    activeLink: 'bg-[#7B2BFF] text-white font-semibold',
+
+                    activeIconBg: 'bg-white/20',
+
+                    activeIconText: 'text-white',
+
+                    hoverLink: 'hover:bg-sky-50/60 hover:text-sky-700',
+
+                    hoverIconBg: 'group-hover:bg-sky-100',
+
+                    hoverIconText: 'group-hover:text-sky-700',
+
+                    dot: 'bg-sky-600'
 
                 }
 
@@ -691,7 +764,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
 
                         const sectionPinned = pinnedSections.includes(section.name)
-                        const sectionOpen = showFullMenu || sectionPinned || openSection === section.name
+                        const alwaysOpen = section.name === 'Mobile'
+                        const sectionOpen = alwaysOpen || showFullMenu || sectionPinned || openSection === section.name
 
                         return (
 
@@ -701,17 +775,17 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            if (showFullMenu || sectionPinned) return
+                                            if (alwaysOpen || showFullMenu || sectionPinned) return
                                             setOpenSection((current) => current === section.name ? "" : section.name)
                                         }}
-                                        className={`flex min-w-0 flex-1 items-center gap-1.5 rounded-lg px-1 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wide ${theme.headerText} ${showFullMenu || sectionPinned ? '' : theme.hoverLink}`}
+                                        className={`flex min-w-0 flex-1 items-center gap-1.5 rounded-lg px-1 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wide ${theme.headerText} ${alwaysOpen || showFullMenu || sectionPinned ? '' : theme.hoverLink}`}
                                         aria-expanded={sectionOpen}
                                     >
                                         <span className={`rounded-md p-0.5 ${theme.headerIconBg}`}>
                                             <SectionIcon size={12} className={theme.headerIconText} />
                                         </span>
                                         <span className="min-w-0 flex-1 truncate">{section.name}</span>
-                                        {showFullMenu ? null : (
+                                        {alwaysOpen || showFullMenu ? null : (
                                             <ChevronDown size={14} className={`shrink-0 transition ${sectionOpen ? "rotate-180" : ""}`} />
                                         )}
                                     </button>

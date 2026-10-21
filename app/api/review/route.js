@@ -114,7 +114,7 @@ export async function GET(request) {
         }
 
         const { getCachedData, setCachedData } = await import('@/lib/cache');
-        const cacheKey = `reviews:product:${productId}`;
+        const cacheKey = `reviews:product:v2:${productId}`;
         const cached = getCachedData(cacheKey);
         if (cached) {
             const isDev = process.env.NODE_ENV !== 'production';

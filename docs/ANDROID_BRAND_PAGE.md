@@ -8,6 +8,8 @@ Web source: `app/(public)/brand/[slug]/page.jsx`, `components/brand/BrandPageVie
 
 A brand page is `https://www.store1920.com/brand/{slug}`. Example: `/brand/nexso`.
 
+The brands on the store, and the products call, are in [APP_BRANDS_API.md](./APP_BRANDS_API.md).
+
 This is not a category. `/category/brands/nexso` is a category under Brands. `/brand/nexso` matches the product `brand` name. Do not open one when the link is the other.
 
 Send `Accept-Language: en` or `ar`. No login.
@@ -20,12 +22,13 @@ Product cards on this page use the same card as the rest of the app: [FLUTTER_PR
 
 | Piece | Method | Path | Auth |
 |---|---|---|---|
-| Product list for the brand | GET | `/api/public/brand-products?slug={slug}&page=1&limit=100` | No |
+| Home logo row | GET | `/api/public/brands` | No |
+| Product list and brand header | GET | `/api/public/brand-products?slug={slug}&page=1&limit=100` | No |
 | Seller brand list, page text, banners | GET, PATCH | `/api/store/brands` | Store Firebase token |
 
-The public products call does **not** return the brand name, Arabic name, description, logo, banners, or header stats. The website builds those on the server and paints them in HTML. There is no public JSON route for that header.
+`GET /api/public/brands` returns every saved brand page, including `image` (the logo). Field list and the home-slider rules are in [APP_BRANDS_API.md](./APP_BRANDS_API.md).
 
-Until a public brand-header route exists, the app can show the product grid from section 4, and use the slug as the title (for example `nexso` → `Nexso`) when the header JSON is missing. Do not call `GET /api/store/brands` from the customer app. That route is the seller dashboard.
+`GET /api/public/brand-products` returns `brand` plus `products`. `brand` has the name, Arabic name, description, logo, and banners. Header stats in section 3 are still computed on the website and are not in that JSON. Use `total` for the product count. Do not call `GET /api/store/brands` from the customer app. That route is the seller dashboard.
 
 ---
 
@@ -155,12 +158,25 @@ A brand exists when a saved brand page has that slug, or at least one published 
 
 ```json
 {
+  "brand": {
+    "slug": "nexso",
+    "path": "/brand/nexso",
+    "name": "NEXSO",
+    "nameAr": "",
+    "image": "https://…",
+    "description": "",
+    "descriptionAr": "",
+    "bannerMobileEn": "",
+    "bannerMobileAr": ""
+  },
   "products": [],
   "total": 42,
   "page": 1,
   "limit": 100
 }
 ```
+
+`brand` is the saved page from section 5. The other banner keys are on that object too. When no seller page was saved, `brand.image` is empty and `brand.name` is the product brand text.
 
 `products` is the published catalog for that brand, newest `createdAt` first. Duplicate SKUs are collapsed to one card. Each product is the storefront product object, including:
 
@@ -193,7 +209,7 @@ An unknown brand is a not-found screen, not an empty grid.
 
 ## 5. Brand record the website stores
 
-Sellers edit this at `/store/brands`. The public page reads the same fields. The customer app does not receive this object from `GET /api/public/brand-products`.
+Sellers edit this at `/store/brands`. The same object is `brand` on `GET /api/public/brand-products`, and each item in `brands` on `GET /api/public/brands`.
 
 ```json
 {

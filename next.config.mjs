@@ -17,7 +17,7 @@ const imageRemotePatterns = [
     { protocol: 'https', hostname: '**.flixcart.com', pathname: '/**' },
     { protocol: 'https', hostname: '**.nooncdn.com', pathname: '/**' },
     { protocol: 'http', hostname: '**.nooncdn.com', pathname: '/**' },
-    { protocol: 'https', hostname: '**.store1920.com', pathname: '/**' },
+    { protocol: 'https', hostname: 'www.store1920.com', pathname: '/**' },
     { protocol: 'https', hostname: 'store1920.com', pathname: '/**' },
     { protocol: 'https', hostname: '**.media-amazon.com', pathname: '/**' },
     { protocol: 'https', hostname: '**.ssl-images-amazon.com', pathname: '/**' },
@@ -112,6 +112,10 @@ const nextConfig = {
             {
                 source: '/sitemap-categories.xml',
                 destination: '/sitemap-chunk/categories',
+            },
+            {
+                source: '/sitemap-brands.xml',
+                destination: '/sitemap-chunk/brands',
             },
             {
                 source: '/sitemap-blog.xml',

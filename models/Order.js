@@ -180,6 +180,8 @@ const OrderSchema = new mongoose.Schema({
     lastError: { type: String, default: null },
   },
   shortOrderNumber: { type: Number, index: true },
+  clientChannel: { type: String, enum: ['website', 'app'], default: 'website', index: true },
+  clientPlatform: { type: String, enum: ['web', 'android', 'ios', 'unknown'], default: 'web' },
   fulfillmentKind: {
     type: String,
     enum: ['SALE', 'RETURN', 'REPLACEMENT'],

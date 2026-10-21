@@ -230,8 +230,7 @@ export default function MobileHomeLayoutPreview({
         <div>
           <h2 className="text-sm font-semibold text-slate-900">App home preview</h2>
           <p className="mt-0.5 text-xs text-slate-500">
-            Same website home APIs + app banners. Drag to reorder — the mobile app reads this order from{' '}
-            <code className="rounded bg-slate-100 px-1 text-[10px]">homeLayout</code>.
+            The shopper app does not use this drag order. Edit App home. Those API changes show on the next open.
           </p>
         </div>
         <div className="flex flex-wrap gap-1.5">

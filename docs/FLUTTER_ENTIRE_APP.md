@@ -228,10 +228,10 @@ If the seller disables a block, that block disappears on the next refresh. No ex
 | `/shop` | Shop / all products | `GET /api/products` |
 | `/categories` | Category index | `GET /api/categories` |
 | `/category/{slug}` | Category products. Slug may be nested, for example `/category/brands/porodo` | [FLUTTER_CATEGORY_APIS.md](./FLUTTER_CATEGORY_APIS.md) |
-| `/brand/{slug}` | Brand page. This is **not** the category page | `GET /api/public/brand-products?slug={slug}` |
+| `/brand/{slug}` | Brand page. This is **not** the category page. Home logos: `GET /api/public/brands` | `GET /api/public/brand-products?slug={slug}` |
 | `/product/{slug}` and `/products/{slug}` | Product detail | `GET /api/products/by-slug` or `GET /api/products/page` |
 | `/search-results` | Search | `GET /api/search-products` |
-| Image search | Camera search | `POST /api/search-by-image` |
+| Image search | Camera or gallery photo, then closest and related products | [APP_IMAGE_SEARCH.md](./APP_IMAGE_SEARCH.md) — `POST /api/search-by-image` |
 | `/new-arrivals`, `/new` | New arrivals | `GET /api/products` sorted newest |
 | `/best-sellers`, `/top-selling` | Best sellers | `GET /api/products` with the site sort |
 | `/trending-now` | Trending | products list |
@@ -439,7 +439,7 @@ These are edited on the website. The app only reads the public GET.
 | `/store/shipping` | Delivery fee and which payment methods show | `GET /api/shipping` |
 | `/store/landing-pages` | `/c/{slug}` pages | `GET /api/public/campaign-pages/{slug}` |
 | `/store/blogs` | Blog posts | `GET /api/public/blogs` |
-| `/store/brands` | Brand names on products. Brand **pages** are `/brand/{slug}` | `GET /api/public/brand-products` |
+| `/store/brands` | Brand logos and pages. Brand **pages** are `/brand/{slug}` | `GET /api/public/brands` and `GET /api/public/brand-products` |
 
 ---
 

@@ -8,13 +8,14 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: 'Sitemap | Store1920',
   description:
-    'Browse every public page, category, product, and blog post on Store1920. This HTML sitemap updates automatically from the live catalog.',
+    'Browse every public page, category, brand, product, and blog post on Store1920. This HTML sitemap updates automatically from the live catalog.',
 };
 
 const NAV_LABELS = {
   shop: 'Shop',
   budget: 'Budget',
   categories: 'Categories',
+  brands: 'Brands',
   products: 'Products',
   blogs: 'Blog',
   account: 'Account',
@@ -75,7 +76,7 @@ function SectionBlock({ section }) {
 export default async function SitemapPage() {
   let sections = [];
   let products = { initialLinks: [], total: 0, page: 1, limit: 50, hasMore: false };
-  let stats = { categories: 0, products: 0, blogs: 0 };
+  let stats = { categories: 0, brands: 0, products: 0, blogs: 0 };
 
   try {
     const data = await getHtmlSitemapData();
@@ -87,10 +88,10 @@ export default async function SitemapPage() {
   }
 
   const beforeProducts = sections.filter((section) => (
-    section.id === 'shop' || section.id === 'budget' || section.id === 'categories'
+    section.id === 'shop' || section.id === 'budget' || section.id === 'categories' || section.id === 'brands'
   ));
   const afterProducts = sections.filter((section) => (
-    section.id !== 'shop' && section.id !== 'budget' && section.id !== 'categories'
+    section.id !== 'shop' && section.id !== 'budget' && section.id !== 'categories' && section.id !== 'brands'
   ));
 
   const navItems = [
@@ -126,12 +127,13 @@ export default async function SitemapPage() {
             Site map
           </h1>
           <p className="mt-4 max-w-2xl text-base text-stone-300 md:text-lg">
-            A live directory of pages, categories, products, and posts — rebuilt from the catalog whenever it changes.
+            A live directory of pages, categories, brands, products, and posts — rebuilt from the catalog whenever it changes.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-2">
             {[
               { label: 'Categories', value: stats.categories },
+              { label: 'Brands', value: stats.brands },
               { label: 'Products', value: stats.products },
               { label: 'Posts', value: stats.blogs },
             ].map((item) => (
@@ -150,6 +152,7 @@ export default async function SitemapPage() {
             <a href="/sitemap.xml" className="text-white underline-offset-4 hover:underline">/sitemap.xml</a>
             <a href="/sitemap-products.xml" className="hover:text-white">products</a>
             <a href="/sitemap-categories.xml" className="hover:text-white">categories</a>
+            <a href="/sitemap-brands.xml" className="hover:text-white">brands</a>
             <a href="/sitemap-pages.xml" className="hover:text-white">pages</a>
             <a href="/sitemap-blog.xml" className="hover:text-white">blog</a>
           </div>

@@ -579,6 +579,7 @@ export async function GET(request) {
             const minSold = String(searchParams.get('minSold') || '').trim();
             const minStock = String(searchParams.get('minStock') || '').trim();
             const priceAbove = String(searchParams.get('priceAbove') || '').trim();
+            const appDiscount = String(searchParams.get('appDiscount') || '').trim().toLowerCase();
             const pickerResult = await fetchPickerPage(Product, {
                 storeId: String(storeId || '').trim(),
                 page,
@@ -602,6 +603,7 @@ export async function GET(request) {
                 minSold,
                 minStock,
                 priceAbove,
+                appDiscount: manage && appDiscount === 'set' ? 'set' : '',
             });
 
             if (manage) {

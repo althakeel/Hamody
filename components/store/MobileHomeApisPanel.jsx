@@ -22,9 +22,7 @@ export default function MobileHomeApisPanel() {
           Home APIs for the mobile app
         </h2>
         <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
-          Green = same as website home. Drag order in the phone preview; the app reads{' '}
-          <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px]">homeLayout</code> from{' '}
-          <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px]">GET /api/public/mobile-features</code>.
+          The shopper app home does not read homeLayout. It paints shop banners, category tiles, top picks, colored rows, top deals, explore, then recently viewed. Edit those sources. A change shows on the next app open.
         </p>
       </div>
 

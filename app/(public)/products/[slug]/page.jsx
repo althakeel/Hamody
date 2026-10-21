@@ -7,6 +7,8 @@ import { resolveProductSlugRedirect } from "@/lib/productRedirects";
 import ProductPageClient from "@/components/ProductPageClient";
 import ProductJsonLd from "@/components/ProductJsonLd";
 import { getProductCanonicalUrl } from "@/lib/productSeo";
+import { getProductThumbnailUrl } from "@/lib/productMedia";
+import { PLACEHOLDER_IMAGE } from "@/lib/mediaUrls";
 
 export const revalidate = 120;
 
@@ -39,18 +41,28 @@ export async function generateMetadata({ params }) {
       : (Array.isArray(product.tags) ? product.tags : []);
 
     const canonical = getProductCanonicalUrl(product);
+    const title = String(product.seoTitle || product.name || "Product").trim();
+    const description = String(product.seoDescription || product.shortDescription || "").trim();
+    const shareImage = getProductThumbnailUrl(product);
+    const shareImages = shareImage && shareImage !== PLACEHOLDER_IMAGE
+      ? [{ url: shareImage, alt: String(product.name || title).trim() }]
+      : undefined;
 
     return {
-      title: String(product.seoTitle || product.name || "Product").trim(),
-      description: String(product.seoDescription || product.shortDescription || "").trim(),
+      title,
+      description,
       keywords: keywords.length > 0 ? keywords.join(", ") : undefined,
       alternates: { canonical },
       openGraph: {
-        title: String(product.seoTitle || product.name || "Product").trim(),
-        description: String(product.seoDescription || product.shortDescription || "").trim(),
+        title,
+        description,
         url: canonical,
         type: "website",
+        ...(shareImages ? { images: shareImages } : {}),
       },
+      twitter: shareImages
+        ? { card: "summary_large_image", title, description, images: [shareImage] }
+        : undefined,
     };
   } catch {
     return { title: "Product" };

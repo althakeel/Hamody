@@ -4,7 +4,7 @@ Last updated: 11 September 2026
 Audience: Flutter / mobile app developers  
 Web reference: `app/api/auth/whatsapp-otp`, `lib/whatsappOtpAuth.js`, `lib/authClient.js`
 
-This is the contract for **login and register with a WhatsApp OTP**. Do not invent a second JWT or password store. Identity is always **Firebase Auth**.
+This is the contract for **login and register with a WhatsApp OTP**. Every other shopper method (email password, Google, Facebook, email OTP, reset, MFA) is in [APP_AUTH.md](./APP_AUTH.md). Do not invent a second JWT or password store. Identity is always **Firebase Auth**.
 
 ---
 

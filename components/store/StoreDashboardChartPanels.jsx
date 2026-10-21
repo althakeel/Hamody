@@ -72,12 +72,14 @@ function SectionHeading({ title, description }) {
 
 function HourlyTooltip({ active, payload, label, currency }) {
   if (!active || !payload?.length) return null;
-  const orders = payload.find((p) => p.dataKey === 'orders')?.value ?? 0;
-  const revenue = payload.find((p) => p.dataKey === 'revenue')?.value ?? 0;
+  const point = payload[0]?.payload || {};
+  const hourLabel = point.label || label;
+  const orders = Number(point.orders ?? payload.find((p) => p.dataKey === 'orders')?.value ?? 0);
+  const revenue = Number(point.revenue ?? payload.find((p) => p.dataKey === 'revenue')?.value ?? 0);
   return (
     <div className="rounded-xl border border-slate-200/80 bg-white/95 px-3 py-2 text-xs shadow-lg backdrop-blur">
-      <p className="font-semibold text-slate-900">{label}</p>
-      <p className="text-violet-700"><strong>{orders}</strong> orders</p>
+      <p className="font-semibold text-slate-900">{hourLabel}</p>
+      <p className="text-violet-700"><strong>{orders}</strong> {orders === 1 ? 'order' : 'orders'}</p>
       <p className="text-emerald-700"><strong>{money(revenue, currency)}</strong></p>
     </div>
   );
@@ -141,12 +143,18 @@ function StoreDashboardChartPanels({
     weekComparison = [],
   } = analytics;
 
-  const hourlyData = todayHourlyTrend.length ? todayHourlyTrend : Array.from({ length: 24 }, (_, h) => ({
+  const hourlyData = (todayHourlyTrend.length ? todayHourlyTrend : Array.from({ length: 24 }, (_, h) => ({
     hour: h,
-    shortLabel: h % 4 === 0 ? `${String(h).padStart(2, '0')}:00` : '',
     orders: 0,
     revenue: 0,
-  }));
+  }))).map((row, index) => {
+    const hour = Number.isFinite(Number(row.hour)) ? Number(row.hour) : index;
+    return {
+      ...row,
+      hour,
+      label: row.label || `${String(hour).padStart(2, '0')}:00`,
+    };
+  });
 
   const hasTodayActivity = hourlyData.some((d) => d.orders > 0 || d.revenue > 0);
   const weekDelta = ordersThisWeek - ordersLastWeek;
@@ -181,13 +189,13 @@ function StoreDashboardChartPanels({
                   </linearGradient>
                 </defs>
                 <CartesianGrid stroke="#E2E8F0" vertical={false} strokeDasharray="3 3" />
-                <XAxis dataKey="shortLabel" tick={{ fontSize: 10, fill: '#64748B' }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="label" interval={2} tick={{ fontSize: 10, fill: '#64748B' }} axisLine={false} tickLine={false} />
                 <YAxis yAxisId="orders" allowDecimals={false} tick={{ fontSize: 10 }} width={24} axisLine={false} tickLine={false} />
                 <YAxis yAxisId="revenue" orientation="right" tickFormatter={formatRevenueTick} tick={{ fontSize: 10 }} width={36} axisLine={false} tickLine={false} />
                 <Tooltip content={<HourlyTooltip currency={currency} />} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Bar yAxisId="orders" isAnimationActive={CHART_ANIMATION} dataKey="orders" name="Orders" fill="url(#todayOrdersGrad)" radius={[6, 6, 0, 0]} maxBarSize={22} />
-                <Line yAxisId="revenue" isAnimationActive={CHART_ANIMATION} type="monotone" dataKey="revenue" name="Revenue" stroke="#10B981" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+                <Line yAxisId="revenue" isAnimationActive={CHART_ANIMATION} type="linear" dataKey="revenue" name="Revenue" stroke="#10B981" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
               </ComposedChart>
             </SafeResponsiveContainer>
           </div>

@@ -6,6 +6,7 @@ import { memo, useMemo } from 'react';
 import {
   ChevronRight,
   ShoppingBag,
+  Smartphone,
   TrendingUp,
   Tags,
   AlertCircle,
@@ -79,6 +80,85 @@ function KpiCard({ label, value, sub, href, icon: Icon, gradient, iconColor }) {
   return inner;
 }
 
+function platformLabel(platform) {
+  if (platform === 'android') return 'Android';
+  if (platform === 'ios') return 'iOS';
+  if (platform === 'web') return 'Website';
+  return 'App';
+}
+
+function AppSourcePanel({ app = {}, currency = 'AED' }) {
+  const installs = app.installs || {};
+  const orders = app.orders || {};
+  const today = app.ordersToday || {};
+  const recent = Array.isArray(app.recent) ? app.recent : [];
+
+  return (
+    <section className="space-y-4">
+      <div>
+        <h2 className="text-base font-semibold tracking-tight text-slate-900">App</h2>
+        <p className="mt-0.5 text-sm text-slate-500">Installs, and orders placed in the Android or iOS app.</p>
+      </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <KpiCard
+          label="Installs"
+          value={Number(installs.total || 0)}
+          sub={`Android ${Number(installs.android || 0)} · iOS ${Number(installs.ios || 0)}`}
+          icon={Smartphone}
+          gradient="bg-gradient-to-br from-sky-100/90 via-sky-50/50 to-white"
+          iconColor="text-sky-600"
+        />
+        <KpiCard
+          label="App orders"
+          value={Number(orders.total || 0)}
+          sub={`${Number(today.total || 0)} today`}
+          href="/store/orders"
+          icon={ShoppingBag}
+          gradient="bg-gradient-to-br from-violet-100/90 via-violet-50/50 to-white"
+          iconColor="text-violet-600"
+        />
+        <KpiCard
+          label="Android orders"
+          value={Number(orders.android || 0)}
+          sub={`${Number(today.android || 0)} today`}
+          icon={Smartphone}
+          gradient="bg-gradient-to-br from-emerald-100/90 via-emerald-50/50 to-white"
+          iconColor="text-emerald-600"
+        />
+        <KpiCard
+          label="iOS orders"
+          value={Number(orders.ios || 0)}
+          sub={`${Number(today.ios || 0)} today`}
+          icon={Smartphone}
+          gradient="bg-gradient-to-br from-slate-100 via-white to-white"
+          iconColor="text-slate-700"
+        />
+      </div>
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h3 className="text-sm font-semibold text-slate-900">Latest app orders</h3>
+        {recent.length ? (
+          <ul className="mt-3 divide-y divide-slate-100">
+            {recent.map((order) => (
+              <li key={`${order.orderNumber}-${order.createdAt}`} className="flex items-center justify-between gap-3 py-2 text-sm">
+                <Link href={order.orderNumber ? `/store/orders?q=${encodeURIComponent(order.orderNumber)}` : '/store/orders'} className="font-medium text-slate-800 hover:underline">
+                  {order.orderNumber ? `#${order.orderNumber}` : 'Order'}
+                </Link>
+                <span className="text-slate-500">{platformLabel(order.platform)}</span>
+                <span className="font-medium text-slate-800">{money(order.total, currency)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 text-sm text-slate-500">No app orders yet. Website orders stay in the sales totals above.</p>
+        )}
+        <p className="mt-3 text-xs leading-relaxed text-slate-400">
+          An install is counted once per phone. An order is marked Android or iOS only when the app sends that with the order. Orders placed before this was turned on stay with the website.
+        </p>
+      </div>
+    </section>
+  );
+}
+
 function StoreDashboardCharts({ data = {}, currency = 'AED', getToken, loading = false }) {
   const {
     totalProducts = 0,
@@ -100,6 +180,7 @@ function StoreDashboardCharts({ data = {}, currency = 'AED', getToken, loading =
     peakHourToday = null,
     awaitingPaymentCount = 0,
     paymentMethodBreakdown = [],
+    app = {},
   } = analytics;
 
   const aiStats = useMemo(() => ({
@@ -197,6 +278,8 @@ function StoreDashboardCharts({ data = {}, currency = 'AED', getToken, loading =
           ) : null}
         </div>
       </section>
+
+      <AppSourcePanel app={app} currency={currency} />
 
       {getToken ? <StoreDashboardAiInsights getToken={getToken} stats={aiStats} currency={currency} /> : null}
 

@@ -5,10 +5,6 @@ import Category from '@/models/Category';
 import {
   buildCategoryNameSearch,
   buildProductBrowseSearchFilter,
-  buildProductPhraseSearchFilter,
-  buildProductSearchFilter,
-  isBrowseStyleSearch,
-  isMultiWordSearch,
   mapSearchProduct,
   normalizeSearchKeyword,
   productTitleMatchesKeyword,
@@ -26,7 +22,9 @@ import {
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const keyword = normalizeSearchKeyword(searchParams.get('keyword') || '');
+    const keyword = normalizeSearchKeyword(
+      searchParams.get('keyword') || searchParams.get('q') || searchParams.get('search') || '',
+    );
     const category = searchParams.get('category') || '';
     const excludeId = searchParams.get('excludeId') || '';
     const includeOutOfStock = searchParams.get('includeOutOfStock') === 'true';
@@ -82,31 +80,17 @@ export async function GET(request) {
       }, { status: 400 });
     }
 
-    // "car accessories" / "computer" — name, each word, tags, and categories.
-    // Long product titles still match the full sentence first.
+    // Every query searches the product name, brand, SKU, tags, SEO keywords,
+    // category, and description. A product matches when any of those fields hits.
+    const categoryQuery = buildCategoryNameSearch(keyword);
     let categoryIds = [];
-    if (isBrowseStyleSearch(keyword)) {
-      const categoryQuery = buildCategoryNameSearch(keyword);
-      if (categoryQuery) {
-        const categories = await Category.find(categoryQuery).select('_id').limit(40).lean();
-        categoryIds = categories.map((category) => String(category._id));
-      }
+    if (categoryQuery) {
+      const categories = await Category.find(categoryQuery).select('_id name').limit(40).lean();
+      categoryIds = categories.map((row) => String(row._id));
     }
 
-    const phraseFilter = !isBrowseStyleSearch(keyword) && isMultiWordSearch(keyword)
-      ? buildProductPhraseSearchFilter(keyword, { includeOutOfStock })
-      : null;
-    let searchFilter = isBrowseStyleSearch(keyword)
-      ? buildProductBrowseSearchFilter(keyword, { includeOutOfStock, categoryIds })
-      : (phraseFilter || buildProductSearchFilter(keyword, { includeOutOfStock }));
-    let total = await countProductsDedupedBySku(Product, searchFilter);
-    let usedPhraseOnly = Boolean(phraseFilter && total > 0);
-
-    if (phraseFilter && total === 0) {
-      searchFilter = buildProductSearchFilter(keyword, { includeOutOfStock });
-      total = await countProductsDedupedBySku(Product, searchFilter);
-      usedPhraseOnly = false;
-    }
+    const searchFilter = buildProductBrowseSearchFilter(keyword, { includeOutOfStock, categoryIds });
+    const total = await countProductsDedupedBySku(Product, searchFilter);
 
     let products = await fetchProductsDedupedBySku(Product, searchFilter, {
       sort: { createdAt: -1 },
@@ -115,7 +99,7 @@ export async function GET(request) {
       fields: STOREFRONT_CARD_FIELDS,
     });
     const resultCap = limit ?? total;
-    if (!usedPhraseOnly && products.length < resultCap && page === 1) {
+    if (products.length < resultCap && page === 1) {
       const existingIds = new Set(products.map((product) => String(product._id)));
       const textFilter = {
         $text: { $search: keyword },

@@ -34,6 +34,7 @@ import { getProductPath } from '@/lib/productUrl'
 import CurrencySymbol, { StruckPrice } from '@/components/CurrencySymbol'
 import NewProductTagBadge from '@/components/NewProductTagBadge'
 import TimeDeliveryBadge from '@/components/TimeDeliveryBadge'
+import { extractProductKarat } from '@/lib/productKarat'
 
 const parseAmount = (value) => {
   const num = Number(String(value ?? '').replace(/[^0-9.]/g, ''))
@@ -51,6 +52,7 @@ const getSalePrice = (product) => parseAmount(
 
 const getAEDPrice = (product) => parseAmount(
   product.AED ??
+  product.mrp ??
   product.compareAtPrice ?? product.compare_at_price ??
   product.originalPrice ?? product.original_price ??
   product.listPrice ?? product.list_price ??
@@ -142,8 +144,11 @@ const ProductCard = ({
       ? Math.round(explicitDiscount)
       : 0
 
-  const convertedPrice = convertPrice(priceNum)
-  const convertedAED = convertPrice(AEDNum)
+  const livePrice = priceNum > 0 ? priceNum : AEDNum
+  const comparePrice = priceNum > 0 && AEDNum > priceNum ? AEDNum : 0
+  const convertedPrice = convertPrice(livePrice)
+  const convertedAED = convertPrice(comparePrice)
+  const karat = extractProductKarat(product)
   const isOutOfStock = product.inStock === false || (typeof product.stockQuantity === 'number' && product.stockQuantity <= 0)
 
   const ratingValue = Math.round(Number(product.averageRating) || 0)
@@ -411,8 +416,8 @@ const ProductCard = ({
         {renderCartControl()}
       </div>
 
-      <div className={`flex min-h-0 flex-col ${compactAll ? 'shrink-0 p-1.5' : compactLg ? 'flex-1 p-2 sm:p-2.5 lg:shrink-0 lg:p-1.5' : 'flex-1 p-2 sm:p-2.5'}`}>
-        <h3 className={`overflow-hidden text-start font-semibold leading-tight text-slate-900 ${compactAll ? 'mb-1 text-[10px]' : compactLg ? 'mb-1.5 min-h-[2.5em] text-xs sm:text-sm lg:mb-1 lg:min-h-0 lg:text-[10px]' : 'mb-1.5 min-h-[2.5em] text-xs sm:text-sm'}`}>
+      <div className={`flex shrink-0 flex-col ${compactAll ? 'p-1.5' : compactLg ? 'p-2 sm:p-2.5 lg:p-1.5' : 'p-2 sm:p-2.5'}`}>
+        <h3 className={`overflow-hidden text-start font-semibold leading-tight text-slate-900 ${compactAll ? 'mb-1 text-[10px]' : compactLg ? 'mb-1 min-h-[2.5em] text-xs sm:text-sm lg:min-h-0 lg:text-[10px]' : 'mb-1 min-h-[2.5em] text-xs sm:text-sm'}`}>
           <bdi
             dir={getContentDirection(productName)}
             className={`break-words ${compactAll ? 'line-clamp-1' : compactLg ? 'line-clamp-2 lg:line-clamp-1' : 'line-clamp-2'}`}
@@ -421,17 +426,21 @@ const ProductCard = ({
           </bdi>
         </h3>
 
+        {karat ? (
+          <p className={`mb-1 text-start font-medium leading-none text-amber-800 ${compactAll ? 'text-[10px]' : compactLg ? 'text-[11px] lg:text-[10px]' : 'text-[11px] sm:text-xs'}`}>
+            {t('product.karatOnCard', { karat })}
+          </p>
+        ) : null}
+
         <div className={compactAll || compactLg ? '' : 'mt-auto'}>
-          {(priceNum > 0 || AEDNum > 0) ? (
+          {livePrice > 0 ? (
             <div className={`flex min-w-0 flex-nowrap items-baseline justify-start gap-x-1.5 overflow-hidden ${compactAll || compactLg ? '' : 'mb-1'}`}>
               <span dir="ltr" className="inline-flex min-w-0 flex-nowrap items-baseline gap-x-1.5 overflow-hidden">
-                {priceNum > 0 ? (
-                  <span className={`inline-flex shrink-0 items-baseline gap-0.5 font-semibold leading-none text-slate-950 ${compactAll ? 'text-xs' : compactLg ? 'text-sm sm:text-base lg:text-xs' : 'text-sm sm:text-base'}`}>
-                    <CurrencySymbol currency={market.currency} />
-                    <span>{formatNumber(convertedPrice, language, { maximumFractionDigits: 0 })}</span>
-                  </span>
-                ) : null}
-                {AEDNum > 0 && AEDNum > priceNum ? (
+                <span className={`inline-flex shrink-0 items-baseline gap-0.5 font-semibold leading-none text-slate-950 ${compactAll ? 'text-xs' : compactLg ? 'text-sm sm:text-base lg:text-xs' : 'text-sm sm:text-base'}`}>
+                  <CurrencySymbol currency={market.currency} />
+                  <span>{formatNumber(convertedPrice, language, { maximumFractionDigits: 0 })}</span>
+                </span>
+                {comparePrice > 0 ? (
                   <StruckPrice className="shrink-0 gap-0.5 text-[10px] leading-none text-slate-400 sm:text-xs">
                     <CurrencySymbol currency={market.currency} />
                     <span>{formatNumber(convertedAED, language, { maximumFractionDigits: 0 })}</span>

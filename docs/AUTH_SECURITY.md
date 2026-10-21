@@ -39,6 +39,8 @@ AUTH_WHATSAPP_OTP_LENGTH=4
 
 ## Customer UI
 
+Shopper app contract: [APP_AUTH.md](./APP_AUTH.md). WhatsApp Flutter sample: [FLUTTER_WHATSAPP_OTP_AUTH.md](./FLUTTER_WHATSAPP_OTP_AUTH.md).
+
 - Sign-in modal: CAPTCHA, strong password, forgot/reset, MFA step
 - `/dashboard/security`: verify email/phone, MFA, devices, logout all
 

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   STORE1920_AUTHOR,
   isStoreAuthorQuestion,
+  isStoreOwnerQuestion,
   matchStoreHelpKnowledge,
 } from '../lib/storeHelpKnowledge.js';
 import { listStoreHelpExportPages } from '../lib/storeHelpPages.js';
@@ -28,6 +29,14 @@ test('author of Store1920 is always Rohith Sagar M', () => {
   }
 });
 
+test('who is the owner names the company only', () => {
+  const reply = matchStoreHelpKnowledge('who is the owner of this');
+  assert.equal(isStoreOwnerQuestion('who is the owner of this'), true);
+  assert.match(reply.answer, /ALTHAKEEL GENERAL TRADING L\.L\.C/);
+  assert.equal(reply.answer.includes('Rohith'), false);
+  assert.equal(isStoreOwnerQuestion('who is the author of this store'), false);
+});
+
 test('website page questions export a page list file', () => {
   const pages = listStoreHelpExportPages();
   assert.ok(pages.some((page) => page.href === '/about-us' && page.section === 'Public'));
@@ -43,8 +52,8 @@ test('how many website pages does not look up orders', () => {
   assert.equal(reply.links.some((link) => link.href === '/about-us'), true);
 });
 
-test('about Store1920 still names the author', () => {
-  const reply = matchStoreHelpKnowledge('what is Store1920');
-  assert.match(reply.answer, /Rohith Sagar M/);
-  assert.equal(reply.links[0].href, '/about-us');
+test('navbar wording with a filler word still explains the dropdown', () => {
+  const reply = matchStoreHelpKnowledge('how do I change the navbar dropdown');
+  assert.match(reply.answer, /Dropdown/);
+  assert.equal(reply.links[0].href, '/store/menu-management');
 });

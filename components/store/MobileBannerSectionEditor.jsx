@@ -18,55 +18,185 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/lib/useAuth'
 import { compressImageForUpload } from '@/lib/compressImageForUpload'
+import { uploadStoreImage } from '@/lib/uploadStoreImage'
+import { loaderMediaTypeFromFile } from '@/lib/mobileAppLoader'
+import StoreDropdown from '@/components/store/StoreDropdown'
+import MobilePathPicker from '@/components/store/MobilePathPicker'
+import EnableSwitch from '@/components/store/EnableSwitch'
 import {
+  BANNER_HOME_SLOTS,
+  HERO_FONT_OPTIONS,
+  HERO_HOVER_OPTIONS,
   MOBILE_BANNER_SECTIONS,
   createEmptySlide,
   createEmptyTile,
+  isHeroBannerSection,
 } from '@/lib/mobileBannerLayout'
 import { normalizeMobileFeatures } from '@/lib/mobileFeatures'
-import { shopShowcaseToBannerSliderForm } from '@/lib/mobileHomeApis'
-import MobileHomeBannerPreview from '@/components/store/MobileHomeBannerPreview'
-import MobileHomeApisPanel from '@/components/store/MobileHomeApisPanel'
+import MobileHomeBannerPreview, { HeroSliderPreview } from '@/components/store/MobileHomeBannerPreview'
 
 const BANNER_UPLOAD_MAX_BYTES = 4 * 1024 * 1024
 
+const PLACE_X = [
+  { id: 'left', label: 'Left' },
+  { id: 'center', label: 'Center' },
+  { id: 'right', label: 'Right' },
+]
+const PLACE_Y = [
+  { id: 'top', label: 'Top' },
+  { id: 'center', label: 'Middle' },
+  { id: 'bottom', label: 'Bottom' },
+]
+const BUTTON_ALIGN = [
+  { id: 'left', label: 'Left' },
+  { id: 'right', label: 'Right' },
+]
+
+function ChoiceChips({ value, options, onChange }) {
+  return (
+    <div className="mt-1 flex flex-wrap gap-1.5">
+      {options.map((option) => (
+        <button
+          key={option.id}
+          type="button"
+          onClick={() => onChange(option.id)}
+          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+            value === option.id ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-600'
+          }`}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function HeroSlideFields({ item, onChange }) {
+  return (
+    <div className="mt-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+      <label className="block text-xs font-medium text-slate-600">
+        Video URL
+        <input
+          type="url"
+          value={item.video || ''}
+          onChange={(e) => onChange({ video: e.target.value, mediaType: e.target.value ? 'video' : 'image' })}
+          placeholder="https://...mp4"
+          className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+        />
+      </label>
+      <label className="block text-xs font-medium text-slate-600">
+        Subtitle
+        <input
+          type="text"
+          value={item.subtitle || ''}
+          onChange={(e) => onChange({ subtitle: e.target.value })}
+          className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+        />
+      </label>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="text-xs font-medium text-slate-600">
+          Text position
+          <ChoiceChips value={item.contentPosition || 'left'} options={PLACE_X} onChange={(id) => onChange({ contentPosition: id })} />
+        </div>
+        <div className="text-xs font-medium text-slate-600">
+          Vertical
+          <ChoiceChips value={item.contentVertical || 'center'} options={PLACE_Y} onChange={(id) => onChange({ contentVertical: id })} />
+        </div>
+        <div className="text-xs font-medium text-slate-600">
+          Text align
+          <ChoiceChips value={item.textAlign || 'left'} options={PLACE_X} onChange={(id) => onChange({ textAlign: id })} />
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block text-xs font-medium text-slate-600">
+          Title color
+          <input type="color" value={item.titleColor || '#ffffff'} onChange={(e) => onChange({ titleColor: e.target.value })} className="mt-1 h-9 w-full rounded border border-slate-200 bg-white" />
+        </label>
+        <label className="block text-xs font-medium text-slate-600">
+          Subtitle color
+          <input type="color" value={item.subtitleColor || '#e2e8f0'} onChange={(e) => onChange({ subtitleColor: e.target.value })} className="mt-1 h-9 w-full rounded border border-slate-200 bg-white" />
+        </label>
+        <label className="block text-xs font-medium text-slate-600">
+          Title size
+          <input type="number" min={16} max={64} value={item.titleSizePx ?? 32} onChange={(e) => onChange({ titleSizePx: Number(e.target.value) || 32 })} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" />
+        </label>
+        <label className="block text-xs font-medium text-slate-600">
+          Subtitle size
+          <input type="number" min={10} max={32} value={item.subtitleSizePx ?? 15} onChange={(e) => onChange({ subtitleSizePx: Number(e.target.value) || 15 })} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" />
+        </label>
+      </div>
+      <label className="block text-xs font-medium text-slate-600">
+        Font
+        <div className="mt-1">
+          <StoreDropdown
+            portal
+            value={item.fontFamily || 'inherit'}
+            onChange={(value) => onChange({ fontFamily: value })}
+            options={HERO_FONT_OPTIONS.map((font) => ({ value: font.id, label: font.label }))}
+          />
+        </div>
+      </label>
+      <div className="text-xs font-medium text-slate-600">
+        Hover animation
+        <ChoiceChips
+          value={item.hoverAnimation || 'none'}
+          options={HERO_HOVER_OPTIONS}
+          onChange={(id) => onChange({ hoverAnimation: id })}
+        />
+      </div>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-medium text-slate-800">Show button</span>
+        <EnableSwitch enabled={item.buttonEnabled === true} onChange={(enabled) => onChange({ buttonEnabled: enabled })} />
+      </div>
+      {item.buttonEnabled ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block text-xs font-medium text-slate-600">
+            Button text
+            <input type="text" value={item.buttonText || ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" />
+          </label>
+          <div className="text-xs font-medium text-slate-600">
+            Button align
+            <ChoiceChips value={item.buttonAlign || 'left'} options={BUTTON_ALIGN} onChange={(id) => onChange({ buttonAlign: id })} />
+          </div>
+          <label className="block text-xs font-medium text-slate-600 sm:col-span-2">
+            Button path
+            <div className="mt-1">
+              <MobilePathPicker value={item.buttonPath || ''} onChange={(value) => onChange({ buttonPath: value })} />
+            </div>
+          </label>
+          <label className="block text-xs font-medium text-slate-600">
+            Button color
+            <input type="color" value={item.buttonColor || '#f97316'} onChange={(e) => onChange({ buttonColor: e.target.value })} className="mt-1 h-9 w-full rounded border border-slate-200 bg-white" />
+          </label>
+          <label className="block text-xs font-medium text-slate-600">
+            Button text color
+            <input type="color" value={item.buttonTextColor || '#ffffff'} onChange={(e) => onChange({ buttonTextColor: e.target.value })} className="mt-1 h-9 w-full rounded border border-slate-200 bg-white" />
+          </label>
+          <label className="block text-xs font-medium text-slate-600">
+            Button corner
+            <input type="number" min={0} max={40} value={item.buttonRadiusPx ?? 8} onChange={(e) => onChange({ buttonRadiusPx: Number(e.target.value) || 0 })} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" />
+          </label>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 export default function MobileBannerSectionEditor({ sectionKey }) {
   const meta = MOBILE_BANNER_SECTIONS[sectionKey]
+  const isHero = isHeroBannerSection(sectionKey)
   const { getToken } = useAuth()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploadingIndex, setUploadingIndex] = useState(null)
   const [allFeatures, setAllFeatures] = useState(() => normalizeMobileFeatures())
   const [form, setForm] = useState(() => normalizeMobileFeatures()[sectionKey])
-  const [shopShowcase, setShopShowcase] = useState(null)
 
   const listKey = meta?.listKey || 'slides'
   const items = Array.isArray(form?.[listKey]) ? form[listKey] : []
-  const useWebsiteHomeBanners = sectionKey === 'bannerSlider' && form?.useWebsiteHomeBanners === true
   const previewFeatures = {
     ...allFeatures,
     [sectionKey]: form,
-  }
-
-  const importWebsiteBanners = async () => {
-    try {
-      const token = await getToken()
-      const { data } = await axios.get('/api/store/preferences/shop-showcase', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      const showcase = data?.shopShowcase || data || {}
-      setShopShowcase(showcase)
-      const imported = shopShowcaseToBannerSliderForm(showcase)
-      setForm((prev) => ({
-        ...prev,
-        ...imported,
-        useWebsiteHomeBanners: true,
-      }))
-      toast.success('Loaded website home banner slider')
-    } catch (error) {
-      console.error(error)
-      toast.error(error?.response?.data?.error || 'Could not load website banners')
-    }
   }
 
   const load = useCallback(async () => {
@@ -74,22 +204,12 @@ export default function MobileBannerSectionEditor({ sectionKey }) {
     try {
       setLoading(true)
       const token = await getToken()
-      const [featuresRes, showcaseRes] = await Promise.all([
-        axios.get('/api/store/mobile-features', {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        sectionKey === 'bannerSlider'
-          ? axios.get('/api/store/preferences/shop-showcase', {
-              headers: { Authorization: `Bearer ${token}` },
-            }).catch(() => ({ data: null }))
-          : Promise.resolve({ data: null }),
-      ])
-      const normalized = normalizeMobileFeatures(featuresRes.data?.mobileFeatures)
+      const { data } = await axios.get('/api/store/mobile-features', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const normalized = normalizeMobileFeatures(data?.mobileFeatures)
       setAllFeatures(normalized)
       setForm(normalized[sectionKey])
-      if (showcaseRes.data) {
-        setShopShowcase(showcaseRes.data?.shopShowcase || showcaseRes.data || null)
-      }
     } catch (error) {
       console.error(error)
       toast.error(error?.response?.data?.error || 'Failed to load banner settings')
@@ -152,6 +272,8 @@ export default function MobileBannerSectionEditor({ sectionKey }) {
 
   const uploadImage = async (index, file) => {
     if (!file) return
+    const mediaType = isHero ? loaderMediaTypeFromFile(file) : 'image'
+    const isVideo = mediaType === 'video'
     try {
       setUploadingIndex(index)
       const token = await getToken()
@@ -159,28 +281,31 @@ export default function MobileBannerSectionEditor({ sectionKey }) {
         toast.error('Please sign in again to upload')
         return
       }
-      const compressed = await compressImageForUpload(file, {
-        maxBytes: BANNER_UPLOAD_MAX_BYTES,
-        maxWidth: 2048,
-        maxHeight: 2048,
-      })
-      if (compressed.size > BANNER_UPLOAD_MAX_BYTES) {
-        toast.error('Image is still over 4 MB after compression. Try a smaller file.')
-        return
+      let uploadFile = file
+      if (!isVideo) {
+        uploadFile = await compressImageForUpload(file, {
+          maxBytes: BANNER_UPLOAD_MAX_BYTES,
+          maxWidth: 2048,
+          maxHeight: 2048,
+        })
+        if (uploadFile.size > BANNER_UPLOAD_MAX_BYTES) {
+          toast.error('Image is still over 4 MB after compression. Try a smaller file.')
+          return
+        }
       }
-      const formData = new FormData()
-      formData.append('image', compressed)
-      formData.append('type', 'banner')
-      const { data } = await axios.post('/api/store/upload-image', formData, {
-        headers: { Authorization: `Bearer ${token}` },
+      const data = await uploadStoreImage(uploadFile, {
+        token,
+        type: 'banner',
+        compress: false,
       })
       const url = data?.url || data?.imageUrl || data?.secure_url
-      if (!url) throw new Error('No image URL returned')
-      updateItem(index, { image: url })
-      toast.success(`Image ${index + 1} uploaded`)
+      if (!url) throw new Error('No file URL returned')
+      if (isVideo) updateItem(index, { video: url, mediaType: 'video' })
+      else updateItem(index, { image: url, mediaType: 'image', video: '' })
+      toast.success(`${isVideo ? 'Video' : 'Image'} ${index + 1} uploaded`)
     } catch (error) {
       console.error(error)
-      toast.error(error?.response?.data?.error || 'Upload failed')
+      toast.error(error?.response?.data?.error || error?.message || 'Upload failed')
     } finally {
       setUploadingIndex(null)
     }
@@ -192,7 +317,13 @@ export default function MobileBannerSectionEditor({ sectionKey }) {
       const token = await getToken()
       await axios.post(
         `/api/store/${meta.apiPath}`,
-        form,
+        isHero
+          ? {
+              ...form,
+              heightPx: meta.frameHeight,
+              ...(isHero ? { useWebsiteHomeBanners: false } : {}),
+            }
+          : form,
         { headers: { Authorization: `Bearer ${token}` } },
       )
       toast.success(`${meta.label} saved`)
@@ -236,22 +367,12 @@ export default function MobileBannerSectionEditor({ sectionKey }) {
           </Link>
           <div className="flex items-center gap-2">
             <Smartphone className="h-5 w-5 text-sky-600" />
-            <h1 className="text-2xl font-bold text-slate-900">{meta.label}</h1>
+            <h1 className="text-2xl font-bold text-slate-900">{isHero ? 'Banners' : meta.label}</h1>
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            {meta.description}{' '}
-            {sectionKey === 'bannerSlider' ? (
-              <>
-                This editor feeds the same API the mobile app calls:{' '}
-                <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">GET /api/store/{meta.apiPath}</code>.
-                {' '}You can mirror the website home banner slider from Customize, or set app-only slides.
-              </>
-            ) : (
-              <>
-                App-only — not shown on the website.
-                {' '}Public GET: <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">/api/store/{meta.apiPath}</code>
-              </>
-            )}
+            {isHero
+              ? 'Four banners in different places on the app home. Banner 1 is the top hero.'
+              : meta.description}
           </p>
         </div>
         <button
@@ -265,67 +386,38 @@ export default function MobileBannerSectionEditor({ sectionKey }) {
         </button>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
-      <div className="space-y-6 min-w-0">
-      {sectionKey === 'bannerSlider' ? (
-        <section className="rounded-2xl border border-sky-200 bg-sky-50/60 p-5 sm:p-6">
-          <label className="flex items-start gap-3 text-sm font-medium text-slate-900">
-            <input
-              type="checkbox"
-              checked={useWebsiteHomeBanners}
-              onChange={async (e) => {
-                const checked = e.target.checked
-                setForm((prev) => ({
-                  ...prev,
-                  useWebsiteHomeBanners: checked,
-                }))
-                if (checked) {
-                  await importWebsiteBanners()
-                }
-              }}
-              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-sky-600"
-            />
-            <span>
-              Use website home banners (same as Customize /{' '}
-              <code className="rounded bg-white px-1 py-0.5 text-[11px]">/api/public/shop-showcase</code>)
-              <span className="mt-1 block text-xs font-normal text-slate-600">
-                When on, the mobile API returns the website banner slider. When off, it returns the slides you edit below.
-                The app always calls <code className="rounded bg-white px-1 py-0.5 text-[11px]">/api/store/mobile-banner-slider</code>.
-              </span>
-            </span>
-          </label>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={importWebsiteBanners}
-              className="rounded-lg border border-sky-300 bg-white px-3 py-1.5 text-xs font-semibold text-sky-800 hover:bg-sky-50"
-            >
-              Import / refresh from website
-            </button>
-            <Link
-              href="/store/storefront/carousel-slider"
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              Open website banner slider
-            </Link>
+      {isHero ? (
+        <>
+          <div className="flex flex-wrap gap-2">
+            {BANNER_HOME_SLOTS.map((slot) => (
+              <Link
+                key={slot.key}
+                href={slot.href}
+                className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                  sectionKey === slot.key
+                    ? 'bg-slate-900 text-white'
+                    : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                {slot.label}
+              </Link>
+            ))}
           </div>
-        </section>
+          <HeroSliderPreview features={previewFeatures} activeKey={sectionKey} />
+        </>
       ) : null}
 
+      <div className={isHero ? 'space-y-6' : 'grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start'}>
+      <div className="space-y-6 min-w-0">
       <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-800">
-            <input
-              type="checkbox"
-              checked={form.enabled !== false}
-              onChange={(e) => setForm((prev) => ({ ...prev, enabled: e.target.checked }))}
-              className="h-4 w-4 rounded border-slate-300 text-sky-600"
-            />
-            Show this section in the mobile app
-          </label>
+          <div className="flex items-center gap-3 text-sm font-medium text-slate-800">
+            <span>Show this section in the mobile app</span>
+            <EnableSwitch enabled={form.enabled !== false} onChange={(enabled) => setForm((prev) => ({ ...prev, enabled }))} />
+          </div>
 
           <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
-            {meta.supportsInterval ? (
+            {meta.supportsInterval && items.filter((item) => item?.enabled !== false && (item.image || item.video)).length > 1 ? (
               <label className="inline-flex items-center gap-2">
                 <span>Auto-slide (sec)</span>
                 <input
@@ -343,7 +435,9 @@ export default function MobileBannerSectionEditor({ sectionKey }) {
               </label>
             ) : null}
 
-            {meta.supportsHeight ? (
+            {isHero ? (
+              <span className="text-sm text-slate-600">Size {meta.frameWidth} × {meta.frameHeight}</span>
+            ) : meta.supportsHeight ? (
               <label className="inline-flex items-center gap-2">
                 <span>Height (px)</span>
                 <input
@@ -415,25 +509,12 @@ export default function MobileBannerSectionEditor({ sectionKey }) {
                   >
                     <ArrowDown size={14} />
                   </button>
-                  <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-600">
-                    <input
-                      type="checkbox"
-                      checked={item.enabled !== false}
-                      onChange={(e) => updateItem(index, { enabled: e.target.checked })}
-                      className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600"
-                    />
-                    Enabled
-                  </label>
+                  <EnableSwitch enabled={item.enabled !== false} onChange={(enabled) => updateItem(index, { enabled })} />
                   {meta.supportsAdBadge ? (
-                    <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-600">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(item.showAdBadge)}
-                        onChange={(e) => updateItem(index, { showAdBadge: e.target.checked })}
-                        className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600"
-                      />
-                      Ad badge
-                    </label>
+                    <div className="inline-flex items-center gap-2">
+                      <span className="text-xs font-medium text-slate-600">Ad badge</span>
+                      <EnableSwitch enabled={Boolean(item.showAdBadge)} onChange={(enabled) => updateItem(index, { showAdBadge: enabled })} />
+                    </div>
                   ) : null}
                   <button
                     type="button"
@@ -448,7 +529,9 @@ export default function MobileBannerSectionEditor({ sectionKey }) {
 
               <div className="grid gap-4 sm:grid-cols-[200px_1fr]">
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                  {item.image ? (
+                  {isHero && item.mediaType === 'video' && item.video ? (
+                    <video src={item.video} className="aspect-[16/9] w-full object-cover" muted playsInline autoPlay loop />
+                  ) : item.image ? (
                     <img
                       src={item.image}
                       alt={item.alt || item.title || `${itemLabel} ${index + 1}`}
@@ -456,7 +539,7 @@ export default function MobileBannerSectionEditor({ sectionKey }) {
                     />
                   ) : (
                     <div className="flex aspect-[16/9] items-center justify-center text-xs text-slate-400">
-                      No image
+                      No file
                     </div>
                   )}
                   <label className="flex cursor-pointer items-center justify-center gap-2 border-t border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-50">
@@ -465,10 +548,10 @@ export default function MobileBannerSectionEditor({ sectionKey }) {
                     ) : (
                       <Upload size={14} />
                     )}
-                    Upload
+                    {isHero ? 'Upload image or video' : 'Upload'}
                     <input
                       type="file"
-                      accept="image/*"
+                      accept={isHero ? 'image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov' : 'image/*'}
                       className="hidden"
                       disabled={uploadingIndex === index}
                       onChange={(e) => {
@@ -481,6 +564,7 @@ export default function MobileBannerSectionEditor({ sectionKey }) {
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
+                  {isHero ? null : (
                   <label className="block text-xs font-medium text-slate-600 sm:col-span-2">
                     Image URL
                     <input
@@ -491,8 +575,9 @@ export default function MobileBannerSectionEditor({ sectionKey }) {
                       className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
                     />
                   </label>
+                  )}
                   <label className="block text-xs font-medium text-slate-600 sm:col-span-2">
-                    Link / path
+                    {isHero ? 'Banner path' : 'Link / path'}
                     <input
                       type="text"
                       value={item.link || item.path || ''}
@@ -501,8 +586,8 @@ export default function MobileBannerSectionEditor({ sectionKey }) {
                       className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
                     />
                   </label>
-                  <label className="block text-xs font-medium text-slate-600">
-                    Title
+                  <label className={`block text-xs font-medium text-slate-600 ${isHero ? 'sm:col-span-2' : ''}`}>
+                    {isHero ? 'Main title' : 'Title'}
                     <input
                       type="text"
                       value={item.title || ''}
@@ -531,7 +616,7 @@ export default function MobileBannerSectionEditor({ sectionKey }) {
                         />
                       </label>
                     </>
-                  ) : (
+                  ) : isHero ? null : (
                     <label className="block text-xs font-medium text-slate-600">
                       Alt text
                       <input
@@ -543,6 +628,11 @@ export default function MobileBannerSectionEditor({ sectionKey }) {
                     </label>
                   )}
                 </div>
+                {isHero ? (
+                  <div className="sm:col-span-2">
+                    <HeroSlideFields item={item} onChange={(patch) => updateItem(index, patch)} />
+                  </div>
+                ) : null}
               </div>
             </section>
           ))
@@ -561,22 +651,20 @@ export default function MobileBannerSectionEditor({ sectionKey }) {
       ) : null}
       </div>
 
+      {isHero ? null : (
       <aside className="space-y-4 lg:sticky lg:top-4">
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <MobileHomeBannerPreview
             features={previewFeatures}
-            shopShowcase={shopShowcase}
             highlightSectionKey={sectionKey}
             compact
           />
           <p className="mt-3 text-center text-[11px] text-slate-400">
-            {useWebsiteHomeBanners
-              ? 'Website mode on — preview shows your slides (or website banners). Save to update the app API.'
-              : 'Live preview updates as you edit. Save to push to the app APIs.'}
+            Live preview updates as you edit. Save to push to the app APIs.
           </p>
         </div>
-        {sectionKey === 'bannerSlider' ? <MobileHomeApisPanel compact /> : null}
       </aside>
+      )}
       </div>
     </div>
   )

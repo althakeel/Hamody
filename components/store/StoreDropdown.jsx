@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, ChevronDown, Search } from 'lucide-react';
 
 function normalizeSearchText(value) {
@@ -17,15 +18,19 @@ export default function StoreDropdown({
   disabled = false,
   className = '',
   triggerClassName = '',
+  portal = false,
 }) {
   const listId = useId();
   const rootRef = useRef(null);
+  const menuRef = useRef(null);
   const searchRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [menuStyle, setMenuStyle] = useState(null);
 
-  const normalizedOptions = useMemo(
-    () => options
+  const normalizedOptions = useMemo(() => {
+    const seen = new Set();
+    return options
       .map((option) => {
         if (typeof option === 'string') {
           return { value: option, label: option };
@@ -33,11 +38,16 @@ export default function StoreDropdown({
         return {
           value: String(option?.value ?? ''),
           label: String(option?.label || option?.value || ''),
+          group: String(option?.group || ''),
         };
       })
-      .filter((option) => option.value || option.label),
-    [options],
-  );
+      .filter((option) => {
+        const key = option.value || option.label;
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  }, [options]);
 
   const selected = normalizedOptions.find((option) => option.value === String(value || '')) || null;
   const showSearch = searchable || normalizedOptions.length > 8;
@@ -55,10 +65,10 @@ export default function StoreDropdown({
     if (!open) return undefined;
 
     const handlePointerDown = (event) => {
-      if (!rootRef.current?.contains(event.target)) {
-        setOpen(false);
-        setQuery('');
-      }
+      const target = event.target;
+      if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+      setQuery('');
     };
 
     const handleEscape = (event) => {
@@ -75,6 +85,32 @@ export default function StoreDropdown({
       document.removeEventListener('keydown', handleEscape);
     };
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !portal) return undefined;
+    const place = (event) => {
+      if (event?.target && menuRef.current?.contains(event.target)) return;
+      const rect = rootRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const menuHeight = 320;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openUp = spaceBelow < menuHeight && rect.top > spaceBelow;
+      setMenuStyle({
+        position: 'fixed',
+        left: Math.max(8, rect.left),
+        width: Math.min(rect.width, window.innerWidth - 16),
+        top: openUp ? Math.max(8, rect.top - 6 - Math.min(menuHeight, rect.top - 8)) : rect.bottom + 6,
+        zIndex: 200,
+      });
+    };
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
+  }, [open, portal]);
 
   useEffect(() => {
     if (open && showSearch) {
@@ -119,10 +155,11 @@ export default function StoreDropdown({
       </button>
 
       {open ? (
-        <div
-          id={listId}
-          role="listbox"
-          className="absolute left-0 right-0 top-[calc(100%+6px)] z-[80] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_14px_32px_rgba(15,23,42,0.14)]"
+        <MenuFrame
+          portal={portal}
+          menuRef={menuRef}
+          menuStyle={menuStyle}
+          listId={listId}
         >
           {showSearch ? (
             <div className="border-b border-slate-100 p-2">
@@ -142,32 +179,55 @@ export default function StoreDropdown({
 
           <div className="max-h-64 overflow-y-auto py-1">
             {filteredOptions.length > 0 ? (
-              filteredOptions.map((option) => {
+              filteredOptions.map((option, index) => {
                 const isSelected = option.value === String(value || '');
+                const showGroup = option.group && option.group !== filteredOptions[index - 1]?.group;
                 return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    onClick={() => handleSelect(option.value)}
-                    className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition ${
-                      isSelected
-                        ? 'bg-indigo-50 font-semibold text-indigo-700'
-                        : 'text-slate-700 hover:bg-slate-50'
-                    }`}
-                  >
-                    <span className="truncate">{option.label}</span>
-                    {isSelected ? <Check size={14} className="shrink-0" /> : null}
-                  </button>
+                  <Fragment key={option.value}>
+                    {showGroup ? (
+                      <p className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                        {option.group}
+                      </p>
+                    ) : null}
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      onClick={() => handleSelect(option.value)}
+                      className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition ${
+                        isSelected
+                          ? 'bg-indigo-50 font-semibold text-indigo-700'
+                          : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="truncate">{option.label}</span>
+                      {isSelected ? <Check size={14} className="shrink-0" /> : null}
+                    </button>
+                  </Fragment>
                 );
               })
             ) : (
               <p className="px-3 py-5 text-center text-sm text-slate-500">No matches found</p>
             )}
           </div>
-        </div>
+        </MenuFrame>
       ) : null}
     </div>
   );
+}
+
+function MenuFrame({ portal, menuRef, menuStyle, listId, children }) {
+  const frame = (
+    <div
+      ref={menuRef}
+      id={listId}
+      role="listbox"
+      style={portal ? menuStyle || { position: 'fixed', visibility: 'hidden' } : undefined}
+      className={`${portal ? '' : 'absolute left-0 right-0 top-[calc(100%+6px)] z-[80]'} overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_14px_32px_rgba(15,23,42,0.14)]`}
+    >
+      {children}
+    </div>
+  );
+  if (portal && typeof document !== 'undefined') return createPortal(frame, document.body);
+  return frame;
 }

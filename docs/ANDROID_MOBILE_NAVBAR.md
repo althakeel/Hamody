@@ -512,11 +512,13 @@ The suggestion row uses `_id` or `slug`, `name` / `nameAr`, and `image` (else th
 
 ### `POST /api/search-by-image`
 
-`multipart/form-data`, field name `image`.
+Camera and gallery upload. Full request, related products, and the results screen: [APP_IMAGE_SEARCH.md](./APP_IMAGE_SEARCH.md).
+
+`multipart/form-data`, field name `image`. No GET.
 
 | Status | Body |
 |---|---|
-| 200 | `{ "products": [ … ], "keyword": "toaster", "keywords": ["toaster"] }` |
+| 200 | `products` (closest), `relatedProducts` (same as `recommendedProducts`), `keyword` |
 | 400 | `{ "error": "No image uploaded" }` or `{ "error": "Image is empty" }` |
 
 ### `GET /api/cart`

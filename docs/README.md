@@ -14,8 +14,15 @@ This folder is the **full API documentation set** — from public storefront / m
 |---|----------|--------------|----------|
 | **0** | **[FLUTTER_ENTIRE_APP.md](./FLUTTER_ENTIRE_APP.md)** | **Flutter shopper app** | **Entire customer app: every website screen, API, and what not to build** |
 | **0b** | [FLUTTER_MOBILE_BOTTOM_BUTTON.md](./FLUTTER_MOBILE_BOTTOM_BUTTON.md) | Flutter | Phone center circle only (part of the app doc) |
-| **0g** | [ANDROID_MOBILE_NAVBAR.md](./ANDROID_MOBILE_NAVBAR.md) | Android | Phone top navbar and menu drawer: every API |
+| **0g** | [ANDROID_MOBILE_NAVBAR.md](./ANDROID_MOBILE_NAVBAR.md) | Android | Website phone header and menu drawer: every API |
+| **0g2** | [ANDROID_APP_NAVBAR.md](./ANDROID_APP_NAVBAR.md) | Android | App navbar the seller designs under Mobile: home bar and other-pages bar |
 | **0h** | [ANDROID_BRAND_PAGE.md](./ANDROID_BRAND_PAGE.md) | Android | Brand page design and brand APIs |
+| **0h2** | [APP_BRANDS_API.md](./APP_BRANDS_API.md) | Android / Flutter | Home brand logos `GET /api/public/brands`, brand products, and the brands on the store |
+| **0h3** | [APP_IMAGE_SEARCH.md](./APP_IMAGE_SEARCH.md) | Android / Flutter | Camera and upload image search: `POST /api/search-by-image` and the results screen |
+| **0h3b** | [ANDROID_PRODUCT_IMAGE_SCAN.md](./ANDROID_PRODUCT_IMAGE_SCAN.md) | Android | Product photo scan: closest products, related products, and the product fields |
+| **0h3c** | [APP_SCANNER_AI.md](./APP_SCANNER_AI.md) | Android / iOS | Scanner uses server Gemini and ChatGPT. The phone sends the photo and does not check products |
+| **0h4** | [APP_AUTH.md](./APP_AUTH.md) | Android / Flutter | Shopper login and register: email, Google, Facebook, email OTP, WhatsApp OTP, reset, MFA |
+| **0h5** | [ANDROID_GOOGLE_SIGNIN.md](./ANDROID_GOOGLE_SIGNIN.md) | Android | Google sign-in from `GET /api/public/google-auth`, then Firebase and login-result |
 | **0i** | [ANDROID_BANNER_2.md](./ANDROID_BANNER_2.md) | Android | Home Banner 2 slider: design and API |
 | **0j** | [ANDROID_HOME_PAGE.md](./ANDROID_HOME_PAGE.md) | Android | Home page only: section order, design, and APIs |
 | **0k** | [ANDROID_SHOP_PAGE.md](./ANDROID_SHOP_PAGE.md) | Android | Shop tab: category rail, banner size, spotlight |
@@ -23,6 +30,7 @@ This folder is the **full API documentation set** — from public storefront / m
 | **0m** | [ANDROID_PRODUCT_PAGE.md](./ANDROID_PRODUCT_PAGE.md) | Android | Product page: every API, including Notify Me, reviews, cart, wishlist |
 | **0n** | [ANDROID_CATEGORY_SLIDER.md](./ANDROID_CATEGORY_SLIDER.md) | Android | Home category slider: app image, ratio, and products |
 | **0o** | [ANDROID_CHECKOUT_PAGE.md](./ANDROID_CHECKOUT_PAGE.md) | Android | Checkout screen: delivery, store pickup, payments, place order |
+| **0p** | [VAULTSPAY_CHECKOUT.md](./VAULTSPAY_CHECKOUT.md) | Android / Flutter | VaultsPay card, Google Pay, and Apple Pay at checkout |
 | **0d** | [FLUTTER_HOME_HERO.md](./FLUTTER_HOME_HERO.md) | Flutter | Home hero banner: slides, arrows, dots, mobile image |
 | **0e** | [FLUTTER_CATEGORY_APIS.md](./FLUTTER_CATEGORY_APIS.md) | Flutter | Category tree, category page, home icons, category sliders |
 | **0f** | [FLUTTER_PRODUCT_CARDS.md](./FLUTTER_PRODUCT_CARDS.md) | Flutter | Product card APIs, fields, and the phone card layout |

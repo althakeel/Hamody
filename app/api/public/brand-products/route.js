@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { findPublicBrandPage, getBrandProducts, BRAND_PRODUCTS_PAGE_SIZE } from '@/lib/brandPage';
+import { findPublicBrandPage, getBrandProducts, serializePublicBrand, BRAND_PRODUCTS_PAGE_SIZE } from '@/lib/brandPage';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +21,7 @@ export async function GET(request) {
 
     const result = await getBrandProducts(brand.name, { page, limit });
     return NextResponse.json({
+      brand: serializePublicBrand(brand),
       products: result.products || [],
       total: Number(result.total) || 0,
       page: Number(result.page) || page,

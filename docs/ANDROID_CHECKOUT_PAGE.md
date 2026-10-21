@@ -537,6 +537,7 @@ After the hosted page returns to the app:
 | Stripe | `POST /api/orders/verify-stripe` with `{ "orderId", "sessionId" }` |
 | Tabby | `POST /api/orders/verify-tabby` with `{ "orderId" }` |
 | Tamara | `POST /api/orders/verify-tamara` with `{ "orderId" }` |
+| VaultsPay card, Google Pay, Apple Pay | `POST /api/orders/verify-vaultspay` with `{ "orderId" }`. Full steps: [VAULTSPAY_CHECKOUT.md](./VAULTSPAY_CHECKOUT.md) |
 | Customer cancelled | `POST /api/payment-cancelled` with `{ "orderId", "reason" }` then open the failed screen |
 
 Verified payment opens `/order-success?orderId={orderId}`. Failure opens `/order-failed?reason=…`.

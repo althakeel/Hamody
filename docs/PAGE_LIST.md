@@ -99,6 +99,7 @@ English LTR only. Sidebar + Customize hub.
 | Brands | `/store/brands` |
 | Add product | `/store/add-product` |
 | Manage product | `/store/manage-product` |
+| App discount | `/store/app-discount` |
 | Bulk import | `/store/bulk-import` |
 | Inventory | `/store/inventory` |
 | Database import | `/store/settings/database-import` |
@@ -135,10 +136,20 @@ English LTR only. Sidebar + Customize hub.
 | New blog | `/store/blogs/new` |
 | Edit blog | `/store/blogs/[blogId]` |
 | Mobile features | `/store/mobile-features` |
-| Mobile banners | `/store/mobile-features/banners` |
+| Main banner slider | `/store/mobile-features/banners` |
+| Offers | `/store/mobile-features/offers` |
+| Shop blocks | `/store/mobile-features/shop-blocks` |
+| Deal bar | `/store/mobile-features/deal-bar` |
+| Coupon banner | `/store/mobile-features/coupon-banner` |
+| Push notification | `/store/mobile-features/push` |
 | Mobile small banners | `/store/mobile-features/small-banners` |
 | Mobile promo cards | `/store/mobile-features/promo-cards` |
 | Mobile tile banners | `/store/mobile-features/tile-banners` |
+| Splash screens | `/store/mobile-features/splash-screens` |
+| App header | `/store/mobile-features/header` |
+| Navbar | `/store/mobile-features/navbar` |
+| Footer | `/store/mobile-features/footer` |
+| Loader | `/store/mobile-features/loader` |
 
 ### Marketing
 

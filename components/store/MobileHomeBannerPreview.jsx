@@ -5,7 +5,9 @@ import Link from 'next/link'
 import { Loader2, RefreshCw } from 'lucide-react'
 import BusyButtonIcon from '@/components/store/BusyButtonIcon'
 import {
+  BANNER_HOME_SLOTS,
   MOBILE_BANNER_SECTIONS,
+  heroFontFamily,
   toPublicBannerSection,
 } from '@/lib/mobileBannerLayout'
 import { normalizeMobileFeatures, toPreviewMobileFeatures } from '@/lib/mobileFeatures'
@@ -19,13 +21,86 @@ const SECTION_HREF = {
   tileBanners: '/store/mobile-features/tile-banners',
 }
 
-function SlideCarousel({ slides, heightPx, intervalSeconds, emptyLabel }) {
+function HeroOverlay({ slide, phone = false }) {
+  if (!slide?.title && !slide?.subtitle && !slide?.buttonEnabled) return null;
+  const align = slide.textAlign || 'left';
+  const placeX = slide.contentPosition || 'left';
+  const placeY = slide.contentVertical || 'center';
+  const self = placeX === 'right' ? 'flex-end' : placeX === 'center' ? 'center' : 'flex-start';
+  const pack = placeY === 'top' ? 'flex-start' : placeY === 'bottom' ? 'flex-end' : 'center';
+  const hover = slide.hoverAnimation && slide.hoverAnimation !== 'none' ? `hero-hover-${slide.hoverAnimation}` : '';
+  const titleSize = phone
+    ? Math.max(16, Math.min(22, Math.round((slide.titleSizePx || 32) * 0.58)))
+    : Math.max(12, Math.round((slide.titleSizePx || 32) * 0.42));
+  const subtitleSize = phone
+    ? Math.max(10, Math.min(13, Math.round((slide.subtitleSizePx || 15) * 0.8)))
+    : Math.max(9, Math.round((slide.subtitleSizePx || 15) * 0.7));
+  return (
+    <div
+      className={`absolute inset-0 flex flex-col ${phone ? 'px-4 py-4' : 'p-3'}`}
+      style={{ justifyContent: pack, fontFamily: heroFontFamily(slide.fontFamily) }}
+    >
+      <div style={{ alignSelf: self, maxWidth: phone ? '78%' : '82%', textAlign: align }}>
+        {slide.title ? (
+          <p
+            className="font-bold leading-[1.05]"
+            style={{
+              color: slide.titleColor || '#fff',
+              fontSize: titleSize,
+              textShadow: '0 1px 2px rgba(0,0,0,0.45)',
+            }}
+          >
+            {slide.title}
+          </p>
+        ) : null}
+        {slide.subtitle ? (
+          <p
+            className={phone ? 'mt-1.5 leading-snug' : 'mt-1 leading-snug'}
+            style={{
+              color: slide.subtitleColor || '#e2e8f0',
+              fontSize: subtitleSize,
+              textShadow: '0 1px 2px rgba(0,0,0,0.45)',
+            }}
+          >
+            {slide.subtitle}
+          </p>
+        ) : null}
+      </div>
+      {slide.buttonEnabled && slide.buttonText ? (
+        <span
+          className={`inline-block font-bold transition ${phone ? 'mt-2.5 px-3 py-1.5 text-[11px] tracking-wide' : 'mt-2 px-2 py-1 text-[9px]'} ${hover}`}
+          style={{
+            alignSelf: slide.buttonAlign === 'right' ? 'flex-end' : 'flex-start',
+            background: slide.buttonColor || '#f97316',
+            color: slide.buttonTextColor || '#fff',
+            borderRadius: slide.buttonRadiusPx ?? 8,
+          }}
+        >
+          {slide.buttonText}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function SlideCarousel({
+  slides,
+  heightPx,
+  intervalSeconds,
+  emptyLabel,
+  phone = false,
+  frameWidth = 376,
+  frameHeight = 156,
+  highlighted = false,
+}) {
+  const aspectRatio = `${frameWidth} / ${frameHeight}`
+  const phoneWidth = `${(frameWidth / 392) * 100}%`
   const [index, setIndex] = useState(0)
-  const safeSlides = Array.isArray(slides) ? slides.filter((s) => s?.image) : []
+  const safeSlides = Array.isArray(slides) ? slides.filter((s) => s?.image || s?.video) : []
 
   useEffect(() => {
     setIndex(0)
-  }, [safeSlides.length, safeSlides[0]?.image])
+  }, [safeSlides.length, safeSlides[0]?.image, safeSlides[0]?.video])
 
   useEffect(() => {
     if (safeSlides.length < 2) return undefined
@@ -39,8 +114,8 @@ function SlideCarousel({ slides, heightPx, intervalSeconds, emptyLabel }) {
   if (!safeSlides.length) {
     return (
       <div
-        className="flex items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-100 text-[10px] text-slate-400"
-        style={{ height: heightPx }}
+        className={`flex items-center justify-center border border-dashed border-slate-300 bg-slate-100 text-slate-400 ${phone ? 'mx-auto text-[11px]' : 'rounded-lg text-[10px]'} ${highlighted ? 'ring-2 ring-sky-500' : ''}`}
+        style={phone ? { aspectRatio, width: phoneWidth } : { height: heightPx }}
       >
         {emptyLabel}
       </div>
@@ -50,24 +125,53 @@ function SlideCarousel({ slides, heightPx, intervalSeconds, emptyLabel }) {
   const current = safeSlides[index] || safeSlides[0]
 
   return (
-    <div className="relative overflow-hidden rounded-lg bg-slate-200" style={{ height: heightPx }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={current.image}
-        alt={current.title || 'Banner'}
-        className="h-full w-full object-cover"
-      />
+    <div
+      className={`relative overflow-hidden bg-slate-900 ${phone ? 'mx-auto rounded-lg' : 'rounded-lg'} ${highlighted ? 'ring-2 ring-sky-500' : ''}`}
+      style={phone ? { aspectRatio, width: phoneWidth, maxWidth: phoneWidth, flex: `0 0 ${phoneWidth}` } : { height: heightPx }}
+    >
+      <style>{`
+        .hero-hover-lift:hover { transform: translateY(-2px); }
+        .hero-hover-scale:hover { transform: scale(1.06); }
+        .hero-hover-fade:hover { opacity: 0.75; }
+        .hero-hover-glow:hover { box-shadow: 0 0 12px rgba(255,255,255,0.85); }
+      `}</style>
+      {current.mediaType === 'video' && current.video ? (
+        <video
+          key={current.video}
+          src={current.video}
+          poster={current.image || undefined}
+          className="absolute inset-0 h-full w-full object-cover"
+          muted
+          playsInline
+          autoPlay
+          loop
+        />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={current.image}
+          alt={current.title || 'Banner'}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      )}
+      {phone ? (
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-950/45 via-slate-950/10 to-transparent" />
+      ) : null}
+      <HeroOverlay slide={current} phone={phone} />
       {current.showAdBadge ? (
         <span className="absolute end-2 top-2 rounded bg-black/70 px-1.5 py-0.5 text-[9px] font-semibold text-white">
           Ad
         </span>
       ) : null}
       {safeSlides.length > 1 ? (
-        <div className="absolute inset-x-0 bottom-1.5 flex justify-center gap-1">
+        <div className={`absolute inset-x-0 flex justify-center ${phone ? 'bottom-2 gap-1.5' : 'bottom-1.5 gap-1'}`}>
           {safeSlides.map((_, i) => (
-            <span
+            <button
               key={i}
-              className={`h-1 w-1 rounded-full ${i === index ? 'bg-white' : 'bg-white/50'}`}
+              type="button"
+              aria-label={`Slide ${i + 1}`}
+              onClick={() => setIndex(i)}
+              className={`rounded-full ${phone ? 'h-1.5 w-1.5' : 'h-1 w-1'} ${i === index ? 'bg-white' : 'bg-white/45'}`}
             />
           ))}
         </div>
@@ -112,6 +216,59 @@ function TileGrid({ tiles }) {
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+function HomeGap() {
+  return (
+    <div className="space-y-1.5 px-3 py-3">
+      <div className="h-2 w-2/3 rounded bg-slate-200" />
+      <div className="h-8 rounded bg-slate-200" />
+    </div>
+  )
+}
+
+export function HeroSliderPreview({ features, activeKey }) {
+  return (
+    <div className="flex justify-center">
+      <div className="w-[300px] rounded-[2.6rem] border-[11px] border-slate-900 bg-slate-900 shadow-xl">
+        <div className="relative overflow-hidden rounded-[1.85rem] bg-white">
+          <div className="absolute left-1/2 top-2 z-20 h-[18px] w-[92px] -translate-x-1/2 rounded-full bg-slate-900" />
+          <div className="flex aspect-[9/19.5] flex-col overflow-y-auto bg-slate-50">
+            <div className="h-8 shrink-0 bg-white" />
+            {BANNER_HOME_SLOTS.map((slot, index) => {
+              const meta = MOBILE_BANNER_SECTIONS[slot.key]
+              const section = features?.[slot.key] || {}
+              const slides = Array.isArray(section[meta.listKey]) ? section[meta.listKey] : []
+              const active = activeKey === slot.key
+              return (
+                <div key={slot.key}>
+                  {index > 0 ? <HomeGap /> : null}
+                  <p className={`px-3 pb-1 text-[10px] font-semibold ${active ? 'text-sky-700' : 'text-slate-400'}`}>
+                    {slot.label}
+                  </p>
+                  <div className="flex justify-center">
+                    <SlideCarousel
+                      slides={slides.filter((slide) => slide && slide.enabled !== false)}
+                      intervalSeconds={slides.length > 1 ? section.slideIntervalSeconds : 0}
+                      emptyLabel="Add a slide"
+                      phone
+                      highlighted={active}
+                      frameWidth={meta.frameWidth}
+                      frameHeight={meta.frameHeight}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+            <div className="min-h-8 flex-1" />
+          </div>
+          <div className="pointer-events-none absolute inset-x-0 bottom-1.5 flex justify-center">
+            <span className="h-1 w-24 rounded-full bg-slate-900/80" />
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -179,7 +336,7 @@ export default function MobileHomeBannerPreview({
                 <p className="text-[9px] text-slate-400">App preview · not the website</p>
               </div>
 
-              {SECTION_ORDER.map((key) => {
+              {(highlightSectionKey ? SECTION_ORDER.filter((key) => key === highlightSectionKey) : SECTION_ORDER).map((key) => {
                 const meta = MOBILE_BANNER_SECTIONS[key]
                 const section = payload[key] || toPublicBannerSection(key, {})
                 const list = section[meta.listKey] || []
