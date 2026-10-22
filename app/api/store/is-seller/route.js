@@ -68,7 +68,7 @@ export async function GET(request) {
             isSuperAdmin: isAdminEmail(decodedToken.email),
             accessRole: access.accessRole,
             permissions: access.permissions,
-            canManageTeamAccess: access.isOwner,
+            canManageTeamAccess: Boolean(access.isOwner || access.permissions?.manageUsers === true),
             canViewActivityHistory: canViewStoreActivityHistory(decodedToken.email, access.permissions),
         });
     } catch (error) {

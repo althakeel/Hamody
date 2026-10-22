@@ -7,6 +7,8 @@ import Wallet from '@/models/Wallet';
 import {
   aggregateStoreCustomers,
   enrichCustomersWithUsers,
+  findRegisteredCustomersWithoutOrders,
+  placeCustomersWithoutOrders,
   resolveRegisteredCustomerIds,
 } from '@/lib/storeCustomersApi';
 import { reconcileUnlinkedGuestOrdersForStore } from '@/lib/linkGuestOrders';
@@ -56,13 +58,37 @@ export async function GET(request) {
       matchingUserIds = matchedUsers.map((user) => user._id);
     }
 
-    const { customers, pagination, stats } = await aggregateStoreCustomers(Order, storeId, {
+    const aggregated = await aggregateStoreCustomers(Order, storeId, {
       search,
       view,
       page,
       limit,
       matchingUserIds,
     });
+
+    let customers = aggregated.customers;
+    let pagination = aggregated.pagination;
+    const stats = aggregated.stats;
+
+    if (search && matchingUserIds.length) {
+      const withoutOrders = await findRegisteredCustomersWithoutOrders(
+        Order,
+        User,
+        storeId,
+        matchingUserIds,
+      );
+      const placed = placeCustomersWithoutOrders(customers, withoutOrders, {
+        page,
+        limit,
+        orderTotal: pagination.total,
+      });
+      customers = placed.customers;
+      pagination = {
+        ...pagination,
+        total: placed.total,
+        totalPages: placed.totalPages,
+      };
+    }
 
     const registeredIds = customers
       .filter((customer) => !customer.isGuest && customer.userId)

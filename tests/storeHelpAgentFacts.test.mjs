@@ -309,6 +309,11 @@ test('app navbar questions open the mobile navbar', () => {
   assert.equal(match.href, '/store/mobile-features/navbar');
 });
 
+test('app icon questions open the app icon page', () => {
+  const match = matchHelpHowTo('where do I upload the app icon');
+  assert.equal(match.href, '/store/mobile-features/app-icon');
+});
+
 test('parent categories open menu management', () => {
   const match = matchHelpHowTo('where are parent categories');
   assert.equal(match.href, '/store/menu-management');

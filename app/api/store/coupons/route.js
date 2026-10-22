@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Coupon from "@/models/Coupon";
-import Store from "@/models/Store";
+import { requireStorePermission } from "@/lib/storeAccessControl";
 
 // GET - Fetch all coupons for a store
 export async function GET(request) {
@@ -25,15 +25,12 @@ export async function GET(request) {
     } catch (e) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const userId = decodedToken.uid;
-
-    // Get store
-    const store = await Store.findOne({ userId }).lean();
-    if (!store) {
-      return NextResponse.json({ error: "Store not found" }, { status: 404 });
+    const seller = await requireStorePermission(decodedToken.uid, decodedToken, 'coupons');
+    if (seller.error) {
+      return NextResponse.json({ error: seller.error }, { status: seller.status });
     }
 
-    const coupons = await Coupon.find({ storeId: store._id.toString() })
+    const coupons = await Coupon.find({ storeId: seller.storeId })
       .sort({ createdAt: -1 });
 
     return NextResponse.json({ success: true, coupons });
@@ -68,12 +65,9 @@ export async function POST(request) {
     } catch (e) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const userId = decodedToken.uid;
-
-    // Get store
-    const store = await Store.findOne({ userId }).lean();
-    if (!store) {
-      return NextResponse.json({ error: "Store not found" }, { status: 404 });
+    const seller = await requireStorePermission(decodedToken.uid, decodedToken, 'coupons');
+    if (seller.error) {
+      return NextResponse.json({ error: seller.error }, { status: seller.status });
     }
 
     const body = await request.json();
@@ -119,7 +113,7 @@ export async function POST(request) {
     // Check if coupon code already exists
     const existingCoupon = await Coupon.findOne({
       code: finalCode.toUpperCase(),
-      storeId: store._id.toString(),
+      storeId: seller.storeId,
     });
 
     if (existingCoupon) {
@@ -133,7 +127,7 @@ export async function POST(request) {
       code: finalCode.toUpperCase(),
       title: finalTitle,
       description: finalDescription,
-      storeId: store._id.toString(),
+      storeId: seller.storeId,
       discountType: finalDiscountType,
       discountValue: parseFloat(finalDiscountValue),
       minOrderValue: parseFloat(minOrderValue || minPrice || 0),
@@ -189,12 +183,9 @@ export async function DELETE(request) {
     } catch (e) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const userId = decodedToken.uid;
-
-    // Get store
-    const store = await Store.findOne({ userId }).lean();
-    if (!store) {
-      return NextResponse.json({ error: "Store not found" }, { status: 404 });
+    const seller = await requireStorePermission(decodedToken.uid, decodedToken, 'coupons');
+    if (seller.error) {
+      return NextResponse.json({ error: seller.error }, { status: seller.status });
     }
 
     const { searchParams } = new URL(request.url);
@@ -209,7 +200,7 @@ export async function DELETE(request) {
 
     const coupon = await Coupon.findOneAndDelete({
       _id: couponId,
-      storeId: store._id.toString(),
+      storeId: seller.storeId,
     });
 
     if (!coupon) {

@@ -7,7 +7,7 @@ const StoreActivityLogSchema = new mongoose.Schema({
   actorName: { type: String, default: '' },
   actorRole: {
     type: String,
-    enum: ['owner', 'admin', 'member', 'unknown'],
+    enum: ['owner', 'admin', 'member', 'customer', 'unknown'],
     default: 'unknown',
   },
   method: { type: String, default: 'POST' },

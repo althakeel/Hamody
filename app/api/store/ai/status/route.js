@@ -1,4 +1,4 @@
-import authSeller from '@/middlewares/authSeller';
+import { canUseProductAi, resolveDashboardAccess } from '@/lib/storeAccessControl';
 import { getProductAiRuntimeConfig } from '@/lib/productAiConfig';
 import { NextResponse } from 'next/server';
 
@@ -6,21 +6,22 @@ export async function GET(request) {
   try {
     const authHeader = request.headers.get('authorization');
     let userId = null;
+    let decodedToken = null;
 
     if (authHeader?.startsWith('Bearer ')) {
       const idToken = authHeader.split('Bearer ')[1];
       try {
         const { getAuth } = await import('@/lib/firebase-admin');
         const adminAuth = getAuth();
-        const decodedToken = await adminAuth.verifyIdToken(idToken);
+        decodedToken = await adminAuth.verifyIdToken(idToken);
         userId = decodedToken.uid;
       } catch (error) {
         return NextResponse.json({ error: 'Auth verification failed', detail: error.message }, { status: 401 });
       }
     }
 
-    const storeId = await authSeller(userId);
-    if (!storeId) {
+    const access = await resolveDashboardAccess(userId, decodedToken || {});
+    if (!canUseProductAi(access)) {
       return NextResponse.json({ error: 'not authorized' }, { status: 401 });
     }
 

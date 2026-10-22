@@ -255,7 +255,7 @@ export default function SettingsPage() {
     const tabs = ["profile", "store", "preferences", "payments", "dataImport"];
     if (canManageTeamAccess) tabs.splice(4, 0, "dashboardAccess");
     if (canViewActivityHistory) tabs.push("history");
-    if (isSuperAdmin || isStoreOwner || canManageTeamAccess) tabs.push("cache");
+    if (isSuperAdmin || isStoreOwner) tabs.push("cache");
     if (isSuperAdmin || isStoreOwner) tabs.push("passwords");
     return tabs;
   }, [canEditStoreSettings, canManageTeamAccess, canViewActivityHistory, isSuperAdmin, isStoreOwner]);
@@ -430,7 +430,7 @@ export default function SettingsPage() {
     }
   }, [canViewActivityHistory]);
 
-  const canManageCache = isSuperAdmin || isStoreOwner || canManageTeamAccess;
+  const canManageCache = isSuperAdmin || isStoreOwner;
 
   useEffect(() => {
     if (typeof window === "undefined" || !canManageCache) return;

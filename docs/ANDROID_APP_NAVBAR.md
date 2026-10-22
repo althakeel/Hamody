@@ -1,23 +1,25 @@
-# Store1920 app navbar — design from the seller dashboard
+# Store1920 app navbar
 
-Last updated: 20 October 2026  
-Audience: Android app  
+Last updated: 22 October 2026  
+Audience: Android and Flutter  
 Seller page: `/store/mobile-features/navbar`  
-Web source: `components/store/MobileNavbarEditor.jsx`
+Web source: `lib/mobileAppNavbar.js`, `components/store/MobileNavbarEditor.jsx`
 
-This is the **app** navbar the seller designs under Mobile. It is not the website header.
+This is the navbar the seller designs for the **mobile app**. It is not the website header.
 
-Do not read this bar from `GET /api/store/navbar-menu` or `GET /api/store/settings`. Those are the website logo, search, and phone row. That spec is [ANDROID_MOBILE_NAVBAR.md](./ANDROID_MOBILE_NAVBAR.md).
+Do not read this bar from `GET /api/store/navbar-menu` or `GET /api/store/settings`. Those are the website logo, search, and phone row. That spec is [ANDROID_MOBILE_NAVBAR.md](./ANDROID_MOBILE_NAVBAR.md). The black category strip under the website header is [ANDROID_CATEGORY_BAR.md](./ANDROID_CATEGORY_BAR.md).
 
 ```http
 GET https://www.store1920.com/api/public/mobile-features
 ```
 
-No login. Do not send `Authorization`.
+No login. Do not send `Authorization`. The response is cached for about 3 minutes. Cache the last good `mobileFeatures.appNavbar` on the device. If a refresh fails, keep that cache. Never replace a saved logo or icon with an empty one.
 
-Read `mobileFeatures.appNavbar`. Cache the last good response. If a refresh fails, keep that cache. Never replace a saved logo with an empty one.
+Read only `mobileFeatures.appNavbar`. The rest of `mobileFeatures` is other home blocks.
 
 `appNavbar.enabled` false hides the home bar. Inner pages still use `appNavbar.pageNavbar`.
+
+English is left to right. Arabic mirrors every row. Marquee text uses `textAr` when the language is Arabic and that field is not empty. Search uses `placeholderAr` the same way. A link or image URL that starts with `/` is on this site. `https://` is a full URL. Ignore `javascript:` and `data:`.
 
 ---
 
@@ -25,40 +27,138 @@ Read `mobileFeatures.appNavbar`. Cache the last good response. If a refresh fail
 
 | Screen | Object | What it is |
 |---|---|---|
-| Home | `appNavbar` | Marquee, logo, search. Colored or gradient block with rounded bottom corners |
+| Home | `appNavbar` | Marquee, logo row, search. One colored block with rounded bottom corners |
 | Every other screen | `appNavbar.pageNavbar` | Back, search, heart |
 
-English is left to right. Arabic mirrors the row. Marquee and search text use `textAr` / `placeholderAr` when the language is Arabic and that field is not empty.
-
----
-
-## 2. Home bar
-
-Three bands, top to bottom. Full width. Pinned under the status bar.
-
 ```
+Home
 ┌─────────────────────────────────────┐
 │  Cash On Delivery    tamara    …    │  marquee
 │  [logo]              location  EN   │  logo row
 │  [≡]  Search              |  📷     │  search
 └─────────────────────────────────────┘
+
+Other screens
+┌─────────────────────────────────────┐
+│  ←     [  🔍  Search            ]  ♡ │
+└─────────────────────────────────────┘
 ```
 
-The location label and the language switch are the app’s own words. Draw them on the end side of the logo row. Paint the location words and pin with `logoRow.locationColor`. Paint the language word with `logoRow.languageColor`. Both default to `#ffffff`.
+The location line and the language word are the app’s own copy. Draw them on the end side of the logo row. Paint the location words and the pin with `logoRow.locationColor`. Paint the language word with `logoRow.languageColor`. Both default to `#ffffff`.
 
-`heightPx` on `appNavbar` is the sum of the three bands, including their margins. Use the band fields below. Do not invent a second height.
+---
+
+## 2. Sample `appNavbar`
+
+Fields that are empty are omitted. `marquee.items` only includes lines the seller left on, and only lines that have an icon or text.
+
+```json
+{
+  "enabled": true,
+  "heightPx": 176,
+  "radius": { "topLeft": 0, "topRight": 0, "bottomLeft": 28, "bottomRight": 28 },
+  "background": {
+    "mode": "color",
+    "color": "#6d35e8",
+    "gradientFrom": "#8b5cf6",
+    "gradientTo": "#5b21b6",
+    "gradientPosition": 100,
+    "gradientAngle": 180
+  },
+  "logoUrl": "https://…/logo.png",
+  "logoRow": {
+    "heightPx": 72,
+    "marginTopPx": 8,
+    "marginBottomPx": 0,
+    "paddingX": 16,
+    "locationColor": "#ffffff",
+    "languageColor": "#ffffff"
+  },
+  "search": {
+    "enabled": true,
+    "placeholder": "Search",
+    "placeholderAr": "بحث",
+    "backgroundColor": "#ffffff",
+    "textColor": "#b7b6f2",
+    "menuButtonColor": "#eceefe",
+    "menuButtonRadius": 16,
+    "dividerColor": "#c9caf6",
+    "heightPx": 48,
+    "marginTopPx": 8,
+    "marginBottomPx": 12,
+    "paddingX": 12,
+    "radiusPx": 32,
+    "iconSizePx": 18
+  },
+  "marquee": {
+    "enabled": true,
+    "heightPx": 36,
+    "marginTopPx": 8,
+    "marginBottomPx": 0,
+    "paddingX": 0,
+    "speedSeconds": 16,
+    "textColor": "#ffffff",
+    "gapPx": 28,
+    "iconSizePx": 18,
+    "fontSizePx": 13,
+    "items": [
+      { "id": "nav-line-1", "text": "Cash On Delivery", "textAr": "الدفع عند الاستلام", "color": "#ffffff" }
+    ]
+  },
+  "pageNavbar": {
+    "enabled": true,
+    "backgroundMode": "color",
+    "backgroundColor": "#f6f5fb",
+    "iconColor": "#6b4ce6",
+    "backEnabled": true,
+    "heartEnabled": true,
+    "searchEnabled": true,
+    "placeholder": "Search",
+    "searchBackground": "#ffffff",
+    "searchBorderColor": "#ddd6fe",
+    "searchTextColor": "#6b4ce6",
+    "gradientFrom": "#8b5cf6",
+    "gradientTo": "#5b21b6",
+    "gradientPosition": 100,
+    "gradientAngle": 180,
+    "backgroundMediaUrl": "",
+    "backgroundMediaKind": "image",
+    "heightPx": 56,
+    "paddingX": 12,
+    "searchRadiusPx": 22,
+    "iconSizePx": 22,
+    "backIconUrl": "",
+    "searchIconUrl": "",
+    "heartIconUrl": ""
+  }
+}
+```
+
+`menuIconUrl`, `searchIconUrl`, and `cameraIconUrl` appear on `search` only when the seller uploaded that icon. `iconUrl` appears on a marquee item only when that line has an icon. `background.mediaUrl` and `background.mediaKind` appear only when a background file is saved.
+
+---
+
+## 3. Home bar
+
+Full width. Pinned under the status bar. Three bands, top to bottom.
+
+`heightPx` on the root object adds every band, including a band that is hidden. Do not use it when the marquee or the search is off. The drawn height is:
+
+- Marquee on: `marquee.marginTopPx + marquee.heightPx + marquee.marginBottomPx`. Marquee off: **12**.
+- Logo row, always: `logoRow.marginTopPx + logoRow.heightPx + logoRow.marginBottomPx`.
+- Search on: `search.marginTopPx + search.heightPx + search.marginBottomPx`. Search off: **12**.
 
 ### Background
+
+One fill behind all three bands.
 
 | `background.mode` | Fill |
 |---|---|
 | `color` | `background.color`. Default `#6d35e8` |
-| `gradient` | `linear-gradient({gradientAngle}deg, gradientFrom 0%, gradientTo gradientPosition%)`. Angle default **180** (top to bottom). Colors default `#8b5cf6` → `#5b21b6`, position **100** |
-| `media` | `background.mediaUrl` covers the bar. `background.mediaKind` is `image` (JPEG, PNG, WebP, GIF) or `video` (muted, loop). Keep `background.color` behind it until the file loads |
+| `gradient` | `linear-gradient({gradientAngle}deg, gradientFrom 0%, gradientTo gradientPosition%)`. Angle default **180** (top to bottom). Colors default `#8b5cf6` to `#5b21b6`. Position default **100** |
+| `media` | `background.mediaUrl` covers the bar (`object-fit: cover`). `background.mediaKind` is `image` (JPEG, PNG, WebP, GIF) or `video` (muted, looped, no sound). Keep `background.color` visible until the file loads |
 
-`pageNavbar` uses the same `backgroundMode`, `gradientFrom`, `gradientTo`, `gradientPosition`, `gradientAngle`, `backgroundMediaUrl`, and `backgroundMediaKind`. `backgroundColor` stays the flat color.
-
-Corners, in px. Default top **0**, bottom **28**. Clamp 0–80.
+Corners are in `radius`, in px. Default top **0**, bottom **28**. Clamp 0–80.
 
 | Field | Corner |
 |---|---|
@@ -67,9 +167,11 @@ Corners, in px. Default top **0**, bottom **28**. Clamp 0–80.
 | `radius.bottomLeft` | Bottom start |
 | `radius.bottomRight` | Bottom end |
 
+In Arabic, start is the right edge and end is the left edge.
+
 ### Marquee
 
-Skip the band when `marquee.enabled` is false or `marquee.items` is empty.
+Skip this band when `marquee.enabled` is false or `marquee.items` is empty. At most **12** items.
 
 | Field | Default | Range |
 |---|---|---|
@@ -83,11 +185,13 @@ Skip the band when `marquee.enabled` is false or `marquee.items` is empty.
 | `textColor` | `#ffffff` | |
 | `speedSeconds` | 16 | 4–60 |
 
-Each item: `text`, `textAr`, optional `iconUrl`, `color`. `color` empty means `marquee.textColor`. Icon sits **6** px before the text. Text is one line, semibold.
+Each item has `id`, `text`, `textAr`, optional `iconUrl`, and `color`. An empty `color` is already replaced with `marquee.textColor` before the app sees it. The icon is `iconSizePx`, **6** px before the text. Text is one line, semibold.
 
-Draw the items twice, in one row, and move that row by half its width over `speedSeconds`, linear, forever. The row does not pause.
+Draw the item list twice, in one row. Move that row by half its width over `speedSeconds`, linear, forever. The row does not pause. Side padding is `paddingX`. The gap between items is `gapPx` (`paddingInline` of `gapPx / 2` on each item).
 
 ### Logo row
+
+Always drawn.
 
 | Field | Default | Range |
 |---|---|---|
@@ -95,14 +199,14 @@ Draw the items twice, in one row, and move that row by half its width over `spee
 | `logoRow.marginTopPx` | 8 | 0–80 |
 | `logoRow.marginBottomPx` | 0 | 0–80 |
 | `logoRow.paddingX` | 16 | 0–40 |
-| `logoRow.locationColor` | `#ffffff` | Deliver to, city, and the pin |
+| `logoRow.locationColor` | `#ffffff` | Deliver-to line and the pin |
 | `logoRow.languageColor` | `#ffffff` | Language word |
 
-Logo is **56 × 56**, radius **16**, on the start side, vertically centered. `logoUrl` fills the box, cropped. When `logoUrl` is missing, draw the word store1920 in white on white at 20% opacity.
+The logo box is **56 × 56**, radius **16**, on the start side, vertically centered. `logoUrl` fills the box, cropped. The file may be a PNG, JPG, WEBP, or an animated GIF. Play a GIF inside the box. When `logoUrl` is missing, the box is white at 20% opacity and the words `store` and `1920` are white, about **9** px, bold. The seller sets this file at `/store/mobile-features/app-icon`.
 
 ### Search
 
-Skip the band when `search.enabled` is false.
+Skip this band when `search.enabled` is false.
 
 | Field | Default | Range |
 |---|---|---|
@@ -113,7 +217,7 @@ Skip the band when `search.enabled` is false.
 | `radiusPx` | 32 | 0–40 |
 | `iconSizePx` | 18 | 12–28 |
 | `backgroundColor` | `#ffffff` | |
-| `textColor` | `#b7b6f2` | placeholder and default icons |
+| `textColor` | `#b7b6f2` | placeholder and the default icons |
 | `menuButtonColor` | `#eceefe` | |
 | `menuButtonRadius` | 16 | 0–24 |
 | `dividerColor` | `#c9caf6` | |
@@ -123,30 +227,27 @@ The pill is inset by `paddingX`. Inside the pill: **4** px start padding, **14**
 
 | Piece | Size | Tap |
 |---|---|---|
-| Menu button | 78% of the pill height, square, radius `menuButtonRadius`, fill `menuButtonColor` | Opens the category menu |
+| Menu button | 78% of the pill height, square, radius `menuButtonRadius`, fill `menuButtonColor` | Opens the app category menu |
 | Menu icon | `iconSizePx`. `menuIconUrl` when set, otherwise three horizontal lines in `textColor` | |
 | Search icon | `iconSizePx`. `searchIconUrl` when set, otherwise a magnifying glass in `textColor` | Focuses search |
-| Placeholder | `max(13, iconSizePx - 2)`, medium, `textColor`, one line | Opens search |
+| Placeholder | `max(13, iconSizePx - 2)` px, medium, `textColor`, one line | Opens search |
 | Divider | 1 px wide, 42% of the pill height, `dividerColor` | |
 | Camera | `iconSizePx`. `cameraIconUrl` when set, otherwise a camera in `textColor` | Image search. See [APP_IMAGE_SEARCH.md](./APP_IMAGE_SEARCH.md) |
 
-A `menuIconUrl`, `searchIconUrl`, or `cameraIconUrl` that is empty means the default icon. Ignore `javascript:` and `data:` URLs.
+An empty icon URL means the default icon.
 
 ---
 
-## 3. Other pages
+## 4. Other pages
 
-`pageNavbar.enabled` false hides this bar. Home is unchanged.
+`pageNavbar.enabled` false hides this bar. The home bar is unchanged.
 
-One row. Full width.
+One row. Full width. Background uses the same three modes as the home bar: `backgroundMode` `color`, `gradient`, or `media`. Flat color is `backgroundColor`. Gradient uses `gradientFrom`, `gradientTo`, `gradientPosition`, and `gradientAngle`. A file uses `backgroundMediaUrl` and `backgroundMediaKind` (`image` or `video`, muted and looped).
 
 | Field | Default | Range |
 |---|---|---|
-| `backgroundColor` | `#f6f5fb` | flat color when `backgroundMode` is `color` |
-| `backgroundMode` | `color` | `color`, `gradient`, or `media`. Same fill rules as the home bar |
-| `backgroundMediaUrl` | empty | image, WebP, GIF, or video. Present when a file is saved |
-| `backgroundMediaKind` | `image` | `video` plays muted and looped |
-| `iconColor` | `#6b4ce6` | back and heart when no custom icon |
+| `backgroundColor` | `#f6f5fb` | Used when `backgroundMode` is `color` |
+| `iconColor` | `#6b4ce6` | Back and heart when no custom icon is set |
 | `heightPx` | 56 | 44–96 |
 | `paddingX` | 12 | 0–32 |
 | `iconSizePx` | 22 | 14–32 |
@@ -154,23 +255,27 @@ One row. Full width.
 | `searchBackground` | `#ffffff` | |
 | `searchBorderColor` | `#ddd6fe` | |
 | `searchTextColor` | `#6b4ce6` | |
-| `placeholder` | Search | 40 characters |
+| `placeholder` | Search | 40 characters. There is no Arabic placeholder on this bar |
 | `backEnabled` | true | |
 | `searchEnabled` | true | |
 | `heartEnabled` | true | |
 
 | Piece | Draw | Tap |
 |---|---|---|
-| Back | `backIconUrl`, or a chevron in `iconColor` at `iconSizePx`. Hidden when `backEnabled` is false. Keep the gap | Previous screen |
-| Search | Centered, flex. Height is 68% of the bar. Radius `searchRadiusPx`. Border 1 px. Icon is 80% of `iconSizePx` (`searchIconUrl` or a magnifying glass). Placeholder is 14 px, medium | Search |
-| Heart | `heartIconUrl`, or a heart outline in `iconColor`. Hidden when `heartEnabled` is false. Keep the gap | Wishlist |
+| Back | `backIconUrl`, or a chevron in `iconColor` at `iconSizePx`. Hidden when `backEnabled` is false. Keep a gap the size of the icon | Previous screen |
+| Search | Centered, flex. Height is 68% of `heightPx`. Radius `searchRadiusPx`. Border 1 px `searchBorderColor`. Icon is 80% of `iconSizePx` (`searchIconUrl` or a magnifying glass). Placeholder is **14** px, medium, `searchTextColor` | Search |
+| Heart | `heartIconUrl`, or a heart outline in `iconColor`. Hidden when `heartEnabled` is false. Keep a gap the size of the icon | Wishlist |
+
+Gap between the three pieces is **12** px. Custom icons are contained in the icon box, not cropped.
 
 ---
 
-## 4. Checklist
+## 5. Checklist
 
 - One call: `GET /api/public/mobile-features`. No token.
 - Home uses `mobileFeatures.appNavbar`. Other screens use `appNavbar.pageNavbar`.
 - Do not use `GET /api/store/navbar-menu` for this bar.
-- Marquee text loops. Search camera opens image search.
-- Logo, menu, search, camera, back, and heart use the uploaded URL when that field is not empty.
+- Draw a band only when it is enabled. Do not trust root `heightPx` while a band is hidden.
+- Marquee text loops and does not pause.
+- The search camera opens image search.
+- Logo, menu, search, camera, back, and heart use the uploaded URL when that field is present.

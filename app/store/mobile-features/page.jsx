@@ -19,6 +19,20 @@ export default function MobileFeaturesPage() {
 
       <div className="grid gap-3 px-4 py-6 sm:px-6 lg:grid-cols-2 lg:px-8">
         <Link
+          href="/store/mobile-features/app-icon"
+          className="flex max-w-md items-start gap-3 rounded-2xl border border-slate-200 p-4 transition hover:border-sky-300 hover:shadow-sm"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+            <ImageIcon size={18} />
+          </span>
+          <span>
+            <span className="block text-sm font-semibold text-slate-900">App icon</span>
+            <span className="mt-1 block text-xs leading-5 text-slate-500">
+              Header icon. Upload a photo or a GIF.
+            </span>
+          </span>
+        </Link>
+        <Link
           href="/store/mobile-features/navbar"
           className="flex max-w-md items-start gap-3 rounded-2xl border border-slate-200 p-4 transition hover:border-sky-300 hover:shadow-sm"
         >

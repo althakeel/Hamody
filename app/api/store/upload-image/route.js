@@ -33,6 +33,21 @@ function resolveUploadFolder(type = '') {
   return 'products';
 }
 
+function logoFileMeta(name = '', contentType = '') {
+  const fileName = String(name || '');
+  const mime = String(contentType || '').toLowerCase();
+  if (mime === 'image/gif' || /\.gif$/i.test(fileName)) {
+    return { ext: 'gif', contentType: 'image/gif' };
+  }
+  if (mime.includes('webp') || /\.webp$/i.test(fileName)) {
+    return { ext: 'webp', contentType: 'image/webp' };
+  }
+  if (mime === 'image/jpeg' || mime === 'image/jpg' || /\.jpe?g$/i.test(fileName)) {
+    return { ext: 'jpg', contentType: 'image/jpeg' };
+  }
+  return { ext: 'png', contentType: 'image/png' };
+}
+
 export async function POST(request) {
   try {
     const authHeader = request.headers.get('authorization') || '';
@@ -98,13 +113,9 @@ export async function POST(request) {
               : 'jpg');
         uploadName = String(image.name || 'upload').replace(/\.[^.]+$/, `.${ext}`);
       } else if (isLogoUpload) {
-        const keepExt = /\.(png|webp)$/i.test(String(image.name || ''))
-          ? String(image.name).split('.').pop()
-          : 'png';
-        uploadName = String(image.name || 'logo').replace(/\.[^.]+$/, `.${keepExt}`);
-        if (!String(uploadContentType || '').includes('png') && !String(uploadContentType || '').includes('webp')) {
-          uploadContentType = keepExt === 'webp' ? 'image/webp' : 'image/png';
-        }
+        const kept = logoFileMeta(image.name, uploadContentType || image.type);
+        uploadName = String(image.name || 'logo').replace(/\.[^.]+$/, `.${kept.ext}`);
+        uploadContentType = kept.contentType;
       } else {
         uploadName = image.name || 'upload.png';
       }

@@ -7,6 +7,8 @@ import AbandonedCart from '@/models/AbandonedCart';
 import Wallet from '@/models/Wallet';
 import { linkGuestOrdersToUser } from '@/lib/linkGuestOrders';
 import { normalizeEmail } from '@/lib/orderIdentity';
+import StoreActivityLog from '@/models/StoreActivityLog';
+import { formatActivityLogRow } from '@/lib/storeActivityLog';
 
 // Get individual customer details with full order history
 export async function GET(request, { params }) {
@@ -109,7 +111,7 @@ export async function GET(request, { params }) {
             // Try to get customer information for registered user
             let userDoc = null;
             try {
-                userDoc = await User.findById(resolvedCustomerId).select('_id name email image').lean();
+                userDoc = await User.findById(resolvedCustomerId).select('_id name email image createdAt').lean();
             } catch (err) {
                 // Invalid ObjectId format
             }
@@ -163,15 +165,35 @@ export async function GET(request, { params }) {
             walletTransactions = wallet?.transactions || [];
         }
 
+        const historyRows = !isGuest && resolvedCustomerId
+            ? await StoreActivityLog.find({
+                storeId: String(storeId),
+                actorUserId: String(resolvedCustomerId),
+            }).sort({ createdAt: -1 }).limit(50).lean()
+            : [];
+        const history = historyRows.map((row) => {
+            const formatted = formatActivityLogRow(row);
+            return {
+                id: formatted._id,
+                action: formatted.action,
+                details: formatted.details,
+                pagePath: formatted.pagePath,
+                createdAt: formatted.createdAt,
+            };
+        });
+
         const customerDetails = {
             ...customer,
             isGuest,
             totalOrders,
             totalSpent,
             averageOrderValue: Math.round(averageOrderValue),
-            firstOrderDate: ordersWithItems.length > 0 ? ordersWithItems[ordersWithItems.length - 1].createdAt : null,
+            firstOrderDate: ordersWithItems.length > 0
+                ? ordersWithItems[ordersWithItems.length - 1].createdAt
+                : (customer.createdAt || null),
             lastOrderDate: ordersWithItems.length > 0 ? ordersWithItems[0].createdAt : null,
             orders: ordersWithItems,
+            history,
             abandonedCart,
             walletBalance,
             walletTransactions

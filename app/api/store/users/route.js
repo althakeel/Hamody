@@ -120,6 +120,19 @@ export async function GET(request) {
     const dashboardAccessUsers = buildDashboardAccessUsers(store, teamMembers, ownerProfile);
 
     if (!isOwner) {
+      const canManageUsers = canAccessDashboardArea(
+        access.permissions,
+        'manageUsers',
+        { isOwner: false }
+      );
+      if (canManageUsers) {
+        return NextResponse.json({
+          users: teamMembers.map((u) => ({ ...u, id: u._id.toString(), _id: u._id.toString() })),
+          pending: [],
+          dashboardAccessUsers,
+        });
+      }
+
       const canUseAbandonedCheckout = canAccessDashboardArea(
         access.permissions,
         'abandonedCheckout',

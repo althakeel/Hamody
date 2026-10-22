@@ -76,6 +76,40 @@ test('word fallback stays in the product title when there is no phrase hit', () 
   );
 });
 
+test('air mattress keeps the product that has both words', () => {
+  const filter = JSON.stringify(buildProductBrowseSearchFilter('air mattress', {
+    categoryIds: ['hair-care'],
+  }));
+  assert.match(filter, /"\$and"/);
+  assert.equal(filter.includes('hair-care'), false);
+  assert.equal(
+    productTitleMatchesKeyword(
+      { name: 'Air Mattress with Built-in Rechargeable Pump' },
+      'air mattress',
+    ),
+    true,
+  );
+  assert.equal(
+    productTitleMatchesKeyword({ name: 'Green Lion Air Flex Portable Handheld Fan' }, 'air mattress'),
+    false,
+  );
+  assert.equal(
+    productTitleMatchesKeyword({ name: 'Green Lion Cairo 2 Wireless Earbuds' }, 'air mattress'),
+    false,
+  );
+  assert.equal(
+    productTitleMatchesKeyword({ name: 'Green Lion GMT-200 Automatic Inflatable Mattress' }, 'air mattress'),
+    false,
+  );
+  assert.equal(
+    productTitleMatchesKeyword(
+      { name: 'Porodo Lifestyle Portable Pump', description: 'Use this air mattress pump at home' },
+      'air mattress',
+    ),
+    false,
+  );
+});
+
 test('short category searches match name, word, tags, and categories', () => {
   assert.equal(isBrowseStyleSearch('car accessories'), true);
   assert.equal(isBrowseStyleSearch('computer accessories'), true);

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { getAuth } from '@/lib/firebase-admin';
-import Store from '@/models/Store';
+import { requireStorePermission } from '@/lib/storeAccessControl';
 import FreeGiftCampaign from '@/models/FreeGiftCampaign';
 
 async function getSellerStoreId(request) {
@@ -18,12 +18,10 @@ async function getSellerStoreId(request) {
     return { error: 'Unauthorized', status: 401 };
   }
 
-  const store = await Store.findOne({ userId: decoded.uid }).lean();
-  if (!store?._id) {
-    return { error: 'Store not found', status: 404 };
-  }
+  const seller = await requireStorePermission(decoded.uid, decoded, 'giveaways');
+  if (seller.error) return seller;
 
-  return { storeId: String(store._id) };
+  return { storeId: seller.storeId };
 }
 
 function sanitizeUpdate(input, storeId) {

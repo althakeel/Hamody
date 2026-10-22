@@ -22,21 +22,21 @@ export default function CategoryBanner({
         alt={alt}
         width={1440}
         height={320}
-        className="hidden aspect-[1440/320] w-full object-contain object-center lg:block"
+        className="hidden aspect-[1440/320] w-full object-cover object-center lg:block"
       />
       <img
         src={tabletImage}
         alt={alt}
         width={1024}
         height={320}
-        className="hidden aspect-[1024/320] w-full object-contain object-center md:block lg:hidden"
+        className="hidden aspect-[1024/320] w-full object-cover object-center md:block lg:hidden"
       />
       <img
         src={mobileImage}
         alt={alt}
         width={768}
         height={280}
-        className="block aspect-[768/280] w-full object-contain object-center md:hidden"
+        className="block aspect-[768/280] w-full object-cover object-center md:hidden"
       />
     </section>
   );

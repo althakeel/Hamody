@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
-import Store from "@/models/Store";
+import { requireStorePermission } from "@/lib/storeAccessControl";
 import { getAuth } from "@/lib/firebase-admin";
 
 export async function GET(request) {
@@ -13,16 +13,10 @@ export async function GET(request) {
 
     const idToken = authHeader.split("Bearer ")[1];
     const decodedToken = await getAuth().verifyIdToken(idToken);
-    const userId = decodedToken.uid;
-
-    // Verify user is a store owner
     await connectDB();
-    const store = await Store.findOne({ userId: userId });
-    if (!store) {
-      return NextResponse.json(
-        { error: "Store not found" },
-        { status: 403 }
-      );
+    const seller = await requireStorePermission(decodedToken.uid, decodedToken, "customers");
+    if (seller.error) {
+      return NextResponse.json({ error: seller.error }, { status: seller.status });
     }
 
     const { searchParams } = new URL(request.url);

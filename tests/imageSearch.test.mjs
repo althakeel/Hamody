@@ -5,6 +5,7 @@ import {
   inferImageExcludes,
   imageQueryFamilyTerm,
   isGenericImageTerm,
+  mergeVisionDescriptions,
   pickBestAndRecommended,
   productIsRelatedToImageQuery,
   productMatchesImageQuery,
@@ -67,6 +68,23 @@ test('gemini picks a category best match and keeps other scooters recommended', 
   assert.equal(fallback.relatedProducts.length, 2);
 });
 
+test('a specific product name wins over a vague second description', () => {
+  const merged = mergeVisionDescriptions(
+    { provider: 'gemini', name: 'cordless turbo air blower', type: 'leaf blower', keywords: ['blower'] },
+    { provider: 'openai', name: 'cordless electric tools', type: 'tools', keywords: ['cordless', 'electric'] },
+  );
+  assert.equal(merged.name, 'cordless turbo air blower');
+  assert.equal(merged.type, 'leaf blower');
+  assert.equal(merged.keywords.includes('tools'), false);
+});
+
+test('an air duster photo stays in the blower family', () => {
+  assert.equal(imageQueryFamilyTerm({ name: 'cordless turbo air duster', type: 'air duster' }), 'blower');
+  assert.equal(productIsRelatedToImageQuery({ name: 'Turbo Cordless Leaf Blower' }, 'blower'), true);
+  assert.equal(productIsRelatedToImageQuery({ name: 'Porodo Lifestyle Cordless Turbo Air Duster' }, 'blower'), true);
+  assert.equal(productIsRelatedToImageQuery({ name: 'Porodo Lifestyle Mini Massage Gun' }, 'blower'), false);
+});
+
 test('recommended products follow the photo category', () => {
   assert.equal(imageQueryFamilyTerm({ type: 'kick scooter', name: 'adult kick scooter' }), 'scooter');
   assert.equal(imageQueryFamilyTerm({ type: 'oud burner' }), 'oud');
@@ -115,6 +133,15 @@ test('car cup holders do not count as a match for a desk magnetic stand', () => 
   assert.equal(productMatchesImageQuery({ name: 'Adjustable Car Cup Holder Phone Mount' }, query), false);
   assert.equal(productMatchesImageQuery({ name: 'Magnetic Wireless Phone Stand' }, query), true);
   assert.equal(productMatchesImageQuery({ name: 'Porodo Lifestyle Hydrate Bottle' }, query), false);
+});
+
+test('the same catalog photo beats a lookalike', async () => {
+  const { isSameCatalogPhoto } = await import('../lib/catalogPhotoMatch.js');
+  assert.equal(isSameCatalogPhoto(6, 24), true);
+  assert.equal(isSameCatalogPhoto(20, 24), false);
+  assert.equal(isSameCatalogPhoto(6, 10), false);
+  assert.equal(isSameCatalogPhoto(6, null), true);
+  assert.equal(isSameCatalogPhoto(11, null), false);
 });
 
 test('skips the second Gemini pass only for a near-duplicate visual hit', () => {

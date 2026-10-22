@@ -264,7 +264,13 @@ export default function StoreManageProducts() {
     const searchParams = useSearchParams();
 
     const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || 'AED'
-    const sellerAccess = readSellerCache()?.dashboardAccess || {}
+    const [sellerAccess, setSellerAccess] = useState(() => readSellerCache()?.dashboardAccess || {})
+    useEffect(() => {
+        const syncAccess = () => setSellerAccess(readSellerCache()?.dashboardAccess || {})
+        syncAccess()
+        window.addEventListener('store-seller-cache', syncAccess)
+        return () => window.removeEventListener('store-seller-cache', syncAccess)
+    }, [])
     const canEditPricing = canChangeProductPricing(sellerAccess)
     const canBulkEdit = canBulkEditProducts(sellerAccess)
     const formatAmount = (value) => {

@@ -119,7 +119,11 @@ function SearchResultsInner() {
   }, [keyword, source, t]);
 
   const exactProduct = products[0] || null;
-  const exactList = useMemo(() => sortOutOfStockLast(sortProducts(products, sortBy === 'best' ? 'best' : sortBy)), [products, sortBy]);
+  const exactList = useMemo(() => {
+    const ordered = sortProducts(products, sortBy === 'best' ? 'best' : sortBy);
+    if (isImageSearch && sortBy === 'best') return ordered;
+    return sortOutOfStockLast(ordered);
+  }, [products, sortBy, isImageSearch]);
   const recommendedList = useMemo(() => {
     const seen = new Set(products.map((product) => String(product._id)));
     return sortOutOfStockLast(sortProducts(relatedProducts.filter((product) => {

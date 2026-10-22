@@ -86,6 +86,7 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
         { name: 'Mobile', href: '/store/mobile-features', icon: Smartphone },
         { name: 'Navbar', href: '/store/mobile-features/navbar', icon: PanelTop },
+        { name: 'App icon', href: '/store/mobile-features/app-icon', icon: ImageIcon },
         { name: 'Footer', href: '/store/mobile-features/footer', icon: PanelBottom },
         { name: 'Loader', href: '/store/mobile-features/loader', icon: Loader },
         { name: 'Splash screens', href: '/store/mobile-features/splash-screens', icon: Clapperboard },
@@ -245,6 +246,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
                 '/store/mobile-features',
 
                 '/store/mobile-features/navbar',
+
+                '/store/mobile-features/app-icon',
 
                 '/store/mobile-features/footer',
 

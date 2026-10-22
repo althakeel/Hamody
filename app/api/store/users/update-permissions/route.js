@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from '@/lib/mongodb';
 import StoreUser from '@/models/StoreUser';
-import authSeller from '@/middlewares/authSeller';
-import { assertStoreOwner } from '@/lib/storeAccessControl';
+import { resolveDashboardAccess } from '@/lib/storeAccessControl';
 import { getAuth } from '@/lib/firebase-admin';
 
 export async function POST(request) {
@@ -18,12 +17,14 @@ export async function POST(request) {
     const decodedToken = await getAuth().verifyIdToken(idToken);
     const userId = decodedToken.uid;
 
-    const storeId = await authSeller(userId);
-    if (!storeId) {
+    const access = await resolveDashboardAccess(userId, decodedToken);
+    if (!access.isSeller || !access.storeId) {
       return NextResponse.json({ error: 'Store not found' }, { status: 404 });
     }
-
-    await assertStoreOwner(userId);
+    if (!access.isOwner && access.permissions?.manageUsers !== true) {
+      return NextResponse.json({ error: 'You do not have access to staff permissions' }, { status: 403 });
+    }
+    const storeId = access.storeId;
 
     const { userId: memberId, permissions } = await request.json();
     if (!memberId) {

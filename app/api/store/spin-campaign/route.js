@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getAuth } from "@/lib/firebase-admin";
-import Store from "@/models/Store";
+import { requireStorePermission } from "@/lib/storeAccessControl";
 import SpinCampaign from "@/models/SpinCampaign";
 
 const allowedRewardTypes = new Set(["coupon_percent", "coupon_flat", "free_shipping", "no_win"]);
@@ -46,12 +46,10 @@ async function getSellerStoreId(request) {
     return { error: "Unauthorized", status: 401 };
   }
 
-  const store = await Store.findOne({ userId: decoded.uid }).lean();
-  if (!store?._id) {
-    return { error: "Store not found", status: 404 };
-  }
+  const seller = await requireStorePermission(decoded.uid, decoded, "spinWheel");
+  if (seller.error) return seller;
 
-  return { storeId: store._id.toString() };
+  return { storeId: seller.storeId };
 }
 
 export async function GET(request) {

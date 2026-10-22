@@ -92,10 +92,12 @@ export async function GET(request) {
     const searchFilter = buildProductBrowseSearchFilter(keyword, { includeOutOfStock, categoryIds });
     const total = await countProductsDedupedBySku(Product, searchFilter);
 
+    const pageSize = limit || 60;
+    const rankWindow = Math.min(200, Math.max(pageSize, offset + pageSize));
     let products = await fetchProductsDedupedBySku(Product, searchFilter, {
       sort: { createdAt: -1 },
-      skip: offset,
-      limit,
+      skip: 0,
+      limit: rankWindow,
       fields: STOREFRONT_CARD_FIELDS,
     });
     const resultCap = limit ?? total;
@@ -128,15 +130,15 @@ export async function GET(request) {
         }
 
         products = dedupeProductsBySku(merged);
-        if (limit != null) {
-          products = products.slice(0, limit);
-        }
       } catch {
         // Text index may be unavailable in some environments; regex results are enough.
       }
     }
 
     products = rankProductsByTitleMatch(products, keyword);
+    if (limit != null) {
+      products = products.slice(offset, offset + limit);
+    }
 
     return NextResponse.json({
       keyword,

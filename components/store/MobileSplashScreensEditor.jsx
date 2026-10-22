@@ -19,6 +19,7 @@ import EnableSwitch from '@/components/store/EnableSwitch';
 import { normalizeMobileFeatures } from '@/lib/mobileFeatures';
 import {
   MAX_SPLASH_SCREENS,
+  SPLASH_DISPLAY_MODES,
   SPLASH_DURATION_DEFAULT,
   splashMediaTypeFromFile,
 } from '@/lib/mobileSplashScreens';
@@ -329,8 +330,8 @@ export default function MobileSplashScreensEditor() {
         </div>
         <h1 className="mt-3 text-2xl font-bold sm:text-3xl">App splash screens</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-sky-50 sm:text-base">
-          These play in order when the app opens, before the home screen. Add a photo, a GIF, or a video.
-          Remove any screen you no longer want. The website does not show them.
+          These play in order before the home screen. They show when the app is installed, then again by the rule you pick.
+          Add a photo, a GIF, or a video. The website does not show them.
         </p>
       </div>
 
@@ -350,6 +351,35 @@ export default function MobileSplashScreensEditor() {
                   </span>
                 </span>
                 <EnableSwitch enabled={form.enabled !== false} onChange={(enabled) => setForm((prev) => ({ ...prev, enabled }))} />
+              </div>
+              <div className="mt-4">
+                <p className="text-sm font-medium text-slate-800">When to show</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {SPLASH_DISPLAY_MODES.map((mode) => {
+                    const active = (form.displayMode || 'afterClosed') === mode.id;
+                    return (
+                      <button
+                        key={mode.id}
+                        type="button"
+                        onClick={() => setForm((prev) => ({ ...prev, displayMode: mode.id }))}
+                        className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                          active
+                            ? 'bg-slate-900 text-white'
+                            : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                        }`}
+                      >
+                        {mode.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-[11px] leading-5 text-slate-500">
+                  {(form.displayMode || 'afterClosed') === 'everyOpen'
+                    ? 'Plays on install and on every later open.'
+                    : (form.displayMode || 'afterClosed') === 'installOnly'
+                      ? 'Plays once, when the app is installed. Later opens go straight to home.'
+                      : 'Plays when the app is installed. After that, it plays only if the app stayed closed for 3 hours.'}
+                </p>
               </div>
               <label className="mt-4 block text-sm">
                 <span className="font-medium text-slate-800">Seconds between screens</span>
@@ -522,10 +552,9 @@ export default function MobileSplashScreensEditor() {
               showCountdown={form.showCountdown !== false}
             />
             <p className="mt-2 text-xs leading-5 text-slate-500">
-              The app reads <span className="font-mono">splashScreens</span> from{' '}
+              The app reads <span className="font-mono">displayMode</span> and <span className="font-mono">closedHours</span> from{' '}
               <span className="font-mono">GET /api/public/mobile-features</span>.
-              Each screen uses the seconds you set. A video with 0 seconds plays until it ends.
-              The pause between screens is the seconds gap.
+              Install always plays the splash. Later opens follow the rule above.
             </p>
           </aside>
         </div>

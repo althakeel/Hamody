@@ -19,6 +19,7 @@ import {
 import { clearCart, deleteItemFromCart, setCartEntry } from "@/lib/features/cart/cartSlice";
 import { fetchShippingSettings, calculateShipping, cartHasOnlyFreeShippingProducts } from "@/lib/shipping";
 import { getActiveCheckoutAlert } from '@/lib/checkoutAlert';
+import { isStorefrontProductInStock } from '@/lib/productVisibility';
 import {
   getPaymentMethodLimitError,
   isPaymentMethodEnabled,
@@ -756,12 +757,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
 
   // Build cart array
   const cartArray = [];
-  const isPurchasableProduct = (product) => {
-    if (!product) return false;
-    if (product.inStock === false) return false;
-    if (typeof product.stockQuantity === 'number' && product.stockQuantity <= 0) return false;
-    return true;
-  };
+  const isPurchasableProduct = (product) => isStorefrontProductInStock(product);
   for (const [key, value] of Object.entries(cartItems || {})) {
     const actualProductId = getCartEntryProductId(key, value);
     const product = products?.find((p) => String(p._id) === String(actualProductId));

@@ -484,7 +484,11 @@ export default function CustomersPage() {
                             <div className="pt-3 border-t border-slate-100">
                                 <p className="text-xs text-slate-500 flex items-center gap-1">
                                     <Calendar size={12} />
-                                    Last order: {new Date(customer.lastOrderDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    {customer.totalOrders > 0 && customer.lastOrderDate
+                                        ? `Last order: ${new Date(customer.lastOrderDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                                        : `Joined: ${(customer.joinedAt || customer.firstOrderDate)
+                                            ? new Date(customer.joinedAt || customer.firstOrderDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                                            : 'No orders yet'}`}
                                 </p>
                             </div>
                         </div>
@@ -758,6 +762,49 @@ export default function CustomersPage() {
                                             </div>
                                         </div>
                                     )}
+
+                                    {Array.isArray(customerDetails.history) && customerDetails.history.length > 0 ? (
+                                        <div className="mb-8">
+                                            <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                                <div className="w-1 h-6 bg-gradient-to-b from-violet-600 to-fuchsia-600 rounded-full"></div>
+                                                History
+                                            </h3>
+                                            <div className="space-y-3">
+                                                {customerDetails.history.map((entry) => (
+                                                    <div
+                                                        key={entry.id}
+                                                        className="rounded-xl border border-slate-200 bg-white p-4"
+                                                    >
+                                                        <div className="flex flex-wrap items-start justify-between gap-2">
+                                                            <p className="font-semibold text-slate-900">{entry.action}</p>
+                                                            <p className="text-xs text-slate-500">
+                                                                {entry.createdAt
+                                                                    ? new Date(entry.createdAt).toLocaleString('en-US', {
+                                                                        month: 'short',
+                                                                        day: 'numeric',
+                                                                        year: 'numeric',
+                                                                        hour: '2-digit',
+                                                                        minute: '2-digit',
+                                                                        timeZone: 'Asia/Dubai',
+                                                                    })
+                                                                    : ''}
+                                                            </p>
+                                                        </div>
+                                                        {entry.details?.length ? (
+                                                            <ul className="mt-2 space-y-1 text-sm text-slate-600">
+                                                                {entry.details.map((detail) => (
+                                                                    <li key={detail}>{detail}</li>
+                                                                ))}
+                                                            </ul>
+                                                        ) : null}
+                                                        {entry.pagePath ? (
+                                                            <p className="mt-2 text-xs text-slate-400">{entry.pagePath}</p>
+                                                        ) : null}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : null}
 
                                     {/* Order History */}
                                     <div>

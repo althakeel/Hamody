@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Coupon from "@/models/Coupon";
-import Store from "@/models/Store";
+import { requireStorePermission } from "@/lib/storeAccessControl";
 
 // PUT - Update a coupon
 export async function PUT(request, { params }) {
@@ -25,12 +25,9 @@ export async function PUT(request, { params }) {
     } catch (e) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const userId = decodedToken.uid;
-
-    // Get store
-    const store = await Store.findOne({ userId }).lean();
-    if (!store) {
-      return NextResponse.json({ error: "Store not found" }, { status: 404 });
+    const seller = await requireStorePermission(decodedToken.uid, decodedToken, 'coupons');
+    if (seller.error) {
+      return NextResponse.json({ error: seller.error }, { status: seller.status });
     }
 
     const { id } = params;
@@ -38,7 +35,7 @@ export async function PUT(request, { params }) {
 
     const coupon = await Coupon.findOne({
       _id: id,
-      storeId: store._id.toString(),
+      storeId: seller.storeId,
     });
 
     if (!coupon) {

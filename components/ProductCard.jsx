@@ -28,6 +28,7 @@ import { trackProductAddToCart } from '@/lib/ecommerceTracking'
 import { registerItemListImpression, trackSelectItem } from '@/lib/ga4Ecommerce'
 import { pushGtmEcommerceEvent } from '@/lib/pushGtmEcommerceEvent'
 import { productToGa4Item } from '@/lib/ga4Item'
+import { isStorefrontProductInStock } from '@/lib/productVisibility'
 import { GTM_EVENTS } from '@/lib/gtmEvents'
 import { STORE_CURRENCY } from '@/lib/storeCurrency'
 import { getProductPath } from '@/lib/productUrl'
@@ -149,7 +150,7 @@ const ProductCard = ({
   const convertedPrice = convertPrice(livePrice)
   const convertedAED = convertPrice(comparePrice)
   const karat = extractProductKarat(product)
-  const isOutOfStock = product.inStock === false || (typeof product.stockQuantity === 'number' && product.stockQuantity <= 0)
+  const isOutOfStock = !isStorefrontProductInStock(product)
 
   const ratingValue = Math.round(Number(product.averageRating) || 0)
   const reviewCount = Math.max(0, Number(product.ratingCount ?? product.reviewCount) || 0)

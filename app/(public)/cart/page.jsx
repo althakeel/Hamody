@@ -9,6 +9,7 @@ import CartLineItem from "@/components/CartLineItem";
 import CartSummaryBox, { CartSummaryActions } from "@/components/CartSummaryBox";
 import CartRemoveConfirm from "@/components/CartRemoveConfirm";
 import ProductCard from "@/components/ProductCard";
+import { isStorefrontProductInStock } from "@/lib/productVisibility";
 import Loading from "@/components/Loading";
 import {
     clearCart,
@@ -218,7 +219,7 @@ function CartContent() {
                     variantOptions: typeof value === 'object' ? value?.variantOptions || null : null,
                     _variantOptions: typeof value === 'object' ? value?.variantOptions || null : null,
                 });
-                const isOutOfStock = product.inStock === false || (typeof product.stockQuantity === 'number' && product.stockQuantity <= 0);
+                const isOutOfStock = !isStorefrontProductInStock(product);
                 if (!isOutOfStock && !isFreeGift) {
                     total += pricing.lineTotal;
                 }
@@ -382,9 +383,7 @@ function CartContent() {
 
         const removableBefore = cartArray.filter((item) => {
             if (item?._isFreeGift) return false;
-            if (item?.inStock === false) return false;
-            if (typeof item?.stockQuantity === 'number' && item.stockQuantity <= 0) return false;
-            return true;
+            return isStorefrontProductInStock(item);
         });
         const removingLastRemovable =
             removableBefore.length === 1

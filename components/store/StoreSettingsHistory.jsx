@@ -32,6 +32,7 @@ function roleLabel(role) {
   if (role === 'owner') return 'Owner';
   if (role === 'admin') return 'Admin';
   if (role === 'member') return 'Team member';
+  if (role === 'customer') return 'Customer';
   return 'User';
 }
 

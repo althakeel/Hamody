@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import authSeller from '@/middlewares/authSeller';
+import { canUseProductAi, resolveDashboardAccess } from '@/lib/storeAccessControl';
 import { getAuth } from '@/lib/firebase-admin';
 import { isProductAiConfigured } from '@/lib/runProductAutofill';
 import { assertAiBulkEditPin } from '@/lib/storeHelpAgentPin';
@@ -23,10 +23,10 @@ async function getSellerContext(request) {
 
   const idToken = authHeader.replace('Bearer ', '').trim();
   const decodedToken = await getAuth().verifyIdToken(idToken);
-  const storeId = await authSeller(decodedToken.uid);
-  if (!storeId) return null;
+  const access = await resolveDashboardAccess(decodedToken.uid, decodedToken);
+  if (!canUseProductAi(access)) return null;
 
-  return { storeId: String(storeId) };
+  return { storeId: String(access.storeId) };
 }
 
 export async function GET(request) {

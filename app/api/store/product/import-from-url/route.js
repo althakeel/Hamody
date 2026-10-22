@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuth } from '@/lib/firebase-admin';
-import authSeller from '@/middlewares/authSeller';
+import { canUseProductAi, resolveDashboardAccess } from '@/lib/storeAccessControl';
 import connectDB from '@/lib/mongodb';
 import Category from '@/models/Category';
 import { importProductFromUrl } from '@/lib/importProductFromUrl';
@@ -9,13 +9,13 @@ import { runInProductAiQueue } from '@/lib/aiRequestQueue';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
-async function getUserId(request) {
+async function getSellerAccess(request) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) return null;
 
   try {
     const decoded = await getAuth().verifyIdToken(authHeader.split('Bearer ')[1]);
-    return decoded.uid || null;
+    return await resolveDashboardAccess(decoded.uid, decoded);
   } catch {
     return null;
   }
@@ -23,14 +23,9 @@ async function getUserId(request) {
 
 export async function POST(request) {
   try {
-    const userId = await getUserId(request);
-    if (!userId) {
+    const access = await getSellerAccess(request);
+    if (!canUseProductAi(access)) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
-    }
-
-    const storeId = await authSeller(userId);
-    if (!storeId) {
-      return NextResponse.json({ error: 'Store not found for user' }, { status: 403 });
     }
 
     const body = await request.json();

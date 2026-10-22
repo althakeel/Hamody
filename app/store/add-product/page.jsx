@@ -816,7 +816,13 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
         const [enhanceImportedImages, setEnhanceImportedImages] = useState(true);
     const router = useRouter();
     // ...existing state declarations...
-    const sellerAccess = readSellerCache()?.dashboardAccess || {};
+    const [sellerAccess, setSellerAccess] = useState(() => readSellerCache()?.dashboardAccess || {});
+    useEffect(() => {
+        const syncAccess = () => setSellerAccess(readSellerCache()?.dashboardAccess || {});
+        syncAccess();
+        window.addEventListener('store-seller-cache', syncAccess);
+        return () => window.removeEventListener('store-seller-cache', syncAccess);
+    }, []);
     const canEditPricing = Boolean(
         canChangeProductPricing(sellerAccess)
         || !product?._id // new products: allow initial price
