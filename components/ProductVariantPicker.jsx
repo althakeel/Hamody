@@ -1,6 +1,7 @@
 'use client';
 
 import Image from '@/components/SafeNextImage';
+import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 import {
   findVariantForOptionValue,
   formatVariantOptionValue,
@@ -15,19 +16,20 @@ function OptionImageCard({
   label,
   selected,
   available,
+  outOfStockLabel,
   onClick,
 }) {
   return (
     <button
       type="button"
-      disabled={!available}
+      aria-pressed={selected}
       onClick={onClick}
       className={`flex w-[88px] flex-col items-center rounded-xl border-2 bg-white p-2 transition ${
         selected
           ? 'border-gray-900 shadow-sm'
           : available
             ? 'border-gray-200 hover:border-gray-400'
-            : 'border-dashed border-gray-200 opacity-45'
+            : 'border-dashed border-gray-300 opacity-80 hover:border-gray-500'
       }`}
     >
       <div className="relative flex h-20 w-full items-center justify-center overflow-hidden bg-gray-50">
@@ -49,6 +51,11 @@ function OptionImageCard({
       <span className={`mt-2 text-center text-xs leading-tight ${selected ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
         {label}
       </span>
+      {!available ? (
+        <span className="mt-1 text-center text-[10px] font-medium leading-tight text-red-600">
+          {outOfStockLabel}
+        </span>
+      ) : null}
     </button>
   );
 }
@@ -62,6 +69,8 @@ export default function ProductVariantPicker({
   isBulkBundleVariant,
   className = '',
 }) {
+  const { t } = useStorefrontI18n();
+  const outOfStockLabel = t('common.outOfStock');
   if (!groups.length) return null;
 
   return (
@@ -108,6 +117,7 @@ export default function ProductVariantPicker({
                       label={label}
                       selected={selected}
                       available={available}
+                      outOfStockLabel={outOfStockLabel}
                       onClick={() => onSelect(group.key, value)}
                     />
                   );
@@ -130,17 +140,22 @@ export default function ProductVariantPicker({
                     <button
                       key={value}
                       type="button"
-                      disabled={!available}
+                      aria-pressed={selected}
                       onClick={() => onSelect(group.key, value)}
                       className={`rounded-lg border px-4 py-2.5 text-sm transition ${
                         selected
                           ? 'border-gray-900 bg-white font-semibold text-gray-900'
                           : available
                             ? 'border-gray-300 bg-white text-gray-700 hover:border-gray-500'
-                            : 'border-dashed border-gray-300 bg-white text-gray-400 line-through'
+                            : 'border-dashed border-gray-300 bg-white text-gray-500 hover:border-gray-500'
                       }`}
                     >
-                      {label}
+                      <span className={available ? '' : 'line-through'}>{label}</span>
+                      {!available ? (
+                        <span className="mt-0.5 block text-[10px] font-medium leading-tight text-red-600 no-underline">
+                          {outOfStockLabel}
+                        </span>
+                      ) : null}
                     </button>
                   );
                 })}
