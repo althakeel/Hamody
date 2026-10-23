@@ -240,33 +240,92 @@ An empty icon URL means the default icon.
 
 ## 4. Other pages
 
-`pageNavbar.enabled` false hides this bar. The home bar is unchanged.
+Seller screen: **Navbar → Other pages**. This is every screen except home. Read `mobileFeatures.appNavbar.pageNavbar`.
 
-One row. Full width. Background uses the same three modes as the home bar: `backgroundMode` `color`, `gradient`, or `media`. Flat color is `backgroundColor`. Gradient uses `gradientFrom`, `gradientTo`, `gradientPosition`, and `gradientAngle`. A file uses `backgroundMediaUrl` and `backgroundMediaKind` (`image` or `video`, muted and looped).
+`enabled` false hides this bar. The home bar is unchanged.
 
-| Field | Default | Range |
-|---|---|---|
-| `backgroundColor` | `#f6f5fb` | Used when `backgroundMode` is `color` |
-| `iconColor` | `#6b4ce6` | Back and heart when no custom icon is set |
-| `heightPx` | 56 | 44–96 |
-| `paddingX` | 12 | 0–32 |
-| `iconSizePx` | 22 | 14–32 |
-| `searchRadiusPx` | 22 | 0–40 |
-| `searchBackground` | `#ffffff` | |
-| `searchBorderColor` | `#ddd6fe` | |
-| `searchTextColor` | `#6b4ce6` | |
-| `placeholder` | Search | 40 characters. There is no Arabic placeholder on this bar |
-| `backEnabled` | true | |
-| `searchEnabled` | true | |
-| `heartEnabled` | true | |
+One row, full width, pinned under the status bar. English is back, search, heart. Arabic mirrors that row.
+
+Empty icon URLs are still in the JSON. An empty string means the default icon.
+
+### Sample
+
+```json
+{
+  "pageNavbar": {
+    "enabled": true,
+    "backgroundMode": "gradient",
+    "backgroundColor": "#f6f5fb",
+    "gradientFrom": "#9e90a6",
+    "gradientTo": "#6200ff",
+    "gradientAngle": 360,
+    "gradientPosition": 82,
+    "backgroundMediaUrl": "",
+    "backgroundMediaKind": "image",
+    "iconColor": "#6b4ce6",
+    "backEnabled": true,
+    "searchEnabled": true,
+    "heartEnabled": true,
+    "placeholder": "Search",
+    "searchBackground": "#ffffff",
+    "searchBorderColor": "#ddd6fe",
+    "searchTextColor": "#6b4ce6",
+    "heightPx": 56,
+    "paddingX": 12,
+    "searchRadiusPx": 22,
+    "iconSizePx": 22,
+    "backIconUrl": "",
+    "searchIconUrl": "",
+    "heartIconUrl": ""
+  }
+}
+```
+
+### What the seller sets
+
+| On the screen | Field | Default | Range |
+|---|---|---|---|
+| Show this header | `enabled` | `true` | |
+| Back | `backEnabled` | `true` | |
+| Search | `searchEnabled` | `true` | |
+| Heart | `heartEnabled` | `true` | |
+| Search text | `placeholder` | `Search` | 40 characters. No Arabic placeholder |
+| Color / Linear gradient / Image or video | `backgroundMode` | `color` | `color`, `gradient`, or `media` |
+| Start color | `gradientFrom` | `#8b5cf6` | Used when `backgroundMode` is `gradient` |
+| End color | `gradientTo` | `#5b21b6` | Used when `backgroundMode` is `gradient` |
+| Angle | `gradientAngle` | `180` | 0–360. `180` is top to bottom |
+| Spread | `gradientPosition` | `100` | 1–100. Where the end color is reached, in percent |
+| Back and heart | `iconColor` | `#6b4ce6` | Default back and heart icons |
+| Search background | `searchBackground` | `#ffffff` | |
+| Search border | `searchBorderColor` | `#ddd6fe` | |
+| Search text color | `searchTextColor` | `#6b4ce6` | Placeholder and the default search icon |
+| Height | `heightPx` | `56` | 44–96 |
+| Side space | `paddingX` | `12` | 0–32 |
+| Search corner | `searchRadiusPx` | `22` | 0–40 |
+| Icon size | `iconSizePx` | `22` | 14–32 |
+| Back icon | `backIconUrl` | empty | PNG, JPG, WEBP, or GIF |
+| Search icon | `searchIconUrl` | empty | PNG, JPG, WEBP, or GIF |
+| Heart icon | `heartIconUrl` | empty | PNG, JPG, WEBP, or GIF |
+
+The flat color is `backgroundColor`, default `#f6f5fb`. It is the fill when `backgroundMode` is `color`, and the color behind a file until that file loads.
+
+### Background
+
+| `backgroundMode` | Fill |
+|---|---|
+| `color` | `backgroundColor` |
+| `gradient` | `linear-gradient({gradientAngle}deg, {gradientFrom} 0%, {gradientTo} {gradientPosition}%)` |
+| `media` | `backgroundMediaUrl` covers the bar. `backgroundMediaKind` is `image` or `video`. A video is muted, looped, and has no controls |
+
+### How to draw it
 
 | Piece | Draw | Tap |
 |---|---|---|
-| Back | `backIconUrl`, or a chevron in `iconColor` at `iconSizePx`. Hidden when `backEnabled` is false. Keep a gap the size of the icon | Previous screen |
-| Search | Centered, flex. Height is 68% of `heightPx`. Radius `searchRadiusPx`. Border 1 px `searchBorderColor`. Icon is 80% of `iconSizePx` (`searchIconUrl` or a magnifying glass). Placeholder is **14** px, medium, `searchTextColor` | Search |
-| Heart | `heartIconUrl`, or a heart outline in `iconColor`. Hidden when `heartEnabled` is false. Keep a gap the size of the icon | Wishlist |
+| Back | `backIconUrl` when it is not empty, otherwise a chevron in `iconColor` at `iconSizePx`. Hidden when `backEnabled` is false. Keep a gap the size of the icon | Previous screen |
+| Search | Centered, flex. Height is 68% of `heightPx`. Corner radius `searchRadiusPx`. Border 1 px `searchBorderColor`. Fill `searchBackground`. Icon is 80% of `iconSizePx` (`searchIconUrl`, or a magnifying glass in `searchTextColor`). Placeholder is 14 px, medium, `searchTextColor`, one line | Search |
+| Heart | `heartIconUrl` when it is not empty, otherwise a heart outline in `iconColor`. Hidden when `heartEnabled` is false. Keep a gap the size of the icon | Saved items |
 
-Gap between the three pieces is **12** px. Custom icons are contained in the icon box, not cropped.
+The row’s side padding is `paddingX`. The gap between the three pieces is 12 px. A custom icon is contained in a box of `iconSizePx`, not cropped. A GIF keeps playing.
 
 ---
 

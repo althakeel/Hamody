@@ -32,6 +32,8 @@ Prepared 22 October 2026 from the Store1920 database. Months run on Asia/Dubai t
 
 **Repeat buyer.** The customer placed two or more website orders in that month.
 
+**Customer retention rate.** Of the customers who placed a website order in the previous month, the share who placed another website order in this month. July uses June as the previous month. June itself is not a column in this report.
+
 ## Quarter at a glance
 
 | | July | August | September | Jul–Sep |
@@ -44,6 +46,7 @@ Prepared 22 October 2026 from the Store1920 database. Months run on Asia/Dubai t
 | Checkout carts | 5,438 | 2,652 | 1,339 | 9,429 |
 | Carts still abandoned | 65.54% | 66.44% | 64.90% | 65.70% |
 | Customers | 1,613 | 842 | 267 | 2,691 |
+| Customer retention rate | 3.73% | 1.55% | 0.24% | — |
 | Repeat buyers in the month | 10.11% | 8.08% | 4.12% | 9.88% bought again in the quarter |
 
 Staff also created 97 orders in July, 63 in August, and 25 in September. Those are outside this report. Cancelled website orders were 29, 35, and 102.
@@ -171,6 +174,18 @@ A second view, from checkout events rather than saved carts: checkout starts tha
 
 ## 4. Retention and repeat purchase
 
+**Customer retention rate** is the share of last month’s customers who ordered again.
+
+| | July | August | September |
+| --- | ---: | ---: | ---: |
+| Customers in the previous month | 751 (June) | 1,613 (July) | 842 (August) |
+| Of those, ordered again this month | 28 | 25 | 2 |
+| Customer retention rate | 3.73% | 1.55% | 0.24% |
+
+July kept 28 of the 751 people who ordered in June. August kept 25 of the 1,613 July customers. September kept 2 of the 842 August customers.
+
+Of the 1,613 July customers, 29 ordered again at any point in August or September (1.80%). That is wider than the August rate, because 4 of those 29 skipped August and ordered only in September.
+
 | | July | August | September | Jul–Sep |
 | --- | ---: | ---: | ---: | ---: |
 | Customers with a website order | 1,613 | 842 | 267 | 2,691 |
@@ -182,9 +197,7 @@ A second view, from checkout events rather than saved carts: checkout starts tha
 | Bought in more than one of these months, or more than once in the quarter | — | — | — | 266 |
 | Quarter repeat rate | — | — | — | 9.88% |
 
-Of the 1,613 July customers, 29 ordered again in August or September (1.80%). Of the 842 August customers, 2 ordered again in September (0.24%).
-
-Most buyers in each month are new. About 1 in 10 July customers ordered a second time in July. That in-month repeat fell to about 1 in 12 in August and about 1 in 24 in September. Across the quarter, 266 of 2,691 customers (9.88%) either ordered twice or showed up in more than one month.
+Most buyers in each month are new. The retention rate fell from 3.73% in July to 1.55% in August and 0.24% in September. About 1 in 10 July customers also ordered a second time inside July. That in-month repeat fell to about 1 in 12 in August and about 1 in 24 in September. Across the quarter, 266 of 2,691 customers (9.88%) either ordered twice or showed up in more than one month.
 
 ## What changed across the three months
 
@@ -194,4 +207,4 @@ Orders fell from 1,921 to 281, and conversion fell from 4.59% to 1.05%. Untagged
 
 Cart abandonment stayed between 64.90% and 66.44%.
 
-The customer base of each month got smaller, and fewer of those customers placed a second order in the same month. The share who had bought before the month stayed in a narrow band, 4.71% to 6.74%.
+The customer base of each month got smaller. Retention fell from 3.73% in July to 1.55% in August and 0.24% in September. Fewer customers placed a second order in the same month. The share who had bought before the month stayed in a narrow band, 4.71% to 6.74%.

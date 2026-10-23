@@ -17,6 +17,7 @@ This folder is the **full API documentation set** — from public storefront / m
 | **0g** | [ANDROID_MOBILE_NAVBAR.md](./ANDROID_MOBILE_NAVBAR.md) | Android | Website phone header and menu drawer: every API |
 | **0g2** | [ANDROID_APP_NAVBAR.md](./ANDROID_APP_NAVBAR.md) | Android | App navbar the seller designs under Mobile: home bar and other-pages bar |
 | **0g3** | [ANDROID_SPLASH_SCREENS.md](./ANDROID_SPLASH_SCREENS.md) | Android / Flutter | App splash screens: photo, GIF, and video from `GET /api/public/mobile-features` |
+| **0g4** | [ANDROID_APP_BOTTOM_MENU.md](./ANDROID_APP_BOTTOM_MENU.md) | Android / Flutter | App bottom menu the seller designs under Mobile → Footer |
 | **0h** | [ANDROID_BRAND_PAGE.md](./ANDROID_BRAND_PAGE.md) | Android | Brand page design and brand APIs |
 | **0h2** | [APP_BRANDS_API.md](./APP_BRANDS_API.md) | Android / Flutter | Home brand logos `GET /api/public/brands`, brand products, and the brands on the store |
 | **0h3** | [APP_IMAGE_SEARCH.md](./APP_IMAGE_SEARCH.md) | Android / Flutter | Camera and upload image search: `POST /api/search-by-image` and the results screen |

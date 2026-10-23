@@ -69,3 +69,27 @@ test('reads imported stockQuantity when stock is missing', () => {
   assert.equal(getVariantStock({ stockQuantity: 7 }), 7);
   assert.equal(getVariantStock({ stock: 0, stockQuantity: 7 }), 0);
 });
+
+test('a trailing space on the color still shows the photo and stays in stock', () => {
+  const variants = [
+    {
+      stock: 10,
+      options: {
+        color: 'Black ',
+        image: 'https://example.com/black.webp',
+      },
+    },
+    {
+      stock: 10,
+      options: {
+        color: 'Blue',
+        image: 'https://example.com/blue.webp',
+      },
+    },
+  ];
+
+  assert.equal(
+    isVariantOptionValueAvailable(variants, { color: 'Black' }, 'color', 'Black'),
+    true,
+  );
+});

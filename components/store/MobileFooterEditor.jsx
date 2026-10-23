@@ -22,13 +22,14 @@ import StoreDropdown from '@/components/store/StoreDropdown';
 import { slugifyCategory } from '@/lib/categorySlug';
 import { flattenShowcaseCategories } from '@/lib/showcaseBannerLinks';
 import {
+  BOTTOM_NAV_ACCOUNT_OPTIONS,
   BOTTOM_NAV_LINK_TYPES,
   BOTTOM_NAV_PAGE_OPTIONS,
   createBottomNavLink,
   readBottomNavLinkChoice,
 } from '@/lib/bottomNavLinkChoices';
 import { normalizeMobileFeatures } from '@/lib/mobileFeatures';
-import { FOOTER_CLICK_ANIMATIONS, appFooterFrameStyle, normalizeAppFooter } from '@/lib/mobileAppFooter';
+import { APP_FOOTER_CONTENT_PADDING_X, APP_FOOTER_SIDE_INSET_PX, FOOTER_CLICK_ANIMATIONS, appFooterFrameStyle, normalizeAppFooter } from '@/lib/mobileAppFooter';
 
 const BUILTIN_ICONS = {
   home: Home,
@@ -130,18 +131,21 @@ function FooterPreview({ footer, activeId, onSelect }) {
       `}</style>
       <div className="relative h-44 overflow-hidden rounded-[28px] bg-slate-100">
         <div
-          className="absolute inset-x-4 transition-transform duration-300 ease-out"
+          className="absolute transition-transform duration-300 ease-out"
           style={{
+            left: APP_FOOTER_SIDE_INSET_PX,
+            right: APP_FOOTER_SIDE_INSET_PX,
             bottom: config.bottomSpacePx,
             transform: config.hideOnScroll && scrolledAway ? 'translateY(140%)' : 'translateY(0)',
           }}
         >
           <div
-            className="flex items-stretch px-2"
+            className="flex items-stretch"
             style={{
               background: config.backgroundColor,
               borderRadius: config.radiusPx,
               height: config.heightPx,
+              paddingInline: APP_FOOTER_CONTENT_PADDING_X,
               ...appFooterFrameStyle(config),
             }}
           >
@@ -218,6 +222,17 @@ function PathFields({ path, linkType, onTypeChange, onPathChange, categoryOption
           options={BOTTOM_NAV_PAGE_OPTIONS}
           placeholder="Select a page"
           searchPlaceholder="Search pages"
+        />
+      ) : null}
+      {activeType === 'account' ? (
+        <StoreDropdown
+          portal
+          searchable
+          value={choice.type === 'account' ? choice.value : ''}
+          onChange={(value) => onPathChange(createBottomNavLink('account', value))}
+          options={BOTTOM_NAV_ACCOUNT_OPTIONS}
+          placeholder="Select an account page"
+          searchPlaceholder="Search account pages"
         />
       ) : null}
       {activeType === 'category' ? (

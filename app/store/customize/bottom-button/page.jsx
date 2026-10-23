@@ -11,6 +11,7 @@ import StoreDropdown from '@/components/store/StoreDropdown'
 import { slugifyCategory } from '@/lib/categorySlug'
 import { flattenShowcaseCategories } from '@/lib/showcaseBannerLinks'
 import {
+  BOTTOM_NAV_ACCOUNT_OPTIONS,
   BOTTOM_NAV_LINK_TYPES,
   BOTTOM_NAV_PAGE_OPTIONS,
   createBottomNavLink,
@@ -508,6 +509,19 @@ export default function BottomButtonCustomizePage() {
                   options={BOTTOM_NAV_PAGE_OPTIONS}
                   placeholder="Select a page"
                   searchPlaceholder="Search pages"
+                />
+              ) : null}
+              {activeLinkType === 'account' ? (
+                <StoreDropdown
+                  searchable
+                  value={linkChoice.type === 'account' ? linkChoice.value : ''}
+                  onChange={(value) => {
+                    setLinkType('account')
+                    patch({ bottomNavHref: createBottomNavLink('account', value) })
+                  }}
+                  options={BOTTOM_NAV_ACCOUNT_OPTIONS}
+                  placeholder="Select an account page"
+                  searchPlaceholder="Search account pages"
                 />
               ) : null}
               {activeLinkType === 'category' ? (
