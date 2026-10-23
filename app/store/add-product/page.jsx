@@ -24,7 +24,7 @@ import { TableHeader } from '@tiptap/extension-table-header'
 import { useAuth } from '@/lib/useAuth';
 import { getBadgePlacementClass, getBadgeShadowClass, getBadgeSizeClass, getNewBadgeStyle } from '@/lib/newProductTag';
 import { readSellerCache } from '@/lib/storeDashboardCache';
-import { canChangeProductPricing, stripAutoPackSku } from '@/lib/productSaveGuards';
+import { canChangeProductPricing, explicitVariantStock, stripAutoPackSku } from '@/lib/productSaveGuards';
 import { Trash2, X } from 'lucide-react';
 import { formatStorefrontMoney } from '@/lib/storefrontMarket';
 import { getProductImageAspectRatioClass } from '@/lib/productMedia';
@@ -1226,7 +1226,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                         (f) => String(baseOpts[f] || '').trim(),
                     )
                     const key = getVariantMatrixKey(baseOpts)
-                    const rowStock = Number(v.stock) > 0 ? Number(v.stock) : productStockFallback
+                    const rowStock = explicitVariantStock(v.stock, productStockFallback)
                     if (hasSelection && !baseMap.has(key)) {
                         baseMap.set(key, {
                             options: baseOpts,
@@ -1264,7 +1264,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                         cells[buildMatrixCellKey(baseOpts, qty)] = {
                             price: v.price ?? '',
                             AED: v.AED ?? v.price ?? '',
-                            stock: Number(v.stock) > 0 ? Number(v.stock) : '',
+                            stock: v.stock === '' || v.stock == null ? '' : explicitVariantStock(v.stock, 0),
                             sku: v.sku || '',
                         }
                     }
@@ -2259,7 +2259,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                         if (!(price > 0)) return
                         const aed = pickMatrixNumber(cell.AED, b.AED, v.AED, price) || price
                         // Keep the seller's variant stock. Qty is units per pack, not a second stock.
-                        const stock = Math.max(0, Number(v.stock) || productStockFallback || 0)
+                        const stock = explicitVariantStock(v.stock, productStockFallback)
                         expanded.push({
                             sku: stripAutoPackSku(v.sku) || mainSku,
                             options: resolveVariantImageOptions({
@@ -2396,10 +2396,18 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                   : (String(productInfo.sku || '').trim()
                     ? { sku: String(productInfo.sku).trim(), skuManual: true }
                     : {})),
-                // Omit blank stock on edit so server keeps existing qty (Number('')||0 was wiping stock).
-                ...(String(productInfo.stockQuantity ?? '').trim() !== ''
-                  ? { stockQuantity: Number(productInfo.stockQuantity) }
-                  : (product?._id ? {} : { stockQuantity: 0 })),
+                // Variant rows own the quantity. The main field is hidden in that mode
+                // so a stale total cannot be copied onto a variant saved as 0.
+                ...(variantBundleMode === 'variants'
+                  ? {
+                      stockQuantity: variantsToSend.reduce(
+                        (sum, variant) => sum + explicitVariantStock(variant?.stock, 0),
+                        0,
+                      ),
+                    }
+                  : (String(productInfo.stockQuantity ?? '').trim() !== ''
+                    ? { stockQuantity: Number(productInfo.stockQuantity) }
+                    : (product?._id ? {} : { stockQuantity: 0 }))),
                 soldCount: Math.max(0, Number(productInfo.soldCount) || 0),
                 colors: productInfo.colors || [],
                 sizes: productInfo.sizes || [],
@@ -2824,6 +2832,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                             </div>
                         )}
                     </div>
+                    {variantBundleMode === 'variants' ? null : (
                     <div>
                         <label className="block text-xs font-semibold mb-1 text-gray-500 uppercase tracking-wide">Stock Qty</label>
                         <input type="number" name="stockQuantity" value={productInfo.stockQuantity ?? ''} onChange={onChangeHandler} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200" placeholder="0" min="0" />
@@ -2831,6 +2840,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                           <p className="mt-1 text-[11px] text-slate-500">Units on the shelf. Buy 1 uses 1 unit, Bundle of 3 uses 3 units from this same stock.</p>
                         ) : null}
                     </div>
+                    )}
                     <div>
                         <label className="block text-xs font-semibold mb-1 text-gray-500 uppercase tracking-wide">Units Sold (display)</label>
                         <input type="number" name="soldCount" value={productInfo.soldCount ?? ''} onChange={onChangeHandler} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200" placeholder="e.g. 250" min="0" />
@@ -3980,6 +3990,9 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
 
                     {hasVariants && (
                       <div className="space-y-4">
+                        {variantBundleMode === 'variants' ? (
+                          <p className="text-[11px] text-slate-500">Each variant has its own stock. The product total is those stocks added together.</p>
+                        ) : null}
                         {bulkEnabled && variants.some((v) => VARIANT_MATRIX_SELECTION_FIELDS.some((f) => String(v?.options?.[f] || '').trim())) && (
                           <div className="rounded-lg border border-violet-200 bg-violet-50/50 px-4 py-2.5 text-xs text-violet-800">
                             Pack sizes are set above. Use the matrix for Sale / Regular of each option × pack. Stock stays on the variant — Bundle of 3 uses 3 units from that same stock.
