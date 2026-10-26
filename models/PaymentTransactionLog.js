@@ -30,7 +30,7 @@ const PaymentTransactionLogSchema = new mongoose.Schema(
     },
     provider: {
       type: String,
-      enum: ['STRIPE', 'TABBY', 'TAMARA', 'RAZORPAY', 'COD', 'WALLET', 'SYSTEM', ''],
+      enum: ['STRIPE', 'TABBY', 'TAMARA', 'RAZORPAY', 'VAULTSPAY', 'COD', 'WALLET', 'SYSTEM', ''],
       default: '',
       index: true,
     },

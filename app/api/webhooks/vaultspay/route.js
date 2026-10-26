@@ -19,6 +19,6 @@ export async function POST(request) {
     return NextResponse.json(result);
   } catch (error) {
     console.error('[webhooks/vaultspay]', error?.message || error);
-    return NextResponse.json({ received: true });
+    return NextResponse.json({ received: false }, { status: 500 });
   }
 }
