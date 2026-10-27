@@ -14,6 +14,88 @@ import { getOrderLineProduct } from '@/lib/orderDisplay';
 import { isCatalogSku, resolveLineSku } from '@/lib/storePickupExcelSku';
 
 const ORDER_LINE_PRODUCT_SELECT = 'name slug images sku variants price salePrice';
+const ORDER_PAGE_DEFAULT = 20;
+const ORDER_PAGE_MAX = 100;
+
+function escapeRegex(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function orderListPaymentFilter(method) {
+  const key = String(method || 'ALL').trim().toUpperCase();
+  if (key === 'COD') return { paymentMethod: { $regex: 'cod', $options: 'i' } };
+  if (key === 'TABBY') return { paymentMethod: { $regex: 'tabby', $options: 'i' } };
+  if (key === 'TAMARA') return { paymentMethod: { $regex: 'tamara', $options: 'i' } };
+  if (key === 'WALLET') return { paymentMethod: { $regex: '^wallet$', $options: 'i' } };
+  if (key === 'CARD') {
+    return { paymentMethod: { $in: ['CARD', 'STRIPE', 'RAZORPAY', 'VAULTSPAY', 'card', 'stripe', 'razorpay', 'vaultspay'] } };
+  }
+  return null;
+}
+
+function orderListSearchFilter(query) {
+  const text = String(query || '').trim().slice(0, 80);
+  if (!text) return null;
+  const digits = text.replace(/\D/g, '');
+  const bare = text.replace(/^#/, '');
+  if (/^\d{4,8}$/.test(digits) && digits === bare.replace(/\D/g, '') && !/[a-z]/i.test(bare)) {
+    return {
+      $or: [
+        { shortOrderNumber: Number(digits) },
+        { trackingId: text },
+        { legacySourceId: text },
+        { 'waslah.trackingNumber': text },
+        { 'waslah.emxTrackingNumber': text },
+        { 'shippingAddress.phone': { $regex: `${digits}$` } },
+        { guestPhone: { $regex: `${digits}$` } },
+      ],
+    };
+  }
+  const pattern = escapeRegex(text);
+  return {
+    $or: [
+      { guestName: { $regex: pattern, $options: 'i' } },
+      { guestEmail: { $regex: pattern, $options: 'i' } },
+      { guestPhone: { $regex: pattern, $options: 'i' } },
+      { 'shippingAddress.name': { $regex: pattern, $options: 'i' } },
+      { 'shippingAddress.email': { $regex: pattern, $options: 'i' } },
+      { 'shippingAddress.phone': { $regex: pattern, $options: 'i' } },
+      { trackingId: { $regex: pattern, $options: 'i' } },
+      { legacySourceId: { $regex: pattern, $options: 'i' } },
+    ],
+  };
+}
+
+function orderListStatusFilter(status) {
+  const key = String(status || 'ALL').trim().toUpperCase();
+  if (!key || key === 'ALL' || key === 'CONVERTED' || key.startsWith('DELIVERY_')) return null;
+  if (key === 'PENDING_PAYMENT') return { status: 'AWAITING_PAYMENT' };
+  if (key === 'PENDING_SHIPMENT') {
+    return {
+      status: { $in: ['ORDER_PLACED', 'PROCESSING'] },
+      trackingId: { $in: [null, ''] },
+      awb: { $in: [null, ''] },
+    };
+  }
+  if (key === 'PACKED') return { 'warehousePacking.packed': true };
+  if (key === 'LABEL_READY') {
+    return {
+      'waslah.orderId': { $exists: true, $nin: [null, ''] },
+      'waslah.labelDownloadCount': { $in: [null, 0] },
+      'waslah.labelPrintedAt': null,
+    };
+  }
+  if (key === 'RETURN_REQUESTED') return { 'returns.status': 'REQUESTED' };
+  return { status: key };
+}
+
+function orderListSort(sortBy, sortDirection) {
+  const direction = String(sortDirection || 'desc').toLowerCase() === 'asc' ? 1 : -1;
+  if (sortBy === 'orderNumber') return { shortOrderNumber: direction, createdAt: -1 };
+  if (sortBy === 'total') return { total: direction, createdAt: -1 };
+  if (sortBy === 'customer') return { 'shippingAddress.name': direction, createdAt: -1 };
+  return { createdAt: direction, shortOrderNumber: -1 };
+}
 
 async function hydrateOrderItemProducts(orders = []) {
   const missingIds = new Set();
@@ -156,31 +238,90 @@ export async function GET(request){
             return NextResponse.json({ error: 'not authorized' }, { status: 401 })
         }
 
-        try {
-            const { expireStaleAwaitingPaymentOrders } = await import('@/lib/deferredOrderFlow');
-            await expireStaleAwaitingPaymentOrders(storeId);
-        } catch (expireError) {
-            debugLog('stale awaiting-payment expiry failed:', expireError?.message || expireError);
+        const page = Math.max(1, Number(searchParams.get('page')) || 1);
+        const limit = Math.min(ORDER_PAGE_MAX, Math.max(1, Number(searchParams.get('limit')) || ORDER_PAGE_DEFAULT));
+        const from = searchParams.get('from');
+        const to = searchParams.get('to');
+        const createdAt = {};
+        if (from) {
+          const start = new Date(from);
+          if (!Number.isNaN(start.getTime())) createdAt.$gte = start;
         }
+        if (to) {
+          const end = new Date(to);
+          if (!Number.isNaN(end.getTime())) createdAt.$lt = end;
+        }
+        const baseMatch = {
+          storeId,
+          ...ACTIVE_RECORD_FILTER,
+          ...(Object.keys(createdAt).length ? { createdAt } : {}),
+          ...(orderListPaymentFilter(searchParams.get('payment')) || {}),
+          ...(orderListSearchFilter(searchParams.get('q')) || {}),
+        };
+        const match = {
+          ...baseMatch,
+          ...(orderListStatusFilter(searchParams.get('status')) || {}),
+        };
+        const sort = orderListSort(searchParams.get('sortBy'), searchParams.get('sortDirection'));
 
-        const [orders, convertedCarts] = await Promise.all([
-            Order.find({ storeId, ...ACTIVE_RECORD_FILTER })
+        const [orders, total, statusGroups, pendingShipment, labelReady, packed, returnsRequested] = await Promise.all([
+            Order.find(match)
                 .populate('addressId')
                 .populate({
                     path: 'orderItems.productId',
                     model: 'Product',
                     select: ORDER_LINE_PRODUCT_SELECT,
                 })
-                .sort({ createdAt: -1, shortOrderNumber: -1 })
+                .sort(sort)
+                .skip((page - 1) * limit)
+                .limit(limit)
                 .lean(),
-            AbandonedCart.find({
-                storeId,
-                ...ACTIVE_RECORD_FILTER,
-                convertedByName: { $nin: [null, ''] },
-            })
-                .select('_id userId email phone status convertedAt convertedBy convertedByName convertedCartTotal cartTotal conversionNote conversionDiscountType conversionDiscountValue conversionPaymentMethod linkedOrderId')
-                .lean(),
+            Order.countDocuments(match),
+            Order.aggregate([
+              { $match: baseMatch },
+              { $group: { _id: '$status', n: { $sum: 1 } } },
+            ]),
+            Order.countDocuments({
+              ...baseMatch,
+              status: { $in: ['ORDER_PLACED', 'PROCESSING'] },
+              trackingId: { $in: [null, ''] },
+            }),
+            Order.countDocuments({
+              ...baseMatch,
+              'waslah.orderId': { $exists: true, $nin: [null, ''] },
+              'waslah.labelDownloadCount': { $in: [null, 0] },
+              'waslah.labelPrintedAt': null,
+            }),
+            Order.countDocuments({ ...baseMatch, 'warehousePacking.packed': true }),
+            Order.countDocuments({ ...baseMatch, 'returns.status': 'REQUESTED' }),
         ]);
+        const statusCounts = Object.fromEntries(statusGroups.map((row) => [row._id || 'UNKNOWN', row.n]));
+        const scopedTotal = Object.values(statusCounts).reduce((sum, count) => sum + count, 0);
+        const awaitingCount = statusCounts.AWAITING_PAYMENT || 0;
+        const inactiveCount = (statusCounts.PAYMENT_FAILED || 0)
+          + (statusCounts.CANCELLED || 0)
+          + (statusCounts.REFUNDED || 0)
+          + awaitingCount;
+        const counts = {
+          ...statusCounts,
+          TOTAL: scopedTotal,
+          ACTIVE: Math.max(0, scopedTotal - inactiveCount),
+          PENDING_PAYMENT: awaitingCount,
+          PENDING_SHIPMENT: pendingShipment,
+          LABEL_READY: labelReady,
+          PACKED: packed,
+          RETURN_REQUESTED: returnsRequested,
+        };
+
+        const convertedCarts = orders.length
+          ? await AbandonedCart.find({
+              storeId,
+              ...ACTIVE_RECORD_FILTER,
+              linkedOrderId: { $in: orders.map((order) => String(order._id)) },
+            })
+              .select('_id userId email phone status convertedAt convertedBy convertedByName convertedCartTotal cartTotal conversionNote conversionDiscountType conversionDiscountValue conversionPaymentMethod linkedOrderId')
+              .lean()
+          : [];
         
         debugLog('orders found:', orders.length);
         
@@ -267,7 +408,13 @@ export async function GET(request){
         const { excludeReturnPickupCloneOrders } = await import('@/lib/storeReturnLabels');
         enrichedOrders = excludeReturnPickupCloneOrders(enrichedOrders);
 
-        return NextResponse.json({orders: enrichedOrders})
+        return NextResponse.json({
+          orders: enrichedOrders,
+          total,
+          page,
+          limit,
+          counts,
+        })
     } catch (error) {
         console.error('[ORDER API ERROR]', error);
         debugLog('API error:', error);

@@ -36,7 +36,7 @@ Read `mobileFeatures.shopBlocks`. The response is cached for about 3 minutes. Ke
 
 `enabled` false means draw nothing. In that case the object is only `{ "enabled": false }`.
 
-A path that starts with `/` is a screen on this site. `http://` and `https://` open as a full URL. `javascript:` and `data:` are already removed. An empty path is `/shop`.
+Every budget image and every promo image has a `path`. That is the only tap target. There is no separate `link` field. See section 4.
 
 ---
 
@@ -114,7 +114,7 @@ A hidden block:
 
 `id` is only a key for the list. It is not a product id or a category id.
 
-A tile or slide with no image is left out. The ones that remain keep their saved order. A tile with an image and no path uses `/shop`.
+A tile or slide with no image is left out. The ones that remain keep their saved order. A tile or slide with an image and no saved path is sent as `/shop`.
 
 ### Font
 
@@ -130,7 +130,42 @@ A tile or slide with no image is left out. The ones that remain keep their saved
 
 ---
 
-## 4. How to draw it
+## 4. Path
+
+`path` is a string on each tile and each slide. Open it when that image is tapped. Do not call another API to find the destination.
+
+| `path` | Open |
+|---|---|
+| Starts with `/` | A screen in the app |
+| Starts with `http://` or `https://` | That full URL |
+| Missing | The API already replaced it with `/shop` |
+
+`javascript:` and `data:` are removed before the response is sent. A value with no scheme is forced to start with `/`. A query string stays on the path, so `/shop?max=50` is the shop screen with those parameters.
+
+Paths the seller can save:
+
+| Kind | Shape | Example |
+|---|---|---|
+| Home | `/` | `/` |
+| Shop | `/shop` | `/shop` |
+| Category | `/category/{slug}` | `/category/phone-accessories` |
+| Nested category | `/category/{parent}/{child}` | `/category/electronics/earphones` |
+| Brand | `/brand/{slug}` | `/brand/porodo` |
+| Product | `/product/{slug}` | `/product/game-stick-lite-4k` |
+| Landing page | `/c/{slug}` | `/c/summer-sale` |
+| Cart | `/cart` | `/cart` |
+| Offers | `/offers` | `/offers` |
+| New arrivals | `/new-arrivals` | `/new-arrivals` |
+| Best sellers | `/best-sellers` | `/best-sellers` |
+| Categories list | `/categories` | `/categories` |
+| Other site page | `/{page}` | `/about-us`, `/contact-us`, `/faq`, `/return-policy` |
+| Custom | any `/…` or full URL | `/shop?max=50`, `https://example.com/sale` |
+
+The slug is the public slug, not the database id. `id` on the tile or slide is not the path.
+
+---
+
+## 5. How to draw it
 
 One row, two equal columns, about 8 px apart. Corner radius about 16 on both columns. The promo column is the same height as the budget card.
 
@@ -158,7 +193,7 @@ One image means a still picture and no dots. An empty `slides` array leaves the 
 
 ---
 
-## 5. Checklist
+## 6. Checklist
 
 - One call: `GET /api/public/mobile-features`. No token.
 - Read `mobileFeatures.shopBlocks`.
@@ -166,6 +201,6 @@ One image means a still picture and no dots. An empty `slides` array leaves the 
 - Draw the budget card and the promo side by side, equal width and equal height.
 - Title, card color, font, weight, and align come from the fields above.
 - Draw only `tiles` and `slides` that are in the response. Empty images are already removed.
-- A tap on a budget image opens that tile’s `path`.
-- A tap on the promo image opens the current slide’s `path`.
+- A tap on a budget image opens that tile’s `path`. A tap on the promo image opens the current slide’s `path`.
+- Treat `/category/…`, `/brand/…`, `/product/…`, `/c/…`, and the other shapes in section 4 as in-app screens. A path that starts with `http://` or `https://` is a full URL.
 - When there are two or more slides, auto-advance using `slideIntervalSeconds` and show the dots.

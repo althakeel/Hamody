@@ -130,6 +130,8 @@ import {
     getOrderExpectedDeliveryDate,
     getOrderTableTags,
     getOrderPaymentMethodBadge,
+    getOrderGatewayTransactionId,
+    getOrderPaymentSchemaLabel,
     normalizeStoreOrderPaymentMethod,
     isStoreOrderRefunded,
     summarizeDeliveryBuckets,
@@ -757,6 +759,8 @@ export default function StoreOrders() {
     const [bulkUpdatingStatus, setBulkUpdatingStatus] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [ordersPerPage, setOrdersPerPage] = useState(20);
+    const [orderTotal, setOrderTotal] = useState(0);
+    const [serverStats, setServerStats] = useState(null);
     const [sortBy, setSortBy] = useState('date');
     const [sortDirection, setSortDirection] = useState('desc');
     const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
@@ -764,6 +768,7 @@ export default function StoreOrders() {
     const [savingPaymentFailedFollowUp, setSavingPaymentFailedFollowUp] = useState(false);
     const [recheckingPaymentOrderId, setRecheckingPaymentOrderId] = useState(null);
     const [creatingVaultsPayLinkId, setCreatingVaultsPayLinkId] = useState(null);
+    const [creatingPaymentLinkMethod, setCreatingPaymentLinkMethod] = useState('');
     const [vaultsPayLink, setVaultsPayLink] = useState(null);
     const [schedulingPickup, setSchedulingPickup] = useState(false);
     const [sendingToC3xpress, setSendingToC3xpress] = useState(false);
@@ -1173,15 +1178,17 @@ export default function StoreOrders() {
         () => getStatsBaseOrders(),
         [orders, fromDate, toDate, fromTime, toTime, filterPayment, filterTrafficSource, orderSearchQuery],
     );
-    const stats = useMemo(() => getOrderStats(statsBaseOrders), [statsBaseOrders, orders]);
+    const localStats = useMemo(() => getOrderStats(statsBaseOrders), [statsBaseOrders, orders]);
+    const stats = serverStats || localStats;
     const ordersMatchingDateRange = useMemo(
         () => orders.filter(isOrderInRange),
         [orders, fromDate, toDate, fromTime, toTime],
     );
     const filteredOrders = getFilteredOrders();
-    const totalPages = Math.max(1, Math.ceil(filteredOrders.length / ordersPerPage));
+    const listTotal = orderTotal || filteredOrders.length;
+    const totalPages = Math.max(1, Math.ceil(listTotal / ordersPerPage));
     const safeCurrentPage = Math.min(currentPage, totalPages);
-    const paginatedOrders = filteredOrders.slice(
+    const paginatedOrders = orderTotal ? filteredOrders : filteredOrders.slice(
         (safeCurrentPage - 1) * ordersPerPage,
         safeCurrentPage * ordersPerPage
     );
@@ -1461,12 +1468,12 @@ export default function StoreOrders() {
     };
 
     const renderPaginationControls = () => {
-        if (filteredOrders.length <= ordersPerPage) return null;
+        if (listTotal <= ordersPerPage) return null;
 
         return (
             <div className="flex flex-col gap-3 border-t border-gray-200 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-sm text-slate-500">
-                    Showing {(safeCurrentPage - 1) * ordersPerPage + 1} to {Math.min(safeCurrentPage * ordersPerPage, filteredOrders.length)} of {filteredOrders.length} orders
+                    Showing {(safeCurrentPage - 1) * ordersPerPage + 1} to {Math.min(safeCurrentPage * ordersPerPage, listTotal)} of {listTotal} orders
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                     <label className="text-xs text-slate-500">Rows</label>
@@ -1478,7 +1485,7 @@ export default function StoreOrders() {
                         }}
                         className="rounded-lg border border-gray-300 px-2 py-1 text-sm bg-white"
                     >
-                        {[10, 20, 50, 100, 500].map((size) => (
+                        {[10, 20, 50, 100].map((size) => (
                             <option key={size} value={size}>{size}</option>
                         ))}
                     </select>
@@ -1900,10 +1907,20 @@ export default function StoreOrders() {
             }
             if (!silent && !readPageCache('store-orders')) setLoading(true);
 
+            const range = getDateRange();
             const { data } = await axios.get('/api/store/orders', {
                 params: {
                     withDelhivery: autoRefreshEnabled ? 'true' : 'false',
                     withWaslah: 'true',
+                    page: currentPage,
+                    limit: ordersPerPage,
+                    status: filterStatus,
+                    payment: filterPayment,
+                    q: orderSearchQuery.trim(),
+                    sortBy,
+                    sortDirection,
+                    from: range.start ? range.start.toISOString() : '',
+                    to: range.end ? range.end.toISOString() : '',
                 },
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -1960,9 +1977,11 @@ export default function StoreOrders() {
 
             setOrders((prev) => {
                 const merged = mergeOrdersPreservingLabelDownloads(syncedOrders, prev);
-                writePageCache('store-orders', { orders: merged, fetchedAt: Date.now() });
+                writePageCache('store-orders', { orders: merged, fetchedAt: Date.now(), total: Number(data.total) || merged.length });
                 return merged;
             });
+            setOrderTotal(Number(data.total) || syncedOrders.length);
+            setServerStats(data.counts || null);
             setSelectedOrderIds((prev) => prev.filter((id) => syncedOrders.some((order) => String(order._id) === id)));
         } catch (error) {
             toast.error(error?.response?.data?.error || error.message);
@@ -2058,6 +2077,48 @@ export default function StoreOrders() {
             toast.error(error?.response?.data?.error || error?.message || 'Could not create a payment link');
         } finally {
             setCreatingVaultsPayLinkId(null);
+        }
+    };
+
+    const createOrderPaymentLink = async (method) => {
+        const order = selectedOrder;
+        const orderId = String(order?._id || '').trim();
+        if (!orderId || creatingPaymentLinkMethod) return;
+        setCreatingPaymentLinkMethod(method);
+        try {
+            let token = await getToken(false);
+            if (!token) token = await getToken(true);
+            if (!token) {
+                toast.error('Authentication failed. Please sign in again.');
+                return;
+            }
+            const { data } = await axios.post(
+                `/api/store/orders/${orderId}/payment-link`,
+                { method },
+                { headers: { Authorization: `Bearer ${token}` } },
+            );
+            if (!data?.url) throw new Error('No payment link was returned');
+            const paymentLink = {
+                provider: data.provider,
+                url: data.url,
+                expiresAt: data.expiresAt || null,
+                createdAt: new Date().toISOString(),
+            };
+            const applyLink = (row) => (
+                String(row?._id) === orderId ? { ...row, paymentLink } : row
+            );
+            setOrders((prev) => (Array.isArray(prev) ? prev.map(applyLink) : prev));
+            setSelectedOrder((prev) => (prev && String(prev._id) === orderId ? applyLink(prev) : prev));
+            try {
+                await navigator.clipboard.writeText(data.url);
+                toast.success('Payment link copied. It is also saved in History.');
+            } catch {
+                toast.success('Payment link ready. It is saved in History.');
+            }
+        } catch (error) {
+            toast.error(error?.response?.data?.error || error?.message || 'Could not create a payment link');
+        } finally {
+            setCreatingPaymentLinkMethod('');
         }
     };
 
@@ -2166,8 +2227,9 @@ export default function StoreOrders() {
 
     useEffect(() => {
         const cached = readPageCache('store-orders');
-        if (cached?.orders?.length) {
+        if (cached?.orders?.length && cached.orders.length <= 100) {
             setOrders(excludeReturnPickupCloneOrders(cached.orders));
+            if (cached.total) setOrderTotal(Number(cached.total) || 0);
             setLoading(false);
         }
     }, []);
@@ -2179,9 +2241,9 @@ export default function StoreOrders() {
             setLoading(false);
             return;
         }
-        fetchOrders({ silent: Boolean(readPageCache('store-orders')) });
+        fetchOrders({ silent: Boolean(readPageCache('store-orders')) && currentPage === 1 });
         // eslint-disable-next-line
-    }, [authLoading, user]);
+    }, [authLoading, user, currentPage, ordersPerPage, filterStatus, filterPayment, fromDate, toDate, fromTime, toTime, sortBy, sortDirection, orderSearchQuery]);
 
     const loadWaslahConfig = async () => {
         try {
@@ -5407,11 +5469,24 @@ export default function StoreOrders() {
                                         <div className="flex flex-col items-start gap-1.5">
                                             {(() => {
                                                 const paymentBadge = getOrderPaymentMethodBadge(order);
-                                                if (!paymentBadge) return null;
+                                                const transactionId = getOrderGatewayTransactionId(order);
+                                                if (!paymentBadge && !transactionId) return null;
                                                 return (
-                                                    <span className={paymentBadge.className}>
-                                                        {paymentBadge.label}
-                                                    </span>
+                                                    <>
+                                                        {paymentBadge ? (
+                                                            <span className={paymentBadge.className}>
+                                                                {paymentBadge.label}
+                                                            </span>
+                                                        ) : null}
+                                                        {transactionId ? (
+                                                            <span
+                                                                className="max-w-[140px] truncate font-mono text-[10px] text-slate-500"
+                                                                title={transactionId}
+                                                            >
+                                                                {transactionId}
+                                                            </span>
+                                                        ) : null}
+                                                    </>
                                                 );
                                             })()}
                                             {(() => {
@@ -7009,8 +7084,24 @@ export default function StoreOrders() {
                                     })()}
                                     <div>
                                         <p className="text-slate-500">Payment Method</p>
-                                        <p className="font-medium text-slate-900">{selectedOrder.paymentMethod}</p>
+                                        <p className="font-medium text-slate-900">
+                                          {getOrderPaymentMethodBadge(selectedOrder)?.label || 'Payment'}
+                                        </p>
                                     </div>
+                                    <div>
+                                        <p className="text-slate-500">Schema</p>
+                                        <p className="font-medium text-slate-900">
+                                          {getOrderPaymentSchemaLabel(selectedOrder) || 'Not sent'}
+                                        </p>
+                                    </div>
+                                    {getOrderGatewayTransactionId(selectedOrder) ? (
+                                        <div className="md:col-span-2">
+                                            <p className="text-slate-500">Transaction Id</p>
+                                            <p className="font-mono text-xs font-medium text-slate-900 break-all">
+                                                {getOrderGatewayTransactionId(selectedOrder)}
+                                            </p>
+                                        </div>
+                                    ) : null}
                                     {manualOrderReference ? (
                                         <div className="md:col-span-2">
                                             <p className="text-slate-500">{orderPaymentReferenceLabel(selectedOrder.paymentMethod)}</p>
@@ -7027,6 +7118,38 @@ export default function StoreOrders() {
                                                 : (getPaymentStatus(selectedOrder) ? '✓ Paid' : 'Pending')}
                                         </p>
                                     </div>
+                                    {!getPaymentStatus(selectedOrder) && !isStoreOrderRefunded(selectedOrder) ? (
+                                        <div className="md:col-span-3 rounded-lg border border-slate-200 bg-white p-3">
+                                            <p className="text-sm font-semibold text-slate-900">Collect payment</p>
+                                            <p className="mt-1 text-xs text-slate-500">
+                                                Create a Visa / Mastercard, Apple Pay, Tabby, or Tamara link. When the customer pays, a cash on delivery order is marked paid. The link and the payment are saved in History.
+                                            </p>
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                {[
+                                                    ['card', 'Visa / Mastercard link'],
+                                                    ['applepay', 'Apple Pay link'],
+                                                    ['tabby', 'Tabby link'],
+                                                    ['tamara', 'Tamara link'],
+                                                ].map(([method, label]) => (
+                                                    <button
+                                                        key={method}
+                                                        type="button"
+                                                        disabled={Boolean(creatingPaymentLinkMethod)}
+                                                        onClick={() => createOrderPaymentLink(method)}
+                                                        className="inline-flex items-center gap-1.5 rounded-lg border border-violet-300 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-800 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    >
+                                                        <Link2 size={14} />
+                                                        {creatingPaymentLinkMethod === method ? 'Creating…' : label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            {selectedOrder.paymentLink?.url ? (
+                                                <p className="mt-3 break-all font-mono text-[11px] text-slate-600">
+                                                    {selectedOrder.paymentLink.url}
+                                                </p>
+                                            ) : null}
+                                        </div>
+                                    ) : null}
                                     
                                     {/* Delhivery Payment Collection Info */}
                                     {selectedOrder.delhivery?.payment && (

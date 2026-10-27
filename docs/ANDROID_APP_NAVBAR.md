@@ -4,7 +4,7 @@ Last updated: 27 October 2026
 Audience: Android and Flutter  
 Seller page that edits this: `/store/mobile-features/navbar`
 
-This document is the home header and the header used on every other screen. The seller designs both on that one page, plus the home banner that sits under the search.
+This document is the home header and the header used on every other screen. The seller designs both on that one page, plus Banner 1, the home banner that sits under the search. Each Banner 1 slide paints this header with its own top background. The share document for that pair is [ANDROID_APP_BANNER_1.md](./ANDROID_APP_BANNER_1.md).
 
 This is not the website header. Do not read `GET /api/store/navbar-menu` or `GET /api/store/settings` for this bar.
 
@@ -74,7 +74,7 @@ The banner has no side inset and no corner radius. The dots sit on the bottom of
 3. Search, when `search.enabled` is true. When it is off, leave **12** px.
 4. Banner, when `bannerSlider.enabled` is true.
 
-When `logoUrl` is present, draw it at the start of the Deliver to row. Size and GIF rules are in [ANDROID_APP_ICON.md](./ANDROID_APP_ICON.md). Do not draw a language switch. `languageColor` is still on `logoRow` and is unused here. Do not draw a menu button or a divider. `search.menuButtonColor`, `search.dividerColor`, and `search.menuIconUrl` are unused by this layout.
+When `logoUrl` is present, draw it at the start of the Deliver to row. Box **56 × 56**, radius **16**, image covering the box. A GIF keeps playing. A tap does nothing. This is the header mark, not the phone’s main app icon. That icon is `mobileFeatures.appIcon.url` in [ANDROID_APP_ICON.md](./ANDROID_APP_ICON.md). Do not draw a language switch. `languageColor` is still on `logoRow` and is unused here. Do not draw a menu button or a divider. `search.menuButtonColor`, `search.dividerColor`, and `search.menuIconUrl` are unused by this layout.
 
 ---
 
@@ -92,7 +92,7 @@ Numbers below are the values the API returns after clamping. The app does not ne
 | `radius.topRight` | `0` | Top end corner, 0–80 |
 | `radius.bottomLeft` | `0` | Always 0. Square bottom |
 | `radius.bottomRight` | `0` | Always 0. Square bottom |
-| `logoUrl` | omitted when empty | Header icon, 56×56, at the start of the Deliver to row. See [ANDROID_APP_ICON.md](./ANDROID_APP_ICON.md) |
+| `logoUrl` | omitted when empty | Header mark, 56×56, at the start of the Deliver to row. This is not the phone’s main app icon. That icon is `mobileFeatures.appIcon.url` in [ANDROID_APP_ICON.md](./ANDROID_APP_ICON.md) |
 
 In Arabic, start is the right edge and end is the left edge.
 
@@ -145,7 +145,7 @@ The icon sits **6** px before the text. Text is one line, semibold. Draw the ite
 
 ### `logoRow` — Deliver to
 
-Always drawn. This is the address line. When `logoUrl` is present, the 56×56 header icon sits at the start of this row, then the pin and the address. See [ANDROID_APP_ICON.md](./ANDROID_APP_ICON.md).
+Always drawn. This is the address line. When `logoUrl` is present, the 56×56 header mark sits at the start of this row, then the pin and the address. The phone’s main app icon is a different image.
 
 | Field | Default | Range | Use |
 |---|---|---|---|
@@ -272,9 +272,9 @@ Empty icon URLs are omitted. `marquee.items[].color` is filled even when the sel
 
 ---
 
-## 5. `bannerSlider`
+## 5. `bannerSlider` — Banner 1
 
-Same response, `mobileFeatures.bannerSlider`. The seller edits it on the navbar page. It is the banner directly under the search, full width, square corners.
+Same response, `mobileFeatures.bannerSlider`. The seller edits it on the navbar page, including the top background that paints this header. It is the banner directly under the search, full width, square corners. The share document is [ANDROID_APP_BANNER_1.md](./ANDROID_APP_BANNER_1.md).
 
 ```json
 {
@@ -486,7 +486,7 @@ This bar does not follow banner slide colors. Slide colors apply only on the hom
 
 - One call: `GET /api/public/mobile-features`. No token.
 - Home header is `mobileFeatures.appNavbar`. The banner under it is `mobileFeatures.bannerSlider`. Other screens use `appNavbar.pageNavbar`.
-- Do not draw the logo, a language switch, a menu button, or a divider on the home header.
+- When `logoUrl` is present, draw the 56×56 header mark at the start of Deliver to. The phone’s main app icon is `mobileFeatures.appIcon.url`. Do not draw a language switch, a menu button, or a divider.
 - Home bottom corners are square. The banner is full width, with the dots on the image.
 - The search button sits inside the search border on both headers.
 - A slide’s `topBackground` paints only the home header above that banner. `fontColor` paints the marquee, Deliver to, search word, camera, outline, button, and the active dot. The search fill stays `search.backgroundColor`.

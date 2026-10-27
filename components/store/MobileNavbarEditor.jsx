@@ -977,7 +977,7 @@ export default function MobileNavbarEditor() {
                   Remove
                 </button>
               ) : null}
-              <p className="w-full text-xs leading-5 text-slate-500">PNG, JPG, WEBP, or GIF. The home header shows Deliver to, not this logo. A GIF keeps playing.</p>
+              <p className="w-full text-xs leading-5 text-slate-500">Header mark beside Deliver to. PNG, JPG, WEBP, or GIF. The phone’s main app icon is set on the App icon page.</p>
             </div>
           </SettingsPanel>
 

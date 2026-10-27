@@ -224,8 +224,15 @@ const OrderSchema = new mongoose.Schema({
   stripePaymentStatus: { type: String, default: null },
   vaultsPayTransactionId: { type: String, index: true },
   vaultsPayPaymentStatus: { type: String, default: null },
+  paymentScheme: { type: String, default: '' },
   vaultsPayPaymentUrl: { type: String, default: '' },
   vaultsPayPaymentUrlExpiresAt: { type: Date, default: null },
+  paymentLink: {
+    provider: { type: String, default: '' },
+    url: { type: String, default: '' },
+    expiresAt: { type: Date, default: null },
+    createdAt: { type: Date, default: null },
+  },
 
   // Tamara BNPL
   tamaraOrderId: { type: String, index: true },             // Tamara order ID (if BNPL payment)

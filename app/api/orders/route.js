@@ -1312,12 +1312,13 @@ export async function POST(request) {
                 if (!customerName) customerName = userDoc?.name || '';
             }
             let checkout;
+            const requestedWallet = String(vaultsPayMethod || 'card').trim().toLowerCase();
+            const walletMethod = ['card', 'googlepay', 'applepay'].includes(requestedWallet) ? requestedWallet : 'card';
             try {
-                const requestedWallet = String(vaultsPayMethod || 'card').trim().toLowerCase();
-                const walletMethod = ['card', 'googlepay', 'applepay'].includes(requestedWallet) ? requestedWallet : 'card';
                 checkout = await createVaultsPayCheckout({
                     amount: fullAmount,
                     orderId: primaryOrderId,
+                    orderNumber: primaryOrder?.shortOrderNumber || '',
                     redirectUrl: `${origin}/order-success?orderId=${primaryOrderId}&vaultspay=1`,
                     callbackUrl: buildCustomerSitePath('/api/webhooks/vaultspay'),
                     method: walletMethod,
@@ -1346,6 +1347,11 @@ export async function POST(request) {
                         $set: {
                             vaultsPayTransactionId: checkout.transactionId || '',
                             vaultsPayPaymentStatus: 'pending',
+                            paymentScheme: walletMethod === 'applepay'
+                              ? 'Apple Pay'
+                              : walletMethod === 'googlepay'
+                                ? 'Google Pay'
+                                : 'Card',
                         },
                     },
                 ).catch((err) => {

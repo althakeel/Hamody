@@ -64,11 +64,13 @@ export async function POST(request, { params }) {
     const checkout = await createVaultsPayCheckout({
       amount,
       orderId: String(order._id),
+      orderNumber: order.shortOrderNumber || '',
       redirectUrl: buildCustomerSitePath(`/order-success?orderId=${order._id}&vaultspay=1`),
       callbackUrl: buildCustomerSitePath('/api/webhooks/vaultspay'),
       method: 'card',
       expiryInSeconds: LINK_SECONDS,
       customer: {
+        name: address.name || order.guestName || '',
         email: address.email || order.guestEmail || '',
         phone: address.phone || order.guestPhone || '',
       },
@@ -83,6 +85,7 @@ export async function POST(request, { params }) {
           vaultsPayPaymentStatus: 'pending',
           vaultsPayPaymentUrl: checkout.url,
           vaultsPayPaymentUrlExpiresAt: expiresAt,
+          paymentScheme: 'Card',
         },
       },
     );

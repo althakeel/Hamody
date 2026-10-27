@@ -17,7 +17,7 @@ This folder is the **full API documentation set** — from public storefront / m
 | **0b** | [FLUTTER_MOBILE_BOTTOM_BUTTON.md](./FLUTTER_MOBILE_BOTTOM_BUTTON.md) | Flutter | Phone center circle only (part of the app doc) |
 | **0g** | [ANDROID_MOBILE_NAVBAR.md](./ANDROID_MOBILE_NAVBAR.md) | Android | Website phone header and menu drawer: every API |
 | **0g2** | [ANDROID_APP_NAVBAR.md](./ANDROID_APP_NAVBAR.md) | Android | App navbar the seller designs under Mobile: home bar and other-pages bar |
-| **0g2b** | [ANDROID_APP_ICON.md](./ANDROID_APP_ICON.md) | Android / Flutter | App header icon from `mobileFeatures.appNavbar.logoUrl` |
+| **0g2b** | [ANDROID_APP_ICON.md](./ANDROID_APP_ICON.md) | Android / Flutter | App main icon from `mobileFeatures.appIcon.url`. Header logo stays `appNavbar.logoUrl` |
 | **0g3** | [ANDROID_SPLASH_SCREENS.md](./ANDROID_SPLASH_SCREENS.md) | Android / Flutter | App splash screens: photo, GIF, and video from `GET /api/public/mobile-features` |
 | **0g4** | [ANDROID_APP_BOTTOM_MENU.md](./ANDROID_APP_BOTTOM_MENU.md) | Android / Flutter | App bottom menu the seller designs under Mobile → Footer |
 | **0h** | [ANDROID_BRAND_PAGE.md](./ANDROID_BRAND_PAGE.md) | Android | Brand page design and brand APIs |
@@ -29,10 +29,12 @@ This folder is the **full API documentation set** — from public storefront / m
 | **0h5** | [ANDROID_GOOGLE_SIGNIN.md](./ANDROID_GOOGLE_SIGNIN.md) | Android | Google sign-in from `GET /api/public/google-auth`, then Firebase and login-result |
 | **0h6** | [APP_BLOGS_API.md](./APP_BLOGS_API.md) | Android / Flutter | Public blog list and article: `GET /api/public/blogs` |
 | **0h7** | [APP_PUSH_NOTIFICATIONS.md](./APP_PUSH_NOTIFICATIONS.md) | Android / Flutter | App push: register the FCM token, the message payload, and the last 20 notifications |
+| **0h8** | [APP_SUPPORT_TICKETS.md](./APP_SUPPORT_TICKETS.md) | Android / Flutter | Support tickets: list, create, reply, and close. `GET/POST /api/tickets` |
 | **0i** | [ANDROID_BANNER_2.md](./ANDROID_BANNER_2.md) | Android | Website home Banner 2 slider: design and API |
+| **0i1** | [ANDROID_APP_BANNER_1.md](./ANDROID_APP_BANNER_1.md) | Android / Flutter | App home Banner 1 and the navbar top background each slide paints |
 | **0i2** | [ANDROID_APP_BANNERS_2_3_4.md](./ANDROID_APP_BANNERS_2_3_4.md) | Android / Flutter | App home Banner 2, Banner 3, and Banner 4 from `GET /api/public/mobile-features` |
 | **0i3** | [ANDROID_APP_CATEGORY_SLIDERS.md](./ANDROID_APP_CATEGORY_SLIDERS.md) | Android / Flutter | App category chips from `mobileFeatures.categoryMobileSliders` |
-| **0i4** | [ANDROID_APP_SHOP_BLOCKS.md](./ANDROID_APP_SHOP_BLOCKS.md) | Android / Flutter | App home budget card and promo from `mobileFeatures.shopBlocks` |
+| **0i4** | [ANDROID_APP_SHOP_BLOCKS.md](./ANDROID_APP_SHOP_BLOCKS.md) | Android / Flutter | App home budget card and promo from `mobileFeatures.shopBlocks`, including each image `path` |
 | **0j** | [ANDROID_HOME_PAGE.md](./ANDROID_HOME_PAGE.md) | Android | Home page only: section order, design, and APIs |
 | **0k** | [ANDROID_SHOP_PAGE.md](./ANDROID_SHOP_PAGE.md) | Android | Shop tab: category rail, banner size, spotlight |
 | **0l** | [ANDROID_CATEGORY_BAR.md](./ANDROID_CATEGORY_BAR.md) | Android | Black category strip: settings API and category API |

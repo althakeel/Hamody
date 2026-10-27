@@ -10,7 +10,7 @@ Seller pages:
 | Banner 3 | `/store/mobile-features/promo-cards` | `mobileFeatures.promoCards` |
 | Banner 4 | `/store/mobile-features/fourth-banners` | `mobileFeatures.fourthBanners` |
 
-Banner 1 is the banner under the home search. It is `mobileFeatures.bannerSlider` and is specified in [ANDROID_APP_NAVBAR.md](./ANDROID_APP_NAVBAR.md). This file is only Banner 2, Banner 3, and Banner 4.
+Banner 1 is the banner under the home search. It is `mobileFeatures.bannerSlider`. Each of its slides paints the home navbar with `topBackground`. That pair is specified in [ANDROID_APP_BANNER_1.md](./ANDROID_APP_BANNER_1.md). This file is only Banner 2, Banner 3, and Banner 4.
 
 These are not the website home sliders. Do not read `GET /api/public/shop-showcase` for them. Do not call `/api/store/mobile-small-banners`, `/api/store/mobile-promo-cards`, or `/api/store/mobile-fourth-banners`. Those seller routes need a store login.
 

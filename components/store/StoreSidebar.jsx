@@ -15,6 +15,7 @@ import { useStoreOrderNotifications } from "./StoreOrderNotificationProvider"
 
 
 
+const VAULTSPAY_STATEMENT_URL = 'https://merchant.vaultspay.com/app/my-transactions';
 const SIDEBAR_PIN_KEY = 'store1920.sellerSidebarPinned';
 const SECTION_PINS_KEY = 'store1920.sellerSidebarSectionPins';
 
@@ -23,6 +24,7 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
     const pathname = usePathname()
     const { user } = useAuth()
     const showFullMenu = Boolean(isSuperAdmin) || isAdminEmail(user?.email) || isOwner
+    const canSeeVaultsPayStatement = Boolean(isSuperAdmin) || isAdminEmail(user?.email) || permissions?.vaultsPayStatement === true
     const [pinned, setPinned] = useState(false)
     const [iconsOnly, setIconsOnly] = useState(false)
     const [pinnedSections, setPinnedSections] = useState([])
@@ -759,10 +761,9 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
                         const theme = getSectionTheme(section.name)
 
                         const visibleLinks = section.links.filter((href) => linkByHref[href] && canAccessHref(href))
+                        const showVaultsPayStatement = section.name === 'Sales' && canSeeVaultsPayStatement
 
-
-
-                        if (visibleLinks.length === 0) return null
+                        if (visibleLinks.length === 0 && !showVaultsPayStatement) return null
 
 
 
@@ -898,6 +899,23 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
                                             )
 
                                         })}
+
+                                    {showVaultsPayStatement ? (
+                                        <a
+                                            href={VAULTSPAY_STATEMENT_URL}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            aria-label="VaultsPay statement"
+                                            onMouseEnter={(event) => showIconTip(event, 'VaultsPay statement')}
+                                            onMouseLeave={hideIconTip}
+                                            className={`group relative flex items-center gap-2 rounded-lg px-1 py-2 text-slate-700 transition-all duration-200 ${expanded ? 'justify-start px-2.5 py-1.5' : 'justify-center'} ${theme.hoverLink}`}
+                                        >
+                                            <div className={`relative rounded-md bg-slate-100 transition-colors ${expanded ? 'p-1' : 'p-1.5'} ${theme.hoverIconBg}`}>
+                                                <Wallet size={expanded ? 15 : 18} className={`text-slate-600 ${theme.hoverIconText}`} />
+                                            </div>
+                                            <span className={`${expanded ? 'inline' : 'hidden'} flex-1 leading-tight text-[13px]`}>VaultsPay statement</span>
+                                        </a>
+                                    ) : null}
 
                                 </div>
 

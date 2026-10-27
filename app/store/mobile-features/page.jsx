@@ -28,7 +28,7 @@ export default function MobileFeaturesPage() {
           <span>
             <span className="block text-sm font-semibold text-slate-900">App icon</span>
             <span className="mt-1 block text-xs leading-5 text-slate-500">
-              Header icon. Upload a photo or a GIF.
+              Main app icon on the phone home screen. Not the header logo.
             </span>
           </span>
         </Link>
