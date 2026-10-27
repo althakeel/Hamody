@@ -4,7 +4,7 @@ import { uploadToS3 } from '@/lib/storage';
 
 export const maxDuration = 300;
 
-const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 120 * 1024 * 1024;
 
 function isVideoUpload(file) {
   const mime = String(file?.type || '').toLowerCase();
@@ -81,7 +81,7 @@ export async function POST(request) {
     const video = isVideoUpload(image);
 
     if (video && buffer.length > MAX_VIDEO_BYTES) {
-      return Response.json({ error: 'Video must be 50MB or smaller' }, { status: 413 });
+      return Response.json({ error: 'Video must be 120MB or smaller' }, { status: 413 });
     }
 
     let uploadBuffer = buffer;

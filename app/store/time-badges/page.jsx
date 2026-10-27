@@ -166,12 +166,17 @@ function ProductPicker({ productIds, onChange, getToken }) {
       }
       try {
         const token = await getToken()
-        const { data } = await axios.get('/api/store/product', {
-          params: { ids: productIds.join(',') },
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        const headers = { Authorization: `Bearer ${token}` }
+        const byId = new Map()
+        for (let index = 0; index < productIds.length; index += 100) {
+          const ids = productIds.slice(index, index + 100)
+          const { data } = await axios.get('/api/store/product', {
+            params: { ids: ids.join(',') },
+            headers,
+          })
+          ;(data.products || []).forEach((product) => byId.set(productIdOf(product), product))
+        }
         if (!mounted) return
-        const byId = new Map((data.products || []).map((product) => [productIdOf(product), product]))
         setSelected(productIds.map((id) => byId.get(id)).filter(Boolean))
       } catch {
         if (mounted) setSelected([])
@@ -223,38 +228,50 @@ function ProductPicker({ productIds, onChange, getToken }) {
       setResults([])
       return undefined
     }
+    let cancelled = false
     const timer = setTimeout(async () => {
       try {
         setSearching(true)
         const token = await getToken()
-        const params = { manage: 'true', limit: 200, sort: 'name', page: 1 }
-        if (mode === 'manual') params.search = term
-        if (mode === 'category') params.categories = categoryIds.join(',')
-        if (mode === 'brand') params.brands = JSON.stringify(brandNames)
-        if (mode === 'sold') {
-          params.minSold = minSold
-          params.sort = 'sold'
+        const headers = { Authorization: `Bearer ${token}` }
+        const products = []
+        let page = 1
+        let totalPages = 1
+        while (page <= totalPages) {
+          const params = { manage: 'true', limit: 500, sort: 'name', page }
+          if (mode === 'manual') params.search = term
+          if (mode === 'category') params.categories = categoryIds.join(',')
+          if (mode === 'brand') params.brands = JSON.stringify(brandNames)
+          if (mode === 'sold') {
+            params.minSold = minSold
+            params.sort = 'sold'
+          }
+          if (mode === 'price') {
+            params.priceAbove = priceAbove
+            params.sort = 'price_desc'
+          }
+          if (mode === 'stock') {
+            params.minStock = minStock
+            params.sort = 'stock'
+          }
+          const { data } = await axios.get('/api/store/product', { params, headers })
+          const batch = data.products || []
+          products.push(...batch)
+          totalPages = Number(data.pagination?.totalPages) || page
+          if (!batch.length || batch.length < 500) break
+          page += 1
         }
-        if (mode === 'price') {
-          params.priceAbove = priceAbove
-          params.sort = 'price_desc'
-        }
-        if (mode === 'stock') {
-          params.minStock = minStock
-          params.sort = 'stock'
-        }
-        const { data } = await axios.get('/api/store/product', {
-          params,
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        setResults(data.products || [])
+        if (!cancelled) setResults(products)
       } catch {
-        setResults([])
+        if (!cancelled) setResults([])
       } finally {
-        setSearching(false)
+        if (!cancelled) setSearching(false)
       }
     }, mode === 'category' || mode === 'brand' ? 0 : 300)
-    return () => clearTimeout(timer)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
   }, [mode, query, categoryIds, brandNames, minSold, priceAbove, minStock, getToken])
 
   const toggleProduct = (product) => {
@@ -301,7 +318,7 @@ function ProductPicker({ productIds, onChange, getToken }) {
             placeholder="100"
             className={inputClass}
           />
-          <span className="block">Only products sold more than this number. Tick them, or add all shown. Up to 200.</span>
+          <span className="block">Only products sold more than this number. Tick them, or add all shown.</span>
         </label>
       ) : null}
       {mode === 'price' ? (
@@ -315,7 +332,7 @@ function ProductPicker({ productIds, onChange, getToken }) {
             placeholder="50"
             className={inputClass}
           />
-          <span className="block">Only products priced above this amount. Tick them, or add all shown. Up to 200.</span>
+          <span className="block">Only products priced above this amount. Tick them, or add all shown.</span>
         </label>
       ) : null}
       {mode === 'stock' ? (
@@ -329,7 +346,7 @@ function ProductPicker({ productIds, onChange, getToken }) {
             placeholder="10"
             className={inputClass}
           />
-          <span className="block">Only products with stock above this number. Tick them, or add all shown. Up to 200.</span>
+          <span className="block">Only products with stock above this number. Tick them, or add all shown.</span>
         </label>
       ) : null}
       {mode === 'manual' ? (
@@ -388,7 +405,7 @@ function ProductPicker({ productIds, onChange, getToken }) {
           </ul>
         </div>
       ) : null}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto">
         {selected.map((product) => {
           const id = productIdOf(product)
           return (
@@ -416,6 +433,7 @@ const STYLE_OPTIONS = [
   { id: 'countdown', label: 'Countdown' },
   { id: 'express', label: 'Express' },
   { id: 'pill', label: 'Blue text' },
+  { id: 'repeat', label: 'Repeat' },
 ]
 
 function ColorField({ label, value, onChange }) {
@@ -598,7 +616,8 @@ function DeliverySchedule({ date, time, onChange }) {
 function BadgeFields({ rule, onChange, showCutoff = false, rollover = null, mention = '', getToken, placements, onPlacements, showPages = false, hover = 'none' }) {
   const [pagesOpen, setPagesOpen] = useState(false)
   const express = rule.style === 'express'
-  const shownLabel = rule.label || mention
+  const repeat = rule.style === 'repeat'
+  const shownLabel = rule.label || mention || (repeat ? 'Get in 1Hr 30min' : '')
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -707,10 +726,14 @@ function BadgeFields({ rule, onChange, showCutoff = false, rollover = null, ment
         onChange={(icon) => onChange({ icon })}
         options={[{ id: 'lightning', label: 'Lightning' }, { id: 'plus', label: 'Plus' }, { id: 'none', label: 'None' }]}
       />
-      <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-        <input type="checkbox" checked={rule.arrow !== false} onChange={(event) => onChange({ arrow: event.target.checked })} />
-        Arrow
-      </label>
+      {repeat ? (
+        <p className="text-xs text-slate-500">The words and the icon show twice on one bar.</p>
+      ) : (
+        <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+          <input type="checkbox" checked={rule.arrow !== false} onChange={(event) => onChange({ arrow: event.target.checked })} />
+          Arrow
+        </label>
+      )}
       <LogoField value={rule.logo} getToken={getToken} onChange={(logo) => onChange({ logo })} />
       <ChoiceRow label="Shape" value={rule.shape} onChange={(shape) => onChange({ shape })} options={[{ id: 'pill', label: 'Pill' }, { id: 'rounded', label: 'Rounded' }, { id: 'square', label: 'Square' }]} />
       <ChoiceRow label="Font" value={rule.fontFamily} onChange={(fontFamily) => onChange({ fontFamily })} options={[{ id: 'sans', label: 'Sans' }, { id: 'serif', label: 'Serif' }]} />

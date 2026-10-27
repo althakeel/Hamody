@@ -105,6 +105,26 @@ function BlueTimePill({ text, badge, className = '' }) {
   );
 }
 
+function RepeatStrip({ text, badge, className = '' }) {
+  const phrase = String(text || '').trim();
+  if (!phrase && !badge?.logo && badge?.icon === 'none') return null;
+  const chunk = (key) => (
+    <span key={key} className="inline-flex shrink-0 items-center gap-1.5">
+      <BadgeIcon badge={badge} />
+      {phrase ? <span>{phrase}</span> : null}
+    </span>
+  );
+  return (
+    <span
+      className={`inline-flex max-w-full min-w-0 items-center gap-3 px-3 py-1.5 leading-none shadow-sm ${shapeClass(badge?.shape)} ${textClass(badge)} ${motionClass(badge?.hover)} ${className}`.trim()}
+      style={{ backgroundColor: badge?.backgroundColor || '#ddd6fe', color: badge?.textColor || '#5b35d5', fontWeight: badge?.fontWeight || 600, fontSize: fontSizePx(badge?.fontSize) }}
+    >
+      {chunk('a')}
+      {chunk('b')}
+    </span>
+  );
+}
+
 function ExpressTimePill({ prefix, label, badge, className = '' }) {
   const left = String(prefix || '').trim();
   const right = String(label || '').trim();
@@ -153,6 +173,12 @@ export function DeliveryTimeMark({ badge, arabic = false, className = '', hover 
     }
     const text = [badge.prefix, formatCountdown(Math.max(left, 0), arabic)].filter(Boolean).join(' ');
     return <BlueTimePill text={text} badge={painted} className={className} />;
+  }
+
+  if (badge.style === 'repeat') {
+    const text = [badge.prefix, badge.label].filter(Boolean).join(' ');
+    if (!text && !badge.logo && badge.icon === 'none') return null;
+    return <RepeatStrip text={text} badge={painted} className={className} />;
   }
 
   if (badge.style === 'express') {

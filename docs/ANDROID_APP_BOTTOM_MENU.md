@@ -1,6 +1,6 @@
 # Store1920 app bottom menu
 
-Last updated: 22 October 2026  
+Last updated: 27 October 2026  
 Audience: Android and Flutter  
 Seller page: `/store/mobile-features/footer`  
 Web source: `lib/mobileAppFooter.js`, `components/store/MobileFooterEditor.jsx`
@@ -62,6 +62,10 @@ Empty icon fields are omitted. This sample is the default bar with a custom cart
       "activeColor": "#5b35e6",
       "radiusPx": 40,
       "heightPx": 74,
+      "iconWidthPx": 16,
+      "iconHeightPx": 16,
+      "labelWidthPx": 48,
+      "labelHeightPx": 9,
       "bottomSpacePx": 12,
       "hideOnScroll": false,
       "clickAnimation": "scale",
@@ -108,9 +112,9 @@ Empty icon fields are omitted. This sample is the default bar with a custom cart
 | Inner padding | `contentPaddingX` on the left and the right. Always 8 |
 | Item | Equal width. Icon above the label, 4 px between them |
 
-Icon box is 24 × 24. The picture inside is 20 × 20, contained, centered. A built-in icon is 20 px. Stroke is 2.4 when that item is selected, and 1.8 when it is not.
+The icon box is `iconWidthPx` by `iconHeightPx` (10–40, default 16). The picture fills that box, contained and centered. A built-in icon uses the smaller of those two sizes. Stroke is 2.4 when that item is selected, and 1.8 when it is not.
 
-The label is 11 px, medium weight, one line, truncated.
+The label is one line, medium weight, truncated. Its width is `labelWidthPx` (24–96, default 48). Its height is `labelHeightPx` (8–16, default 9), used as the font size.
 
 | State | Icon and label color |
 |---|---|
@@ -155,6 +159,10 @@ Use these when the field is missing, and when the first request fails with no ca
 | `activeColor` | `#5b35e6` |
 | `radiusPx` | `40` |
 | `heightPx` | `74` |
+| `iconWidthPx` | `16` |
+| `iconHeightPx` | `16` |
+| `labelWidthPx` | `48` |
+| `labelHeightPx` | `9` |
 | `bottomSpacePx` | `12` |
 | `hideOnScroll` | `false` |
 | `clickAnimation` | `scale` |
@@ -237,6 +245,7 @@ The animation plays on the **icon only**, once, when that item is tapped. `none`
 - Use the uploaded icon when the field is present. Otherwise draw the built-in icon in the state color.
 - Pin the bar with `placement: fixed`. Inset it by `sideInsetPx` on each side, and by `bottomSpacePx` above the safe area.
 - Apply height, radius, fill, shadow, and border from the payload.
+- Draw each icon at `iconWidthPx` by `iconHeightPx`. Draw each label at `labelWidthPx` wide and `labelHeightPx` as the font size.
 - Mark the matching path as selected. Home `/` is selected only on home.
 - Play `clickAnimation` on the tapped icon.
 - Slide the bar away while scrolling only when `hideOnScroll` is true.

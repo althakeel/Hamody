@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import Store from '@/models/Store';
 import Product from '@/models/Product';
 import StorePreference from '@/models/StorePreference';
+import Category from '@/models/Category';
 import { getCachedData, setCachedData } from '@/lib/cache';
 import { resolvePublicFeaturedStore } from '@/lib/featuredProducts';
 import {
@@ -10,6 +11,7 @@ import {
   MOBILE_FEATURES_CACHE_KEY,
   toPublicMobileFeatures,
 } from '@/lib/mobileFeatures';
+import { expandCategoryMobileSliders } from '@/lib/mobileCategorySliders';
 import mongoose from 'mongoose';
 
 export const dynamic = 'force-dynamic';
@@ -62,6 +64,18 @@ export async function GET(request) {
         pref?.shopShowcase || null,
       ),
     };
+
+    try {
+      const categories = await Category.find({ isActive: { $ne: false } })
+        .select('_id name nameAr slug image parentId url sortOrder')
+        .lean();
+      payload.mobileFeatures.categoryMobileSliders = expandCategoryMobileSliders(
+        pref?.mobileFeatures?.categoryMobileSliders,
+        categories,
+      );
+    } catch (categoryError) {
+      console.error('[public/mobile-features categories]', categoryError);
+    }
 
     setCachedData(cacheKey, payload, 180);
 

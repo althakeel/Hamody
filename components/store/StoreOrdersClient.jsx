@@ -9,7 +9,7 @@ import PageSkeleton from "@/components/PageSkeleton";
 import { readPageCache, writePageCache, clearPageCache } from "@/lib/storePageCache";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { Package, Truck, X, Download, Printer, RefreshCw, MapPin, Trash2, CalendarClock, AlertTriangle, Search, Plus, ArrowUp, ArrowDown, ArrowUpDown, History, Pencil, Filter, Phone, Undo2, CheckCircle2, FileText } from "lucide-react";
+import { Package, Truck, X, Download, Printer, RefreshCw, MapPin, Trash2, CalendarClock, AlertTriangle, Search, Plus, ArrowUp, ArrowDown, ArrowUpDown, History, Pencil, Filter, Phone, Undo2, CheckCircle2, FileText, Link2, Copy } from "lucide-react";
 import StoreCreateOrderModal from '@/components/store/StoreCreateOrderModal';
 import StoreNotifyRequestsCard from '@/components/store/StoreNotifyRequestsCard';
 import PaymentFailedCallCustomerModal from '@/components/store/PaymentFailedCallCustomerModal';
@@ -153,7 +153,7 @@ import {
   buildWooCommerceOrderExportCsv,
 } from '@/lib/storeOrderWooExport';
 import { isAwaitingPaymentOrder, isVisibleStoreOrder } from '@/lib/deferredOrderStatus';
-import { isPaymentFailedStoreOrder, hasPaymentFailedFollowUpDiscount, hasPaymentFailedFollowUp } from '@/lib/paymentFailedFollowUp';
+import { isPaymentFailedStoreOrder, hasPaymentFailedFollowUpDiscount, hasPaymentFailedFollowUp, getOrderCustomerPhone } from '@/lib/paymentFailedFollowUp';
 import { getDefaultWaslahPickupInfo, getWaslahPickupDateOptions } from '@/lib/waslahOrderMapper';
 import WaslahShipNotice, { buildWaslahShipNotice } from '@/components/store/WaslahShipNotice';
 import {
@@ -763,6 +763,8 @@ export default function StoreOrders() {
     const [paymentFailedCallOrder, setPaymentFailedCallOrder] = useState(null);
     const [savingPaymentFailedFollowUp, setSavingPaymentFailedFollowUp] = useState(false);
     const [recheckingPaymentOrderId, setRecheckingPaymentOrderId] = useState(null);
+    const [creatingVaultsPayLinkId, setCreatingVaultsPayLinkId] = useState(null);
+    const [vaultsPayLink, setVaultsPayLink] = useState(null);
     const [schedulingPickup, setSchedulingPickup] = useState(false);
     const [sendingToC3xpress, setSendingToC3xpress] = useState(false);
     const [showCommunicationHistory, setShowCommunicationHistory] = useState(false);
@@ -2016,6 +2018,46 @@ export default function StoreOrders() {
             toast.error(error?.response?.data?.error || 'Failed to save follow-up');
         } finally {
             setSavingPaymentFailedFollowUp(false);
+        }
+    };
+
+    const regenerateVaultsPayLink = async (order) => {
+        const orderId = String(order?._id || '').trim();
+        if (!orderId || creatingVaultsPayLinkId) return;
+        setCreatingVaultsPayLinkId(orderId);
+        try {
+            let token = await getToken(false);
+            if (!token) token = await getToken(true);
+            if (!token) {
+                toast.error('Authentication failed. Please sign in again.');
+                return;
+            }
+            const { data } = await axios.post(
+                `/api/store/orders/${orderId}/vaultspay-link`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } },
+            );
+            if (!data?.url) throw new Error('VaultsPay did not return a payment link');
+            const nextLink = {
+                orderId,
+                url: data.url,
+                expiresAt: data.expiresAt || '',
+                orderNumber: order.shortOrderNumber || order.orderNumber || orderId,
+                phone: getOrderCustomerPhone(order).tel,
+            };
+            setVaultsPayLink(nextLink);
+            const applyLink = (row) => (
+                String(row?._id) === orderId
+                    ? { ...row, vaultsPayPaymentUrl: data.url, vaultsPayPaymentUrlExpiresAt: data.expiresAt }
+                    : row
+            );
+            setOrders((prev) => (Array.isArray(prev) ? prev.map(applyLink) : prev));
+            setSelectedOrder((prev) => (prev && String(prev._id) === orderId ? applyLink(prev) : prev));
+            toast.success('Payment link ready to share');
+        } catch (error) {
+            toast.error(error?.response?.data?.error || error?.message || 'Could not create a payment link');
+        } finally {
+            setCreatingVaultsPayLinkId(null);
         }
     };
 
@@ -3903,22 +3945,27 @@ export default function StoreOrders() {
             toast.error('Select orders with a shipping address that are not already sent to EMX');
             return;
         }
-        if (eligible.length > 25) {
-            toast.error('Select at most 25 orders to send to EMX at once');
+        if (eligible.length > 100) {
+            toast.error('Select at most 100 orders to send to EMX at once');
             return;
         }
 
-        const skipped = selectedOrderIds.length - eligible.length;
+        const selectedNow = getSelectedOrders();
+        const alreadyOnEmx = selectedNow.filter((order) => String(order?.waslah?.orderId || '').trim()).length;
+        const skipped = selectedOrderIds.length - eligible.length - alreadyOnEmx;
         const confirmed = await askCenterConfirm({
             title: 'Send selected orders to EMX?',
             message: [
-                `${eligible.length} order(s) will be sent to EMX.`,
+                alreadyOnEmx > 0
+                    ? `${alreadyOnEmx} selected order(s) are already sent to EMX and will be skipped.`
+                    : '',
+                `${eligible.length} order(s) will be sent now.`,
                 'This creates the shipments only. You can schedule pickup for them next.',
                 eligible.length > 5
-                    ? 'Large selections are sent in batches of 5 so the request does not time out (504).'
+                    ? 'Large selections are sent in batches of 5. If a batch times out, this click stops. Send to EMX again to send only the orders that are not on EMX yet.'
                     : '',
                 skipped > 0
-                    ? `${skipped} selected order(s) will be skipped (already shipped, missing address, or not eligible).`
+                    ? `${skipped} selected order(s) will be skipped (missing address or not eligible).`
                     : '',
             ].filter(Boolean).join('\n\n'),
             confirmLabel: 'Send to EMX',
@@ -3939,10 +3986,20 @@ export default function StoreOrders() {
         };
         const BULK_EMX_SHIP_CHUNK_SIZE = 5;
         const BULK_EMX_SHIP_TIMEOUT_MS = 90000;
+        const shipTotal = eligible.length;
+        const shipPercent = (done) => Math.round((done / shipTotal) * 100);
+        let stoppedForTimeout = false;
+        let remainingCount = 0;
 
         try {
             const token = await getToken();
             if (!token) throw new Error('Authentication failed. Please sign in again.');
+
+            setCenterProgress({
+                title: 'Sending to EMX…',
+                message: `0 of ${shipTotal} orders sent`,
+                percent: 0,
+            });
 
             for (let start = 0; start < eligible.length; start += BULK_EMX_SHIP_CHUNK_SIZE) {
                 const chunk = eligible.slice(start, start + BULK_EMX_SHIP_CHUNK_SIZE);
@@ -3950,7 +4007,8 @@ export default function StoreOrders() {
                 const to = start + chunk.length;
                 setCenterProgress({
                     title: 'Sending to EMX…',
-                    message: `Creating EMX shipments ${from}–${to} of ${eligible.length}. Batches of ${BULK_EMX_SHIP_CHUNK_SIZE} avoid gateway timeouts.`,
+                    message: `Sending orders ${from}–${to} of ${shipTotal}`,
+                    percent: shipPercent(start),
                 });
 
                 try {
@@ -3978,10 +4036,18 @@ export default function StoreOrders() {
                         || status === 504
                         || status === 524
                         || status === 408;
-                    const chunkMessage = timedOut
-                        ? 'This batch timed out. Wait a few seconds, then send remaining orders again — some may already be on EMX.'
-                        : formatWaslahError(chunkError, 'This batch failed to send to EMX');
+                    if (timedOut) {
+                        stoppedForTimeout = true;
+                        remainingCount = shipTotal - start;
+                        setCenterProgress({
+                            title: 'Sending paused',
+                            message: `${aggregated.succeeded} of ${shipTotal} already sent. ${remainingCount} not sent in this click.`,
+                            percent: shipPercent(aggregated.succeeded),
+                        });
+                        break;
+                    }
 
+                    const chunkMessage = formatWaslahError(chunkError, 'This batch failed to send to EMX');
                     aggregated.failed += chunk.length;
                     chunk.forEach((order) => {
                         aggregated.results.push({
@@ -3989,6 +4055,14 @@ export default function StoreOrders() {
                             success: false,
                             error: chunkMessage,
                         });
+                    });
+                }
+
+                if (!stoppedForTimeout) {
+                    setCenterProgress({
+                        title: 'Sending to EMX…',
+                        message: `${to} of ${shipTotal} orders processed`,
+                        percent: shipPercent(to),
                     });
                 }
             }
@@ -4011,13 +4085,23 @@ export default function StoreOrders() {
 
             const data = {
                 ...aggregated,
-                message: aggregated.failed
-                    ? `Sent ${aggregated.succeeded} of ${aggregated.total} order(s) to EMX; ${aggregated.failed} failed. Schedule pickup next.`
-                    : `Sent ${aggregated.succeeded} order(s) to EMX. Schedule pickup next.`,
+                message: stoppedForTimeout
+                    ? `${aggregated.succeeded} already sent to EMX. ${remainingCount} were not sent in this click. Click Send to EMX again. Orders already on EMX are skipped, and only the balance is sent.`
+                    : aggregated.failed
+                        ? `Sent ${aggregated.succeeded} of ${aggregated.total} order(s) to EMX; ${aggregated.failed} failed. Schedule pickup next.`
+                        : `Sent ${aggregated.succeeded} order(s) to EMX. Schedule pickup next.`,
             };
             const firstError = (data.results || []).find((entry) => !entry.success)?.error;
 
-            if (data.succeeded > 0 && !data.failed) {
+            if (stoppedForTimeout) {
+                showCenterNotice({
+                    title: aggregated.succeeded > 0 ? 'Already sent, then paused' : 'Send paused',
+                    message: data.message,
+                    tone: 'warning',
+                    icon: 'alert',
+                    primaryLabel: 'OK',
+                });
+            } else if (data.succeeded > 0 && !data.failed) {
                 setWaslahPickupInfo(getDefaultWaslahPickupInfo());
                 showCenterNotice({
                     title: 'Sent to EMX',
@@ -4915,6 +4999,7 @@ export default function StoreOrders() {
                                     <>
                                         {' '}
                                         {getSelectedShipEligibleOrders().length} ready to send ·{' '}
+                                        {getSelectedOrders().filter((order) => String(order?.waslah?.orderId || '').trim()).length} already sent to EMX ·{' '}
                                         {getSelectedPickupEligibleOrders().length} ready for pickup ·{' '}
                                         {getSelectedLabelReadyOrders().length} with label ready
                                     </>
@@ -5472,6 +5557,18 @@ export default function StoreOrders() {
                                                         />
                                                         {recheckingPaymentOrderId === String(order._id) ? 'Checking…' : 'Recheck payment'}
                                                     </button>
+                                                    {String(order?.paymentMethod || '').toUpperCase() === 'VAULTSPAY' ? (
+                                                        <button
+                                                            type="button"
+                                                            disabled={creatingVaultsPayLinkId === String(order._id)}
+                                                            onClick={() => regenerateVaultsPayLink(order)}
+                                                            className="inline-flex items-center gap-1.5 rounded-lg border border-violet-300 bg-violet-50 px-2.5 py-1.5 text-xs font-semibold text-violet-800 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                                            title="Create a new VaultsPay link the customer can open and pay"
+                                                        >
+                                                            <Link2 size={13} />
+                                                            {creatingVaultsPayLinkId === String(order._id) ? 'Creating link…' : 'New payment link'}
+                                                        </button>
+                                                    ) : null}
                                                     {!hasPaymentFailedFollowUp(order) ? (
                                                         <button
                                                             type="button"
@@ -7100,6 +7197,17 @@ export default function StoreOrders() {
                                                     ? 'Checking payment…'
                                                     : 'Recheck payment'}
                                             </button>
+                                            {String(selectedOrder?.paymentMethod || '').toUpperCase() === 'VAULTSPAY' ? (
+                                                <button
+                                                    type="button"
+                                                    disabled={creatingVaultsPayLinkId === String(selectedOrder._id)}
+                                                    onClick={() => regenerateVaultsPayLink(selectedOrder)}
+                                                    className="inline-flex items-center gap-1.5 rounded-lg border border-violet-300 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-800 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                                >
+                                                    <Link2 size={14} />
+                                                    {creatingVaultsPayLinkId === String(selectedOrder._id) ? 'Creating link…' : 'New payment link'}
+                                                </button>
+                                            ) : null}
                                             {!hasPaymentFailedFollowUp(selectedOrder) ? (
                                                 <button
                                                     type="button"
@@ -7393,6 +7501,57 @@ export default function StoreOrders() {
                 }}
             />
 
+            {vaultsPayLink?.url ? (
+                <div className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setVaultsPayLink(null)}>
+                    <div
+                        lang="en"
+                        dir="ltr"
+                        className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-900">VaultsPay payment link</h2>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Order {vaultsPayLink.orderNumber}. Send this link to the customer. It works for 24 hours. The order stays unpaid until they pay.
+                                </p>
+                            </div>
+                            <button type="button" onClick={() => setVaultsPayLink(null)} className="rounded-lg p-1 text-slate-500 hover:bg-slate-100" aria-label="Close">
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <p className="mt-4 break-all rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">{vaultsPayLink.url}</p>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    try {
+                                        await navigator.clipboard.writeText(vaultsPayLink.url);
+                                        toast.success('Link copied');
+                                    } catch {
+                                        toast.error('Could not copy the link');
+                                    }
+                                }}
+                                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
+                            >
+                                <Copy size={14} />
+                                Copy link
+                            </button>
+                            {vaultsPayLink.phone ? (
+                                <a
+                                    href={`https://wa.me/${String(vaultsPayLink.phone).replace(/\D/g, '')}?text=${encodeURIComponent(`Please complete payment for order ${vaultsPayLink.orderNumber}: ${vaultsPayLink.url}`)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800"
+                                >
+                                    Share on WhatsApp
+                                </a>
+                            ) : null}
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+
             <PaymentFailedCallCustomerModal
                 open={Boolean(paymentFailedCallOrder)}
                 order={paymentFailedCallOrder}
@@ -7661,17 +7820,32 @@ export default function StoreOrders() {
                         <p className="mt-2 whitespace-pre-line text-center text-sm leading-relaxed text-slate-600">
                             {centerProgress.message}
                         </p>
-                        <motion.div
-                            className="mx-auto mt-5 h-1.5 w-40 overflow-hidden rounded-full bg-slate-100"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                        >
+                        {Number.isFinite(Number(centerProgress.percent)) ? (
+                            <div className="mt-5">
+                                <div className="mb-2 flex items-center justify-between text-sm font-semibold text-slate-800">
+                                    <span>Progress</span>
+                                    <span>{Math.max(0, Math.min(100, Math.round(Number(centerProgress.percent))))}%</span>
+                                </div>
+                                <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+                                    <div
+                                        className="h-full rounded-full bg-violet-600 transition-all duration-300"
+                                        style={{ width: `${Math.max(0, Math.min(100, Number(centerProgress.percent)))}%` }}
+                                    />
+                                </div>
+                            </div>
+                        ) : (
                             <motion.div
-                                className="h-full w-1/2 rounded-full bg-violet-600"
-                                animate={{ x: ['-100%', '200%'] }}
-                                transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}
-                            />
-                        </motion.div>
+                                className="mx-auto mt-5 h-1.5 w-40 overflow-hidden rounded-full bg-slate-100"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                            >
+                                <motion.div
+                                    className="h-full w-1/2 rounded-full bg-violet-600"
+                                    animate={{ x: ['-100%', '200%'] }}
+                                    transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}
+                                />
+                            </motion.div>
+                        )}
                     </div>
                 ) : null}
             </StoreCenterPopupShell>

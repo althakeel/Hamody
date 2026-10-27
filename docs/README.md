@@ -12,10 +12,12 @@ This folder is the **full API documentation set** — from public storefront / m
 
 | # | Document | Who it’s for | Coverage |
 |---|----------|--------------|----------|
+| **0a** | **[APP_DEVELOPER_API.md](./APP_DEVELOPER_API.md)** | **iOS / Android / Flutter** | **Entire shopper API: routes, checkout bodies, payments** |
 | **0** | **[FLUTTER_ENTIRE_APP.md](./FLUTTER_ENTIRE_APP.md)** | **Flutter shopper app** | **Entire customer app: every website screen, API, and what not to build** |
 | **0b** | [FLUTTER_MOBILE_BOTTOM_BUTTON.md](./FLUTTER_MOBILE_BOTTOM_BUTTON.md) | Flutter | Phone center circle only (part of the app doc) |
 | **0g** | [ANDROID_MOBILE_NAVBAR.md](./ANDROID_MOBILE_NAVBAR.md) | Android | Website phone header and menu drawer: every API |
 | **0g2** | [ANDROID_APP_NAVBAR.md](./ANDROID_APP_NAVBAR.md) | Android | App navbar the seller designs under Mobile: home bar and other-pages bar |
+| **0g2b** | [ANDROID_APP_ICON.md](./ANDROID_APP_ICON.md) | Android / Flutter | App header icon from `mobileFeatures.appNavbar.logoUrl` |
 | **0g3** | [ANDROID_SPLASH_SCREENS.md](./ANDROID_SPLASH_SCREENS.md) | Android / Flutter | App splash screens: photo, GIF, and video from `GET /api/public/mobile-features` |
 | **0g4** | [ANDROID_APP_BOTTOM_MENU.md](./ANDROID_APP_BOTTOM_MENU.md) | Android / Flutter | App bottom menu the seller designs under Mobile → Footer |
 | **0h** | [ANDROID_BRAND_PAGE.md](./ANDROID_BRAND_PAGE.md) | Android | Brand page design and brand APIs |
@@ -25,11 +27,17 @@ This folder is the **full API documentation set** — from public storefront / m
 | **0h3c** | [APP_SCANNER_AI.md](./APP_SCANNER_AI.md) | Android / iOS | Scanner uses server Gemini and ChatGPT. The phone sends the photo and does not check products |
 | **0h4** | [APP_AUTH.md](./APP_AUTH.md) | Android / Flutter | Shopper login and register: email, Google, Facebook, email OTP, WhatsApp OTP, reset, MFA |
 | **0h5** | [ANDROID_GOOGLE_SIGNIN.md](./ANDROID_GOOGLE_SIGNIN.md) | Android | Google sign-in from `GET /api/public/google-auth`, then Firebase and login-result |
-| **0i** | [ANDROID_BANNER_2.md](./ANDROID_BANNER_2.md) | Android | Home Banner 2 slider: design and API |
+| **0h6** | [APP_BLOGS_API.md](./APP_BLOGS_API.md) | Android / Flutter | Public blog list and article: `GET /api/public/blogs` |
+| **0h7** | [APP_PUSH_NOTIFICATIONS.md](./APP_PUSH_NOTIFICATIONS.md) | Android / Flutter | App push: register the FCM token, the message payload, and the last 20 notifications |
+| **0i** | [ANDROID_BANNER_2.md](./ANDROID_BANNER_2.md) | Android | Website home Banner 2 slider: design and API |
+| **0i2** | [ANDROID_APP_BANNERS_2_3_4.md](./ANDROID_APP_BANNERS_2_3_4.md) | Android / Flutter | App home Banner 2, Banner 3, and Banner 4 from `GET /api/public/mobile-features` |
+| **0i3** | [ANDROID_APP_CATEGORY_SLIDERS.md](./ANDROID_APP_CATEGORY_SLIDERS.md) | Android / Flutter | App category chips from `mobileFeatures.categoryMobileSliders` |
+| **0i4** | [ANDROID_APP_SHOP_BLOCKS.md](./ANDROID_APP_SHOP_BLOCKS.md) | Android / Flutter | App home budget card and promo from `mobileFeatures.shopBlocks` |
 | **0j** | [ANDROID_HOME_PAGE.md](./ANDROID_HOME_PAGE.md) | Android | Home page only: section order, design, and APIs |
 | **0k** | [ANDROID_SHOP_PAGE.md](./ANDROID_SHOP_PAGE.md) | Android | Shop tab: category rail, banner size, spotlight |
 | **0l** | [ANDROID_CATEGORY_BAR.md](./ANDROID_CATEGORY_BAR.md) | Android | Black category strip: settings API and category API |
 | **0m** | [ANDROID_PRODUCT_PAGE.md](./ANDROID_PRODUCT_PAGE.md) | Android | Product page: every API, including Notify Me, reviews, cart, wishlist |
+| **0m2** | [APP_PRODUCT_BADGES.md](./APP_PRODUCT_BADGES.md) | Android / Flutter | Product image badges, delivery-time badge, sale price, and app discount |
 | **0n** | [ANDROID_CATEGORY_SLIDER.md](./ANDROID_CATEGORY_SLIDER.md) | Android | Home category slider: app image, ratio, and products |
 | **0o** | [ANDROID_CHECKOUT_PAGE.md](./ANDROID_CHECKOUT_PAGE.md) | Android | Checkout screen: delivery, store pickup, payments, place order |
 | **0p** | [VAULTSPAY_CHECKOUT.md](./VAULTSPAY_CHECKOUT.md) | Android / Flutter | VaultsPay card, Google Pay, and Apple Pay at checkout |
@@ -64,12 +72,10 @@ This folder is the **full API documentation set** — from public storefront / m
 
 ## Recommended reading order (mobile)
 
-1. **[FLUTTER_ENTIRE_APP.md](./FLUTTER_ENTIRE_APP.md)** — entire customer app for Flutter  
-2. **[STORE1920_FULL_API.md](./STORE1920_FULL_API.md)** — home call order + full shopper table  
-2. [MOBILE_HOME_PAGE_APIS.md](./MOBILE_HOME_PAGE_APIS.md) — homepage only  
-3. [MOBILE_FEATURES_DOCUMENTATION.md](./MOBILE_FEATURES_DOCUMENTATION.md) — banners only (JSON + APIs)  
-4. [MOBILE_APP_API.md](./MOBILE_APP_API.md) — checkout / cart deep dive  
-5. [ORDER_DETAILS.md](./ORDER_DETAILS.md) when building order UI  
+1. **[APP_DEVELOPER_API.md](./APP_DEVELOPER_API.md)** — entire shopper API  
+2. **[FLUTTER_ENTIRE_APP.md](./FLUTTER_ENTIRE_APP.md)** — every shopper screen  
+3. [ANDROID_CHECKOUT_PAGE.md](./ANDROID_CHECKOUT_PAGE.md) and [VAULTSPAY_CHECKOUT.md](./VAULTSPAY_CHECKOUT.md) when building checkout  
+4. [APP_AUTH.md](./APP_AUTH.md) when building sign-in  
 
 ---
 

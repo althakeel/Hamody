@@ -166,16 +166,20 @@ function FooterPreview({ footer, activeId, onSelect }) {
                 >
                   <span
                     key={selected ? `${item.id}-${tapKey}` : item.id}
-                    className={`flex h-6 w-6 items-center justify-center ${selected && motion ? `footer-tap-${motion}` : ''}`}
+                    className={`flex items-center justify-center ${selected && motion ? `footer-tap-${motion}` : ''}`}
+                    style={{ width: config.iconWidthPx, height: config.iconHeightPx }}
                   >
                     {iconUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={iconUrl} alt="" className="h-5 w-5 object-contain" />
+                      <img src={iconUrl} alt="" className="h-full w-full object-contain" />
                     ) : (
-                      <Icon size={20} color={color} strokeWidth={selected ? 2.4 : 1.8} />
+                      <Icon size={Math.min(config.iconWidthPx, config.iconHeightPx)} color={color} strokeWidth={selected ? 2.4 : 1.8} />
                     )}
                   </span>
-                  <span className="max-w-full truncate text-[11px] font-medium" style={{ color }}>
+                  <span
+                    className="truncate font-medium"
+                    style={{ color, maxWidth: config.labelWidthPx, fontSize: config.labelHeightPx, lineHeight: 1.1 }}
+                  >
                     {item.label}
                   </span>
                 </button>
@@ -496,6 +500,22 @@ export default function MobileFooterEditor() {
               <label className="block text-sm">
                 <span className="font-medium text-slate-800">Height</span>
                 <input type="number" min="56" max="120" value={form.heightPx} onChange={(event) => patch({ heightPx: Number(event.target.value) })} className={fieldClass()} />
+              </label>
+              <label className="block text-sm">
+                <span className="font-medium text-slate-800">Icon width</span>
+                <input type="number" min="10" max="40" value={form.iconWidthPx ?? 16} onChange={(event) => patch({ iconWidthPx: Number(event.target.value) })} className={fieldClass()} />
+              </label>
+              <label className="block text-sm">
+                <span className="font-medium text-slate-800">Icon height</span>
+                <input type="number" min="10" max="40" value={form.iconHeightPx ?? 16} onChange={(event) => patch({ iconHeightPx: Number(event.target.value) })} className={fieldClass()} />
+              </label>
+              <label className="block text-sm">
+                <span className="font-medium text-slate-800">Text width</span>
+                <input type="number" min="24" max="96" value={form.labelWidthPx ?? 48} onChange={(event) => patch({ labelWidthPx: Number(event.target.value) })} className={fieldClass()} />
+              </label>
+              <label className="block text-sm">
+                <span className="font-medium text-slate-800">Text height</span>
+                <input type="number" min="8" max="16" value={form.labelHeightPx ?? 9} onChange={(event) => patch({ labelHeightPx: Number(event.target.value) })} className={fieldClass()} />
               </label>
               <label className="block text-sm">
                 <span className="font-medium text-slate-800">Space from the bottom</span>

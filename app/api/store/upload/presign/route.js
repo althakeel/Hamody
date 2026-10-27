@@ -2,7 +2,7 @@ import authSeller from '@/middlewares/authSeller';
 import { getAuth } from '@/lib/firebase-admin';
 import { createPresignedUploadUrl } from '@/lib/storage';
 
-const MAX_PRESIGN_BYTES = 50 * 1024 * 1024;
+const MAX_PRESIGN_BYTES = 120 * 1024 * 1024;
 
 export async function POST(request) {
   try {
@@ -36,7 +36,7 @@ export async function POST(request) {
     }
 
     if (fileSize > MAX_PRESIGN_BYTES) {
-      return Response.json({ error: 'File is too large (max 50MB)' }, { status: 413 });
+      return Response.json({ error: 'File is too large (max 120MB)' }, { status: 413 });
     }
 
     const presigned = await createPresignedUploadUrl({

@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ChevronLeft,
   Heart,
+  ImagePlus,
   Loader2,
   MapPin,
   PanelTop,
@@ -23,7 +24,13 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth'
 import EnableSwitch from '@/components/store/EnableSwitch';
+import MobilePathPicker from '@/components/store/MobilePathPicker';
 import { normalizeMobileFeatures } from '@/lib/mobileFeatures';
+import {
+  MOBILE_BANNER_SECTIONS,
+  createEmptySlide,
+  normalizeBannerSection,
+} from '@/lib/mobileBannerLayout';
 import {
   MAX_MARQUEE_ITEMS,
   appNavbarBackground,
@@ -31,6 +38,8 @@ import {
   normalizeAppNavbar,
   normalizePageNavbar,
 } from '@/lib/mobileAppNavbar';
+
+const SLIDER_META = MOBILE_BANNER_SECTIONS.bannerSlider;
 
 const BACKGROUND_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,.gif,.webp,.mp4,.webm,.mov';
 
@@ -68,7 +77,7 @@ function BackgroundChoices({ value, onChange, uploading, onFile }) {
         {[
           ['color', 'Color'],
           ['gradient', 'Linear gradient'],
-          ['media', 'Image or video'],
+          ['media', 'Image, GIF, or video'],
         ].map(([id, label]) => (
           <button
             key={id}
@@ -257,21 +266,41 @@ function PageNavbarPreview({ navbar }) {
       )}
       {bar.searchEnabled ? (
         <div
-          className="flex min-w-0 flex-1 items-center justify-center gap-2 border px-3"
+          className="flex min-w-0 flex-1 items-center border"
           style={{
-            height: Math.round(bar.heightPx * 0.68),
+            height: Math.max(40, bar.heightPx - 12),
             borderRadius: bar.searchRadiusPx,
             background: bar.searchBackground,
             borderColor: bar.searchBorderColor,
-            color: bar.searchTextColor,
+            borderWidth: 1.5,
+            paddingLeft: 14,
+            paddingRight: 4,
+            gap: 8,
           }}
         >
-          {bar.searchIconUrl ? (
-            <img src={bar.searchIconUrl} alt="" style={{ width: Math.round(icon * 0.8), height: Math.round(icon * 0.8) }} className="object-contain" />
+          <span className="min-w-0 flex-1 truncate text-sm font-medium" style={{ color: bar.searchBorderColor }}>
+            {bar.placeholder || 'Search'}
+          </span>
+          {bar.cameraIconUrl ? (
+            <img src={bar.cameraIconUrl} alt="" style={{ width: icon, height: icon }} className="shrink-0 object-contain" />
           ) : (
-            <Search size={Math.round(icon * 0.8)} color={bar.searchTextColor} strokeWidth={2.2} />
+            <Camera size={icon} color={bar.searchBorderColor} strokeWidth={1.8} className="shrink-0" />
           )}
-          <span className="truncate text-sm font-medium">{bar.placeholder || 'Search'}</span>
+          <span
+            className="flex shrink-0 items-center justify-center"
+            style={{
+              width: Math.max(32, bar.heightPx - 20),
+              height: Math.max(32, bar.heightPx - 20),
+              borderRadius: 10,
+              backgroundColor: bar.searchButtonColor,
+            }}
+          >
+            {bar.searchIconUrl ? (
+              <img src={bar.searchIconUrl} alt="" style={{ width: Math.round(icon * 0.9), height: Math.round(icon * 0.9) }} className="object-contain" />
+            ) : (
+              <Search size={Math.round(icon * 0.9)} color="#ffffff" strokeWidth={2.4} />
+            )}
+          </span>
         </div>
       ) : (
         <span className="flex-1" />
@@ -290,23 +319,65 @@ function PageNavbarPreview({ navbar }) {
   );
 }
 
-function NavbarPreview({ navbar }) {
+function slideTopFill(slide) {
+  if (slide?.topBackgroundMode === 'gradient') {
+    const angle = Number(slide.topGradientAngle);
+    const degrees = Number.isFinite(angle) ? angle : 180;
+    const from = slide.topGradientFrom || '#8b5cf6';
+    const to = slide.topGradientTo || '#5b21b6';
+    const position = slide.topGradientPosition ?? 100;
+    return `linear-gradient(${degrees}deg, ${from} 0%, ${to} ${position}%)`;
+  }
+  return slide?.topBackgroundColor || 'transparent';
+}
+
+function NavbarPreview({ navbar, slider }) {
   const config = normalizeAppNavbar(navbar);
   const visible = config.items.filter((item) => item.enabled && (item.iconUrl || item.text));
   const loop = visible.length ? [...visible, ...visible] : [];
+  const slides = (Array.isArray(slider?.slides) ? slider.slides : []).filter((slide) => slide && slide.enabled !== false && (slide.image || slide.video));
+  const [slideIndex, setSlideIndex] = useState(0);
+  useEffect(() => {
+    if (slides.length < 2 || slider?.enabled === false) return undefined;
+    const seconds = Math.max(2, Number(slider.slideIntervalSeconds) || SLIDER_META.defaultIntervalSeconds);
+    const timer = window.setInterval(() => {
+      setSlideIndex((current) => (current + 1) % slides.length);
+    }, seconds * 1000);
+    return () => window.clearInterval(timer);
+  }, [slides.length, slider?.enabled, slider?.slideIntervalSeconds]);
+  const activeIndex = slides.length ? slideIndex % slides.length : 0;
+  const activeSlide = slides[activeIndex] || null;
+  const fontColor = activeSlide?.fontColor || '';
+  const colorEase = 'background-color 600ms ease, color 600ms ease, border-color 600ms ease';
 
   return (
     <div
       className="relative flex flex-col overflow-hidden border border-slate-300 shadow-sm"
       style={{
         background: appNavbarBackground(config),
+        transition: colorEase,
         borderTopLeftRadius: config.radiusTopLeft,
         borderTopRightRadius: config.radiusTopRight,
-        borderBottomLeftRadius: config.radiusBottomLeft,
-        borderBottomRightRadius: config.radiusBottomRight,
+        borderBottomLeftRadius: 0,
+        borderBottomRightRadius: 0,
       }}
     >
       <NavbarFill navbar={config} />
+      {slides.map((slide, index) => (
+        <div
+          key={`top-${slide.id || index}`}
+          className="pointer-events-none absolute inset-0 transition-opacity duration-700 ease-in-out"
+          style={{ opacity: index === activeIndex ? 1 : 0, background: slideTopFill(slide) }}
+        >
+          {slide.topBackgroundMode === 'media' && slide.topBackgroundMediaUrl ? (
+            slide.topBackgroundMediaKind === 'video' ? (
+              <video src={slide.topBackgroundMediaUrl} className="h-full w-full object-cover" autoPlay muted loop playsInline />
+            ) : (
+              <img src={slide.topBackgroundMediaUrl} alt="" className="h-full w-full object-cover" />
+            )
+          ) : null}
+        </div>
+      ))}
       <div className="relative z-10 flex flex-col">
       <style>{'@keyframes store1920NavMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }'}</style>
       {config.marqueeEnabled && loop.length ? (
@@ -328,10 +399,11 @@ function NavbarPreview({ navbar }) {
                 key={`${item.id}-${index}`}
                 className="inline-flex shrink-0 items-center font-semibold text-white"
                 style={{
-                  color: item.color || config.marqueeTextColor,
+                  color: fontColor || item.color || config.marqueeTextColor,
                   fontSize: config.marqueeFontSizePx,
                   paddingInline: config.marqueeGapPx / 2,
                   gap: 6,
+                  transition: 'color 600ms ease',
                 }}
               >
                 {item.iconUrl ? (
@@ -348,33 +420,26 @@ function NavbarPreview({ navbar }) {
       )}
 
       <div
-        className="flex items-center justify-between gap-3"
+        className="flex items-start gap-2"
         style={{
-          height: config.logoRowHeightPx,
+          minHeight: config.logoRowHeightPx,
           marginTop: config.logoRowMarginTopPx,
           marginBottom: config.logoRowMarginBottomPx,
           paddingInline: config.logoRowPaddingX,
+          color: fontColor || config.locationColor,
+          transition: 'color 600ms ease',
         }}
       >
-        <span className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white/20 text-center text-[9px] font-bold leading-tight text-white">
-          {config.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={config.logoUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <span>store<br />1920</span>
-          )}
-        </span>
-        <span className="flex items-center gap-4">
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold leading-tight" style={{ color: config.locationColor }}>
-            <MapPin size={16} color={config.locationColor} />
-            <span>Deliver to<br />Dubai</span>
-          </span>
-          <span className="text-sm font-semibold" style={{ color: config.languageColor }}>العربية</span>
+        <MapPin size={18} className="mt-0.5 shrink-0" />
+        <span className="min-w-0">
+          <span className="block text-[11px] font-semibold leading-tight">Deliver to</span>
+          <span className="block truncate text-[11px] leading-tight opacity-90">Address 123 Road 123 Street 123 Building 123</span>
         </span>
       </div>
 
       {config.search.enabled ? (
         <div
+          className="flex items-center gap-2"
           style={{
             marginTop: config.search.marginTopPx,
             marginBottom: config.search.marginBottomPx,
@@ -382,58 +447,95 @@ function NavbarPreview({ navbar }) {
           }}
         >
           <div
-            className="flex items-center"
+            className="flex min-w-0 flex-1 items-center border"
             style={{
               height: config.search.heightPx,
               borderRadius: config.search.radiusPx,
               backgroundColor: config.search.backgroundColor,
-              paddingLeft: 4,
-              paddingRight: 14,
-              gap: 8,
+              borderColor: fontColor || config.search.borderColor,
+              borderWidth: 1.5,
+              transition: colorEase,
+              paddingLeft: 16,
+              paddingRight: 4,
+              gap: 10,
             }}
           >
             <span
-              className="flex shrink-0 items-center justify-center"
-              style={{
-                width: Math.round(config.search.heightPx * 0.78),
-                height: Math.round(config.search.heightPx * 0.78),
-                borderRadius: config.search.menuButtonRadius,
-                backgroundColor: config.search.menuButtonColor,
-              }}
-            >
-              {config.search.menuIconUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={config.search.menuIconUrl} alt="" style={{ width: config.search.iconSizePx, height: config.search.iconSizePx }} className="object-contain" />
-              ) : (
-                <svg width={config.search.iconSizePx} height={config.search.iconSizePx} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M4 7.5h16M7 12h10M4 16.5h16" stroke={config.search.textColor} strokeWidth="2.4" strokeLinecap="round" />
-                </svg>
-              )}
-            </span>
-            {config.search.searchIconUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={config.search.searchIconUrl} alt="" style={{ width: config.search.iconSizePx, height: config.search.iconSizePx }} className="shrink-0 object-contain" />
-            ) : (
-              <Search size={config.search.iconSizePx} color={config.search.textColor} strokeWidth={2.2} className="shrink-0" />
-            )}
-            <span
               className="min-w-0 flex-1 truncate font-medium"
-              style={{ color: config.search.textColor, fontSize: Math.max(13, config.search.iconSizePx - 2) }}
+              style={{ color: fontColor || config.search.textColor, fontSize: Math.max(14, config.search.iconSizePx - 1), transition: 'color 600ms ease' }}
             >
               {config.search.placeholder || 'Search'}
             </span>
-            <span className="w-px shrink-0" style={{ height: Math.round(config.search.heightPx * 0.42), backgroundColor: config.search.dividerColor }} />
             {config.search.cameraIconUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={config.search.cameraIconUrl} alt="" style={{ width: config.search.iconSizePx, height: config.search.iconSizePx }} className="shrink-0 object-contain" />
             ) : (
-              <Camera size={config.search.iconSizePx} color={config.search.textColor} strokeWidth={2.1} className="shrink-0" />
+              <Camera size={config.search.iconSizePx} strokeWidth={1.8} className="shrink-0" style={{ color: fontColor || config.search.borderColor, transition: 'color 600ms ease' }} />
             )}
+            <span
+              className="flex shrink-0 items-center justify-center"
+              style={{
+                width: Math.max(32, config.search.heightPx - 10),
+                height: Math.max(32, config.search.heightPx - 10),
+                borderRadius: Math.min(12, config.search.menuButtonRadius),
+                backgroundColor: fontColor || config.search.buttonColor,
+                transition: 'background-color 600ms ease',
+              }}
+            >
+              {config.search.searchIconUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={config.search.searchIconUrl} alt="" style={{ width: config.search.iconSizePx, height: config.search.iconSizePx }} className="object-contain" />
+              ) : (
+                <Search size={config.search.iconSizePx} color="#ffffff" strokeWidth={2.4} />
+              )}
+            </span>
           </div>
         </div>
       ) : (
         <div className="h-3" />
       )}
+
+      {slider?.enabled !== false ? (
+        <div>
+          <div
+            className="relative overflow-hidden bg-white/40"
+            style={{ height: slider?.heightPx || SLIDER_META.defaultHeightPx }}
+          >
+            {slides.length === 0 ? (
+              <div className="flex h-full items-center justify-center text-xs font-medium text-slate-500">Banner slider</div>
+            ) : slides.map((slide, index) => (
+              <div
+                key={slide.id || index}
+                className="absolute inset-0 transition-opacity duration-700 ease-in-out"
+                style={{ opacity: index === activeIndex ? 1 : 0 }}
+              >
+                {slide.video && slide.mediaType === 'video' ? (
+                  <video src={slide.video} className="h-full w-full object-cover" muted autoPlay loop playsInline />
+                ) : slide.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={slide.image} alt="" className="h-full w-full object-cover" />
+                ) : null}
+              </div>
+            ))}
+          {slides.length > 1 ? (
+            <div className="absolute inset-x-0 bottom-2 flex justify-center gap-1.5">
+              {slides.map((slide, index) => (
+                <span
+                  key={slide.id || index}
+                  className="h-1.5 rounded-full"
+                  style={{
+                    width: index === activeIndex ? 14 : 6,
+                    backgroundColor: index === activeIndex ? (fontColor || config.locationColor) : '#ffffff',
+                    opacity: index === activeIndex ? 1 : 0.7,
+                    transition: 'width 600ms ease, background-color 600ms ease',
+                  }}
+                />
+              ))}
+            </div>
+          ) : null}
+          </div>
+        </div>
+      ) : null}
       </div>
     </div>
   );
@@ -442,6 +544,7 @@ function NavbarPreview({ navbar }) {
 export default function MobileNavbarEditor() {
   const { getToken } = useAuth();
   const [form, setForm] = useState(() => normalizeAppNavbar());
+  const [slider, setSlider] = useState(() => normalizeBannerSection('bannerSlider', {}));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState('');
@@ -456,7 +559,9 @@ export default function MobileNavbarEditor() {
       const { data } = await axios.get('/api/store/mobile-features', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setForm(normalizeAppNavbar(normalizeMobileFeatures(data?.mobileFeatures).appNavbar));
+      const features = normalizeMobileFeatures(data?.mobileFeatures);
+      setForm(normalizeAppNavbar(features.appNavbar));
+      setSlider(normalizeBannerSection('bannerSlider', features.bannerSlider));
     } catch (error) {
       console.error(error);
       toast.error('Could not load the navbar');
@@ -473,10 +578,10 @@ export default function MobileNavbarEditor() {
   const patchSearch = (next) => setForm((prev) => ({ ...prev, search: { ...prev.search, ...next } }));
   const patchPage = (next) => setForm((prev) => ({ ...prev, pageNavbar: { ...normalizePageNavbar(prev.pageNavbar), ...next } }));
 
-  const uploadBackground = async (file, onPatch) => {
+  const uploadBackground = async (file, onPatch, uploadKey = 'background') => {
     if (!file) return;
     try {
-      setUploading('background');
+      setUploading(uploadKey);
       const token = await getToken();
       if (!token) {
         toast.error('Please sign in again to upload');
@@ -487,6 +592,7 @@ export default function MobileNavbarEditor() {
       const data = await uploadStoreImage(file, {
         token,
         type: 'banner',
+        maxBytes: 8 * 1024 * 1024,
         compress: kind !== 'video' && file.type !== 'image/gif' && !String(file.name || '').toLowerCase().endsWith('.gif'),
       });
       const url = data?.url;
@@ -496,7 +602,7 @@ export default function MobileNavbarEditor() {
         backgroundMediaUrl: url,
         backgroundMediaKind: kind,
       });
-      toast.success('Background uploaded. Save to publish it.');
+      toast.success(String(uploadKey).startsWith('slide-') ? 'Banner uploaded. Save to publish it.' : 'Background uploaded. Save to publish it.');
     } catch (error) {
       toast.error(error?.message || 'Upload failed');
     } finally {
@@ -515,9 +621,9 @@ export default function MobileNavbarEditor() {
       }
       const { compressImageForUpload } = await import('@/lib/compressImageForUpload');
       const prepared = await compressImageForUpload(file, {
-        maxWidth: 800,
-        maxHeight: 800,
-        maxBytes: 1024 * 1024,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        maxBytes: 8 * 1024 * 1024,
         preserveTransparency: true,
       });
       const body = new FormData();
@@ -562,7 +668,15 @@ export default function MobileNavbarEditor() {
       setSaving(true);
       const token = await getToken();
       await axios.put('/api/store/mobile-features', {
-        mobileFeatures: { appNavbar: normalizeAppNavbar(form) },
+        mobileFeatures: {
+          appNavbar: normalizeAppNavbar(form),
+            bannerSlider: normalizeBannerSection('bannerSlider', {
+            ...slider,
+            useWebsiteHomeBanners: (slider.slides || []).some((slide) => slide.image || slide.video)
+              ? false
+              : slider.useWebsiteHomeBanners,
+          }),
+        },
       }, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -595,7 +709,7 @@ export default function MobileNavbarEditor() {
         </div>
         <h1 className="mt-3 text-2xl font-bold sm:text-3xl">Mobile navbar</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-sky-50 sm:text-base">
-          Home is the store header. Other pages is the back, search, and heart bar.
+          Home is the tab background, marquee, Deliver to line, search, and banner slider. Other pages is the back, search, and heart bar.
         </p>
       </div>
 
@@ -645,13 +759,11 @@ export default function MobileNavbarEditor() {
           </section>
 
 
-          <SettingsPanel title="Background" open={openPanel === 'background'} onToggle={() => togglePanel('background')}>
+          <SettingsPanel title="Tab background" open={openPanel === 'background'} onToggle={() => togglePanel('background')}>
             <div className="grid grid-cols-2 gap-3">
               {[
                 ['radiusTopLeft', 'Top left'],
                 ['radiusTopRight', 'Top right'],
-                ['radiusBottomLeft', 'Bottom left'],
-                ['radiusBottomRight', 'Bottom right'],
               ].map(([key, label]) => (
                 <label key={key} className="block text-sm">
                   <span className="font-medium text-slate-800">{label}</span>
@@ -816,7 +928,7 @@ export default function MobileNavbarEditor() {
             </div>
           </SettingsPanel>
 
-          <SettingsPanel title="Logo, location, and language" open={openPanel === 'logo'} onToggle={() => togglePanel('logo')}>
+          <SettingsPanel title="Deliver to" open={openPanel === 'logo'} onToggle={() => togglePanel('logo')}>
             <div>
               <SpaceFields
                 values={{
@@ -834,7 +946,7 @@ export default function MobileNavbarEditor() {
               />
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <ColorField label="Location color" value={form.locationColor} onChange={(locationColor) => patch({ locationColor })} />
+              <ColorField label="Deliver to color" value={form.locationColor} onChange={(locationColor) => patch({ locationColor })} />
               <ColorField label="Language color" value={form.languageColor} onChange={(languageColor) => patch({ languageColor })} />
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -865,7 +977,7 @@ export default function MobileNavbarEditor() {
                   Remove
                 </button>
               ) : null}
-              <p className="w-full text-xs leading-5 text-slate-500">PNG, JPG, WEBP, or GIF. This is the app header icon. A GIF keeps playing.</p>
+              <p className="w-full text-xs leading-5 text-slate-500">PNG, JPG, WEBP, or GIF. The home header shows Deliver to, not this logo. A GIF keeps playing.</p>
             </div>
           </SettingsPanel>
 
@@ -897,11 +1009,11 @@ export default function MobileNavbarEditor() {
                   <input dir="rtl" value={form.search?.placeholderAr || ''} onChange={(event) => patchSearch({ placeholderAr: event.target.value.slice(0, 40) })} className={fieldClass()} />
                 </label>
                 <ColorField label="Bar color" value={form.search?.backgroundColor} onChange={(backgroundColor) => patchSearch({ backgroundColor })} />
-                <ColorField label="Text and icon color" value={form.search?.textColor} onChange={(textColor) => patchSearch({ textColor })} />
-                <ColorField label="Menu button color" value={form.search?.menuButtonColor} onChange={(menuButtonColor) => patchSearch({ menuButtonColor })} />
-                <ColorField label="Divider color" value={form.search?.dividerColor} onChange={(dividerColor) => patchSearch({ dividerColor })} />
+                <ColorField label="Hint color" value={form.search?.textColor} onChange={(textColor) => patchSearch({ textColor })} />
+                <ColorField label="Border color" value={form.search?.borderColor} onChange={(borderColor) => patchSearch({ borderColor })} />
+                <ColorField label="Search button color" value={form.search?.buttonColor} onChange={(buttonColor) => patchSearch({ buttonColor, menuButtonColor: buttonColor })} />
                 <label className="block text-sm">
-                  <span className="font-medium text-slate-800">Menu button corners</span>
+                  <span className="font-medium text-slate-800">Search button corners</span>
                   <input type="number" min="0" max="24" value={form.search?.menuButtonRadius ?? 14} onChange={(event) => patchSearch({ menuButtonRadius: Number(event.target.value) })} className={fieldClass()} />
                 </label>
                 <label className="block text-sm">
@@ -915,9 +1027,8 @@ export default function MobileNavbarEditor() {
               </div>
               <div className="grid gap-3 sm:grid-cols-3">
                 {[
-                  ['menuIconUrl', 'Menu icon', 'menu'],
-                  ['searchIconUrl', 'Search icon', 'search'],
                   ['cameraIconUrl', 'Camera icon', 'camera'],
+                  ['searchIconUrl', 'Search button icon', 'search'],
                 ].map(([key, label, uploadKey]) => (
                   <div key={key} className="rounded-xl border border-slate-200 p-3">
                     <p className="text-xs font-medium text-slate-800">{label}</p>
@@ -956,6 +1067,233 @@ export default function MobileNavbarEditor() {
             </div>
           </SettingsPanel>
 
+          <SettingsPanel
+            title="Banner slider"
+            open={openPanel === 'slider'}
+            onToggle={() => togglePanel('slider')}
+            aside={(
+              <EnableSwitch enabled={slider.enabled !== false} onChange={(enabled) => setSlider((prev) => ({ ...prev, enabled }))} />
+            )}
+          >
+            <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block text-sm">
+                  <span className="font-medium text-slate-800">Slider speed (seconds)</span>
+                  <input
+                    type="number"
+                    min="2"
+                    max="30"
+                    value={slider.slideIntervalSeconds ?? SLIDER_META.defaultIntervalSeconds}
+                    onChange={(event) => setSlider((prev) => ({ ...prev, slideIntervalSeconds: Number(event.target.value) || SLIDER_META.defaultIntervalSeconds }))}
+                    className={fieldClass()}
+                  />
+                  <span className="mt-1 block text-[11px] text-slate-500">How long each banner stays before the next one.</span>
+                </label>
+                <label className="block text-sm">
+                  <span className="font-medium text-slate-800">Banner height</span>
+                  <input
+                    type="number"
+                    min={SLIDER_META.minHeightPx}
+                    max={SLIDER_META.maxHeightPx}
+                    value={slider.heightPx ?? SLIDER_META.defaultHeightPx}
+                    onChange={(event) => setSlider((prev) => ({ ...prev, heightPx: Number(event.target.value) || SLIDER_META.defaultHeightPx }))}
+                    className={fieldClass()}
+                  />
+                </label>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-slate-800">Banners</p>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-800"
+                  onClick={() => setSlider((prev) => {
+                    const slides = Array.isArray(prev.slides) ? prev.slides : [];
+                    if (slides.length >= SLIDER_META.maxItems) {
+                      toast.error(`You can add up to ${SLIDER_META.maxItems} banners`);
+                      return prev;
+                    }
+                    return { ...prev, slides: [...slides, createEmptySlide({ title: '' })] };
+                  })}
+                >
+                  <Plus size={14} />
+                  Add banner
+                </button>
+              </div>
+              {(slider.slides || []).length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center">
+                  <ImagePlus className="mx-auto text-slate-400" size={28} />
+                  <p className="mt-2 text-sm text-slate-600">Upload a banner, then set where a tap should go.</p>
+                </div>
+              ) : null}
+              {(slider.slides || []).map((slide, index) => (
+                <div key={slide.id || index} className="rounded-xl border border-slate-200 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-slate-800">Banner {index + 1}</span>
+                      <EnableSwitch
+                        enabled={slide.enabled !== false}
+                        onChange={(enabled) => setSlider((prev) => ({
+                          ...prev,
+                          slides: prev.slides.map((item, itemIndex) => (itemIndex === index ? { ...item, enabled } : item)),
+                        }))}
+                      />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={index === 0}
+                        onClick={() => setSlider((prev) => {
+                          const slides = [...prev.slides];
+                          [slides[index - 1], slides[index]] = [slides[index], slides[index - 1]];
+                          return { ...prev, slides };
+                        })}
+                        className="rounded-lg border border-slate-200 p-1.5 text-slate-600 disabled:opacity-40"
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={index === slider.slides.length - 1}
+                        onClick={() => setSlider((prev) => {
+                          const slides = [...prev.slides];
+                          [slides[index + 1], slides[index]] = [slides[index], slides[index + 1]];
+                          return { ...prev, slides };
+                        })}
+                        className="rounded-lg border border-slate-200 p-1.5 text-slate-600 disabled:opacity-40"
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSlider((prev) => ({ ...prev, slides: prev.slides.filter((_, itemIndex) => itemIndex !== index) }))}
+                        className="rounded-lg border border-slate-200 p-1.5 text-rose-700"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                    {slide.mediaType === 'video' && slide.video ? (
+                      <video src={slide.video} className="aspect-[16/7] w-full object-cover" muted playsInline />
+                    ) : null}
+                    {slide.image && slide.mediaType !== 'video' ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={slide.image} alt="" className="aspect-[16/7] w-full object-cover" />
+                    ) : null}
+                    {!slide.image && !(slide.mediaType === 'video' && slide.video) ? (
+                      <div className="flex aspect-[16/7] items-center justify-center text-xs text-slate-400">No banner yet</div>
+                    ) : null}
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white">
+                      {uploading === `slide-${index}` ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                      Upload banner
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
+                        className="hidden"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          event.target.value = '';
+                          if (!file) return;
+                          const kind = mediaKindForFile(file);
+                          uploadBackground(file, (next) => {
+                            setSlider((prev) => ({
+                              ...prev,
+                              slides: prev.slides.map((item, itemIndex) => (
+                                itemIndex === index
+                                  ? (kind === 'video'
+                                    ? { ...item, video: next.backgroundMediaUrl, mediaType: 'video' }
+                                    : { ...item, image: next.backgroundMediaUrl, mediaType: 'image', video: '' })
+                                  : item
+                              )),
+                            }));
+                          }, `slide-${index}`);
+                        }}
+                      />
+                    </label>
+                  </div>
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-slate-800">Top background</p>
+                    <p className="mt-1 text-xs text-slate-500">Used above this banner while it is showing. A solid color, a linear gradient, or an image, GIF, or video.</p>
+                    <div className="mt-3">
+                      <BackgroundChoices
+                        value={{
+                          backgroundMode: slide.topBackgroundMode || 'color',
+                          backgroundColor: slide.topBackgroundColor || form.backgroundColor,
+                          gradientFrom: slide.topGradientFrom || '#8b5cf6',
+                          gradientTo: slide.topGradientTo || '#5b21b6',
+                          gradientAngle: slide.topGradientAngle ?? 180,
+                          gradientPosition: slide.topGradientPosition ?? 100,
+                          backgroundMediaUrl: slide.topBackgroundMediaUrl || '',
+                          backgroundMediaKind: slide.topBackgroundMediaKind || 'image',
+                        }}
+                        onChange={(patch) => setSlider((prev) => ({
+                          ...prev,
+                          slides: prev.slides.map((item, itemIndex) => {
+                            if (itemIndex !== index) return item;
+                            return {
+                              ...item,
+                              ...(patch.backgroundMode != null ? { topBackgroundMode: patch.backgroundMode } : {}),
+                              ...(patch.backgroundColor != null ? { topBackgroundColor: patch.backgroundColor } : {}),
+                              ...(patch.gradientFrom != null ? { topGradientFrom: patch.gradientFrom } : {}),
+                              ...(patch.gradientTo != null ? { topGradientTo: patch.gradientTo } : {}),
+                              ...(patch.gradientAngle != null ? { topGradientAngle: patch.gradientAngle } : {}),
+                              ...(patch.gradientPosition != null ? { topGradientPosition: patch.gradientPosition } : {}),
+                              ...(patch.backgroundMediaUrl != null ? { topBackgroundMediaUrl: patch.backgroundMediaUrl } : {}),
+                              ...(patch.backgroundMediaKind != null ? { topBackgroundMediaKind: patch.backgroundMediaKind } : {}),
+                            };
+                          }),
+                        }))}
+                        uploading={uploading === `top-${index}`}
+                        onFile={(file) => uploadBackground(file, (next) => {
+                          setSlider((prev) => ({
+                            ...prev,
+                            slides: prev.slides.map((item, itemIndex) => (
+                              itemIndex === index
+                                ? {
+                                  ...item,
+                                  topBackgroundMode: 'media',
+                                  topBackgroundMediaUrl: next.backgroundMediaUrl,
+                                  topBackgroundMediaKind: next.backgroundMediaKind,
+                                }
+                                : item
+                            )),
+                          }));
+                        }, `top-${index}`)}
+                      />
+                    </div>
+                    <div className="mt-4 max-w-xs">
+                      <ColorField
+                        label="Font color"
+                        value={slide.fontColor || form.marqueeTextColor}
+                        onChange={(fontColor) => setSlider((prev) => ({
+                          ...prev,
+                          slides: prev.slides.map((item, itemIndex) => (
+                            itemIndex === index ? { ...item, fontColor } : item
+                          )),
+                        }))}
+                      />
+                    </div>
+                  </div>
+                  <label className="mt-3 block text-sm">
+                    <span className="font-medium text-slate-800">Path</span>
+                    <div className="mt-1">
+                      <MobilePathPicker
+                        value={slide.path || slide.link || ''}
+                        onChange={(value) => setSlider((prev) => ({
+                          ...prev,
+                          slides: prev.slides.map((item, itemIndex) => (
+                            itemIndex === index ? { ...item, path: value, link: value } : item
+                          )),
+                        }))}
+                      />
+                    </div>
+                  </label>
+                </div>
+              ))}
+            </div>
+          </SettingsPanel>
 
           <button
             type="button"
@@ -969,9 +1307,9 @@ export default function MobileNavbarEditor() {
         </div>
 
         <aside className="lg:sticky lg:top-4 space-y-2">
-          <NavbarPreview navbar={form} />
+          <NavbarPreview navbar={form} slider={slider} />
           <p className="text-xs leading-5 text-slate-500">
-            Deliver to and the language word stay in the app. The search bar uses the icons and colors from the Search section.
+            Each banner has its own top background and font color. The header above the picture uses the colors of the banner that is showing.
           </p>
         </aside>
         </div>
@@ -984,7 +1322,8 @@ export default function MobileNavbarEditor() {
 function PageNavbarFields({ bar, uploading, saving, onPatch, onUpload, onBackgroundFile, onSave }) {
   const icons = [
     ['backIconUrl', 'Back icon'],
-    ['searchIconUrl', 'Search icon'],
+    ['cameraIconUrl', 'Camera icon'],
+    ['searchIconUrl', 'Search button icon'],
     ['heartIconUrl', 'Heart icon'],
   ];
   return (
@@ -1022,7 +1361,7 @@ function PageNavbarFields({ bar, uploading, saving, onPatch, onUpload, onBackgro
           <ColorField label="Back and heart" value={bar.iconColor} onChange={(value) => onPatch({ iconColor: value })} />
           <ColorField label="Search background" value={bar.searchBackground} onChange={(value) => onPatch({ searchBackground: value })} />
           <ColorField label="Search border" value={bar.searchBorderColor} onChange={(value) => onPatch({ searchBorderColor: value })} />
-          <ColorField label="Search text color" value={bar.searchTextColor} onChange={(value) => onPatch({ searchTextColor: value })} />
+          <ColorField label="Search button" value={bar.searchButtonColor} onChange={(value) => onPatch({ searchButtonColor: value })} />
         </div>
         <div className="grid grid-cols-2 gap-3">
           {[
@@ -1037,7 +1376,7 @@ function PageNavbarFields({ bar, uploading, saving, onPatch, onUpload, onBackgro
             </label>
           ))}
         </div>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {icons.map(([key, label]) => (
             <div key={key} className="rounded-xl border border-slate-200 p-3">
               <p className="text-xs font-semibold text-slate-700">{label}</p>

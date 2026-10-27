@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Bell, Clapperboard, Gift, Image as ImageIcon, LayoutGrid, Loader, PanelBottom, PanelTop, Smartphone, Ticket, Zap } from 'lucide-react'
+import { Bell, Clapperboard, Gift, Image as ImageIcon, LayoutGrid, Loader, PanelBottom, PanelTop, Shapes, Smartphone, Ticket, Zap } from 'lucide-react'
 
 export default function MobileFeaturesPage() {
   return (
@@ -99,6 +99,20 @@ export default function MobileFeaturesPage() {
             <span className="block text-sm font-semibold text-slate-900">Banners</span>
             <span className="mt-1 block text-xs leading-5 text-slate-500">
               Banner 1, Banner 2, Banner 3, and Banner 4 in different places on the home screen.
+            </span>
+          </span>
+        </Link>
+        <Link
+          href="/store/mobile-features/category-sliders"
+          className="flex max-w-md items-start gap-3 rounded-2xl border border-slate-200 p-4 transition hover:border-sky-300 hover:shadow-sm"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+            <Shapes size={18} />
+          </span>
+          <span>
+            <span className="block text-sm font-semibold text-slate-900">Category sliders</span>
+            <span className="mt-1 block text-xs leading-5 text-slate-500">
+              At least three choices. A parent category shows its children. A manual choice sets the image, title, and path.
             </span>
           </span>
         </Link>
