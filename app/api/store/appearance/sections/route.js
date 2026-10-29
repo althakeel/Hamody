@@ -11,6 +11,8 @@ import {
   normalizeWhatsAppProductWidget,
 } from '@/lib/whatsappProductWidget'
 import { DEFAULT_SCROLL_TO_TOP, normalizeScrollToTop } from '@/lib/scrollToTopSettings'
+import { DEFAULT_TAWK_CHAT, normalizeTawkChat } from '@/lib/tawkChatSettings'
+import { DEFAULT_RELATED_PRODUCT_AD, normalizeRelatedProductAd } from '@/lib/relatedProductAd'
 import { DEFAULT_HOME_WELCOME_POPUP, mergeHomePopupStats, normalizeHomeWelcomePopup } from '@/lib/homeWelcomePopup'
 import { DEFAULT_FOOTER, normalizeFooter } from '@/lib/footerSettings'
 import { DEFAULT_TIME_BADGES, normalizeTimeBadges } from '@/lib/timeBadgeSettings'
@@ -27,6 +29,8 @@ const DEFAULT_APPEARANCE = {
   offersPage: DEFAULT_OFFERS_PAGE,
   whatsappProductWidget: DEFAULT_WHATSAPP_PRODUCT_WIDGET,
   scrollToTop: DEFAULT_SCROLL_TO_TOP,
+  tawkChat: DEFAULT_TAWK_CHAT,
+  relatedProductAd: DEFAULT_RELATED_PRODUCT_AD,
   homeWelcomePopup: DEFAULT_HOME_WELCOME_POPUP,
   footer: DEFAULT_FOOTER,
   timeBadges: DEFAULT_TIME_BADGES,
@@ -228,6 +232,8 @@ function normalizeAppearance(data = {}) {
       data.whatsappProductWidget || DEFAULT_APPEARANCE.whatsappProductWidget,
     ),
     scrollToTop: normalizeScrollToTop(data.scrollToTop || DEFAULT_APPEARANCE.scrollToTop),
+    tawkChat: normalizeTawkChat(data.tawkChat || DEFAULT_APPEARANCE.tawkChat),
+    relatedProductAd: normalizeRelatedProductAd(data.relatedProductAd || DEFAULT_APPEARANCE.relatedProductAd),
     homeWelcomePopup: normalizeHomeWelcomePopup(data.homeWelcomePopup || DEFAULT_APPEARANCE.homeWelcomePopup),
     productPageInfo: {
       returnsText: (productPageInfo.returnsText || DEFAULT_APPEARANCE.productPageInfo.returnsText).toString().trim(),
@@ -321,6 +327,8 @@ export async function POST(request) {
     deleteCacheKey('public:appearance-sections:v10')
     deleteCacheKey('public:appearance-sections:v11')
     deleteCacheKey('public:appearance-sections:v12')
+    deleteCacheKey('public:appearance-sections:v13')
+    deleteCacheKey('public:appearance-sections:v14')
     invalidateCachePattern('public:appearance-sections')
     invalidateCachePattern('public:offers')
 

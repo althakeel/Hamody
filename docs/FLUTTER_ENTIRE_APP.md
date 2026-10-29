@@ -462,18 +462,14 @@ Use these when a screen needs request and response fields. This file is the map.
 
 | Topic | File |
 |---|---|
-| Every shopper route and checkout bodies | [MOBILE_APP_API.md](./MOBILE_APP_API.md) |
-| Home call order | [MOBILE_HOME_PAGE_APIS.md](./MOBILE_HOME_PAGE_APIS.md) |
-| App home banners | [MOBILE_FEATURES_DOCUMENTATION.md](./MOBILE_FEATURES_DOCUMENTATION.md) |
-| Home hero (photo, arrows, dots) | [FLUTTER_HOME_HERO.md](./FLUTTER_HOME_HERO.md) |
+| Every shopper route and checkout bodies | [APP_DEVELOPER_API.md](./APP_DEVELOPER_API.md) |
+| Home | [ANDROID_HOME_PAGE.md](./ANDROID_HOME_PAGE.md) |
 | Categories | [FLUTTER_CATEGORY_APIS.md](./FLUTTER_CATEGORY_APIS.md) |
-| Product cards | [FLUTTER_PRODUCT_CARDS.md](./FLUTTER_PRODUCT_CARDS.md) |
-| Phone center circle | [FLUTTER_MOBILE_BOTTOM_BUTTON.md](./FLUTTER_MOBILE_BOTTOM_BUTTON.md) |
+| Bottom menu | [ANDROID_APP_BOTTOM_MENU.md](./ANDROID_APP_BOTTOM_MENU.md) |
+| Checkout and card | [ANDROID_CHECKOUT_PAGE.md](./ANDROID_CHECKOUT_PAGE.md), [VAULTSPAY_CHECKOUT.md](./VAULTSPAY_CHECKOUT.md) |
 | WhatsApp login | [FLUTTER_WHATSAPP_OTP_AUTH.md](./FLUTTER_WHATSAPP_OTP_AUTH.md) |
-| Orders | [ORDER_DETAILS.md](./ORDER_DETAILS.md) |
+| Sign-in | [APP_AUTH.md](./APP_AUTH.md) |
 | Auth security | [AUTH_SECURITY.md](./AUTH_SECURITY.md) |
-| Payments | [PAYMENT_SECURITY.md](./PAYMENT_SECURITY.md) |
-| Full API index | [STORE1920_FULL_API.md](./STORE1920_FULL_API.md) |
 | Docs index | [README.md](./README.md) |
 
 Do not point the shopper app at seller, admin, warehouse, cron, or webhook routes.

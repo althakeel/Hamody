@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Search } from 'lucide-react';
 
 const fieldClassName =
@@ -39,9 +40,11 @@ export default function SearchableSelect({
 }) {
   const listId = useId();
   const rootRef = useRef(null);
+  const menuRef = useRef(null);
   const searchRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [menuBox, setMenuBox] = useState(null);
 
   const filteredOptions = useMemo(() => {
     const needle = query.trim();
@@ -85,10 +88,10 @@ export default function SearchableSelect({
     if (!open) return undefined;
 
     const handlePointerDown = (event) => {
-      if (!rootRef.current?.contains(event.target)) {
-        setOpen(false);
-        setQuery('');
-      }
+      const target = event.target;
+      if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+      setQuery('');
     };
 
     const handleEscape = (event) => {
@@ -107,11 +110,43 @@ export default function SearchableSelect({
   }, [open]);
 
   useEffect(() => {
-    if (open) {
-      window.requestAnimationFrame(() => searchRef.current?.focus());
-    } else {
+    if (!open) {
+      setMenuBox(null);
       setQuery('');
+      return undefined;
     }
+
+    const placeMenu = (event) => {
+      if (event?.target && menuRef.current?.contains(event.target)) return;
+      const trigger = rootRef.current?.querySelector('button');
+      if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const gap = 8;
+      const spaceBelow = window.innerHeight - rect.bottom - gap;
+      const spaceAbove = rect.top - gap;
+      const openUp = spaceBelow < 240 && spaceAbove > spaceBelow;
+      const available = Math.max(160, openUp ? spaceAbove : spaceBelow);
+      const maxHeight = Math.min(360, available);
+      const width = Math.min(rect.width, window.innerWidth - 16);
+      const left = Math.min(Math.max(8, rect.left), window.innerWidth - width - 8);
+      setMenuBox({
+        left,
+        width,
+        maxHeight,
+        top: openUp ? 'auto' : rect.bottom + gap,
+        bottom: openUp ? window.innerHeight - rect.top + gap : 'auto',
+      });
+    };
+
+    placeMenu();
+    window.addEventListener('resize', placeMenu);
+    window.addEventListener('scroll', placeMenu, true);
+    const focusTimer = window.requestAnimationFrame(() => searchRef.current?.focus({ preventScroll: true }));
+    return () => {
+      window.removeEventListener('resize', placeMenu);
+      window.removeEventListener('scroll', placeMenu, true);
+      window.cancelAnimationFrame(focusTimer);
+    };
   }, [open]);
 
   const handleSelect = (option) => {
@@ -159,13 +194,23 @@ export default function SearchableSelect({
         />
       ) : null}
 
-      {open ? (
+      {open && menuBox && typeof document !== 'undefined' ? createPortal(
         <div
+          ref={menuRef}
           id={listId}
           role="listbox"
-          className="absolute left-0 right-0 top-[calc(100%+8px)] z-[120] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.14)]"
+          style={{
+            position: 'fixed',
+            left: menuBox.left,
+            top: menuBox.top,
+            bottom: menuBox.bottom,
+            width: menuBox.width,
+            maxHeight: menuBox.maxHeight,
+            zIndex: 200,
+          }}
+          className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.14)]"
         >
-          <div className="border-b border-slate-100 p-3">
+          <div className="shrink-0 border-b border-slate-100 p-3">
             <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
               <Search size={16} className="shrink-0 text-slate-400" />
               <input
@@ -179,10 +224,13 @@ export default function SearchableSelect({
             </div>
           </div>
 
-          <div className="max-h-72 overflow-y-auto py-1">
-            {!query.trim() && options.length > 0 ? (
+          <div
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-1"
+            style={{ maxHeight: Math.max(120, menuBox.maxHeight - 64) }}
+          >
+            {!query.trim() && listHint ? (
               <p className="border-b border-slate-100 px-4 py-2 text-xs text-slate-500">
-                {listHint || `Showing ${options.length} areas — scroll or type to search`}
+                {listHint}
               </p>
             ) : null}
             {displayOptions.length > 0 ? (
@@ -228,7 +276,8 @@ export default function SearchableSelect({
               <p className="px-4 py-6 text-center text-sm text-slate-500">{emptyMessage}</p>
             ) : null}
           </div>
-        </div>
+        </div>,
+        document.body,
       ) : null}
     </div>
   );

@@ -2,7 +2,7 @@
 import { addAddress, fetchAddress } from "@/lib/features/address/addressSlice"
 
 import axios from "axios"
-import { Check, MapPin, Pencil, Phone, Plus, Trash2, User, XIcon } from "lucide-react"
+import { Check, MapPin, Pencil, Plus, Trash2, XIcon } from "lucide-react"
 import { useState, useEffect } from "react"
 import { toast } from "react-hot-toast"
 import { useDispatch } from "react-redux"
@@ -25,27 +25,31 @@ const indianStates = [
     "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Delhi", "Jammu and Kashmir", "Ladakh"
 ];
 
-function formatLocationLine(addr) {
-    const parts = [addr?.city, addr?.district, addr?.state]
+function formatPhoneLine(addr) {
+    const code = String(addr?.phoneCode || '+971').trim();
+    const phone = String(addr?.phone || '').trim();
+    if (!phone) return '';
+    return `${code} ${phone}`;
+}
+
+function formatAddressSummary(addr) {
+    const country = String(addr?.country || '').trim();
+    const hideCountry = /united arab emirates/i.test(country);
+    const parts = [addr?.street, addr?.city, addr?.district, addr?.state, hideCountry ? '' : country]
         .map((value) => String(value || '').trim())
         .filter(Boolean);
-
     const seen = new Set();
-    return parts
+    const line = parts
         .filter((part) => {
             const key = part.toLowerCase();
             if (seen.has(key)) return false;
             seen.add(key);
             return true;
         })
-        .join(', ');
-}
-
-function formatPhoneLine(addr) {
-    const code = String(addr?.phoneCode || '+971').trim();
-    const phone = String(addr?.phone || '').trim();
-    if (!phone) return '';
-    return `${code} ${phone}`;
+        .join(' – ');
+    const phone = formatPhoneLine(addr);
+    if (!line) return phone;
+    return phone ? `${line} · ${phone}` : line;
 }
 
 function resolveAddressCity(addr) {
@@ -422,50 +426,50 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-slate-950/55 p-0 sm:items-center sm:p-4 backdrop-blur-md"
+            className="fixed inset-0 z-50 flex items-end justify-center overflow-hidden bg-slate-950/55 p-0 backdrop-blur-md sm:items-center sm:p-4"
             onClick={() => setShowAddressModal(false)}
             role="presentation"
         >
             <div
-                className="my-0 flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[24px] border border-white/60 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.28)] sm:my-8 sm:max-w-2xl sm:rounded-[24px]"
+                className="my-0 flex h-[92dvh] max-h-[92dvh] w-full min-h-0 max-w-lg flex-col overflow-hidden rounded-t-[24px] border border-white/60 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.28)] sm:my-8 sm:h-[min(92dvh,760px)] sm:max-w-2xl sm:rounded-[24px]"
                 onClick={(event) => event.stopPropagation()}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="address-modal-title"
             >
                 {/* Header */}
-                <div className="relative border-b border-slate-100 bg-gradient-to-b from-slate-50 to-white px-5 py-5 sm:px-6">
-                    <div className="flex items-start justify-between gap-4">
+                <div className="relative border-b border-slate-100 bg-gradient-to-b from-slate-50 to-white px-4 py-3 sm:px-6 sm:py-5">
+                    <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600">
+                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600">
                                 Delivery
                             </span>
-                            <h2 id="address-modal-title" className="mt-2 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                            <h2 id="address-modal-title" className="mt-1 text-lg font-bold tracking-tight text-slate-900 sm:mt-2 sm:text-2xl">
                                 {mode === 'select' ? 'Choose delivery address' : (isEdit || editingAddress ? 'Update address' : 'Add new address')}
                             </h2>
-                            <p className="mt-1 text-sm leading-relaxed text-slate-500">
+                            <p className="mt-0.5 text-xs leading-snug text-slate-500 sm:mt-1 sm:text-sm sm:leading-relaxed">
                                 {mode === 'select'
                                     ? 'Pick where your order should be delivered.'
-                                    : 'Add accurate details so your order arrives without delays.'}
+                                    : 'Where should we deliver?'}
                             </p>
                         </div>
                         <button
                             type="button"
                             onClick={() => setShowAddressModal(false)}
-                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 sm:h-10 sm:w-10"
                             aria-label="Close"
                         >
-                            <XIcon size={20} />
+                            <XIcon size={18} />
                         </button>
                     </div>
                 </div>
                 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                     {mode === 'select' ? (
                         <div className="flex min-h-0 flex-1 flex-col">
-                            <div className="flex-1 overflow-y-auto p-5 sm:p-6">
-                                <div className="mb-4 flex items-center justify-between gap-3">
+                            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-6">
+                                <div className="mb-2 flex items-center justify-between gap-3 sm:mb-4">
                                     <h3 className="text-sm font-semibold text-slate-800">Saved addresses</h3>
                                     <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
                                         {addressList.length}
@@ -479,21 +483,21 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                                         <p className="mt-1 text-sm text-slate-500">Add your first delivery address to continue.</p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-3">
+                                    <div className="space-y-2">
                                         {addressList.map((addr) => {
                                             const isSelected = pendingAddressId === addr._id;
-                                            const locationLine = formatLocationLine(addr);
-                                            const phoneLine = formatPhoneLine(addr);
+                                            const summary = formatAddressSummary(addr);
 
                                             return (
                                                 <div
                                                     key={addr._id}
                                                     role="button"
                                                     tabIndex={0}
-                                                    className={`w-full cursor-pointer rounded-2xl border-2 p-4 text-left transition-all ${
+                                                    aria-pressed={isSelected}
+                                                    className={`w-full cursor-pointer rounded-xl border px-3 py-2.5 text-left transition-all ${
                                                         isSelected
-                                                            ? 'border-slate-900 bg-slate-50'
-                                                            : 'border-slate-200 bg-white hover:border-slate-400'
+                                                            ? 'border-[#c4b8fd] bg-[#f5f3ff]'
+                                                            : 'border-slate-200 bg-white hover:border-slate-300'
                                                     }`}
                                                     onClick={() => setPendingAddressId(addr._id)}
                                                     onKeyDown={(event) => {
@@ -503,73 +507,43 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                                                         }
                                                     }}
                                                 >
-                                                    <div className="flex items-start gap-3">
-                                                        <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
-                                                            isSelected ? 'border-slate-900 bg-slate-900' : 'border-slate-300 bg-white'
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
+                                                            isSelected ? 'border-[#a78bfa] bg-[#a78bfa]' : 'border-slate-300 bg-white'
                                                         }`}>
-                                                            {isSelected ? <Check className="h-3 w-3 text-white" strokeWidth={3} /> : null}
+                                                            {isSelected ? <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} /> : null}
                                                         </div>
-
-                                                        <div className="min-w-0 flex-1">
-                                                            <div className="flex items-start justify-between gap-2">
-                                                                <div className="flex min-w-0 flex-wrap items-center gap-2">
-                                                                    <span className="inline-flex items-center gap-1.5 font-semibold text-slate-900">
-                                                                        <User className="h-4 w-4 shrink-0 text-slate-400" />
-                                                                        {addr.name}
-                                                                    </span>
-                                                                    {isSelected ? (
-                                                                        <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                                                                            Selected
-                                                                        </span>
-                                                                    ) : null}
-                                                                </div>
-                                                                <div className="flex shrink-0 items-center gap-1.5">
-                                                                <button
-                                                                    type="button"
-                                                                    className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
-                                                                    onClick={(event) => {
-                                                                        event.stopPropagation();
-                                                                        setEditingAddress(addr);
-                                                                        setMode('form');
-                                                                    }}
-                                                                >
-                                                                    <Pencil className="h-3 w-3" />
-                                                                    Edit
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    disabled={deletingAddressId === addr._id}
-                                                                    className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-                                                                    onClick={(event) => {
-                                                                        event.stopPropagation();
-                                                                        handleDeleteAddress(addr);
-                                                                    }}
-                                                                    aria-label={`Delete address for ${addr.name}`}
-                                                                >
-                                                                    <Trash2 className="h-3 w-3" />
-                                                                    {deletingAddressId === addr._id ? 'Deleting…' : 'Delete'}
-                                                                </button>
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="mt-2 space-y-1 text-sm text-slate-600">
-                                                                <p className="flex items-start gap-2">
-                                                                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-                                                                    <span>
-                                                                        <span className="block font-medium text-slate-800">{addr.street}</span>
-                                                                        {locationLine ? <span className="block">{locationLine}</span> : null}
-                                                                        <span className="block">{addr.country}{addr.zip || addr.pincode ? ` · ${addr.zip || addr.pincode}` : ''}</span>
-                                                                    </span>
-                                                                </p>
-                                                                {phoneLine ? (
-                                                                    <p className="flex items-center gap-2 pl-6">
-                                                                        <Phone className="h-3.5 w-3.5 text-slate-400" />
-                                                                        <span className="font-medium text-slate-700">{phoneLine}</span>
-                                                                    </p>
-                                                                ) : null}
-                                                            </div>
-                                                        </div>
+                                                        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">
+                                                            {addr.name}
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                setEditingAddress(addr);
+                                                                setMode('form');
+                                                            }}
+                                                            aria-label={`Edit address for ${addr.name}`}
+                                                        >
+                                                            <Pencil className="h-3.5 w-3.5" />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            disabled={deletingAddressId === addr._id}
+                                                            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                handleDeleteAddress(addr);
+                                                            }}
+                                                            aria-label={deletingAddressId === addr._id ? 'Deleting address' : `Delete address for ${addr.name}`}
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </button>
                                                     </div>
+                                                    {summary ? (
+                                                        <p className="mt-1 line-clamp-2 pl-6 text-xs leading-4 text-slate-600">{summary}</p>
+                                                    ) : null}
                                                 </div>
                                             );
                                         })}
@@ -578,7 +552,7 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
 
                                 <button
                                     type="button"
-                                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3.5 text-sm font-semibold text-slate-800 transition hover:border-slate-900 hover:bg-slate-50"
+                                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
                                     onClick={() => {
                                         setEditingAddress(null);
                                         setMode('form');
@@ -602,89 +576,78 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                         </div>
                     ) : (
                         /* Address Form */
-                        <form onSubmit={e => toast.promise(handleSubmit(e), { loading: 'Adding Address...' })} className="p-6 md:p-7">
-                    <div className="grid gap-5">
-                    <div className="grid gap-5 rounded-[24px] border border-[#f1e4d3] bg-white/88 p-5 shadow-[0_12px_32px_rgba(15,23,42,0.05)] md:p-6">
-                        <div className="flex items-center justify-between gap-3">
-                            <div>
-                                <h3 className="text-base font-bold text-slate-900">Contact information</h3>
-                                <p className="mt-1 text-sm text-slate-500">Who should receive delivery and order updates?</p>
-                            </div>
-                            <span className="rounded-full bg-[#fff5db] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#b45309]">
-                                Step 1
-                            </span>
-                        </div>
+                        <form onSubmit={e => toast.promise(handleSubmit(e), { loading: 'Adding Address...' })} className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-6">
+                    <div className="grid gap-3">
+                    <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
+                        <h3 className="text-sm font-bold text-slate-900">Contact</h3>
 
                     <div>
-                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">Full Name</label>
+                        <label className="mb-1 block text-xs font-semibold text-slate-600">Full name</label>
                         <input 
                             name="name" 
                             onChange={handleAddressChange} 
                             value={address.name} 
-                            className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#f59e0b] focus:bg-white focus:ring-4 focus:ring-[#fde7c2]" 
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#f59e0b] focus:bg-white focus:ring-2 focus:ring-[#fde7c2]" 
                             type="text" 
-                            placeholder="Enter your name" 
+                            placeholder="Name" 
                             required 
                         />
                     </div>
 
                     <div>
-                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">Email Address</label>
+                        <label className="mb-1 block text-xs font-semibold text-slate-600">Email</label>
                         <input 
                             name="email" 
                             onChange={handleAddressChange} 
                             value={address.email} 
-                            className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#f59e0b] focus:bg-white focus:ring-4 focus:ring-[#fde7c2]" 
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#f59e0b] focus:bg-white focus:ring-2 focus:ring-[#fde7c2]" 
                             type="email" 
-                            placeholder="Email address" 
+                            placeholder="Email" 
                             required={allowGuest} 
                         />
                     </div>
 
                     <PhoneNumberField
                         id="address-phone"
-                        label="Phone Number"
+                        label="Phone"
+                        labelClassName="mb-1 block text-xs font-semibold text-slate-600"
                         phone={address.phone}
                         phoneCode={address.phoneCode}
                         onPhoneChange={(value) => setAddress((prev) => ({ ...prev, phone: value }))}
                         onPhoneCodeChange={handleAddressChange}
                         countryOptions={UAE_PHONE_CODE_OPTIONS}
                         inputKey={address.id || 'new'}
+                        showHint={false}
+                        selectClassName="min-w-[72px] rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2.5 text-sm font-medium text-slate-700 outline-none"
+                        inputClassName="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#f59e0b] focus:bg-white focus:ring-2 focus:ring-[#fde7c2]"
                     />
                     </div>
 
-                    <div className="grid gap-5 rounded-[24px] border border-[#f1e4d3] bg-white/88 p-5 shadow-[0_12px_32px_rgba(15,23,42,0.05)] md:p-6">
-                        <div className="flex items-center justify-between gap-3">
-                            <div>
-                                <h3 className="text-base font-bold text-slate-900">Address details</h3>
-                                <p className="mt-1 text-sm text-slate-500">Make sure this matches the exact drop-off location.</p>
-                            </div>
-                            <span className="rounded-full bg-[#fff5db] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#b45309]">
-                                Step 2
-                            </span>
-                        </div>
+                    <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
+                        <h3 className="text-sm font-bold text-slate-900">Address</h3>
 
                     <div>
-                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">Street name, building number, apartment number</label>
+                        <label className="mb-1 block text-xs font-semibold text-slate-600">Building and street</label>
                         <input 
                             name="street" 
                             onChange={handleAddressChange} 
                             value={address.street} 
-                            className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#f59e0b] focus:bg-white focus:ring-4 focus:ring-[#fde7c2]" 
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#f59e0b] focus:bg-white focus:ring-2 focus:ring-[#fde7c2]" 
                             type="text" 
-                            placeholder="Street name, building number, apartment number" 
+                            placeholder="Building, street, apartment" 
                             required 
                         />
                     </div>
 
                     <div>
-                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">{isUaeCountry(address.country) ? 'Emirate' : 'State'}</label>
+                        <label className="mb-1 block text-xs font-semibold text-slate-600">{isUaeCountry(address.country) ? 'Emirate' : 'State'}</label>
                         {(address.country === 'India' || isUaeCountry(address.country)) ? (
                             <SearchableSelect
                                 value={address.state}
                                 onChange={(value) => setAddress({ ...address, state: value, district: '' })}
                                 options={isUaeCountry(address.country) ? UAE_EMIRATES : indianStates}
-                                placeholder={isUaeCountry(address.country) ? 'Select Emirate' : 'Select State'}
+                                placeholder={isUaeCountry(address.country) ? 'Select emirate' : 'Select state'}
+                                triggerClassName="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left text-sm text-slate-900 outline-none"
                                 searchPlaceholder={isUaeCountry(address.country) ? 'Search emirate...' : 'Search state...'}
                                 emptyMessage="No matches found"
                                 required
@@ -694,9 +657,9 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                                 name="state"
                                 onChange={handleAddressChange}
                                 value={address.state}
-                                className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#f59e0b] focus:bg-white focus:ring-4 focus:ring-[#fde7c2]"
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#f59e0b] focus:bg-white focus:ring-2 focus:ring-[#fde7c2]"
                                 type="text"
-                                placeholder="State/Region"
+                                placeholder="State or region"
                                 required
                             />
                         )}
@@ -704,7 +667,7 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
 
                     {isUaeCountry(address.country) && address.state ? (
                         <div>
-                            <label className="mb-1.5 block text-sm font-semibold text-slate-700">Select area</label>
+                            <label className="mb-1 block text-xs font-semibold text-slate-600">Area</label>
                             <SearchableSelect
                                 value={address.district}
                                 onChange={(value) => {
@@ -713,9 +676,9 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                                 }}
                                 options={getUaeAreaOptionsForEmirate(address.state, address.district)}
                                 placeholder="Select area"
+                                triggerClassName="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left text-sm text-slate-900 outline-none"
                                 searchPlaceholder="Search area..."
                                 emptyMessage="No areas found"
-                                listHint={`Showing ${getUaeAreaOptionsForEmirate(address.state, address.district).length} areas in ${address.state} — scroll or type to search`}
                                 allowCustomValue
                                 formatCustomOption={(area) => `Use "${area}"`}
                                 hasError={Boolean(areaError)}
@@ -727,12 +690,12 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                         </div>
                     ) : !isUaeCountry(address.country) ? (
                         <div>
-                            <label className="mb-1.5 block text-sm font-semibold text-slate-700">Area/District</label>
+                            <label className="mb-1 block text-xs font-semibold text-slate-600">Area</label>
                             <input 
                                 name="district" 
                                 onChange={handleAddressChange} 
                                 value={address.district} 
-                                className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#f59e0b] focus:bg-white focus:ring-4 focus:ring-[#fde7c2]" 
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#f59e0b] focus:bg-white focus:ring-2 focus:ring-[#fde7c2]" 
                                 type="text" 
                                 placeholder="Area or district" 
                                 required 
@@ -741,7 +704,7 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                     ) : null}
 
                     <div>
-                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">Country</label>
+                        <label className="mb-1 block text-xs font-semibold text-slate-600">Country</label>
                         <SearchableSelect
                             value={address.country}
                             onChange={(value) => {
@@ -757,7 +720,8 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                                 setPincodeError('');
                             }}
                             options={countries.map((country) => country.name)}
-                            placeholder="Select Country"
+                            placeholder="Select country"
+                            triggerClassName="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left text-sm text-slate-900 outline-none"
                             searchPlaceholder="Search country..."
                             emptyMessage="No countries found"
                             required
@@ -768,7 +732,7 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                     <div className="mt-2 flex gap-3">
                         <button 
                             type="submit"
-                            className="flex-1 rounded-2xl bg-[#E52721] py-3.5 font-semibold text-white shadow-[0_12px_28px_rgba(229,39,33,0.28)] transition hover:bg-[#C41F1A]"
+                            className="flex-1 rounded-xl bg-[#E52721] py-3 text-sm font-semibold text-white transition hover:bg-[#C41F1A]"
                         >
                             {isEdit || editingAddress ? 'Save changes' : 'Save address'}
                         </button>
@@ -782,7 +746,7 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                                     setShowAddressModal(false);
                                 }
                             }}
-                            className="flex-1 rounded-2xl border border-slate-200 bg-white py-3.5 font-semibold text-slate-700 transition hover:bg-slate-50"
+                            className="flex-1 rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                         >
                             {mode === 'form' && addressList.length > 0 && !isEdit ? 'Back' : 'Cancel'}
                         </button>

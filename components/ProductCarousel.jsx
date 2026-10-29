@@ -35,6 +35,7 @@ export default function ProductCarousel({
   autoSlide = false,
   autoSlideIntervalMs = DEFAULT_CATEGORY_SLIDER_AUTO_SLIDE_INTERVAL_MS,
   cardWidthVariant = 'default',
+  leading = null,
 }) {
   const { isArabic } = useStorefrontI18n()
   const [canScrollLeft, setCanScrollLeft] = useState(false)
@@ -303,7 +304,7 @@ export default function ProductCarousel({
     }
   }, [applyTransformOffset, autoSlideIntervalMs, products.length, cardsPerRow, useTransformAutoSlide])
 
-  if (!products.length) return null
+  if (!products.length && !leading) return null
 
   const resolvedTransformTrackClassName = [
     'flex w-full min-w-0 will-change-transform [backface-visibility:hidden]',
@@ -379,6 +380,7 @@ export default function ProductCarousel({
           className={resolvedTransformTrackClassName}
           style={resolvedTrackStyle}
         >
+            {leading ? <div className={cardClassName}>{leading}</div> : null}
             {productNodes}
           </div>
         </div>
@@ -392,6 +394,7 @@ export default function ProductCarousel({
           className={baseTrackClassName}
           style={resolvedTrackStyle}
         >
+          {leading ? <div className={cardClassName}>{leading}</div> : null}
           {productNodes}
         </div>
       )}

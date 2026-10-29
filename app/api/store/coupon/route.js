@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import Coupon from '@/models/Coupon';
 import authSeller from '@/middlewares/authSeller';
 import { getAuth } from '@/lib/firebase-admin';
+import { couponCodeEqualsQuery, normalizeCouponCode } from '@/lib/couponAccess';
 
 function parseCouponNumber(value, emptyValue) {
     if (value === '' || value === null || value === undefined) return emptyValue;
@@ -78,13 +79,18 @@ export async function POST(req) {
             }, { status: 400 });
         }
 
-        const existingCoupon = await Coupon.findOne({ code: code.toUpperCase() }).lean();
+        const normalizedCode = normalizeCouponCode(code);
+        if (!normalizedCode) {
+            return NextResponse.json({ error: "Coupon code is required" }, { status: 400 });
+        }
+
+        const existingCoupon = await Coupon.findOne({ code: couponCodeEqualsQuery(normalizedCode) }).lean();
         if (existingCoupon) {
             return NextResponse.json({ error: "Coupon code already exists" }, { status: 400 });
         }
 
         const coupon = await Coupon.create({
-            code: code.toUpperCase(),
+            code: normalizedCode,
             title: `${discount}${discountType === 'percentage' ? '% Off' : ' Off'}`,
             description,
             discount: parseCouponNumber(discount, 0),

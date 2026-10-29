@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { usePathname } from "next/navigation"
 
-import { ChevronDown, HomeIcon, LayoutListIcon, SquarePenIcon, SquarePlusIcon, StarIcon, FolderIcon, TicketIcon, TruckIcon, RefreshCw, Users as UsersIcon, MessageSquare, Sparkles, BellIcon, MailIcon, Image as ImageIcon, ShoppingCart, Wallet, BarChart3, Target, Gift, Palette, CircleDashed, PackagePlus, Package, Activity, Layers, LineChart, Warehouse, MousePointerClick, ShieldAlert, Zap, Trash2, Smartphone, FileText, CalendarClock, MessageCircle, AlertTriangle, Download, Tag as TagIcon, Tags, ArrowUp, Search, Factory, CircleDollarSign, Pin, PanelLeftClose, PanelLeftOpen, Percent, PanelTop, PanelBottom, Loader, Clapperboard, LayoutGrid } from "lucide-react"
+import { ChevronDown, HomeIcon, LayoutListIcon, SquarePenIcon, SquarePlusIcon, StarIcon, FolderIcon, TicketIcon, TruckIcon, RefreshCw, Users as UsersIcon, MessageSquare, Sparkles, BellIcon, MailIcon, Image as ImageIcon, ShoppingCart, Wallet, BarChart3, Target, Gift, Palette, CircleDashed, PackagePlus, Package, Activity, Layers, LineChart, Warehouse, MousePointerClick, ShieldAlert, Zap, Trash2, Smartphone, FileText, CalendarClock, MessageCircle, AlertTriangle, Download, Tag as TagIcon, Tags, ArrowUp, Search, Factory, CircleDollarSign, Pin, PanelLeftClose, PanelLeftOpen, Percent, PanelTop, PanelBottom, Loader, Clapperboard, LayoutGrid, Megaphone } from "lucide-react"
 
 import StoreNavLink from "@/components/store/StoreNavLink"
 
@@ -83,6 +83,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
 
         { name: 'Mobile bottom button', href: '/store/customize/bottom-button', icon: Percent },
         { name: 'WhatsApp Widget', href: '/store/customize/whatsapp-widget', icon: MessageCircle },
+        { name: 'Tawk live chat', href: '/store/customize/tawk', icon: MessageSquare },
+        { name: 'Related product ad', href: '/store/customize/related-ad', icon: Megaphone },
         { name: 'Scroll to Top', href: '/store/customize/scroll-to-top', icon: ArrowUp },
         { name: 'Homepage popup', href: '/store/customize/home-popup', icon: Gift },
 
@@ -224,6 +226,10 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
                 '/store/customize/bottom-button',
 
                 '/store/customize/whatsapp-widget',
+
+                '/store/customize/tawk',
+
+                '/store/customize/related-ad',
 
                 '/store/customize/scroll-to-top',
 

@@ -34,6 +34,7 @@ import ProductWhatsAppWidget from "./ProductWhatsAppWidget";
 import TimeDeliveryBadge from "./TimeDeliveryBadge";
 import ProductCard from "./ProductCard";
 import ProductCarousel from "./ProductCarousel";
+import RelatedProductAdCard from "./RelatedProductAdCard";
 import ProductDescription from "./ProductDescription";
 import ProductReviewsSection from "./ProductReviewsSection";
 import StorefrontActionToast from "./StorefrontActionToast";
@@ -46,6 +47,7 @@ import { productToGa4Item } from "@/lib/ga4Item";
 import { getStorefrontLocale, formatLocalizedNumber } from '@/lib/storefrontMarket';
 import { useStorefrontMarket } from '@/lib/useStorefrontMarket';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
+import { isRelatedProductAdActive, normalizeRelatedProductAd } from '@/lib/relatedProductAd';
 import { trackCustomerEvent } from '@/lib/trackingClient';
 import { pushGtmEcommerceEvent } from '@/lib/pushGtmEcommerceEvent';
 import { GTM_EVENTS } from '@/lib/gtmEvents';
@@ -86,6 +88,15 @@ import {
   normalizeSellerVariantOptions,
 } from '@/lib/productVariantOptions';
 import { getAvailableBundlePacks } from '@/lib/bundleSharedStock';
+
+const MANSORY_NOON_SLUG = 'mansory-special-edition-scooter-sm10';
+const MANSORY_NOON_CODE = 'SAVE500';
+const MANSORY_NOON_HREF = 'https://www.noon.com/uae-en/mansory-electric-scooter-sm10-special-edition/Z8DD81D65F9B4C82D2DA8Z/p/?o=a2c207db1205b88e';
+const MANSORY_JOMLA_HREF = 'https://jomla.ae/en/product/mansory-x10-3-wheel-electric-scooter-speed-up-to-20km-hr-typical-range-to-35km-infoinity-black/';
+
+function isMansoryNoonProduct(product) {
+  return String(product?.slug || '').trim().toLowerCase() === MANSORY_NOON_SLUG;
+}
 
 const PLACEHOLDER_IMAGE = 'https://store1920-images.s3.ap-south-1.amazonaws.com/uploads/placeholder.png';
 const GALLERY_CROSSFADE = { duration: 0.55, ease: [0.22, 1, 0.36, 1] };
@@ -501,6 +512,8 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
     }
   });
   const [whatsappProductWidget, setWhatsappProductWidget] = useState(null);
+  const [relatedProductAd, setRelatedProductAd] = useState(null);
+  const [relatedAdProduct, setRelatedAdProduct] = useState(null);
   const [timeNow, setTimeNow] = useState(() => new Date());
   const [cartUiReady, setCartUiReady] = useState(false);
   const [shippingPreview, setShippingPreview] = useState({
@@ -524,6 +537,54 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
   const [isOrderingNow, setIsOrderingNow] = useState(false);
   const [showRatingBreakdown, setShowRatingBreakdown] = useState(false);
   const [deliveryInfoOpen, setDeliveryInfoOpen] = useState(false);
+  const [noonOfferOpen, setNoonOfferOpen] = useState(true);
+  const [noonCodeCopied, setNoonCodeCopied] = useState(false);
+
+  const mansoryNoonOffer = isMansoryNoonProduct(product);
+  const amazonOrderHref = mansoryNoonOffer
+    && isRelatedProductAdActive(relatedProductAd, product?._id)
+    && relatedProductAd?.marketplaces?.includes('amazon')
+    ? String(relatedProductAd.amazonUrl || '').trim()
+    : '';
+  useEffect(() => {
+    if (!mansoryNoonOffer) return undefined;
+    const timer = window.setTimeout(() => {
+      setNoonOfferOpen((open) => !open);
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [mansoryNoonOffer, noonOfferOpen]);
+  const noonCodeCopyTimerRef = useRef(null);
+
+  const copyNoonCoupon = useCallback(async () => {
+    let copied = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(MANSORY_NOON_CODE);
+        copied = true;
+      }
+    } catch {
+      copied = false;
+    }
+    if (!copied) {
+      try {
+        const input = document.createElement('textarea');
+        input.value = MANSORY_NOON_CODE;
+        input.setAttribute('readonly', '');
+        input.style.position = 'fixed';
+        input.style.left = '-9999px';
+        document.body.appendChild(input);
+        input.select();
+        copied = document.execCommand('copy');
+        document.body.removeChild(input);
+      } catch {
+        copied = false;
+      }
+    }
+    if (!copied) return;
+    setNoonCodeCopied(true);
+    if (noonCodeCopyTimerRef.current) clearTimeout(noonCodeCopyTimerRef.current);
+    noonCodeCopyTimerRef.current = setTimeout(() => setNoonCodeCopied(false), 2000);
+  }, []);
   const ratingBreakdownRef = useRef(null);
 
   const scrollToProductReviews = useCallback(() => {
@@ -586,6 +647,42 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
       if (timerId) window.clearTimeout(timerId);
     };
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    fetch('/api/store/appearance/sections/public', { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (!mounted) return;
+        setRelatedProductAd(normalizeRelatedProductAd(data?.relatedProductAd));
+      })
+      .catch(() => {
+        if (mounted) setRelatedProductAd(normalizeRelatedProductAd(null));
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isRelatedProductAdActive(relatedProductAd, product?._id)) {
+      setRelatedAdProduct(null);
+      return undefined;
+    }
+    const controller = new AbortController();
+    fetch(`/api/products?ids=${relatedProductAd.productId}&limit=1&slim=false`, { signal: controller.signal })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        const list = Array.isArray(data) ? data : data?.products;
+        const match = Array.isArray(list) ? list[0] : null;
+        setRelatedAdProduct(match?.slug ? match : null);
+      })
+      .catch((error) => {
+        if (error?.name === 'AbortError') return;
+        setRelatedAdProduct(null);
+      });
+    return () => controller.abort();
+  }, [product?._id, relatedProductAd]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -3775,7 +3872,8 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
           </div>
 
           {/* RIGHT: Product Info (buy box) — desktop/tablet only; mobile uses fixed bar below */}
-          <div className="relative z-0 min-w-0 self-start rounded-xl border border-slate-200 bg-white p-4 shadow-sm max-lg:hidden lg:sticky lg:top-24 lg:p-5" dir={isArabic ? 'rtl' : 'ltr'}>
+          <div className="min-w-0 w-full self-start overflow-hidden max-lg:hidden">
+          <div className="relative z-0 min-w-0 w-full rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:p-5" dir={isArabic ? 'rtl' : 'ltr'}>
 
             {/* Special Offer - Countdown Timer */}
             {offerData?.countdownTimer && (
@@ -3917,13 +4015,17 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                   <button
                     onClick={handleOrderNow}
                     disabled={!isSelectionInStock}
-                    className={`h-11 w-full rounded-lg px-4 text-sm font-semibold transition-[background-color,box-shadow,transform] duration-200 active:scale-[0.99] ${
-                      !isSelectionInStock
-                        ? 'cursor-not-allowed bg-slate-200 text-slate-500 shadow-none'
-                        : 'bg-[#E52D27] text-white shadow-sm hover:bg-[#CC261F] hover:shadow-[0_6px_16px_rgba(229,45,39,0.28)]'
-                    }`}
+                    className={isMansoryNoonProduct(product)
+                      ? 'flex h-[52px] w-full flex-col items-center justify-center rounded-xl bg-[#E52D27] px-4 text-white shadow-[0_8px_18px_rgba(229,45,39,0.28)] transition hover:bg-[#CC261F] active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none'
+                      : `h-11 w-full rounded-lg px-4 text-sm font-semibold transition-[background-color,box-shadow,transform] duration-200 active:scale-[0.99] ${
+                        !isSelectionInStock
+                          ? 'cursor-not-allowed bg-slate-200 text-slate-500 shadow-none'
+                          : 'bg-[#E52D27] text-white shadow-sm hover:bg-[#CC261F] hover:shadow-[0_6px_16px_rgba(229,45,39,0.28)]'
+                      }`}
                   >
-                    {t('common.buyNow')}
+                    <span className={isMansoryNoonProduct(product) ? 'text-[15px] font-bold leading-none' : ''}>
+                      {t('common.buyNow')}
+                    </span>
                   </button>
                 </div>
                 )
@@ -4064,15 +4166,38 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                 </div>
               )}
 
-              {String(product?.slug || '').trim().toLowerCase() === 'mansory-special-edition-scooter-sm10' ? (
-                <a
-                  href="https://www.noon.com/uae-en/mansory-electric-scooter-sm10-special-edition/Z8DD81D65F9B4C82D2DA8Z/p/?o=a2c207db1205b88e"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 flex h-11 w-full items-center justify-center rounded-lg bg-[#FEEE00] px-4 text-sm font-semibold text-black shadow-sm transition hover:bg-[#FFE14A]"
-                >
-                  {t('product.orderOnNoon')}
-                </a>
+              {isMansoryNoonProduct(product) ? (
+                <div className={`mt-2 grid gap-2 ${amazonOrderHref ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                  <a
+                    href={MANSORY_NOON_HREF}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={t('product.orderOnNoon')}
+                    className="flex h-11 items-center justify-center rounded-xl border border-black/10 bg-[#FEEE00] px-3 text-black shadow-sm transition hover:bg-[#FFE14A] active:scale-[0.99]"
+                  >
+                    <img src="/logo/noon.png" alt="" className="h-8 w-auto max-w-full object-contain" />
+                  </a>
+                  <a
+                    href={MANSORY_JOMLA_HREF}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={t('product.orderOnJomla')}
+                    className="flex h-11 items-center justify-center rounded-xl bg-[#E52D27] px-3 text-white shadow-sm transition hover:bg-[#B31217] active:scale-[0.99]"
+                  >
+                    <img src="/logo/jomla.png" alt="" className="h-7 w-auto max-w-full object-contain" />
+                  </a>
+                  {amazonOrderHref ? (
+                    <a
+                      href={amazonOrderHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={t('product.orderOnAmazon')}
+                      className="flex h-11 items-center justify-center rounded-xl bg-[#232F3E] px-1.5 shadow-sm transition hover:bg-[#1a2533] active:scale-[0.99]"
+                    >
+                      <img src="/logo/amazon.png" alt="" className="h-6 w-auto max-w-full object-contain" />
+                    </a>
+                  ) : null}
+                </div>
               ) : null}
 
               <button
@@ -4091,6 +4216,21 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
 
             </div>
 
+          </div>
+          {relatedAdProduct ? (
+            <div className="mt-3 min-w-0 w-full overflow-hidden">
+              <RelatedProductAdCard
+                product={relatedAdProduct}
+                headline={relatedProductAd?.headline}
+                marketplaces={relatedProductAd?.marketplaces}
+                links={{
+                  noon: relatedProductAd?.noonUrl,
+                  jomla: relatedProductAd?.jomlaUrl,
+                  amazon: relatedProductAd?.amazonUrl,
+                }}
+              />
+            </div>
+          ) : null}
           </div>
         </div>
       </div>
@@ -4131,7 +4271,11 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
               </div>
             </div>
 
-            <ProductCarousel products={relatedProducts} priorityCount={6} showArrows />
+            <ProductCarousel
+              products={relatedProducts}
+              priorityCount={6}
+              showArrows
+            />
           </div>
         </div>
       )}
@@ -4168,6 +4312,52 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
         </p>
       </FastDeliveryInfoPopup>
 
+      {isMansoryNoonProduct(product) && noonOfferOpen ? (
+        <div className="hidden lg:block">
+          <aside
+            className="fixed bottom-28 right-4 z-[90] w-[248px] rounded-xl border border-slate-200 bg-white p-4 shadow-[0_12px_40px_rgba(15,23,42,0.16)]"
+            dir={isArabic ? 'rtl' : 'ltr'}
+          >
+            <button
+              type="button"
+              onClick={() => setNoonOfferOpen(false)}
+              aria-label={t('product.noonOfferClose')}
+              className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
+            >
+              <X size={16} />
+            </button>
+            <p className="pe-6 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {t('product.noonOfferTitle')}
+            </p>
+            <p className="mt-1 text-base font-bold text-slate-900">
+              {t('product.noonOfferDetail')}
+            </p>
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={copyNoonCoupon}
+                className="inline-flex rounded-md bg-[#FEEE00] px-2.5 py-1 text-sm font-bold tracking-wide text-black transition hover:bg-[#FFE14A]"
+                aria-label={t('product.noonOfferCopy')}
+              >
+                {MANSORY_NOON_CODE}
+              </button>
+              <span className="text-[11px] font-medium text-slate-500">
+                {noonCodeCopied ? t('product.noonOfferCopied') : t('product.noonOfferCopy')}
+              </span>
+            </div>
+            <a
+              href={MANSORY_NOON_HREF}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={t('product.orderOnNoon')}
+              className="mt-3 flex h-9 w-full items-center justify-center rounded-lg bg-[#FEEE00] text-sm font-semibold text-black transition hover:bg-[#FFE14A]"
+            >
+              <img src="/logo/noon.png" alt="" className="h-[28px] w-auto" />
+            </a>
+          </aside>
+        </div>
+      ) : null}
+
       {actionToast ? (
         <StorefrontActionToast
           floating
@@ -4202,11 +4392,9 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
         notifyProductId={product._id}
         notifySku={String(selectedVariant?.sku || product.sku || '').trim()}
         notifyEmail={user?.email || ''}
-        noonHref={
-          String(product?.slug || '').trim().toLowerCase() === 'mansory-special-edition-scooter-sm10'
-            ? 'https://www.noon.com/uae-en/mansory-electric-scooter-sm10-special-edition/Z8DD81D65F9B4C82D2DA8Z/p/?o=a2c207db1205b88e'
-            : ''
-        }
+        noonHref={isMansoryNoonProduct(product) ? MANSORY_NOON_HREF : ''}
+        jomlaHref={isMansoryNoonProduct(product) ? MANSORY_JOMLA_HREF : ''}
+        amazonHref={amazonOrderHref}
       />
 
       <style jsx>{`

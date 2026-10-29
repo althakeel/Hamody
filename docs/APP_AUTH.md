@@ -1,6 +1,6 @@
 # Store1920 shopper login and register — app API
 
-Last updated: 19 October 2026  
+Last updated: 28 October 2026  
 Audience: Android and Flutter  
 Website: sign-in sheet on `https://www.store1920.com`  
 API root: `https://www.store1920.com/api`  
@@ -22,7 +22,59 @@ Content-Type for the JSON routes below is `application/json`.
 
 ---
 
-## 1. Ways to sign in
+## 1. Screen
+
+Title: **Hala! Let's get started**.  
+Subtitle: **Create account or sign in to your account**.
+
+Two tabs: **Log in** and **Sign up**. The continue button on both is **CONTINUE**.
+
+There is no separate username. The identity field is the email. Placeholder: **Enter your email**. Placeholder for the password: **Enter your password**. A wrong password shows **Invalid email/username or password.**
+
+```text
+Hala! Let's get started
+Create account or sign in to your account
+
+[ Log in ]  [ Sign up ]
+
+Sign up only:
+  Full name
+  Country code + phone
+
+Enter your email
+Enter your password
+Sign up only: Confirm your password
+CAPTCHA question + answer
+
+Log in only: Forgot password?
+
+[ CONTINUE ]
+
+Or continue with
+[ Google ]  [ Facebook ]
+[ Login with OTP ]
+
+By continuing, I confirm that I have read the Privacy Policy
+```
+
+| Method | Tab | Fields |
+|---|---|---|
+| Email and password | Log in | Email, password, CAPTCHA |
+| Email and password | Sign up | Full name, phone, email, password, confirm password, CAPTCHA |
+| Google | Either tab | No email or password typed in the app |
+| Facebook | Either tab | No email or password typed in the app |
+| Email OTP | **Login with OTP** | Email, then a 6-digit code |
+| WhatsApp OTP | **Login with OTP** | UAE phone, then a 4-digit code |
+| Forgot password | **Forgot password?** on Log in | Email and a 6-digit code, or WhatsApp and a 4-digit code, then a new password |
+| MFA | After a successful sign-in, only when the account has it on | 6-digit email code |
+
+Apple is not a button. Do not add it.
+
+The password is never posted to Store1920. Firebase takes it. The calls below are CAPTCHA, lockout, and the result.
+
+---
+
+## 1b. Ways to sign in
 
 The website sheet has these methods. Build the same set.
 
@@ -148,7 +200,9 @@ Welcome and login emails are notices. A failure does not undo the sign-in.
 
 ### Sign in
 
-Fields: email, password, CAPTCHA.
+Fields: email, password, CAPTCHA. The email is the account name. There is no separate username.
+
+On Log in, the password field rejects fewer than 6 characters before Firebase is called. Sign up still requires the full rule: at least 8 characters, upper, lower, number, and a special character.
 
 1. `GET /api/auth/captcha`
 2. `POST /api/auth/pre-login`

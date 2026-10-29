@@ -30,6 +30,7 @@ This folder is the **full API documentation set** — from public storefront / m
 | **0h6** | [APP_BLOGS_API.md](./APP_BLOGS_API.md) | Android / Flutter | Public blog list and article: `GET /api/public/blogs` |
 | **0h7** | [APP_PUSH_NOTIFICATIONS.md](./APP_PUSH_NOTIFICATIONS.md) | Android / Flutter | App push: register the FCM token, the message payload, and the last 20 notifications |
 | **0h8** | [APP_SUPPORT_TICKETS.md](./APP_SUPPORT_TICKETS.md) | Android / Flutter | Support tickets: list, create, reply, and close. `GET/POST /api/tickets` |
+| **0h9** | [APP_ACCOUNT_PROFILE.md](./APP_ACCOUNT_PROFILE.md) | Android / Flutter | Profile, Account Settings, and guest orders placed from the app |
 | **0i** | [ANDROID_BANNER_2.md](./ANDROID_BANNER_2.md) | Android | Website home Banner 2 slider: design and API |
 | **0i1** | [ANDROID_APP_BANNER_1.md](./ANDROID_APP_BANNER_1.md) | Android / Flutter | App home Banner 1 and the navbar top background each slide paints |
 | **0i2** | [ANDROID_APP_BANNERS_2_3_4.md](./ANDROID_APP_BANNERS_2_3_4.md) | Android / Flutter | App home Banner 2, Banner 3, and Banner 4 from `GET /api/public/mobile-features` |
@@ -39,9 +40,13 @@ This folder is the **full API documentation set** — from public storefront / m
 | **0k** | [ANDROID_SHOP_PAGE.md](./ANDROID_SHOP_PAGE.md) | Android | Shop tab: category rail, banner size, spotlight |
 | **0l** | [ANDROID_CATEGORY_BAR.md](./ANDROID_CATEGORY_BAR.md) | Android | Black category strip: settings API and category API |
 | **0m** | [ANDROID_PRODUCT_PAGE.md](./ANDROID_PRODUCT_PAGE.md) | Android | Product page: every API, including Notify Me, reviews, cart, wishlist |
+| **0m4** | [APP_PRODUCT.md](./APP_PRODUCT.md) | Android / Flutter | Product page: name, prices, app discount, images, badges, time badge, bundle, variant, and add to cart |
+| **0m3** | [APP_PRODUCT_SHARE.md](./APP_PRODUCT_SHARE.md) | Android / Flutter | Product share sheet: WhatsApp, Facebook, Gmail, copy link, and the system share sheet |
 | **0m2** | [APP_PRODUCT_BADGES.md](./APP_PRODUCT_BADGES.md) | Android / Flutter | Product image badges, delivery-time badge, sale price, and app discount |
 | **0n** | [ANDROID_CATEGORY_SLIDER.md](./ANDROID_CATEGORY_SLIDER.md) | Android | Home category slider: app image, ratio, and products |
-| **0o** | [ANDROID_CHECKOUT_PAGE.md](./ANDROID_CHECKOUT_PAGE.md) | Android | Checkout screen: delivery, store pickup, payments, place order |
+| **0o** | [APP_CHECKOUT.md](./APP_CHECKOUT.md) | Android / Flutter | Checkout APIs: delivery, pickup, cash, Visa / Mastercard, Apple Pay, Google Pay, Tabby, Tamara |
+| **0o3** | [APP_DELIVERY_ADDRESS.md](./APP_DELIVERY_ADDRESS.md) | Android / Flutter | Delivery address: name, phone, street, emirate, area, city, and country |
+| **0o2** | [ANDROID_CHECKOUT_PAGE.md](./ANDROID_CHECKOUT_PAGE.md) | Android | Checkout screen layout: spacing, fields, and the sticky pay button |
 | **0p** | [VAULTSPAY_CHECKOUT.md](./VAULTSPAY_CHECKOUT.md) | Android / Flutter | VaultsPay card, Google Pay, and Apple Pay at checkout |
 | **0d** | [FLUTTER_HOME_HERO.md](./FLUTTER_HOME_HERO.md) | Flutter | Home hero banner: slides, arrows, dots, mobile image |
 | **0e** | [FLUTTER_CATEGORY_APIS.md](./FLUTTER_CATEGORY_APIS.md) | Flutter | Category tree, category page, home icons, category sliders |
@@ -76,8 +81,9 @@ This folder is the **full API documentation set** — from public storefront / m
 
 1. **[APP_DEVELOPER_API.md](./APP_DEVELOPER_API.md)** — entire shopper API  
 2. **[FLUTTER_ENTIRE_APP.md](./FLUTTER_ENTIRE_APP.md)** — every shopper screen  
-3. [ANDROID_CHECKOUT_PAGE.md](./ANDROID_CHECKOUT_PAGE.md) and [VAULTSPAY_CHECKOUT.md](./VAULTSPAY_CHECKOUT.md) when building checkout  
+3. [APP_CHECKOUT.md](./APP_CHECKOUT.md) when building checkout. Layout is [ANDROID_CHECKOUT_PAGE.md](./ANDROID_CHECKOUT_PAGE.md). Card return is [VAULTSPAY_CHECKOUT.md](./VAULTSPAY_CHECKOUT.md)  
 4. [APP_AUTH.md](./APP_AUTH.md) when building sign-in  
+5. [APP_ACCOUNT_PROFILE.md](./APP_ACCOUNT_PROFILE.md) when building the account profile screen  
 
 ---
 

@@ -191,7 +191,9 @@ export default function CategoryProductsPanel({
   }, [hasMoreProducts, loadingPage, loadNextPage, pageProducts.length]);
 
   const handleFilterChange = useCallback((filters) => {
-    setActiveFilters(filters);
+    setActiveFilters((current) => (
+      JSON.stringify(current) === JSON.stringify(filters) ? current : filters
+    ));
   }, []);
 
   const filteredAndSortedProducts = useMemo(() => {

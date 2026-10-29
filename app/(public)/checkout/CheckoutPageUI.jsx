@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Check, MapPin, Tag, Truck, Zap, AlertTriangle } from "lucide-react";
+import { Check, Lock, MapPin, Tag, Truck, Zap, AlertTriangle } from "lucide-react";
 import axios from "axios";
 import { countryCodes, UAE_PHONE_CODE, UAE_PHONE_CODE_OPTIONS } from "@/assets/countryCodes";
 import { indiaStatesAndDistricts } from "@/assets/indiaStatesAndDistricts";
@@ -120,6 +120,7 @@ function getGuestCountryCode(countryName) {
 }
 
 const CHECKOUT_ORDER_PREVIEW_LIMIT = 4;
+const CHECKOUT_ORDER_MOBILE_PREVIEW_LIMIT = 1;
 const CHECKOUT_RETURN_PATH_KEY = 'store1920_checkout_return_path';
 
 function isCouponAllowedPayment(payment) {
@@ -916,6 +917,8 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   const showTabbyPayment = isTabbyEnabled && !isTabbyOverLimit;
   const showTamaraPayment = isTamaraEnabled && !isTamaraOverLimit;
   const showCodPayment = !hasPersonalizedOfferItem && isPaymentMethodEnabled(shippingSetting, 'cod');
+  const paymentChoiceClass = 'flex cursor-pointer items-center gap-3 rounded-2xl border border-[#e6e8ee] bg-white px-3.5 py-3.5 transition-colors has-[:checked]:border-[#6f63f6] has-[:checked]:bg-[#f4f1ff] md:rounded-xl md:border-2 md:border-slate-200 md:bg-white md:p-4 md:has-[:checked]:border-slate-900 md:has-[:checked]:bg-slate-50';
+  const paymentRadioClass = 'h-5 w-5 shrink-0 accent-[#6f63f6] md:accent-slate-900';
   const isPaymentMissing = needsPaymentSelection && !form.payment;
   const isInvalidPaymentSelection =
     form.payment !== 'wallet' && (
@@ -2772,10 +2775,10 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   };
 
   const renderCheckoutOrderItem = (item) => (
-    <div key={item._cartKey || item._id} className="flex items-center bg-gray-50 border border-gray-200 rounded-lg p-3 gap-3">
-      <img src={item.image || item.images?.[0] || '/placeholder.png'} alt={item.name} className="w-14 h-14 object-cover rounded-md border shrink-0" />
+    <div key={item._cartKey || item._id} className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-2 md:gap-3 md:p-3">
+      <img src={item.image || item.images?.[0] || '/placeholder.png'} alt={item.name} className="h-11 w-11 shrink-0 rounded-md border object-cover md:h-14 md:w-14" />
       <div className="flex-1 min-w-0">
-        <div className="font-semibold text-gray-900 truncate">{item.name}</div>
+        <div className="truncate text-sm font-semibold text-gray-900 md:text-base">{item.name}</div>
         <div className="text-xs text-gray-500 truncate">
           {getProductSubtitle(item, {
             variantOptions: item.variantOptions || item._variantOptions,
@@ -2862,7 +2865,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   return (
     <>
       <div className="bg-white pb-24 pt-0 md:min-h-[35dvh] md:pb-14 md:py-10">
-      <div className="mx-auto w-full max-w-[1400px] px-4 pt-4 sm:px-6 md:pt-0 md:pb-2" dir={isArabic ? 'rtl' : 'ltr'}>
+      <div className="mx-auto hidden w-full max-w-[1400px] px-4 sm:px-6 md:block md:pb-2" dir={isArabic ? 'rtl' : 'ltr'}>
         <h1 className="text-2xl font-bold tracking-tight text-gray-900 md:text-3xl">{t('checkout.pageTitle')}</h1>
       </div>
       {activeCheckoutAlert ? (
@@ -2878,23 +2881,32 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
             <div className="mb-4 md:mb-6">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-xl font-bold text-gray-900">{t('checkout.yourOrder')}</h2>
-                {checkoutOrderHiddenCount > 0 ? (
+                {cartArray.length > CHECKOUT_ORDER_MOBILE_PREVIEW_LIMIT ? (
                   <button
                     type="button"
                     onClick={() => setShowAllOrderItemsModal(true)}
-                    className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-[#f59e0b] hover:text-[#b45309]"
+                    className={`rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-700 transition hover:border-[#f59e0b] hover:text-[#b45309] ${
+                      cartArray.length > CHECKOUT_ORDER_PREVIEW_LIMIT ? '' : 'md:hidden'
+                    }`}
                   >
-                    {isArabic ? `عرض الكل (${cartArray.length})` : `View All (${cartArray.length})`}
+                    {t('product.viewAllLink')} ({cartArray.length})
                   </button>
                 ) : null}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {checkoutOrderPreviewItems.map(renderCheckoutOrderItem)}
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:gap-4">
+                {checkoutOrderPreviewItems.map((item, index) => (
+                  <div
+                    key={item._cartKey || item._id}
+                    className={index >= CHECKOUT_ORDER_MOBILE_PREVIEW_LIMIT ? 'hidden md:block' : undefined}
+                  >
+                    {renderCheckoutOrderItem(item)}
+                  </div>
+                ))}
                 {checkoutOrderHiddenCount > 0 ? (
                   <button
                     type="button"
                     onClick={() => setShowAllOrderItemsModal(true)}
-                    className="flex min-h-[88px] items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 p-3 text-slate-700 transition hover:border-[#f59e0b] hover:bg-amber-50 hover:text-[#b45309]"
+                    className="hidden min-h-[88px] items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 p-3 text-slate-700 transition hover:border-[#f59e0b] hover:bg-amber-50 hover:text-[#b45309] md:flex"
                   >
                     <span className="text-lg font-bold">+{checkoutOrderHiddenCount}</span>
                   </button>
@@ -2903,22 +2915,20 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
             </div>
             {/* Shipping Method Section */}
             <div className="mb-4 md:mb-6">
-              <div className="mb-4 flex items-center gap-2">
+              <div className="relative mb-4 flex items-center gap-2">
                 <h2 className="text-xl font-bold text-gray-900">{t('checkout.deliveryMethod')}</h2>
-                <span className="group relative inline-flex">
-                  <button
-                    type="button"
-                    className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 text-[11px] font-semibold text-slate-500 transition hover:border-slate-900 hover:text-slate-900"
-                    aria-label={t('checkout.freeDeliveryNote')}
-                  >
-                    ?
-                  </button>
-                  <span
-                    role="tooltip"
-                    className="pointer-events-none absolute start-0 top-full z-20 mt-2 hidden w-72 rounded-xl bg-slate-900 px-3 py-2 text-xs font-normal leading-relaxed text-white shadow-lg group-hover:block group-focus-within:block"
-                  >
-                    {t('checkout.freeDeliveryNote')}
-                  </span>
+                <button
+                  type="button"
+                  className="peer inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 text-[11px] font-semibold text-slate-500 transition hover:border-slate-900 hover:text-slate-900"
+                  aria-label={t('checkout.freeDeliveryNote')}
+                >
+                  ?
+                </button>
+                <span
+                  role="tooltip"
+                  className="pointer-events-none absolute start-0 top-full z-30 mt-2 hidden w-[min(20rem,calc(100vw-2rem))] whitespace-normal break-words rounded-xl bg-slate-900 px-3 py-2 text-start text-xs font-normal leading-relaxed text-white shadow-lg peer-hover:block peer-focus:block"
+                >
+                  {t('checkout.freeDeliveryNote')}
                 </span>
               </div>
               <div className="space-y-3">
@@ -3006,36 +3016,36 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                       key={option.id}
                       type="button"
                       onClick={() => setShippingMethod(option.id)}
-                      className={`w-full rounded-xl border-2 p-4 text-left transition-colors ${
+                      className={`w-full rounded-2xl border px-2.5 py-2 text-left transition-colors md:rounded-xl md:border-2 md:p-4 ${
                         isSelected
-                          ? 'border-slate-900 bg-slate-50'
+                          ? 'border-[#c4b8fd] bg-[#f5f3ff] md:border-slate-900 md:bg-slate-50'
                           : 'border-slate-200 bg-white hover:border-slate-400'
                       }`}
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                      <div className="flex items-center gap-2 md:gap-4">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 md:h-11 md:w-11 md:rounded-xl">
                           {isExpressLike ? (
-                            <Zap className="h-5 w-5" strokeWidth={2} />
+                            <Zap className="h-4 w-4 md:h-5 md:w-5" strokeWidth={2} />
                           ) : (
-                            <Truck className="h-5 w-5" strokeWidth={2} />
+                            <Truck className="h-4 w-4 md:h-5 md:w-5" strokeWidth={2} />
                           )}
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <span className="font-semibold text-slate-900">{option?.name || 'Delivery'}</span>
-                          <p className="mt-0.5 text-sm text-slate-500">
+                          <span className="text-sm font-semibold text-slate-900 md:text-base">{option?.name || 'Delivery'}</span>
+                          <p className="text-[11px] leading-4 text-slate-500 md:mt-0.5 md:text-sm">
                             {t('checkout.deliveredIn', { days: optionDays })}
                           </p>
                         </div>
 
-                        <div className="flex shrink-0 items-center gap-3">
-                          <span className="text-sm font-semibold text-slate-900">
+                        <div className="flex shrink-0 items-center gap-2 md:gap-3">
+                          <span className="text-xs font-semibold text-slate-900 md:text-sm">
                             {optionFee === 0 ? t('cart.free') : formatMoney(optionFee)}
                           </span>
-                          <span className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
-                            isSelected ? 'border-slate-900 bg-slate-900' : 'border-slate-300 bg-white'
+                          <span className={`flex h-4 w-4 items-center justify-center rounded-full border-2 md:h-5 md:w-5 ${
+                            isSelected ? 'border-[#a78bfa] bg-[#a78bfa] md:border-slate-900 md:bg-slate-900' : 'border-slate-300 bg-white'
                           }`}>
-                            {isSelected ? <Check className="h-3 w-3 text-white" strokeWidth={3} /> : null}
+                            {isSelected ? <Check className="h-2.5 w-2.5 text-white md:h-3 md:w-3" strokeWidth={3} /> : null}
                           </span>
                         </div>
                       </div>
@@ -3097,7 +3107,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
               {!isCustomerPickup && !user ? (
                 <p className="mb-4 text-sm text-slate-600">{t('checkout.shippingDetails')}</p>
               ) : !isCustomerPickup ? (
-                <h2 className="text-xl font-bold mb-3 mt-1 text-gray-900">{t('checkout.shippingDetails')}</h2>
+                <h2 className="mb-2 mt-1 text-lg font-bold text-gray-900 md:mb-3 md:text-xl">{t('checkout.shippingDetails')}</h2>
               ) : null}
               {/* ...existing code for address/guest form... */}
               {/* Show address fetch error if present */}
@@ -3140,59 +3150,46 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                       ? 'border-red-300 ring-2 ring-red-100'
                       : 'border-gray-200'
                   }`}>
-                    <div className="px-4 py-3 border-b border-gray-200">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-gray-700">{t('checkout.address')}</span>
-                        <button 
-                          type="button"
-                          className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                          onClick={() => setShowAddressModal(true)}
-                        >
-                          {t('checkout.switchAddress')}
-                        </button>
-                      </div>
-                    </div>
-                    
                     {form.addressId && (() => {
                       const selectedAddress = checkoutAddressList.find(a => a._id === form.addressId);
                       if (!selectedAddress) return null;
+                      const addressParts = [
+                        selectedAddress.street,
+                        selectedAddress.city,
+                        selectedAddress.district,
+                        selectedAddress.state,
+                      ]
+                        .map((part) => String(part || '').trim())
+                        .filter(Boolean)
+                        .filter((part, index, list) => list.findIndex(
+                          (existing) => existing.toLowerCase() === part.toLowerCase(),
+                        ) === index);
                       return (
-                        <div 
-                          className="px-4 py-4 cursor-pointer hover:bg-gray-50 transition-colors"
-                          onClick={() => {
-                            console.log('📍 Address card clicked!');
-                            setShowAddressModal(true);
-                          }}
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-gray-50 md:gap-3 md:px-4 md:py-3.5"
+                          onClick={() => setShowAddressModal(true)}
                         >
-                          <div className="flex items-start gap-3">
-                            {/* Location Pin Icon */}
-                            <div className="flex-shrink-0 mt-0.5">
-                              <svg className="w-6 h-6 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                              </svg>
-                            </div>
-                            
-                            {/* Address Details */}
-                            <div className="flex-1">
-                              <div className="text-sm font-medium text-gray-900 mb-1">
-                                {t('checkout.deliverTo')} <span className="font-bold">{selectedAddress.name?.toUpperCase() || 'HOME'}</span>
-                              </div>
-                              <div className="text-sm text-gray-600 leading-relaxed">
-                                {selectedAddress.street}
-                                {selectedAddress.city && ` - ${selectedAddress.city}`}
-                                {selectedAddress.district && ` - ${selectedAddress.district}`}
-                                {selectedAddress.state && ` - ${selectedAddress.state}`}
-                              </div>
-                            </div>
-                            
-                            {/* Right Arrow */}
-                            <div className="flex-shrink-0">
-                              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                              </svg>
-                            </div>
-                          </div>
-                        </div>
+                          <svg className="h-5 w-5 shrink-0 text-yellow-500" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                          </svg>
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-center justify-between gap-2">
+                              <span className="truncate text-sm font-semibold text-gray-900">
+                                {t('checkout.deliverTo')} {selectedAddress.name?.toUpperCase() || 'HOME'}
+                              </span>
+                              <span className="shrink-0 text-[11px] font-semibold text-blue-600 md:text-xs">
+                                {t('checkout.switchAddress')}
+                              </span>
+                            </span>
+                            <span className="mt-0.5 block text-xs leading-4 text-gray-500 line-clamp-2">
+                              {addressParts.join(' – ')}
+                            </span>
+                          </span>
+                          <svg className="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
                       );
                     })()}
                     
@@ -3502,7 +3499,13 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                   ) : null}
                 </div>
               ) : null}
-              <h2 className="text-xl font-bold mb-3 mt-4 text-gray-900">{t('checkout.paymentMethods')}</h2>
+              <div className="mb-3 mt-4 md:mb-3">
+                <h2 className="text-[22px] font-bold tracking-tight text-gray-950 md:text-xl">{t('checkout.paymentMethods')}</h2>
+                <p className="mt-1.5 flex items-center gap-1.5 text-sm text-slate-500 md:hidden">
+                  <Lock size={14} strokeWidth={2} />
+                  {t('checkout.secureCheckout')}
+                </p>
+              </div>
               {fieldRequiredHint('checkout-payment')}
 
               {storefrontWalletEnabled && user && walletBalance > 0 ? (
@@ -3535,17 +3538,17 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                   <p className="mt-1 text-sm text-emerald-800">{t('checkout.walletCoversOrder')}</p>
                 </div>
               ) : (
-              <div id="checkout-payment" className={`flex flex-col gap-2 mb-4 ${fieldHasError('checkout-payment') ? 'rounded-2xl ring-2 ring-red-100' : ''}`}>
+              <div id="checkout-payment" className={`mb-2 flex flex-col gap-3 md:mb-4 md:gap-2 ${fieldHasError('checkout-payment') ? 'rounded-2xl ring-2 ring-red-100' : ''}`}>
                 {/* Credit Card Option */}
                 {showCardPayment ? (
-                <label className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-4 transition-all hover:border-slate-400 has-[:checked]:border-slate-900 has-[:checked]:bg-slate-50">
+                <label className={paymentChoiceClass}>
                   <input
                     type="radio"
                     name="payment"
                     value="card"
                     checked={form.payment === 'card'}
                     onChange={handleChange}
-                    className="h-5 w-5 accent-slate-900"
+                    className={paymentRadioClass}
                   />
                   <div className="flex-1 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -3554,8 +3557,8 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                         <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd"/>
                       </svg>
                       <div>
-                        <span className="font-semibold text-gray-900">{t('checkout.creditDebitCard')}</span>
-                        <div className="text-xs text-gray-600">{t('checkout.cardSubtitle')}</div>
+                        <span className="text-sm font-semibold text-gray-900 md:text-base">{t('checkout.creditDebitCard')}</span>
+                        <div className="text-[11px] leading-4 text-gray-600 md:text-xs">{t('checkout.cardSubtitle')}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -3570,56 +3573,54 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
 
                 {showVaultsPayPayment ? (
                 <>
-                <label className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-4 transition-all hover:border-slate-400 has-[:checked]:border-slate-900 has-[:checked]:bg-slate-50">
+                <label className={paymentChoiceClass}>
                   <input
                     type="radio"
                     name="payment"
                     value="vaultspay"
                     checked={form.payment === 'vaultspay'}
                     onChange={handleChange}
-                    className="h-5 w-5 accent-slate-900"
+                    className={paymentRadioClass}
                   />
-                  <div className="flex-1 flex items-center justify-between gap-3">
-                    <div>
-                      <span className="font-semibold text-gray-900">{t('checkout.creditDebitCard')}</span>
-                      <div className="text-xs text-gray-600">{t('checkout.visaMastercard')}</div>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Image src={VisaLogo} alt="Visa" width={52} height={32} className="h-7 w-auto object-contain" />
-                      <Image src={MastercardLogo} alt="Mastercard" width={52} height={32} className="h-7 w-auto object-contain" />
-                    </div>
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate text-[15px] font-semibold leading-tight text-gray-950">{t('checkout.creditDebitCard')}</span>
+                    <span className="mt-0.5 block truncate text-[13px] leading-tight text-slate-500">{t('checkout.visaMastercard')}</span>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <Image src={VisaLogo} alt="Visa" width={52} height={32} className="h-6 w-auto object-contain md:h-7" />
+                    <Image src={MastercardLogo} alt="Mastercard" width={52} height={32} className="h-6 w-auto object-contain md:h-7" />
                   </div>
                 </label>
                 {showVaultsPayGooglePay ? (
-                <label className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-4 transition-all hover:border-slate-400 has-[:checked]:border-slate-900 has-[:checked]:bg-slate-50">
+                <label className={paymentChoiceClass}>
                   <input
                     type="radio"
                     name="payment"
                     value="googlepay"
                     checked={form.payment === 'googlepay'}
                     onChange={handleChange}
-                    className="h-5 w-5 accent-slate-900"
+                    className={paymentRadioClass}
                   />
-                  <div className="flex items-center gap-2">
-                    <Image src={GooglePayLogo} alt="" width={56} height={32} className="h-7 w-auto object-contain" />
-                    <span className="font-semibold text-gray-900">{t('checkout.googlePay')}</span>
-                  </div>
+                  <span className="min-w-0 flex-1 truncate text-[15px] font-semibold text-gray-950">{t('checkout.googlePay')}</span>
+                  <Image src={GooglePayLogo} alt="" width={56} height={32} className="h-6 w-auto shrink-0 object-contain md:h-7" />
                 </label>
                 ) : null}
                 {showVaultsPayApplePay ? (
-                <label className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-4 transition-all hover:border-slate-400 has-[:checked]:border-slate-900 has-[:checked]:bg-slate-50">
+                <label className={paymentChoiceClass}>
                   <input
                     type="radio"
                     name="payment"
                     value="applepay"
                     checked={form.payment === 'applepay'}
                     onChange={handleChange}
-                    className="h-5 w-5 accent-slate-900"
+                    className={paymentRadioClass}
                   />
-                  <div className="flex items-center gap-2">
-                    <Image src={ApplePayLogo} alt="" width={56} height={32} className="h-7 w-auto object-contain" />
-                    <span className="font-semibold text-gray-900">{t('checkout.applePay')}</span>
-                  </div>
+                  <Image src={ApplePayLogo} alt="" width={56} height={32} className="hidden h-7 w-auto shrink-0 object-contain md:block" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[15px] font-semibold leading-tight text-gray-950">{t('checkout.applePay')}</span>
+                    <span className="mt-0.5 block truncate text-[13px] leading-tight text-slate-500 md:hidden">{t('checkout.applePayHint')}</span>
+                  </span>
+                  <Image src={ApplePayLogo} alt="" width={56} height={32} className="h-8 w-14 shrink-0 rounded-sm object-cover object-center md:hidden" />
                 </label>
                 ) : null}
                 </>
@@ -3633,10 +3634,10 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                     (maxCODAmount > 0 && remainingAmount > maxCODAmount);
 
                   return (
-                    <label className={`flex items-center gap-3 p-4 border-2 rounded-lg transition-all ${
+                    <label className={`flex items-center gap-3 rounded-2xl border px-3.5 py-3.5 transition-colors md:rounded-xl md:border-2 md:p-4 ${
                       isCODDisabled
-                        ? 'opacity-50 cursor-not-allowed border-gray-300 bg-gray-50'
-                        : 'cursor-pointer border-slate-200 bg-white hover:border-slate-400 has-[:checked]:border-slate-900 has-[:checked]:bg-slate-50'
+                        ? 'cursor-not-allowed border-gray-300 bg-gray-50 opacity-50'
+                        : 'cursor-pointer border-[#e6e8ee] bg-white has-[:checked]:border-[#6f63f6] has-[:checked]:bg-[#f4f1ff] md:border-slate-200 md:has-[:checked]:border-slate-900 md:has-[:checked]:bg-slate-50'
                     }`}>
                       <input
                         type="radio"
@@ -3645,22 +3646,22 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                         checked={form.payment === 'cod' && !isCODDisabled}
                         onChange={handleChange}
                         disabled={isCODDisabled}
-                        className="h-5 w-5 accent-slate-900"
+                        className={paymentRadioClass}
                       />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <svg className="w-5 h-5 text-slate-700" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
-                          </svg>
-                          <div>
-                            <span className="font-semibold text-gray-900">{isCustomerPickup ? t('checkout.cashOnPickup') : t('checkout.cashOnDelivery')}</span>
-                            <div className="text-xs text-gray-600">{isCustomerPickup ? t('checkout.cashOnPickupSubtitle') : t('checkout.codSubtitle')}</div>
-                          </div>
+                      <div className="min-w-0 flex-1">
+                        <div>
+                          <span className="block truncate text-[15px] font-semibold leading-tight text-gray-950">{isCustomerPickup ? t('checkout.cashOnPickup') : t('checkout.cashOnDelivery')}</span>
+                          <span className="mt-0.5 block truncate text-[13px] leading-tight text-slate-500">{isCustomerPickup ? t('checkout.cashOnPickupSubtitle') : t('checkout.codSubtitle')}</span>
                         </div>
                         {isCODDisabled && maxCODAmount > 0 && remainingAmount > maxCODAmount && (
                           <span className="text-xs text-red-600 ml-8">Max limit AED{maxCODAmount}</span>
                         )}
                       </div>
+                      <svg className="h-6 w-6 shrink-0 text-slate-800 md:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+                        <rect x="3" y="6.5" width="18" height="12" rx="2" />
+                        <path d="M3 10.5h18" />
+                        <circle cx="16.5" cy="14.5" r="1" fill="currentColor" stroke="none" />
+                      </svg>
                     </label>
                   );
                 })() : null}
@@ -3669,7 +3670,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                 {showTamaraPayment ? (() => {
                   const tamaraInstalment = totalAfterWallet > 0 ? Number((totalAfterWallet / 4).toFixed(2)) : 0;
                   return (
-                    <label className="flex flex-col gap-0 p-4 border-2 rounded-lg transition-all cursor-pointer border-gray-200 hover:border-[#f075a3] has-[:checked]:border-[#f075a3] has-[:checked]:bg-[#fff5f9]">
+                    <label className="flex cursor-pointer flex-col justify-center gap-0 rounded-2xl border border-[#e6e8ee] bg-white px-3.5 py-3.5 transition-colors has-[:checked]:border-[#6f63f6] has-[:checked]:bg-[#f4f1ff] md:rounded-xl md:border-2 md:border-slate-200 md:p-4 md:has-[:checked]:border-[#f075a3] md:has-[:checked]:bg-[#fff5f9]">
                       <div className="flex items-center gap-3">
                         <input
                           type="radio"
@@ -3677,21 +3678,29 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                           value="tamara"
                           checked={form.payment === 'tamara'}
                           onChange={handleChange}
-                          className="w-5 h-5 flex-shrink-0"
-                          style={{ accentColor: '#f075a3' }}
+                          className={`${paymentRadioClass} md:accent-[#f075a3]`}
                         />
-                        <BnplLogo provider="tamara" size="checkout" />
-                        <span className="text-sm font-semibold text-gray-900">Split in up to 4 payments</span>
-                        <span className="ml-0.5 w-4 h-4 rounded-full border border-gray-400 text-gray-400 text-[10px] flex items-center justify-center flex-shrink-0" title="Pay in 4 equal interest-free instalments">?</span>
+                        <BnplLogo provider="tamara" size="checkout" className="!hidden md:!block md:!h-6" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[15px] font-semibold leading-tight text-gray-950">Tamara</span>
+                          <span className="mt-0.5 block truncate text-[13px] leading-tight text-slate-500 md:hidden">{t('checkout.splitInto4')}</span>
+                          <span className="mt-0.5 hidden truncate text-xs leading-tight text-slate-500 md:block">{t('checkout.splitPayments')}</span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-1.5 md:hidden">
+                          <BnplLogo provider="tamara" size="checkout" className="!h-6" />
+                          <span className="flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 text-[10px] font-semibold text-slate-400">i</span>
+                        </span>
                       </div>
-                      <div className="ml-8 mt-1">
+                      {form.payment === 'tamara' ? (
+                      <>
+                      <div className="ml-6 mt-1 md:ml-8">
                         <p className="text-sm text-[#F75B94]">
-                          Pay <span className="font-bold text-base">{formatMoneyFixed(tamaraInstalment)}</span> today
+                          Pay <span className="text-base font-bold">{formatMoneyFixed(tamaraInstalment)}</span> today
                         </p>
                         <p className="text-xs text-gray-500">and the rest in 3 interest-free payments</p>
                       </div>
                       {totalAfterWallet > 0 && (
-                        <div className="ml-8 grid grid-cols-4 gap-2 mt-3">
+                        <div className="ml-6 mt-2 grid grid-cols-4 gap-1.5 md:ml-8 md:mt-3 md:gap-2">
                           {['Today', 'In 1 month', 'In 2 months', 'In 3 months'].map((label) => (
                             <div key={label} className="flex flex-col items-center bg-white border border-gray-200 rounded-md pt-2 pb-1 px-1 text-center">
                               <span className="text-xs font-bold text-gray-900">{formatMoneyFixed(tamaraInstalment)}</span>
@@ -3701,6 +3710,8 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                           ))}
                         </div>
                       )}
+                      </>
+                      ) : null}
                     </label>
                   );
                 })() : null}
@@ -3709,7 +3720,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                 {showTabbyPayment ? (() => {
                   const tabbyInstalment = totalAfterWallet > 0 ? Number((totalAfterWallet / 4).toFixed(2)) : 0;
                   return (
-                    <label className="flex flex-col gap-0 p-4 border-2 rounded-lg transition-all cursor-pointer border-gray-200 hover:border-[#3DBEA3] has-[:checked]:border-[#3DBEA3] has-[:checked]:bg-[#f0faf8]">
+                    <label className="flex cursor-pointer flex-col justify-center gap-0 rounded-2xl border border-[#e6e8ee] bg-white px-3.5 py-3.5 transition-colors has-[:checked]:border-[#6f63f6] has-[:checked]:bg-[#f4f1ff] md:rounded-xl md:border-2 md:border-slate-200 md:p-4 md:has-[:checked]:border-[#3DBEA3] md:has-[:checked]:bg-[#f0faf8]">
                       <div className="flex items-center gap-3">
                         <input
                           type="radio"
@@ -3717,21 +3728,29 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                           value="tabby"
                           checked={form.payment === 'tabby'}
                           onChange={handleChange}
-                          className="w-5 h-5 flex-shrink-0"
-                          style={{ accentColor: '#3DBEA3' }}
+                          className={`${paymentRadioClass} md:accent-[#3DBEA3]`}
                         />
-                        <BnplLogo provider="tabby" size="checkout" />
-                        <span className="text-sm font-semibold text-gray-900">Split in up to 4 payments</span>
-                        <span className="ml-0.5 w-4 h-4 rounded-full border border-gray-400 text-gray-400 text-[10px] flex items-center justify-center flex-shrink-0" title="Pay in 4 equal interest-free instalments">?</span>
+                        <BnplLogo provider="tabby" size="checkout" className="!hidden md:!block md:!h-6" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[15px] font-semibold leading-tight text-gray-950">Tabby</span>
+                          <span className="mt-0.5 block truncate text-[13px] leading-tight text-slate-500 md:hidden">{t('checkout.splitInto4')}</span>
+                          <span className="mt-0.5 hidden truncate text-xs leading-tight text-slate-500 md:block">{t('checkout.splitPayments')}</span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-1.5 md:hidden">
+                          <BnplLogo provider="tabby" size="checkout" className="!h-6" />
+                          <span className="flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 text-[10px] font-semibold text-slate-400">i</span>
+                        </span>
                       </div>
-                      <div className="ml-8 mt-1">
+                      {form.payment === 'tabby' ? (
+                      <>
+                      <div className="ml-6 mt-1 md:ml-8">
                         <p className="text-sm text-[#2E9E88]">
-                          Pay <span className="font-bold text-base">{formatMoneyFixed(tabbyInstalment)}</span> today
+                          Pay <span className="text-base font-bold">{formatMoneyFixed(tabbyInstalment)}</span> today
                         </p>
                         <p className="text-xs text-gray-500">and the rest in 3 interest-free payments</p>
                       </div>
                       {totalAfterWallet > 0 && (
-                        <div className="ml-8 grid grid-cols-4 gap-2 mt-3">
+                        <div className="ml-6 mt-2 grid grid-cols-4 gap-1.5 md:ml-8 md:mt-3 md:gap-2">
                           {['Today', 'In 1 month', 'In 2 months', 'In 3 months'].map((label) => (
                             <div key={label} className="flex flex-col items-center bg-white border border-gray-200 rounded-md pt-2 pb-1 px-1 text-center">
                               <span className="text-xs font-bold text-gray-900">{formatMoneyFixed(tabbyInstalment)}</span>
@@ -3741,12 +3760,18 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                           ))}
                         </div>
                       )}
+                      </>
+                      ) : null}
                       {form.payment === 'tabby' && (
                         <div className="ml-8 mt-3 border border-gray-200 rounded-lg p-2 bg-white" id="tabbyCard"></div>
                       )}
                     </label>
                   );
                 })() : null}
+                <p className="flex items-center gap-1.5 px-0.5 pt-1 text-xs text-slate-500 md:hidden">
+                  <Lock size={13} strokeWidth={2} />
+                  {t('checkout.paymentEncrypted')}
+                </p>
               </div>
               )}
 

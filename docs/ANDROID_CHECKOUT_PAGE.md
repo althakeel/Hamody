@@ -6,7 +6,7 @@ Website: `https://www.store1920.com/checkout`
 API root: `https://www.store1920.com/api`  
 Web source: `app/(public)/checkout/CheckoutPageUI.jsx`
 
-This file is the whole checkout screen: what to draw, which calls to make, how delivery and store pickup differ, and the body that places the order.
+The app developer API is [APP_CHECKOUT.md](./APP_CHECKOUT.md). This file is the checkout screen: what to draw, how delivery and store pickup differ, and the field sizes.
 
 The top bar is [ANDROID_MOBILE_NAVBAR.md](./ANDROID_MOBILE_NAVBAR.md). The bottom tab bar is [FLUTTER_MOBILE_BOTTOM_BUTTON.md](./FLUTTER_MOBILE_BOTTOM_BUTTON.md). Hide the tab bar on this screen so the sticky pay button is the only bar at the bottom. Cart lines and prices match the cart the customer already built. Order fields after place are [ORDER_DETAILS.md](./ORDER_DETAILS.md). Route index is [MOBILE_APP_API.md](./MOBILE_APP_API.md) sections 5–7.
 

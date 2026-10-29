@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import {
   TAWK_PROPERTY_ID,
@@ -8,6 +8,7 @@ import {
   getTawkEmbedSrc,
   isTawkEnabled,
 } from '@/lib/tawkConfig';
+import { normalizeTawkChat } from '@/lib/tawkChatSettings';
 import {
   applyTawkVisibility,
   isTawkForcedHidden,
@@ -115,7 +116,22 @@ function hideGreetingDomNodes(root = document.body) {
  */
 export default function TawkToWidget() {
   const pathname = usePathname();
-  const enabled = isTawkEnabled() && shouldShowTawk(pathname);
+  const [storeEnabled, setStoreEnabled] = useState(null);
+  const enabled = isTawkEnabled() && storeEnabled === true && shouldShowTawk(pathname);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/store/appearance/sections/public', { cache: 'no-store', signal: controller.signal })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        setStoreEnabled(data?.tawkChat ? normalizeTawkChat(data.tawkChat).enabled : true);
+      })
+      .catch((error) => {
+        if (error?.name === 'AbortError') return;
+        setStoreEnabled(true);
+      });
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     if (!enabled || typeof window === 'undefined') return undefined;

@@ -375,7 +375,7 @@ export default function StoreCouponsPage() {
 
         try {
             const url = editingCoupon
-                ? `/api/store/coupon/${editingCoupon.code}`
+                ? `/api/store/coupon/${encodeURIComponent(String(editingCoupon.code || '').trim())}`
                 : '/api/store/coupon';
 
             const method = editingCoupon ? 'PUT' : 'POST';
@@ -383,6 +383,7 @@ export default function StoreCouponsPage() {
             
             const payload = {
                 ...formData,
+                code: String(formData.code || '').trim().toUpperCase(),
                 discount: payloadNumber(formData.discount, 0),
                 maxDiscount: formData.discountType === 'percentage'
                     ? payloadNumber(formData.maxDiscount, null)
@@ -430,7 +431,7 @@ export default function StoreCouponsPage() {
 
     // Handle delete
     const handleDelete = (code) => {
-        setDeleteTarget({ code: String(code).toUpperCase() })
+        setDeleteTarget({ code: String(code).trim().toUpperCase() })
     }
 
     const confirmDelete = async () => {
@@ -439,7 +440,7 @@ export default function StoreCouponsPage() {
         setDeleting(true)
         try {
             const token = await getToken()
-            const res = await fetch(`/api/store/coupon/${deleteTarget.code}`, {
+            const res = await fetch(`/api/store/coupon/${encodeURIComponent(deleteTarget.code)}`, {
                 method: 'DELETE',
                 headers: token ? { Authorization: `Bearer ${token}` } : {}
             })
@@ -465,7 +466,7 @@ export default function StoreCouponsPage() {
     const handleToggleActive = async (coupon) => {
         try {
             const token = await getToken();
-            const res = await fetch(`/api/store/coupon/${coupon.code}`, {
+            const res = await fetch(`/api/store/coupon/${encodeURIComponent(String(coupon.code || '').trim())}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -725,7 +726,7 @@ export default function StoreCouponsPage() {
                                 <input
                                     type="text"
                                     value={formData.code}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value.toUpperCase().trim() }))}
                                     required
                                     disabled={!!editingCoupon}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 uppercase"

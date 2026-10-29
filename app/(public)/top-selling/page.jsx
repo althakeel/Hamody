@@ -162,7 +162,9 @@ export default function TopSellingPage() {
   }, [fetchPage, loading, products.length]);
 
   const handleFilterChange = useCallback((filters) => {
-    setActiveFilters(filters);
+    setActiveFilters((current) => (
+      JSON.stringify(current) === JSON.stringify(filters) ? current : filters
+    ));
   }, []);
 
   const handleRetry = useCallback(() => {

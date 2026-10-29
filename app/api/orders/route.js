@@ -527,7 +527,10 @@ export async function POST(request) {
 
             // Base catalog pricing: bundle tier price or matched variant price.
             if (isBundleOrder) {
-                const bundleVariant = findBulkBundleVariant(product, item.variantOptions.bundleQty) || variantMatch;
+                const bundleVariant = findBulkBundleVariant(
+                    product,
+                    item.variantOptions?.bundleQty ?? requestedBundleQty,
+                ) || variantMatch;
                 if (bundleVariant?.price != null) {
                     finalPrice = Number(bundleVariant.price);
                 }

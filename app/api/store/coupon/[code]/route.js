@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import Coupon from '@/models/Coupon';
 import authSeller from '@/middlewares/authSeller';
 import { getAuth } from '@/lib/firebase-admin';
+import { couponCodeEqualsQuery, normalizeCouponCode } from '@/lib/couponAccess';
 
 function parseCouponNumber(value, emptyValue) {
     if (value === '' || value === null || value === undefined) return emptyValue;
@@ -33,10 +34,11 @@ export async function PUT(req, { params }) {
         await connectDB();
 
         const { code } = await params;
-        const normalizedCode = String(code || '').toUpperCase();
+        const normalizedCode = normalizeCouponCode(code);
+        const codeQuery = couponCodeEqualsQuery(normalizedCode);
 
         const existingCoupon = await Coupon.findOne({
-            code: normalizedCode,
+            code: codeQuery || normalizedCode,
             storeId,
         }).lean();
 
@@ -104,7 +106,7 @@ export async function PUT(req, { params }) {
         }
 
         const coupon = await Coupon.findOneAndUpdate(
-            { code: normalizedCode, storeId },
+            { _id: existingCoupon._id, storeId },
             updateData,
             { new: true }
         ).lean();
@@ -131,14 +133,18 @@ export async function DELETE(req, { params }) {
         await connectDB();
 
         const { code } = await params;
-        const normalizedCode = String(code || '').toUpperCase();
+        const normalizedCode = normalizeCouponCode(code);
+        const codeQuery = couponCodeEqualsQuery(normalizedCode);
 
-        const existingCoupon = await Coupon.findOne({ code: normalizedCode }).lean();
-        if (!existingCoupon || existingCoupon.storeId !== storeId) {
+        const existingCoupon = await Coupon.findOne({
+            code: codeQuery || normalizedCode,
+            storeId,
+        }).lean();
+        if (!existingCoupon) {
             return NextResponse.json({ error: "Coupon not found" }, { status: 404 });
         }
 
-        await Coupon.findOneAndDelete({ code: normalizedCode, storeId });
+        await Coupon.deleteOne({ _id: existingCoupon._id, storeId });
 
         return NextResponse.json({ message: "Coupon deleted successfully" }, { status: 200 });
     } catch (error) {

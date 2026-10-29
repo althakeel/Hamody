@@ -264,7 +264,7 @@ function ShopContent() {
             });
 
         return () => controller.abort();
-    }, [filterQueryKey, page, language, search, selectedCategories, sortBy, priceFilter, minPrice, maxPrice, stockFilter, bestSellerOnly, fastDeliveryOnly]);
+    }, [filterQueryKey, page]);
 
     const hasMoreProducts = page < totalPages;
 

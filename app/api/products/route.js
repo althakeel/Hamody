@@ -149,7 +149,10 @@ export async function GET(request){
         .map((id) => id.trim())
         .filter((id) => /^[a-fA-F0-9]{24}$/.test(id))
         .slice(0, 250);
-    const slim = searchParams.get('slim') === 'true' || (!fetchAll && limit <= 50 && !(minRating > 0));
+    const slimFlag = searchParams.get('slim');
+    const slim = slimFlag === 'false'
+        ? false
+        : slimFlag === 'true' || (!fetchAll && limit <= 50 && !(minRating > 0));
     const cacheKey = generateCacheKey('products', {
         limit,
         offset,

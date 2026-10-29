@@ -19,6 +19,8 @@ import {
   Search,
   Truck,
   MessageCircle,
+  MessageSquare,
+  Megaphone,
   Tag,
   Gift,
   Percent,
@@ -108,6 +110,18 @@ const designPages = [
     description: 'Set the WhatsApp number and choose which product pages show a chat button.',
     href: '/store/customize/whatsapp-widget',
     icon: MessageCircle,
+  },
+  {
+    title: 'Tawk live chat',
+    description: 'Turn the purple Tawk chat button on or off for the storefront.',
+    href: '/store/customize/tawk',
+    icon: MessageSquare,
+  },
+  {
+    title: 'Related product ad',
+    description: 'Choose one product to advertise under the desktop buy box.',
+    href: '/store/customize/related-ad',
+    icon: Megaphone,
   },
   {
     title: 'Mobile bottom button',

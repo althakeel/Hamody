@@ -78,7 +78,7 @@ export default function NewProductsPage() {
     return () => {
       cancelled = true
     }
-  }, [filterKey, activeFilters])
+  }, [filterKey])
 
   const totalProducts = products.length
   const safeVisibleCount = Math.min(visibleCount, totalProducts)
@@ -114,7 +114,9 @@ export default function NewProductsPage() {
   }, [loading, hasMore, safeVisibleCount])
 
   const handleFilterChange = useCallback((filters) => {
-    setActiveFilters(filters)
+    setActiveFilters((current) => (
+      JSON.stringify(current) === JSON.stringify(filters) ? current : filters
+    ))
   }, [])
 
   return (

@@ -192,7 +192,9 @@ export default function OffersPageClient({ initialData = null }) {
   }, [loadMore, hasMore, visibleProducts.length]);
 
   const handleFilterChange = useCallback((filters) => {
-    setActiveFilters(filters);
+    setActiveFilters((current) => (
+      JSON.stringify(current) === JSON.stringify(filters) ? current : filters
+    ));
   }, []);
 
   const filterSidebar = (

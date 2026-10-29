@@ -37,6 +37,7 @@ export default function ProductFilterSidebar({
   const [sortOpen, setSortOpen] = useState(false);
   const sortRef = useRef(null);
   const [categorySearch, setCategorySearch] = useState('');
+  const lastEmittedFiltersRef = useRef('');
 
   const [availableFilters, setAvailableFilters] = useState({
     categories: [],
@@ -111,11 +112,13 @@ export default function ProductFilterSidebar({
       setFilters((prev) => {
         const currentMax = Number(prev.priceRange?.max);
         const safeCurrent = Number.isFinite(currentMax) && currentMax >= 10 ? currentMax : nextMax;
+        const nextPriceMax = Math.max(safeCurrent, nextMax);
+        if (nextPriceMax === currentMax) return prev;
         return {
           ...prev,
           priceRange: {
             ...prev.priceRange,
-            max: Math.max(safeCurrent, nextMax),
+            max: nextPriceMax,
           },
         };
       });
@@ -131,14 +134,18 @@ export default function ProductFilterSidebar({
         ? (availableFilters.maxPrice || 100000)
         : Number(maxRaw) || 0;
 
-      onFilterChange({
+      const nextFilters = {
         ...filters,
         priceRange: {
           min: Math.min(min, max),
           max: Math.max(min, max || availableFilters.maxPrice || 100000),
         },
         sortBy,
-      });
+      };
+      const nextKey = JSON.stringify(nextFilters);
+      if (nextKey === lastEmittedFiltersRef.current) return;
+      lastEmittedFiltersRef.current = nextKey;
+      onFilterChange(nextFilters);
     }, 300);
     return () => clearTimeout(timer);
   }, [filters, sortBy, onFilterChange, availableFilters.maxPrice]);

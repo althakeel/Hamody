@@ -139,7 +139,7 @@ import {
 } from '@/lib/storeOrderInsights';
 import { getOrderPickupWaitInfo } from '@/lib/storeOrderPickupWait';
 import { getDisplayOrderNumber, getOrderCustomerDisplayName, formatStoreOrderDateTime, formatStoreOrderDateParts, buildTrackOrderPageUrl } from '@/lib/orderDisplay';
-import { getOrderTrafficSourceDisplay, getOrderTrafficSourceKey, TRAFFIC_SOURCE_FILTER_OPTIONS } from '@/lib/orderAttributionDisplay';
+import { getOrderAppChannelDisplay, getOrderTrafficSourceDisplay, getOrderTrafficSourceKey, TRAFFIC_SOURCE_FILTER_OPTIONS } from '@/lib/orderAttributionDisplay';
 import {
     getManualStoreOrderCreator,
     getOrderPaymentReferenceId,
@@ -5548,8 +5548,17 @@ export default function StoreOrders() {
                                     <td className="px-4 py-3">
                                         {(() => {
                                             const trafficSource = getOrderTrafficSourceDisplay(order);
+                                            const appChannel = getOrderAppChannelDisplay(order);
                                             return (
-                                                <div className="max-w-[180px]">
+                                                <div className="flex max-w-[180px] flex-col items-start gap-1">
+                                                    {appChannel ? (
+                                                        <span
+                                                            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${appChannel.className}`}
+                                                            title={appChannel.title}
+                                                        >
+                                                            {appChannel.label}
+                                                        </span>
+                                                    ) : null}
                                                     <span
                                                         className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${trafficSource.className}`}
                                                         title={trafficSource.title || undefined}
@@ -6899,8 +6908,14 @@ export default function StoreOrders() {
                                         <p className="text-slate-500">Traffic Source</p>
                                         {(() => {
                                             const trafficSource = getOrderTrafficSourceDisplay(selectedOrder);
+                                            const appChannel = getOrderAppChannelDisplay(selectedOrder);
                                             return (
-                                                <div>
+                                                <div className="flex flex-col items-start gap-1">
+                                                    {appChannel ? (
+                                                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${appChannel.className}`}>
+                                                            {appChannel.label}
+                                                        </span>
+                                                    ) : null}
                                                     <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${trafficSource.className}`}>
                                                         {trafficSource.label}
                                                     </span>
