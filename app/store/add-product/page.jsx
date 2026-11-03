@@ -193,7 +193,9 @@ const isBulkTierOnlyProduct = (pv = []) => {
 const productUsesVariantEditor = (product, pv = []) => {
     if (isBulkTierOnlyProduct(pv)) return false;
     if (product?.attributes?.variantType === 'variant_bundles') return true;
-    return (Array.isArray(pv) ? pv : []).some(
+    const variants = Array.isArray(pv) ? pv : [];
+    if (product?.hasVariants && variants.length > 0) return true;
+    return variants.some(
         (v) => String(v?.options?.color || '').trim() || String(v?.options?.size || '').trim(),
     );
 };
