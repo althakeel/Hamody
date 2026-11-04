@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Check, Lock, MapPin, Tag, Truck, Zap, AlertTriangle } from "lucide-react";
+import { Check, Info, Lock, MapPin, Tag, Truck, Zap, AlertTriangle } from "lucide-react";
 import axios from "axios";
 import { countryCodes, UAE_PHONE_CODE, UAE_PHONE_CODE_OPTIONS } from "@/assets/countryCodes";
 import { indiaStatesAndDistricts } from "@/assets/indiaStatesAndDistricts";
@@ -17,7 +17,7 @@ import {
   isCompleteGuestDraft,
 } from "@/lib/guestCheckoutAddress";
 import { clearCart, deleteItemFromCart, setCartEntry } from "@/lib/features/cart/cartSlice";
-import { fetchShippingSettings, calculateShipping, cartHasOnlyFreeShippingProducts } from "@/lib/shipping";
+import { fetchShippingSettings, calculateShipping, cartHasOnlyFreeShippingProducts, getCODFee } from "@/lib/shipping";
 import { getActiveCheckoutAlert } from '@/lib/checkoutAlert';
 import { isStorefrontProductInStock } from '@/lib/productVisibility';
 import {
@@ -808,8 +808,11 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   const effectiveShipping = isFreeShippingCouponApplied ? 0 : shipping;
   const shippingDiscount = isFreeShippingCouponApplied ? shipping : 0;
   const totalAfterCoupon = Math.max(0, subtotal - couponDiscount);
-  
-  const total = totalAfterCoupon + effectiveShipping;
+  const codFee = isCustomerPickup
+    ? 0
+    : getCODFee(shippingSetting, form.payment === 'cod' ? 'COD' : 'CARD');
+
+  const total = totalAfterCoupon + effectiveShipping + codFee;
   const walletRedeemAmount = storefrontWalletEnabled && user && useWalletBalance && walletBalance > 0
     ? Math.min(Math.floor(walletBalance), Math.floor(total))
     : 0;
@@ -1170,15 +1173,24 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     appliedCoupon,
   ]);
 
-  // Load shipping settings - refetch on page load and when products change
+  // Load the payment and shipping settings for the active storefront.
   useEffect(() => {
+    if (!storeId) return undefined;
+    let cancelled = false;
+
     async function loadShipping() {
-      const setting = await fetchShippingSettings();
-      setShippingSetting(setting);
-      console.log('Shipping settings loaded:', setting);
+      const setting = await fetchShippingSettings(storeId);
+      if (!cancelled) {
+        setShippingSetting(setting);
+        console.log('Shipping settings loaded:', setting);
+      }
     }
     loadShipping();
-  }, [products]); // Refetch when products load
+
+    return () => {
+      cancelled = true;
+    };
+  }, [storeId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1258,6 +1270,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
         shippingOption: option,
         paymentMethod: form.payment === 'cod' ? 'COD' : 'CARD',
         shippingState: form.state,
+        includeCODFee: false,
       });
       setShipping(calculatedShipping);
     } else {
@@ -2261,6 +2274,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
           items: itemsFromState,
           paymentMethod: finalPaymentMethod,
           shippingFee: shipping,
+          codFeeIncludedInShipping: false,
           shippingMethod: shippingMethod,
         };
         // Add coupon data if applied
@@ -2301,6 +2315,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
           items: itemsFromState,
           paymentMethod: finalPaymentMethod,
           shippingFee: shipping,
+          codFeeIncludedInShipping: false,
           shippingMethod: shippingMethod,
           isGuest: true,
           guestInfo: {
@@ -3006,6 +3021,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                     shippingOption: option,
                     paymentMethod: form.payment === 'cod' ? 'COD' : 'CARD',
                     shippingState: form.state,
+                    includeCODFee: false,
                   });
                   const optionDays = formatDeliveryDays(option.estimatedDays, '3-5');
                   const isSelected = shippingMethod === option.id;
@@ -3634,7 +3650,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                     (maxCODAmount > 0 && remainingAmount > maxCODAmount);
 
                   return (
-                    <label className={`flex items-center gap-3 rounded-2xl border px-3.5 py-3.5 transition-colors md:rounded-xl md:border-2 md:p-4 ${
+                    <div className={`flex items-center gap-3 rounded-2xl border px-3.5 py-3.5 transition-colors md:rounded-xl md:border-2 md:p-4 ${
                       isCODDisabled
                         ? 'cursor-not-allowed border-gray-300 bg-gray-50 opacity-50'
                         : 'cursor-pointer border-[#e6e8ee] bg-white has-[:checked]:border-[#6f63f6] has-[:checked]:bg-[#f4f1ff] md:border-slate-200 md:has-[:checked]:border-slate-900 md:has-[:checked]:bg-slate-50'
@@ -3642,6 +3658,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                       <input
                         type="radio"
                         name="payment"
+                        id="checkout-payment-cod"
                         value="cod"
                         checked={form.payment === 'cod' && !isCODDisabled}
                         onChange={handleChange}
@@ -3650,19 +3667,46 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                       />
                       <div className="min-w-0 flex-1">
                         <div>
-                          <span className="block truncate text-[15px] font-semibold leading-tight text-gray-950">{isCustomerPickup ? t('checkout.cashOnPickup') : t('checkout.cashOnDelivery')}</span>
+                          <label htmlFor="checkout-payment-cod" className="block truncate text-[15px] font-semibold leading-tight text-gray-950">{isCustomerPickup ? t('checkout.cashOnPickup') : t('checkout.cashOnDelivery')}</label>
                           <span className="mt-0.5 block truncate text-[13px] leading-tight text-slate-500">{isCustomerPickup ? t('checkout.cashOnPickupSubtitle') : t('checkout.codSubtitle')}</span>
                         </div>
                         {isCODDisabled && maxCODAmount > 0 && remainingAmount > maxCODAmount && (
                           <span className="text-xs text-red-600 ml-8">Max limit AED{maxCODAmount}</span>
                         )}
                       </div>
+                      {codFee > 0 && (
+                        <div className="group relative flex shrink-0 items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-amber-950 shadow-sm">
+                          <span className="flex flex-col leading-tight">
+                            <span className="whitespace-nowrap text-[9px] font-bold uppercase tracking-wide text-amber-800">
+                              {t('checkout.codFee')}
+                            </span>
+                            <span className="whitespace-nowrap text-sm font-bold md:text-base">
+                              +{formatMoneyPlain(codFee)}
+                            </span>
+                          </span>
+                          <button
+                            type="button"
+                            aria-label={t('checkout.codFee')}
+                            aria-describedby="checkout-cod-fee-tooltip"
+                            className="rounded-full text-slate-500 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
+                          >
+                            <Info size={15} aria-hidden="true" />
+                          </button>
+                          <span
+                            id="checkout-cod-fee-tooltip"
+                            role="tooltip"
+                            className="absolute end-0 top-full z-30 hidden w-56 whitespace-normal rounded-lg bg-slate-900 px-3 py-2 text-start text-xs font-normal leading-relaxed text-white shadow-lg group-hover:block group-focus-within:block"
+                          >
+                            {t('checkout.codFeeTooltip', { amount: formatMoneyPlain(codFee) })}
+                          </span>
+                        </div>
+                      )}
                       <svg className="h-6 w-6 shrink-0 text-slate-800 md:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
                         <rect x="3" y="6.5" width="18" height="12" rx="2" />
                         <path d="M3 10.5h18" />
                         <circle cx="16.5" cy="14.5" r="1" fill="currentColor" stroke="none" />
                       </svg>
-                    </label>
+                    </div>
                   );
                 })() : null}
 
@@ -3888,6 +3932,13 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                 </div>
               </div>
             </div>
+
+            {codFee > 0 ? (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-700">{t('checkout.codFee')}</span>
+                <span className="font-semibold text-slate-900">{formatMoney(codFee)}</span>
+              </div>
+            ) : null}
 
             {isFreeShippingCouponApplied && shippingDiscount > 0 && (
               <div className="flex items-center justify-between text-sm text-emerald-700">

@@ -210,6 +210,7 @@ export default function SettingsPage() {
 
   const [paymentMethods, setPaymentMethods] = useState({
     enableCOD: true,
+    enableCODFee: true,
     enableCard: true,
     enableTabby: true,
     enableTamara: true,
@@ -351,6 +352,7 @@ export default function SettingsPage() {
       const setting = data?.setting || {};
       setPaymentMethods({
         enableCOD: setting.enableCOD !== false,
+        enableCODFee: setting.enableCODFee !== false,
         enableCard: setting.enableCard !== false,
         enableTabby: setting.enableTabby !== false,
         enableTamara: setting.enableTamara !== false,
@@ -776,6 +778,7 @@ export default function SettingsPage() {
         const setting = data?.setting || {};
         setPaymentMethods({
           enableCOD: setting.enableCOD !== false,
+          enableCODFee: setting.enableCODFee !== false,
           enableCard: setting.enableCard !== false,
           enableTabby: setting.enableTabby !== false,
           enableTamara: setting.enableTamara !== false,
@@ -1341,6 +1344,15 @@ export default function SettingsPage() {
                   checked={paymentMethods.enableCOD}
                   onChange={(e) =>
                     setPaymentMethods((prev) => ({ ...prev, enableCOD: e.target.checked }))
+                  }
+                />
+                <ToggleRow
+                  title="COD surcharge"
+                  description="Charge the configured cash-on-delivery fee at checkout"
+                  checked={paymentMethods.enableCODFee}
+                  disabled={!paymentMethods.enableCOD}
+                  onChange={(e) =>
+                    setPaymentMethods((prev) => ({ ...prev, enableCODFee: e.target.checked }))
                   }
                 />
                 <ToggleRow

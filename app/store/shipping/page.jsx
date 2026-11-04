@@ -57,6 +57,7 @@ function mapSettingToForm(setting) {
         })).filter((entry) => entry.state)
       : [],
     enableCOD: setting.enableCOD !== false,
+    enableCODFee: setting.enableCODFee !== false,
     enableCard: setting.enableCard !== false,
     enableTabby: setting.enableTabby !== false,
     enableTamara: setting.enableTamara !== false,
@@ -150,6 +151,7 @@ export default function StoreShippingSettings() {
     regionalDeliveryFee: '',
     stateCharges: [],
     enableCOD: true,
+    enableCODFee: true,
     enableCard: true,
     enableTabby: true,
     enableTamara: true,
@@ -1173,4 +1175,3 @@ export default function StoreShippingSettings() {
     </div>
   )
 }
-

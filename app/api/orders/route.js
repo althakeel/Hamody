@@ -55,6 +55,7 @@ import {
   isPaymentMethodEnabled,
   isPaymentMethodOverLimit,
 } from '@/lib/paymentMethodLimits';
+import { getCODFee } from '@/lib/shipping';
 import { requestWaslahAutoShipment } from '@/lib/waslahAutoShipment';
 import { isWaslahAutoShipEnabled } from '@/lib/waslahAutoShipPolicy';
 import { createPrepaidUpsellToken } from '@/lib/prepaidUpsellToken';
@@ -637,6 +638,16 @@ export async function POST(request) {
             }
             shippingFee = 0;
         }
+        const primaryStoreId = [...ordersByStore.keys()][0];
+        const shippingSettingForLimits = primaryStoreId
+            ? await ShippingSetting.findOne({ storeId: primaryStoreId }).lean()
+            : null;
+        const codFee = customerPickupRequested
+            ? 0
+            : getCODFee(shippingSettingForLimits, paymentMethod);
+        if (codFee > 0 && body.codFeeIncludedInShipping !== false) {
+            shippingFee = Math.max(0, shippingFee - codFee);
+        }
         let isShippingFeeAdded = false;
 
         // Wallet redemption (logged-in users only)
@@ -656,7 +667,7 @@ export async function POST(request) {
         let projectedCheckoutTotal = 0;
         let projectedShippingAdded = false;
         let projectedWalletApplied = false;
-        for (const [, sellerItems] of ordersByStore.entries()) {
+        for (const [storeId, sellerItems] of ordersByStore.entries()) {
             let storeTotal = sellerItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
             if (normalizedCouponCode && coupon) {
                 const normalizedDiscountValue = Number(coupon.discountValue ?? coupon.discount ?? 0);
@@ -670,6 +681,9 @@ export async function POST(request) {
                 storeTotal += shippingFee;
                 projectedShippingAdded = true;
             }
+            if (storeId === primaryStoreId) {
+                storeTotal += codFee;
+            }
             if (!projectedWalletApplied && redeemableCoins > 0) {
                 const maxCoinsByTotal = Math.floor(storeTotal / 1);
                 const coinsRedeemed = Math.min(redeemableCoins, maxCoinsByTotal);
@@ -680,10 +694,6 @@ export async function POST(request) {
             projectedCheckoutTotal += parseFloat(storeTotal.toFixed(2));
         }
 
-        const primaryStoreId = [...ordersByStore.keys()][0];
-        const shippingSettingForLimits = primaryStoreId
-            ? await ShippingSetting.findOne({ storeId: primaryStoreId }).lean()
-            : null;
         const requestedVaultsWallet = String(vaultsPayMethod || 'card').trim().toLowerCase();
         const paymentLimitMethod = String(paymentMethod || '').toUpperCase() === 'VAULTSPAY'
             ? (requestedVaultsWallet === 'googlepay' || requestedVaultsWallet === 'applepay'
@@ -751,6 +761,8 @@ export async function POST(request) {
                 total += shippingFee;
                 isShippingFeeAdded = true;
             }
+            const orderCodFee = storeId === primaryStoreId ? codFee : 0;
+            total += orderCodFee;
 
             // Apply wallet discount once across the entire checkout
             let coinsRedeemed = 0;
@@ -769,7 +781,8 @@ export async function POST(request) {
             const orderData = {
                 storeId: storeId,
                 total: parseFloat(total.toFixed(2)),
-                shippingFee: shippingFee,
+                shippingFee: shippingFee + orderCodFee,
+                codFee: orderCodFee,
                 paymentMethod,
                 paymentStatus: paymentStatus || 'PENDING',
                 fulfillmentStockReservationRequired: true,

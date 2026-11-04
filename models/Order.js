@@ -37,6 +37,7 @@ const OrderSchema = new mongoose.Schema({
   addressId: String,
   total: { type: Number, default: 0 },
   shippingFee: { type: Number, default: 0 },
+  codFee: { type: Number, default: 0 },
   shippingMethod: { type: String, default: '' },
   customerPickup: { type: Boolean, default: false, index: true },
   status: { type: String, default: "ORDER_PLACED", index: true },

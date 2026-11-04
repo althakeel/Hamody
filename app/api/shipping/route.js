@@ -27,6 +27,7 @@ function getPublicShippingFallback() {
     regionalDeliveryFee: null,
     estimatedDays: "2-5",
     enableCOD: true,
+    enableCODFee: true,
     enableCard: true,
     enableTabby: true,
     enableTamara: true,
@@ -164,6 +165,7 @@ export async function PUT(request) {
     if (body.paymentMethodsOnly) {
       const patch = {
         enableCOD: body.enableCOD !== false,
+        enableCODFee: body.enableCODFee !== false,
         enableCard: body.enableCard !== false,
         enableTabby: body.enableTabby !== false,
         enableTamara: body.enableTamara !== false,
@@ -217,6 +219,7 @@ export async function PUT(request) {
       estimatedDays: legacyFromOptions.estimatedDays || body.estimatedDays || "2-5",
       // Payment methods (storefront checkout)
       enableCOD: body.enableCOD !== false,
+      enableCODFee: body.enableCODFee !== false,
       enableCard: body.enableCard !== false,
       enableTabby: body.enableTabby !== false,
       enableTamara: body.enableTamara !== false,

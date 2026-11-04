@@ -362,10 +362,12 @@ function OrderSuccessContent() {
     return sum + resolveOrderLineLineTotal(item, product);
   }, 0);
   // Use shippingFee from order if available
-  const shipping = typeof order?.shippingFee === 'number' ? order.shippingFee : 0;
+  const shippingTotal = typeof order?.shippingFee === 'number' ? order.shippingFee : 0;
+  const codFee = typeof order?.codFee === 'number' ? order.codFee : 0;
+  const shipping = Math.max(0, shippingTotal - codFee);
   const discount = order?.coupon?.discount ? (order.coupon.discountType === 'percentage' ? (order.coupon.discount / 100 * subtotal) : Math.min(order.coupon.discount, subtotal)) : 0;
   const walletDiscount = Number(order?.walletDiscount || 0);
-  const total = typeof order?.total === 'number' ? order.total : (subtotal + shipping - discount - walletDiscount);
+  const total = typeof order?.total === 'number' ? order.total : (subtotal + shippingTotal - discount - walletDiscount);
   const orderDate = order?.createdAt ? new Date(order.createdAt).toLocaleDateString() : new Date().toLocaleDateString();
   const currency = order?.currency || 'AED';
   const paymentMethod = String(order?.paymentMethod || 'COD').toUpperCase();
@@ -670,6 +672,12 @@ function OrderSuccessContent() {
                         {isPickup && shipping === 0 ? 'Free' : `${currency} ${shipping.toLocaleString()}`}
                       </dd>
                     </div>
+                    {codFee > 0 && (
+                      <div className="flex justify-between">
+                        <dt className="text-slate-500">Cash on delivery fee</dt>
+                        <dd className="font-medium text-slate-900">{currency} {codFee.toLocaleString()}</dd>
+                      </div>
+                    )}
                     {walletDiscount > 0 && (
                       <div className="flex justify-between text-emerald-700">
                         <dt>Wallet</dt>

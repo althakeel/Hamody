@@ -972,10 +972,16 @@ export default function DashboardOrdersPage() {
                               <span className="text-slate-600">Subtotal:</span>
                               <span className="font-medium text-slate-800">AED{((order.total || 0) - (order.shippingFee || 0)).toFixed(2)}</span>
                             </div>
-                            {order.shippingFee > 0 && (
+                            {Number(order.shippingFee || 0) - Number(order.codFee || 0) > 0 && (
                               <div className="flex justify-between text-sm">
                                 <span className="text-slate-600">Shipping:</span>
-                                <span className="font-medium text-slate-800">AED{(order.shippingFee || 0).toFixed(2)}</span>
+                                <span className="font-medium text-slate-800">AED{Math.max(0, Number(order.shippingFee || 0) - Number(order.codFee || 0)).toFixed(2)}</span>
+                              </div>
+                            )}
+                            {Number(order.codFee || 0) > 0 && (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-slate-600">Cash on delivery fee:</span>
+                                <span className="font-medium text-slate-800">AED{Number(order.codFee || 0).toFixed(2)}</span>
                               </div>
                             )}
                             {order.isCouponUsed && (

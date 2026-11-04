@@ -60,7 +60,7 @@ export async function GET(req) {
                 ...ACTIVE_RECORD_FILTER,
                 status: { $ne: 'CANCELLED' },
             })
-                .select('shortOrderNumber createdAt total shippingFee status orderItems paymentMethod paymentStatus isPaid delhivery')
+                .select('shortOrderNumber createdAt total shippingFee codFee status orderItems paymentMethod paymentStatus isPaid delhivery')
                 .sort({ createdAt: -1 })
                 .lean(),
             MarketingExpense.find({ storeId, ...dateFilter }).select('amount').lean(),
@@ -91,7 +91,9 @@ export async function GET(req) {
                 : 0;
             const orderGrossRevenue = Number(order.total || 0);
             const orderRevenue = getOrderNetRevenue(order, refundedAmount);
-            const orderDeliveryCost = countsTowardRevenue ? Number(order.shippingFee || 0) : 0;
+            const orderDeliveryCost = countsTowardRevenue
+                ? Math.max(0, Number(order.shippingFee || 0) - Number(order.codFee || 0))
+                : 0;
             const orderProfit = countsTowardRevenue
                 ? orderRevenue - orderProductCost - orderDeliveryCost
                 : 0;
