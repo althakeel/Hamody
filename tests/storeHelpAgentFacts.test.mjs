@@ -94,7 +94,7 @@ test('last 2 months sales report to download is a period export, not a how-to pa
   }, question);
   assert.equal(
     answer,
-    "In the last 2 months you've had 40 orders, AED 9,800. Use Excel or PDF below to download the details.",
+    "In the last 2 months you've had 40 orders, totaling AED 9,800. Use Excel or PDF below to download the details.",
   );
 });
 
@@ -187,7 +187,8 @@ test('how many pages on this website is not a sales export', () => {
     },
   }, question);
   assert.match(reply.answer, /About Us/);
-  assert.match(reply.answer, /Excel or PDF/);
+  assert.match(reply.answer, /public website/i);
+  assert.match(reply.answer, /seller dashboard/i);
   assert.equal((reply.links || []).some((link) => /orders-by-product|sales-report/i.test(link.href)), false);
 });
 
@@ -208,7 +209,7 @@ test('this month delivered revenue is period sales, not a product named delivere
       statusLabel: 'delivered',
     },
   }, question);
-  assert.equal(answer, "This month you've had 40 orders delivered, AED 12,850.50.");
+  assert.equal(answer, "This month you've had 40 orders delivered, totaling AED 12,850.50.");
 });
 
 test('this month sales is a period total, not a product search', () => {
@@ -235,7 +236,7 @@ test('last 6 months answer sounds like a person', () => {
       currency: 'AED',
     },
   }, 'in last 6 months how many order we got');
-  assert.equal(answer, "In the last 6 months you've had 184 orders, AED 22,150.");
+  assert.equal(answer, "In the last 6 months you've had 184 orders, totaling AED 22,150.");
 });
 
 test('order answers link to that order on the orders page', () => {
@@ -260,7 +261,7 @@ test('period sales answer sounds like a person', () => {
       currency: 'AED',
     },
   }, 'how many sales today');
-  assert.equal(answer, "Today you've had 2 orders, AED 219.80.");
+  assert.equal(answer, "Today you've had 2 orders, totaling AED 219.80.");
 });
 
 test('empty product day is a simple sentence', () => {

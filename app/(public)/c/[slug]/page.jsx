@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 import { Filter, X } from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
 import ProductFilterSidebar from '@/components/ProductFilterSidebar';
+import CampaignPageBannerSlider from '@/components/CampaignPageBannerSlider';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 import { sortOutOfStockLast } from '@/lib/productVisibility';
 import {
@@ -87,9 +88,12 @@ function sortProducts(products, sortBy) {
 export default function CampaignLandingPage() {
   const params = useParams();
   const slug = String(params?.slug || '').trim();
+  const pathname = usePathname();
+  const urlPrefix = pathname?.startsWith('/pages/') ? 'pages' : 'c';
   const { t, language, isArabic } = useStorefrontI18n();
   const [page, setPage] = useState(null);
   const [products, setProducts] = useState([]);
+  const [productsBySection, setProductsBySection] = useState({});
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -116,7 +120,7 @@ export default function CampaignLandingPage() {
     (async () => {
       setLoading(true);
       try {
-        const response = await fetch(`/api/public/campaign-pages/${encodeURIComponent(slug)}?page=1&limit=${LANDING_PAGE_SIZE}`, {
+        const response = await fetch(`/api/public/campaign-pages/${encodeURIComponent(slug)}?prefix=${urlPrefix}&page=1&limit=${LANDING_PAGE_SIZE}`, {
           cache: 'no-store',
         });
         const data = await response.json().catch(() => ({}));
@@ -126,6 +130,7 @@ export default function CampaignLandingPage() {
           setNotFound(true);
           setPage(null);
           setProducts([]);
+          setProductsBySection({});
           setTotal(0);
           setHasMore(false);
           return;
@@ -134,6 +139,7 @@ export default function CampaignLandingPage() {
         setNotFound(false);
         setPage(pageDoc);
         setProducts(firstProducts);
+        setProductsBySection(data.productsBySection && typeof data.productsBySection === 'object' ? data.productsBySection : {});
         setTotal(Number(data.total) || firstProducts.length);
         hasMoreRef.current = Boolean(data.hasMore);
         setHasMore(Boolean(data.hasMore));
@@ -143,6 +149,7 @@ export default function CampaignLandingPage() {
           setNotFound(true);
           setPage(null);
           setProducts([]);
+          setProductsBySection({});
           setTotal(0);
           setHasMore(false);
         }
@@ -153,7 +160,7 @@ export default function CampaignLandingPage() {
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [slug, urlPrefix]);
 
   const loadNextPage = useCallback(async () => {
     if (!slug || loadingMoreRef.current || !hasMoreRef.current) return;
@@ -162,7 +169,7 @@ export default function CampaignLandingPage() {
     const pageToLoad = nextPageRef.current;
     try {
       const response = await fetch(
-        `/api/public/campaign-pages/${encodeURIComponent(slug)}?page=${pageToLoad}&limit=${LANDING_PAGE_SIZE}`,
+        `/api/public/campaign-pages/${encodeURIComponent(slug)}?prefix=${urlPrefix}&page=${pageToLoad}&limit=${LANDING_PAGE_SIZE}`,
         { cache: 'no-store' },
       );
       const data = await response.json().catch(() => ({}));
@@ -181,7 +188,7 @@ export default function CampaignLandingPage() {
       loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  }, [slug]);
+  }, [slug, urlPrefix]);
 
   useEffect(() => {
     const node = sentinelRef.current;
@@ -210,11 +217,32 @@ export default function CampaignLandingPage() {
 
   const accent = page?.accentColor || '#0f766e';
   const background = page?.backgroundColor || '#f8fafc';
+  const design = page?.design || null;
+  const titleSizeClass = design?.titleSize === 'large'
+    ? 'text-3xl sm:text-4xl'
+    : design?.titleSize === 'small'
+      ? 'text-xl sm:text-2xl'
+      : 'text-2xl sm:text-3xl';
+  const titleStyle = design
+    ? { color: design.titleColor || '#0f172a', textAlign: design.titleAlignment || 'left' }
+    : undefined;
+  const gridColumnsClass = {
+    2: 'grid-cols-2 md:grid-cols-2',
+    3: 'grid-cols-2 md:grid-cols-3',
+    4: 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
+    5: 'grid-cols-2 md:grid-cols-3 lg:grid-cols-5',
+    6: 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6',
+  }[design?.gridColumns] || 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
   const bannerSources = useMemo(
     () => (page ? resolveCampaignPageBannerSources(page, language) : { desktop: '', tablet: '', mobile: '', fallback: '' }),
     [page, language],
   );
   const hasBanner = Boolean(page && (campaignPageHasBanner(page.banners, page.heroImage) || page.heroImage));
+  const pageSections = Array.isArray(page?.sections) ? page.sections : [];
+  const hasBuilderSections = pageSections.length > 0;
+  const hasConfiguredSlider = pageSections.some(
+    (section) => section.type === 'bannerSlider' && Array.isArray(section.slides) && section.slides.length > 0,
+  );
   const handleFilterChange = useCallback((filters) => {
     setActiveFilters((current) => {
       const sameCategories = current.categories.join('|') === (filters.categories || []).join('|');
@@ -296,7 +324,7 @@ export default function CampaignLandingPage() {
         </nav>
       </div>
 
-      {hasBanner && bannerSources.fallback ? (
+      {hasBanner && bannerSources.fallback && !hasConfiguredSlider ? (
         <div className="w-full">
           <div className={pageWidthClass} style={pageWidthStyle}>
             <picture>
@@ -316,7 +344,7 @@ export default function CampaignLandingPage() {
           </div>
           <div className="mt-4 border-b border-slate-200/80 bg-white/70">
             <div className={`${pageWidthClass} py-6`} style={pageWidthStyle}>
-              <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">{title}</h1>
+              <h1 className={`font-bold ${design ? titleSizeClass : 'text-2xl sm:text-3xl'}`} style={titleStyle}>{title}</h1>
               {subtitle ? <p className="mt-1 max-w-2xl text-sm text-slate-600 sm:text-base">{subtitle}</p> : null}
             </div>
           </div>
@@ -327,13 +355,13 @@ export default function CampaignLandingPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: accent }}>
               {isArabic ? 'عروض مختارة' : 'Selected for you'}
             </p>
-            <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">{title}</h1>
+            <h1 className={`mt-2 font-bold ${design ? titleSizeClass : 'text-2xl sm:text-3xl'}`} style={titleStyle}>{title}</h1>
             {subtitle ? <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">{subtitle}</p> : null}
           </div>
         </div>
       )}
 
-      <div className={`${pageWidthClass} py-8`} style={pageWidthStyle}>
+      <div className={`${pageWidthClass} min-h-[70vh] py-8`} style={pageWidthStyle}>
         {page.ctaLabel && page.ctaUrl ? (
           <div className="mb-6">
             <a
@@ -346,6 +374,192 @@ export default function CampaignLandingPage() {
           </div>
         ) : null}
 
+        {hasBuilderSections ? (
+          <style>{`
+            .campaign-page-grid { grid-template-columns: repeat(var(--campaign-mobile-columns), minmax(0, 1fr)); }
+            @media (min-width: 768px) { .campaign-page-grid { grid-template-columns: repeat(var(--campaign-tablet-columns), minmax(0, 1fr)); } }
+            @media (min-width: 1024px) { .campaign-page-grid { grid-template-columns: repeat(var(--campaign-desktop-columns), minmax(0, 1fr)); } }
+          `}</style>
+        ) : null}
+
+        {hasBuilderSections ? (
+            <div className="space-y-8">
+              {pageSections.map((section, index) => {
+                const sectionDesign = section.style || {};
+                const widthMap = { narrow: 720, normal: 960, wide: 1200, full: EMAIL_CAMPAIGN_BANNER_MAX_WIDTH };
+                const sectionStyle = {
+                  maxWidth: widthMap[sectionDesign.contentWidth] || EMAIL_CAMPAIGN_BANNER_MAX_WIDTH,
+                  marginInline: 'auto',
+                  padding: `${Number(sectionDesign.padding ?? 16)}px`,
+                  backgroundColor: sectionDesign.backgroundColor || 'transparent',
+                  color: sectionDesign.textColor || undefined,
+                  textAlign: sectionDesign.alignment || 'left',
+                };
+                if (section.type === 'bannerSlider') {
+                  return (
+                    <section key={section.id || `banner-${index}`} style={sectionStyle}>
+                      <CampaignPageBannerSlider slides={section.slides} title={title} className="overflow-hidden" />
+                    </section>
+                  );
+                }
+                if (section.type === 'textBlock') {
+                  const textSize = section.textSize === 'large' ? 'text-lg sm:text-xl' : section.textSize === 'small' ? 'text-xs sm:text-sm' : 'text-sm sm:text-base';
+                  return (
+                    <section key={section.id || `text-${index}`} style={sectionStyle}>
+                      {section.heading ? <h2 className="mb-2 text-xl font-bold">{section.heading}</h2> : null}
+                      <p className={`${textSize} whitespace-pre-line leading-relaxed`}>{section.content}</p>
+                    </section>
+                  );
+                }
+                if (section.type === 'image') {
+                  if (!section.imageUrl) return null;
+                  const image = (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={section.imageUrl} alt={section.alt || ''} className={`mx-auto max-h-[560px] w-full ${section.imageFit === 'contain' ? 'object-contain' : 'object-cover'}`} />
+                  );
+                  return (
+                    <section key={section.id || `image-${index}`} style={sectionStyle}>
+                      {section.linkUrl ? <a href={section.linkUrl}>{image}</a> : image}
+                    </section>
+                  );
+                }
+                if (section.type === 'button') {
+                  if (!section.label || !section.url) return null;
+                  const sizeClass = section.size === 'large' ? 'px-7 py-3.5 text-base' : section.size === 'small' ? 'px-4 py-2 text-xs' : 'px-5 py-2.5 text-sm';
+                  return (
+                    <section key={section.id || `button-${index}`} style={sectionStyle}>
+                      <a
+                        href={section.url}
+                        className={`inline-flex rounded-full font-semibold ${sizeClass} ${section.variant === 'outline' ? 'border-2 bg-transparent' : 'text-white'}`}
+                        style={{
+                          borderColor: accent,
+                          color: section.variant === 'outline' ? accent : '#fff',
+                          backgroundColor: section.variant === 'outline' ? 'transparent' : accent,
+                        }}
+                      >
+                        {section.label}
+                      </a>
+                    </section>
+                  );
+                }
+                if (section.type === 'video') {
+                  if (!section.videoUrl) return null;
+                  return (
+                    <section key={section.id || `video-${index}`} style={sectionStyle}>
+                      <iframe
+                        src={section.videoUrl}
+                        title={section.caption || 'Campaign video'}
+                        className="aspect-video w-full rounded-lg"
+                        loading="lazy"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      />
+                      {section.caption ? <p className="mt-2 text-sm">{section.caption}</p> : null}
+                    </section>
+                  );
+                }
+                if (section.type === 'spacer') {
+                  return (
+                    <div
+                      key={section.id || `spacer-${index}`}
+                      aria-hidden="true"
+                      style={{ height: `${Number(section.height) || 48}px`, backgroundColor: sectionDesign.backgroundColor || 'transparent' }}
+                    />
+                  );
+                }
+                if (section.type !== 'productGrid') return null;
+                const sectionProducts = Object.prototype.hasOwnProperty.call(productsBySection, String(section.id || ''))
+                  ? productsBySection[String(section.id || '')]
+                  : filteredProducts;
+                const visibleGridProducts = sortProducts(
+                  applyProductFilters(sectionProducts, activeFilters),
+                  activeFilters.sortBy,
+                );
+                const columns = Number(section.gridColumns || design?.gridColumns || 4);
+                const desktopColumns = Math.min(6, Math.max(2, columns));
+                const tabletColumns = Math.min(6, Math.max(1, Number(section.tabletGridColumns || design?.tabletGridColumns || 3)));
+                const mobileColumns = Math.min(3, Math.max(1, Number(section.mobileGridColumns || design?.mobileGridColumns || 2)));
+                const isLastGrid = !pageSections.slice(index + 1).some((item) => item.type === 'productGrid');
+                return (
+                  <section key={section.id || `products-${index}`} className="min-w-0" style={sectionStyle}>
+                  {section.title ? (
+                    <h2 className="mb-4 text-xl font-bold" style={titleStyle}>{section.title}</h2>
+                  ) : null}
+                  {index === pageSections.findIndex((item) => item.type === 'productGrid') ? (
+                    <div className="mb-4 flex items-center justify-between lg:hidden">
+                      <p className="text-sm text-gray-600">
+                        {t('shop.showingRange', {
+                          from: filteredProducts.length ? 1 : 0,
+                          to: filteredProducts.length,
+                          total: total || filteredProducts.length,
+                          label: (total || filteredProducts.length) === 1 ? t('common.product') : t('common.products'),
+                        })}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setMobileFiltersOpen(true)}
+                        className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                      >
+                        <Filter size={16} />
+                        {t('category.filtersAndSort')}
+                      </button>
+                    </div>
+                  ) : null}
+                  <div className="flex gap-6">
+                    {index === pageSections.findIndex((item) => item.type === 'productGrid') ? (
+                      <div className="hidden w-56 shrink-0 lg:block">
+                        <ProductFilterSidebar
+                          products={products}
+                          onFilterChange={handleFilterChange}
+                          initialFilters={activeFilters}
+                        />
+                      </div>
+                    ) : null}
+                    <div className="min-w-0 flex-1">
+                      {index === pageSections.findIndex((item) => item.type === 'productGrid') ? (
+                        <p className="mb-4 hidden text-sm text-gray-600 lg:block">
+                          {t('shop.showingRange', {
+                            from: filteredProducts.length ? 1 : 0,
+                            to: filteredProducts.length,
+                            total: total || filteredProducts.length,
+                            label: (total || filteredProducts.length) === 1 ? t('common.product') : t('common.products'),
+                          })}
+                        </p>
+                      ) : null}
+                      {visibleGridProducts.length ? (
+                        <div
+                          className="campaign-page-grid grid items-stretch"
+                          style={{
+                            gap: `${Number(section.gridGap || design?.gridGap || 12)}px`,
+                            '--campaign-mobile-columns': mobileColumns,
+                            '--campaign-tablet-columns': tabletColumns,
+                            '--campaign-desktop-columns': desktopColumns,
+                          }}
+                        >
+                          {visibleGridProducts.map((product) => (
+                            <ProductCard key={`${section.id || index}-${product.id}`} product={product} />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border border-gray-200 bg-white py-12 text-center">
+                          <p className="text-lg text-gray-500">{t('category.noMatch')}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {isLastGrid && hasMore ? (
+                    <div ref={sentinelRef} className="mt-8 flex min-h-16 items-center justify-center py-6 text-sm text-gray-500">
+                      {loadingMore ? t('category.loadingMore') : null}
+                    </div>
+                  ) : null}
+                </section>
+              );
+            })}
+          </div>
+        ) : null}
+
+        {!hasBuilderSections ? (
+          <>
         <div className={`mb-4 flex items-center justify-between lg:hidden ${isArabic ? 'flex-row-reverse' : ''}`}>
           <p className="text-sm text-gray-600">
             {t('shop.showingRange', {
@@ -398,7 +612,10 @@ export default function CampaignLandingPage() {
                 ) : null}
               </div>
             ) : (
-              <div className="grid grid-cols-2 items-stretch gap-3 md:grid-cols-3 lg:grid-cols-4">
+              <div
+                className={`grid items-stretch ${design ? gridColumnsClass : 'grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4'}`}
+                style={design ? { gap: `${design.gridGap || 12}px` } : undefined}
+              >
                 {filteredProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
@@ -412,6 +629,8 @@ export default function CampaignLandingPage() {
             ) : null}
           </div>
         </div>
+              </>
+            ) : null}
 
         {mobileFiltersOpen ? (
           <div className="fixed inset-0 z-50 lg:hidden">

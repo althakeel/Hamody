@@ -6,6 +6,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import {
   Building2,
+  BellRing,
   Camera,
   ChevronRight,
   CreditCard,
@@ -25,6 +26,7 @@ import { auth } from "@/lib/firebase";
 import { updateProfile } from "firebase/auth";
 import PermissionPicker from "@/components/store/PermissionPicker";
 import StoreCacheSettings from "@/components/store/StoreCacheSettings";
+import LowStockAlertSettings from "@/components/store/LowStockAlertSettings";
 import SuperAdminPasswordReset from "@/components/store/SuperAdminPasswordReset";
 import AccountBlockDialog from "@/components/store/AccountBlockDialog";
 import { isAdminEmail } from "@/lib/adminEmails";
@@ -88,6 +90,11 @@ const TAB_META = {
     label: "Cache",
     icon: RefreshCcw,
     description: "Clear website cache",
+  },
+  stockAlerts: {
+    label: "Stock Alerts",
+    icon: BellRing,
+    description: "Low-stock threshold, schedule, and recipients",
   },
   passwords: {
     label: "Passwords",
@@ -257,6 +264,7 @@ export default function SettingsPage() {
     if (canManageTeamAccess) tabs.splice(4, 0, "dashboardAccess");
     if (canViewActivityHistory) tabs.push("history");
     if (isSuperAdmin || isStoreOwner) tabs.push("cache");
+    if (isSuperAdmin) tabs.push("stockAlerts");
     if (isSuperAdmin || isStoreOwner) tabs.push("passwords");
     return tabs;
   }, [canEditStoreSettings, canManageTeamAccess, canViewActivityHistory, isSuperAdmin, isStoreOwner]);
@@ -2044,6 +2052,7 @@ export default function SettingsPage() {
           {activeTab === "dashboardAccess" && canManageTeamAccess ? teamContent : null}
           {activeTab === "dataImport" ? importContent : null}
           {activeTab === "cache" && canManageCache ? <StoreCacheSettings /> : null}
+          {activeTab === "stockAlerts" && isSuperAdmin ? <LowStockAlertSettings /> : null}
           {activeTab === "passwords" && (isSuperAdmin || isStoreOwner) ? (
             <SuperAdminPasswordReset initialQuery={passwordResetQuery} />
           ) : null}

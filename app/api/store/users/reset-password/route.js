@@ -47,6 +47,31 @@ function accountRow({ uid, name, email, kind }) {
   };
 }
 
+function normalizeEmail(value = '') {
+  return String(value || '').trim().toLowerCase();
+}
+
+async function findFirebaseAccount(adminAuth, uid, email) {
+  const expectedEmail = normalizeEmail(email);
+  let account = null;
+  try {
+    account = await adminAuth.getUser(uid);
+  } catch (error) {
+    if (error?.code !== 'auth/user-not-found') throw error;
+  }
+
+  if (account && normalizeEmail(account.email) === expectedEmail) return account;
+  if (!expectedEmail) return null;
+
+  try {
+    const accountByEmail = await adminAuth.getUserByEmail(expectedEmail);
+    return normalizeEmail(accountByEmail.email) === expectedEmail ? accountByEmail : null;
+  } catch (error) {
+    if (error?.code === 'auth/user-not-found') return null;
+    throw error;
+  }
+}
+
 export async function GET(request) {
   try {
     const auth = await requireSuperAdmin(request);
@@ -119,16 +144,27 @@ export async function GET(request) {
       }
     }
 
-    const users = [...rows.values()].slice(0, 12);
     const adminAuth = getAuth();
-    await Promise.all(users.map(async (user) => {
-      try {
-        const record = await adminAuth.getUser(user.uid);
-        user.blocked = Boolean(record.disabled);
-      } catch {
-        user.blocked = false;
-      }
+    const resolvedRows = await Promise.all([...rows.values()].slice(0, 12).map(async (user) => {
+      const record = await findFirebaseAccount(adminAuth, user.uid, user.email);
+      if (!record) return null;
+      return {
+        ...user,
+        uid: record.uid,
+        name: String(record.displayName || user.name || '').trim() || user.email.split('@')[0],
+        email: normalizeEmail(record.email),
+        blocked: Boolean(record.disabled),
+      };
     }));
+
+    const resolvedByUid = new Map();
+    resolvedRows.filter(Boolean).forEach((user) => {
+      const existing = resolvedByUid.get(user.uid);
+      if (!existing || (existing.kind === 'customer' && user.kind === 'team')) {
+        resolvedByUid.set(user.uid, user);
+      }
+    });
+    const users = [...resolvedByUid.values()];
 
     return NextResponse.json({ users });
   } catch (error) {
@@ -144,9 +180,10 @@ export async function POST(request) {
 
     const body = await request.json().catch(() => ({}));
     const uid = String(body.uid || '').trim();
+    const accountEmail = normalizeEmail(body.accountEmail);
     const password = String(body.password || '');
     const policy = validatePasswordStrength(password);
-    if (!uid) {
+    if (!uid || !accountEmail) {
       return NextResponse.json({ error: 'Choose an account first' }, { status: 400 });
     }
     if (!policy.ok) {
@@ -156,14 +193,20 @@ export async function POST(request) {
     const adminAuth = getAuth();
     let account;
     try {
-      account = await adminAuth.getUser(uid);
-    } catch {
-      return NextResponse.json({ error: 'Account not found' }, { status: 404 });
+      account = await findFirebaseAccount(adminAuth, uid, accountEmail);
+    } catch (error) {
+      if (error?.code === 'auth/user-not-found') {
+        return NextResponse.json({ error: 'Account not found' }, { status: 404 });
+      }
+      throw error;
+    }
+    if (!account) {
+      return NextResponse.json({ error: 'Account not found for this email. Search again and select the matching account.' }, { status: 404 });
     }
 
-    await adminAuth.updateUser(uid, { password });
+    await adminAuth.updateUser(account.uid, { password });
     try {
-      await adminAuth.revokeRefreshTokens(uid);
+      await adminAuth.revokeRefreshTokens(account.uid);
     } catch {
       // The new password is already saved. Old sessions can expire on their own.
     }

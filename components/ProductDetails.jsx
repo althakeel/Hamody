@@ -789,7 +789,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
         : `خلال حوالي ${minDays}-${maxDays} أيام`;
       return {
         primary: qualifiesForFreeDelivery
-          ? `شحن مجاني — يقدّر بحلول ${rangeText}`
+          ? 'شحن مجاني'
           : `توصيل تقديري بحلول ${rangeText}`,
         secondary: `اطلب الآن — ${daysText} (تقديري)`,
       };
@@ -801,7 +801,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
 
     return {
       primary: qualifiesForFreeDelivery
-        ? `Free shipping — estimated by ${rangeText}`
+        ? 'Free shipping'
         : `Estimated delivery by ${rangeText}`,
       secondary: `Order now — get it ${daysText} (estimate)`,
     };

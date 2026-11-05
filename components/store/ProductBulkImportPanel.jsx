@@ -388,6 +388,7 @@ export default function ProductBulkImportPanel({
               <div className="space-y-1">
                 <p><strong>Template:</strong> Download the column file, fill the SKU and the fields you want to change, then upload it here.</p>
                 <p><strong>Updates:</strong> The SKU finds the product. A blank name and other empty cells stay as they are.</p>
+                <p><strong>Images:</strong> Image URL and Additional Images columns are imported together. External images are copied to your image storage when configured; otherwise their source URLs are retained.</p>
               </div>
             </div>
           </div>

@@ -228,6 +228,13 @@ function orderMatchesSearch(order, query) {
             order?.delhivery?.awb,
             order?.legacySourceId,
             order?._id ? String(order._id) : '',
+            order?.vaultsPayTransactionId,
+            order?.razorpayPaymentId,
+            order?.razorpayOrderId,
+            order?.stripeCheckoutSessionId,
+            order?.tabbyPaymentId,
+            order?.tamaraOrderId,
+            order?.paymentVerification?.providerReference,
         ]
             .filter(Boolean)
             .map((value) => String(value).toLowerCase());
@@ -281,6 +288,13 @@ function orderMatchesSearch(order, query) {
         order?.courier,
         order?.delhivery?.waybill,
         order?.delhivery?.awb,
+        order?.vaultsPayTransactionId,
+        order?.razorpayPaymentId,
+        order?.razorpayOrderId,
+        order?.stripeCheckoutSessionId,
+        order?.tabbyPaymentId,
+        order?.tamaraOrderId,
+        order?.paymentVerification?.providerReference,
     ]
         .filter(Boolean)
         .map((value) => String(value).toLowerCase());
@@ -306,6 +320,13 @@ function orderMatchesSearch(order, query) {
             order?.waslah?.trackingNumber,
             order?.waslah?.emxTrackingNumber,
             order?.delhivery?.waybill,
+            order?.vaultsPayTransactionId,
+            order?.razorpayPaymentId,
+            order?.razorpayOrderId,
+            order?.stripeCheckoutSessionId,
+            order?.tabbyPaymentId,
+            order?.tamaraOrderId,
+            order?.paymentVerification?.providerReference,
         ]
             .filter(Boolean)
             .map((value) => String(value).replace(/\D/g, ''));
@@ -832,6 +853,7 @@ export default function StoreOrders() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const openedFromQueryRef = useRef('');
+    const ordersRequestIdRef = useRef(0);
 
     selectedOrderIdRef.current = String(selectedOrder?._id || '');
 
@@ -1897,9 +1919,12 @@ export default function StoreOrders() {
     const getPaymentStatus = (order) => isOrderPaid(order);
 
     const fetchOrders = async ({ silent = false } = {}) => {
+        const requestId = ordersRequestIdRef.current + 1;
+        ordersRequestIdRef.current = requestId;
         try {
             let token = await getToken(false);
             if (!token) token = await getToken(true);
+            if (requestId !== ordersRequestIdRef.current) return;
             if (!token) {
                 toast.error("Invalid session. Please sign in again.");
                 setLoading(false);
@@ -1924,6 +1949,7 @@ export default function StoreOrders() {
                 },
                 headers: { Authorization: `Bearer ${token}` },
             });
+            if (requestId !== ordersRequestIdRef.current) return;
             console.log('[ORDERS DEBUG] Raw orders data:', data.orders);
             
             // Debug first 3 orders
@@ -1975,6 +2001,7 @@ export default function StoreOrders() {
                 }
             }
 
+            if (requestId !== ordersRequestIdRef.current) return;
             setOrders((prev) => {
                 const merged = mergeOrdersPreservingLabelDownloads(syncedOrders, prev);
                 writePageCache('store-orders', { orders: merged, fetchedAt: Date.now(), total: Number(data.total) || merged.length });
@@ -1984,9 +2011,13 @@ export default function StoreOrders() {
             setServerStats(data.counts || null);
             setSelectedOrderIds((prev) => prev.filter((id) => syncedOrders.some((order) => String(order._id) === id)));
         } catch (error) {
-            toast.error(error?.response?.data?.error || error.message);
+            if (requestId === ordersRequestIdRef.current) {
+                toast.error(error?.response?.data?.error || error.message);
+            }
         } finally {
-            setLoading(false);
+            if (requestId === ordersRequestIdRef.current) {
+                setLoading(false);
+            }
         }
     };
 
@@ -4304,7 +4335,7 @@ export default function StoreOrders() {
                         type="search"
                         value={orderSearchQuery}
                         onChange={(e) => setOrderSearchQuery(e.target.value)}
-                        placeholder="Email, phone, name, order #, tracking AWB..."
+                        placeholder="Email, phone, name, order #, payment or tracking ID..."
                         className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-10 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                     />
                     {orderSearchQuery ? (

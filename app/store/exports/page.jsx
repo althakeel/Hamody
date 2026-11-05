@@ -10,6 +10,7 @@ import {
   Loader2,
   Package,
   ShoppingBag,
+  Users,
 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 
@@ -17,8 +18,14 @@ const EXPORT_OPTIONS = [
   {
     id: 'orders',
     title: 'Orders',
-    description: 'Order lines with customer, payment, SKU, and totals (CSV).',
+    description: 'Excel workbook with an outcome chart, daily summary, and detailed order lines.',
     icon: ShoppingBag,
+  },
+  {
+    id: 'customers',
+    title: 'Registered customers',
+    description: 'Excel charts for sales channels, new and returning buyers, repeat rate, CAC, active ads, and organic traffic.',
+    icon: Users,
   },
   {
     id: 'products',
@@ -58,6 +65,8 @@ export default function StoreExportsPage() {
   const [rangeMode, setRangeMode] = useState('full');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [fromTime, setFromTime] = useState('10:00');
+  const [toTime, setToTime] = useState('10:00');
   const [exporting, setExporting] = useState(false);
 
   const selectedOption = useMemo(
@@ -75,6 +84,10 @@ export default function StoreExportsPage() {
         toast.error('From date must be on or before to date');
         return;
       }
+      if (['orders', 'customers'].includes(exportType) && fromDate === toDate && fromTime >= toTime) {
+        toast.error('From time must be earlier than to time when exporting the same date');
+        return;
+      }
     }
 
     try {
@@ -89,7 +102,13 @@ export default function StoreExportsPage() {
         params: {
           type: exportType,
           range: rangeMode,
-          ...(rangeMode === 'custom' ? { fromDate, toDate } : {}),
+          ...(rangeMode === 'custom'
+            ? {
+                fromDate,
+                toDate,
+                ...(['orders', 'customers'].includes(exportType) ? { fromTime, toTime } : {}),
+              }
+            : {}),
         },
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob',
@@ -97,7 +116,7 @@ export default function StoreExportsPage() {
 
       const countHeader = response.headers?.['x-export-count'];
       const count = Number(countHeader);
-      const fallbackName = `store-${exportType}-export.csv`;
+      const fallbackName = `store-${exportType}-export.${['orders', 'customers'].includes(exportType) ? 'xlsx' : 'csv'}`;
       const filename = filenameFromDisposition(
         response.headers?.['content-disposition'],
         fallbackName,
@@ -137,13 +156,13 @@ export default function StoreExportsPage() {
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Exports</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Download orders, products, or categories as CSV. Choose a full export or a custom date range.
+          Download orders or registered customers as Excel workbooks, or products and categories as CSV. Choose a full export or a custom date and time range.
         </p>
       </div>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">What to export</h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {EXPORT_OPTIONS.map((option) => {
             const Icon = option.icon;
             const selected = exportType === option.id;
@@ -173,7 +192,7 @@ export default function StoreExportsPage() {
           Date range
         </h2>
         <p className="mt-1 text-xs text-slate-500">
-          Custom range filters by created date. Categories and products use catalog created dates; orders use order created dates.
+          Orders and registered customers include Dubai date/time filters. Customer workbooks also summarize stored order attribution (UTM); older orders without source data are marked Unknown.
         </p>
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -197,7 +216,7 @@ export default function StoreExportsPage() {
                 : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
             }`}
           >
-            From date → to date
+            Custom date/time
           </button>
         </div>
 
@@ -221,6 +240,31 @@ export default function StoreExportsPage() {
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
               />
             </label>
+            {['orders', 'customers'].includes(exportType) ? (
+              <>
+                <p className="text-xs text-slate-500 sm:col-span-2">
+                  Times use Dubai time. The export includes orders at the start time and excludes orders at the end time.
+                </p>
+                <label className="block text-sm">
+                  <span className="mb-1 block font-medium text-slate-700">From time (Dubai)</span>
+                  <input
+                    type="time"
+                    value={fromTime}
+                    onChange={(event) => setFromTime(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                  />
+                </label>
+                <label className="block text-sm">
+                  <span className="mb-1 block font-medium text-slate-700">To time (Dubai)</span>
+                  <input
+                    type="time"
+                    value={toTime}
+                    onChange={(event) => setToTime(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                  />
+                </label>
+              </>
+            ) : null}
           </div>
         ) : (
           <p className="mt-3 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
@@ -241,7 +285,9 @@ export default function StoreExportsPage() {
           ) : (
             <Download className="h-4 w-4" />
           )}
-          {exporting ? 'Preparing…' : `Download ${selectedOption.title} CSV`}
+          {exporting
+            ? 'Preparing…'
+            : `Download ${selectedOption.title} ${['orders', 'customers'].includes(exportType) ? 'Excel' : 'CSV'}`}
         </button>
         <p className="text-xs text-slate-500">
           File downloads to your device. Large catalogs may take a moment.

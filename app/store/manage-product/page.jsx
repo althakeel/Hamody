@@ -2926,6 +2926,9 @@ export default function StoreManageProducts() {
                                         <option value="enable">Mark in stock</option>
                                         <option value="disable">Mark out of stock</option>
                                     </select>
+                                    <span className="block text-xs text-slate-500">
+                                        Marking in stock sets zero-stock products and variations to 5; existing quantities stay unchanged.
+                                    </span>
                                 </label>
                                 <label className="space-y-2">
                                     <span className="block text-sm font-medium text-slate-700">Online / published</span>

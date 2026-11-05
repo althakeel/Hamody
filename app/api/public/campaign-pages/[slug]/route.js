@@ -5,6 +5,7 @@ import Product from '@/models/Product';
 import Category from '@/models/Category';
 import {
   campaignPageAbsoluteUrl,
+  getCampaignPageSectionProductIds,
   normalizeCampaignPageProductIds,
   slugifyCampaignPageTitle,
   toStoreCampaignPage,
@@ -52,6 +53,7 @@ export async function GET(request, { params }) {
   try {
     const { slug: rawSlug } = await params;
     const slug = slugifyCampaignPageTitle(rawSlug);
+    const urlPrefix = new URL(request.url).searchParams.get('prefix') === 'pages' ? 'pages' : 'c';
     if (!slug) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
@@ -60,6 +62,9 @@ export async function GET(request, { params }) {
     const page = await EmailCampaignPage.findOne({
       slug,
       status: 'published',
+      ...(urlPrefix === 'pages'
+        ? { urlPrefix: 'pages' }
+        : { $or: [{ urlPrefix: 'c' }, { urlPrefix: { $exists: false } }] }),
     }).lean();
 
     if (!page) {
@@ -67,24 +72,52 @@ export async function GET(request, { params }) {
     }
 
     const productIds = normalizeCampaignPageProductIds(page.productIds);
+    const sections = Array.isArray(page.sections) ? page.sections : [];
+    const firstGrid = sections.find((section) => section?.type === 'productGrid');
+    const sectionProductIds = getCampaignPageSectionProductIds(sections);
     const { searchParams } = new URL(request.url);
     const pageNumber = Math.max(1, Number.parseInt(searchParams.get('page') || '1', 10) || 1);
     const limit = Math.min(40, Math.max(1, Number.parseInt(searchParams.get('limit') || String(CAMPAIGN_PAGE_SIZE), 10) || CAMPAIGN_PAGE_SIZE));
     const start = (pageNumber - 1) * limit;
     const pageIds = productIds.slice(start, start + limit);
+    const legacySectionIds = firstGrid && !Array.isArray(firstGrid.productIds) ? productIds : [];
+    const requestedIds = [...new Set([
+      ...pageIds,
+      ...(pageNumber === 1 ? [...sectionProductIds, ...legacySectionIds] : []),
+    ])];
     let products = [];
-    if (pageIds.length) {
+    let productsBySection = {};
+    if (requestedIds.length) {
       const docs = await Product.find({
-        _id: { $in: pageIds },
+        _id: { $in: requestedIds },
         ...STOREFRONT_PUBLISHED_FILTER,
       })
         .select('_id name nameAr slug price salePrice originalPrice mrp AED images brand inStock stockQuantity category categories createdAt legacySourceId')
         .lean();
       const byId = new Map(docs.map((doc) => [String(doc._id), doc]));
-      const ordered = pageIds.map((id) => byId.get(id)).filter(Boolean);
-      const rated = await attachProductRatings(ordered);
-      const categoryLookup = await buildCategoryLookupForProductRefs(Category, rated);
-      products = rated.map((doc) => mapPublicProduct(doc, getProductCategoryLabels(doc, categoryLookup)));
+      const ratedDocs = await attachProductRatings(requestedIds.map((id) => byId.get(id)).filter(Boolean));
+      const sectionCategoryLookup = await buildCategoryLookupForProductRefs(Category, ratedDocs);
+      const mappedById = new Map(
+        ratedDocs.map((doc) => [
+          String(doc._id),
+          mapPublicProduct(doc, getProductCategoryLabels(doc, sectionCategoryLookup)),
+        ]),
+      );
+      products = pageIds.map((id) => mappedById.get(String(id))).filter(Boolean);
+      if (pageNumber === 1) {
+        productsBySection = Object.fromEntries(
+          sections
+            .filter((section) => section?.type === 'productGrid')
+            .map((section) => [
+              String(section.id || ''),
+              (Array.isArray(section.productIds)
+                ? section.productIds
+                : (section === firstGrid ? productIds : []))
+                .map((id) => mappedById.get(String(id)))
+                .filter(Boolean),
+            ]),
+        );
+      }
     }
 
     const payload = toStoreCampaignPage(page);
@@ -92,9 +125,10 @@ export async function GET(request, { params }) {
       success: true,
       page: {
         ...payload,
-        publicUrl: campaignPageAbsoluteUrl(page.slug),
+        publicUrl: campaignPageAbsoluteUrl(page.slug, page.urlPrefix),
       },
       products,
+      productsBySection,
       total: productIds.length,
       pageNumber,
       limit,

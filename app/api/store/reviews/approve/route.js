@@ -2,6 +2,9 @@ import authSeller from "@/middlewares/authSeller";
 import connectDB from '@/lib/mongodb';
 import Rating from '@/models/Rating';
 import Product from '@/models/Product';
+import Order from '@/models/Order';
+import { orderContainsReviewProduct } from '@/lib/verifiedReview';
+import { invalidateProductReviewCaches } from '@/lib/storeReviewCache';
 
 
 // POST: Approve or reject a review
@@ -53,11 +56,27 @@ export async function POST(request) {
             return Response.json({ error: "Unauthorized to modify this review" }, { status: 403 });
         }
 
+        if (approved) {
+            if (!review.orderId) {
+                return Response.json({ error: 'Only reviews linked to a verified purchase can be published' }, { status: 403 });
+            }
+
+            const order = await Order.findOne({
+                _id: review.orderId,
+                storeId: String(storeId),
+                status: { $regex: /^delivered$/i },
+            }).select('_id orderItems items').lean();
+            if (!order || !orderContainsReviewProduct(order, review.productId)) {
+                return Response.json({ error: 'The delivered purchase for this review could not be verified' }, { status: 403 });
+            }
+        }
+
         const updatedReview = await Rating.findByIdAndUpdate(
             reviewId,
             { approved, isApproved: approved },
             { new: true }
         );
+        invalidateProductReviewCaches(review.productId);
 
         return Response.json({
             success: true,

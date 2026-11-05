@@ -71,9 +71,11 @@ Success:
 }
 ```
 
-Open `checkout_url` in a browser or in-app web view. Do not change the URL. The hosted page expires about **15 minutes** after it is created. The order stays unpaid until verify succeeds.
+Open `checkout_url` in a browser or in-app web view. Do not change the URL. Every hosted page expires after **30 minutes** (`expiryInSeconds: 1800`). The order stays unpaid until verify succeeds.
 
 The return URL alone is not proof of payment. The order is paid only after `POST /api/orders/verify-vaultspay` returns `success: true`, or after the server webhook does the same check.
+
+Every initialization request sends `https://www.store1920.com/api/vaultspay/callback` as `callBackUrl`. VaultsPay calls that endpoint when the transaction changes. The callback never trusts the posted status by itself; the server loads the authoritative transaction from VaultsPay before changing the order. A dedicated expiry sweep also checks due transactions every minute, marking an order failed shortly after the 30-minute expiry if VaultsPay still reports it as unpaid (`Initiated` or `Pending`). Provider-confirmed success always takes precedence.
 
 ### Errors from place order
 
@@ -121,6 +123,8 @@ No Bearer token is required. Call this when the return URL contains `vaultspay=1
 | `{ "success": true, "paymentVerified": true }` | Paid. Open the order success screen |
 | `{ "success": true, "alreadyPaid": true }` | Already paid. Open the order success screen |
 | `{ "success": false, "pending": true }` | Still pending. Stay on a waiting state and call verify again, or reload the order |
+| `{ "success": false, "pending": true }` while the 30-minute checkout is still valid and VaultsPay says `Initiated` | Unpaid. Keep the order awaiting payment and do not fulfill it |
+| `{ "success": false, "failed": true, "expired": true, "reason": "payment_expired" }` | Expired. Open the failed screen; the order remains unpaid |
 | `{ "success": false, "failed": true, "reason": "payment_cancelled" }` | Cancelled. Open the failed screen |
 | `{ "success": false, "failed": true, "reason": "payment_failed" }` | Declined. Open the failed screen |
 | `{ "success": false, "reason": "amount_mismatch" }` or `currency_mismatch` or `reference_mismatch` | Do not show success. Leave the order unpaid |

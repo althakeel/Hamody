@@ -90,6 +90,7 @@ import { matchVariantByOptions } from '@/lib/productVariantOptions';
 import { getProductSubtitle } from '@/lib/productDisplay';
 import { getProductPath } from '@/lib/productUrl';
 import { collectCheckoutValidationIssues, scrollToCheckoutField } from '@/lib/checkoutValidation';
+import { composeAddressStreetLine, hasCompleteAddressStreetLine } from '@/lib/addressLine';
 import CheckoutValidationAlert from '@/components/CheckoutValidationAlert';
 import toast from 'react-hot-toast';
 
@@ -170,6 +171,9 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     state: 'Dubai',
     district: '',
     street: '',
+    buildingOrVilla: '',
+    streetName: '',
+    apartmentOrFloor: '',
     city: '',
     pincode: '',
     name: '',
@@ -598,6 +602,9 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
         alternatePhone: cleanDigits(selected.alternatePhone) || f.alternatePhone,
         alternatePhoneCode: selected.alternatePhoneCode || f.alternatePhoneCode || UAE_PHONE_CODE,
         street: selected.street || f.street,
+        buildingOrVilla: selected.buildingOrVilla || f.buildingOrVilla,
+        streetName: selected.streetName || selected.street || f.streetName,
+        apartmentOrFloor: selected.apartmentOrFloor || f.apartmentOrFloor,
         city: selected.city || f.city,
         state: selected.state || f.state,
         district: selected.district || f.district,
@@ -635,6 +642,9 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     form.alternatePhone,
     form.alternatePhoneCode,
     form.street,
+    form.buildingOrVilla,
+    form.streetName,
+    form.apartmentOrFloor,
     form.city,
     form.state,
     form.district,
@@ -720,6 +730,9 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
           alternatePhone: cleanDigits(firstAddr.alternatePhone),
           alternatePhoneCode: firstAddr.alternatePhoneCode || UAE_PHONE_CODE,
           street: firstAddr.street || f.street,
+          buildingOrVilla: firstAddr.buildingOrVilla || f.buildingOrVilla,
+          streetName: firstAddr.streetName || firstAddr.street || f.streetName,
+          apartmentOrFloor: firstAddr.apartmentOrFloor || f.apartmentOrFloor,
           city: firstAddr.city || f.city,
           state: firstAddr.state || f.state,
           district: firstAddr.district || f.district,
@@ -1324,7 +1337,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   const fieldErrorClass = (fieldId) =>
     fieldHasError(fieldId) ? 'border-red-400 ring-4 ring-red-100 focus:border-red-400 focus:ring-red-100' : '';
   const getStreetRequiredMessage = () => {
-    if (String(form.district || '').trim() && !String(form.street || '').trim()) {
+    if (String(form.district || '').trim() && !hasCompleteAddressStreetLine(form)) {
       return t('checkout.streetRequiredWithArea');
     }
     return t('checkout.street');
@@ -1338,6 +1351,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
       'guest-name': t('checkout.fullName'),
       'guest-email': t('checkout.emailAddress'),
       'guest-phone': t('checkout.phoneNumber'),
+      'guest-building': t('checkout.buildingVilla'),
       'guest-street': getStreetRequiredMessage(),
       'guest-pincode': 'Pincode',
       'checkout-payment': t('checkout.selectPaymentRequired'),
@@ -1366,6 +1380,8 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
       'Valid email address': t('checkout.emailAddress'),
       'Phone number': t('checkout.phoneNumber'),
       'Street address': t('checkout.street'),
+      'Building / villa number': t('checkout.buildingVilla'),
+      'Street name': t('checkout.streetName'),
       'Emirate': t('checkout.selectEmirate'),
       'State': t('checkout.selectState'),
       'State / Emirate': t('checkout.emirateState'),
@@ -1502,6 +1518,11 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
       setDistricts([]);
     } else if (name === 'payment') {
       setForm(f => ({ ...f, [name]: value }));
+    } else if (['buildingOrVilla', 'streetName', 'apartmentOrFloor'].includes(name)) {
+      setForm((f) => {
+        const next = { ...f, [name]: value };
+        return { ...next, street: composeAddressStreetLine(next) };
+      });
     } else if (name === 'pincode') {
       if (isIndiaCountry(form.country)) {
         const numeric = String(value || '').replace(/\D/g, '').slice(0, 10);
@@ -2004,7 +2025,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
           const addressId = form.addressId || (addressList[0] && addressList[0]._id);
           if (addressId) payload.addressId = addressId;
         } else {
-          if (!form.name || !form.email || !resolvedPhone || (!isCustomerPickup && (!form.street || !resolveGuestCity(form) || !form.state || !resolvedCountry))) {
+          if (!form.name || !form.email || !resolvedPhone || (!isCustomerPickup && (!hasCompleteAddressStreetLine(form) || !resolveGuestCity(form) || !form.state || !resolvedCountry))) {
             setFormError('Please fill all required shipping details.');
             setPlacingOrder(false);
             return;
@@ -2069,7 +2090,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
             payload.addressId = addressId;
           }
         } else {
-          if (!form.name || !form.email || !resolvedPhone || (!isCustomerPickup && (!form.street || !resolveGuestCity(form) || !form.state || !resolvedCountry))) {
+          if (!form.name || !form.email || !resolvedPhone || (!isCustomerPickup && (!hasCompleteAddressStreetLine(form) || !resolveGuestCity(form) || !form.state || !resolvedCountry))) {
             setFormError("Please fill all required shipping details.");
             setPlacingOrder(false);
             return;
@@ -2116,7 +2137,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
           const addressId = form.addressId || (addressList[0] && addressList[0]._id);
           if (addressId) payload.addressId = addressId;
         } else {
-          if (!form.name || !form.email || !resolvedPhone || (!isCustomerPickup && (!form.street || !resolveGuestCity(form) || !form.state || !resolvedCountry))) {
+          if (!form.name || !form.email || !resolvedPhone || (!isCustomerPickup && (!hasCompleteAddressStreetLine(form) || !resolveGuestCity(form) || !form.state || !resolvedCountry))) {
             setFormError("Please fill all required shipping details.");
             setPlacingOrder(false);
             return;
@@ -2163,7 +2184,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
           const addressId = form.addressId || (addressList[0] && addressList[0]._id);
           if (addressId) payload.addressId = addressId;
         } else {
-          if (!form.name || !form.email || !resolvedPhone || (!isCustomerPickup && (!form.street || !resolveGuestCity(form) || !form.state || !resolvedCountry))) {
+          if (!form.name || !form.email || !resolvedPhone || (!isCustomerPickup && (!hasCompleteAddressStreetLine(form) || !resolveGuestCity(form) || !form.state || !resolvedCountry))) {
             setFormError("Please fill all required shipping details.");
             setPlacingOrder(false);
             return;
@@ -2291,7 +2312,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
         // Only add addressId if it exists
         if (addressId || (addressList[0] && addressList[0]._id)) {
           payload.addressId = addressId || addressList[0]._id;
-        } else if (form.street && resolveGuestCity(form) && form.state && form.country) {
+        } else if (hasCompleteAddressStreetLine(form) && resolveGuestCity(form) && form.state && form.country) {
           // User is logged in but has no saved address - include address in payload
           payload.addressData = {
             name: form.name || user.displayName || '',
@@ -3427,19 +3448,57 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                     </div>
 
                     <div className="min-w-0">
-                      <label htmlFor="guest-street" className={guestLabelClass}>{t('checkout.street')}</label>
-                      <input
-                        id="guest-street"
-                        className={`${guestFieldClass} ${fieldErrorClass('guest-street')}`}
-                        type="text"
-                        name="street"
-                        placeholder={t('checkout.streetHint')}
-                        value={form.street || ''}
-                        onChange={handleChange}
-                        required
-                      />
-                      <p className="mt-1 text-xs text-slate-500">{t('checkout.streetHint')}</p>
-                      {fieldRequiredHint('guest-street')}
+                      <p className={`${guestLabelClass} mb-2`}>{t('checkout.street')}</p>
+                      <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                        <div className="min-w-0">
+                          <label htmlFor="guest-building" className={guestLabelClass}>
+                            {t('checkout.buildingVilla')} <span className="text-red-600" aria-hidden="true">*</span>
+                          </label>
+                          <input
+                            id="guest-building"
+                            className={`${guestFieldClass} ${fieldErrorClass('guest-building')}`}
+                            type="text"
+                            name="buildingOrVilla"
+                            placeholder={t('checkout.buildingVilla')}
+                            value={form.buildingOrVilla || ''}
+                            onChange={handleChange}
+                            autoComplete="address-line1"
+                            required
+                          />
+                          {fieldRequiredHint('guest-building')}
+                        </div>
+                        <div className="min-w-0 sm:col-span-2">
+                          <label htmlFor="guest-apartment" className={guestLabelClass}>{t('checkout.apartmentFloor')}</label>
+                          <input
+                            id="guest-apartment"
+                            className={guestFieldClass}
+                            type="text"
+                            name="apartmentOrFloor"
+                            placeholder={t('checkout.apartmentFloor')}
+                            value={form.apartmentOrFloor || ''}
+                            onChange={handleChange}
+                            autoComplete="address-line3"
+                          />
+                        </div>
+                        <div className="min-w-0 sm:col-span-2">
+                          <label htmlFor="guest-street" className={guestLabelClass}>
+                            {t('checkout.streetName')} <span className="text-red-600" aria-hidden="true">*</span>
+                          </label>
+                          <input
+                            id="guest-street"
+                            className={`${guestFieldClass} ${fieldErrorClass('guest-street')}`}
+                            type="text"
+                            name="streetName"
+                            placeholder={t('checkout.streetName')}
+                            value={form.streetName || ''}
+                            onChange={handleChange}
+                            autoComplete="address-line2"
+                            required
+                          />
+                          {fieldRequiredHint('guest-street')}
+                        </div>
+                      </div>
+                      <p className="mt-2 text-xs text-slate-500">{t('checkout.streetHint')}</p>
                     </div>
 
                     {form.country === 'India' && form.state ? (
@@ -4260,6 +4319,9 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
             alternatePhone: cleanDigits(saved.alternatePhone),
             alternatePhoneCode: saved.alternatePhoneCode || UAE_PHONE_CODE,
             street: saved.street || f.street,
+            buildingOrVilla: saved.buildingOrVilla || f.buildingOrVilla,
+            streetName: saved.streetName || saved.street || f.streetName,
+            apartmentOrFloor: saved.apartmentOrFloor || f.apartmentOrFloor,
             city: saved.city || f.city,
             state: saved.state || f.state,
             district: saved.district || f.district,
@@ -4288,6 +4350,9 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
               phone: cleanDigits(next.address.phone) || f.phone,
               phoneCode: next.address.phoneCode || f.phoneCode || UAE_PHONE_CODE,
               street: next.address.street || f.street,
+              buildingOrVilla: next.address.buildingOrVilla || f.buildingOrVilla,
+              streetName: next.address.streetName || next.address.street || f.streetName,
+              apartmentOrFloor: next.address.apartmentOrFloor || f.apartmentOrFloor,
               city: next.address.city || f.city,
               state: next.address.state || f.state,
               district: next.address.district || f.district,
@@ -4319,6 +4384,9 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                   phone: cleanDigits(nextSelected.phone) || f.phone,
                   phoneCode: nextSelected.phoneCode || f.phoneCode || UAE_PHONE_CODE,
                   street: nextSelected.street || f.street,
+                  buildingOrVilla: nextSelected.buildingOrVilla || f.buildingOrVilla,
+                  streetName: nextSelected.streetName || nextSelected.street || f.streetName,
+                  apartmentOrFloor: nextSelected.apartmentOrFloor || f.apartmentOrFloor,
                   city: nextSelected.city || f.city,
                   state: nextSelected.state || f.state,
                   district: nextSelected.district || f.district,
@@ -4358,6 +4426,9 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                 alternatePhone: cleanDigits(selectedAddr.alternatePhone),
                 alternatePhoneCode: selectedAddr.alternatePhoneCode || UAE_PHONE_CODE,
                 street: selectedAddr.street || f.street,
+                buildingOrVilla: selectedAddr.buildingOrVilla || f.buildingOrVilla,
+                streetName: selectedAddr.streetName || selectedAddr.street || f.streetName,
+                apartmentOrFloor: selectedAddr.apartmentOrFloor || f.apartmentOrFloor,
                 city: selectedAddr.city || f.city,
                 state: selectedAddr.state || f.state,
                 district: selectedAddr.district || f.district,

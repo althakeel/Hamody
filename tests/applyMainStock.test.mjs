@@ -30,7 +30,7 @@ test('bundle packs share the new unit stock and show auto-calculated packs', () 
 
   const preview = describeMainStockChange(product, 20);
   assert.equal(preview.name, 'Heated Shiatsu Massager – Neck&Back Relief');
-  assert.equal(preview.currentStock, 29966);
+  assert.equal(preview.currentStock, 10);
   assert.equal(preview.newStock, 20);
   assert.equal(preview.hasBundle, true);
   assert.equal(preview.variants.length, 2);

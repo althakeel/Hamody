@@ -3,8 +3,16 @@ import { uploadToS3 } from '@/lib/storage';
 import connectDB from '@/lib/mongodb';
 import Product from '@/models/Product';
 import Rating from '@/models/Rating';
+import Order from '@/models/Order';
 import User from '@/models/User';
 import { buildReviewSummary, enrichRatingUser } from '@/lib/storeReviewsApi';
+import {
+  getOrderReviewIdentity,
+  normalizeReviewEmail,
+  orderContainsReviewProduct,
+  reviewNamesMatch,
+} from '@/lib/verifiedReview';
+import { invalidateProductReviewCaches } from '@/lib/storeReviewCache';
 
 function getDefaultReviewDate() {
   return new Date();
@@ -15,12 +23,7 @@ function parseReviewDateInput(value) {
   if (!trimmed) return getDefaultReviewDate();
 
   const parsed = new Date(`${trimmed}T12:00:00`);
-  if (Number.isNaN(parsed.getTime())) return getDefaultReviewDate();
-
-  const endOfToday = new Date();
-  endOfToday.setHours(23, 59, 59, 999);
-  if (parsed > endOfToday) return getDefaultReviewDate();
-
+  if (Number.isNaN(parsed.getTime())) return null;
   return parsed;
 }
 
@@ -55,7 +58,7 @@ async function authenticateStore(request) {
     return { error: Response.json({ error: 'Not authorized' }, { status: 401 }) };
   }
 
-  return { storeId };
+  return { storeId, userId: decodedToken.uid };
 }
 
 async function getStoreProductIds(storeId) {
@@ -156,7 +159,7 @@ async function fetchProductReviews(productId, storeId) {
     .filter((userId) => typeof userId === 'string' && /^[a-fA-F0-9]{24}$/.test(userId));
 
   const users = objectIdUserIds.length
-    ? await User.find({ _id: { $in: objectIdUserIds } }).select('_id name email image').lean()
+    ? await User.find({ _id: { $in: objectIdUserIds } }).select('_id name image').lean()
     : [];
 
   const userMap = new Map(users.map((user) => [String(user._id), user]));
@@ -270,24 +273,35 @@ export async function POST(request) {
     const auth = await authenticateStore(request);
     if (auth.error) return auth.error;
 
-    const { storeId } = auth;
+    const { storeId, userId } = auth;
 
     const formData = await request.formData();
-    const productId = formData.get('productId');
+    const productId = String(formData.get('productId') || '').trim();
     const rating = Number(formData.get('rating'));
-    const review = formData.get('review');
-    const customerName = formData.get('customerName');
-    const customerEmail = formData.get('customerEmail');
+    const review = String(formData.get('review') || '').trim();
+    const customerName = String(formData.get('customerName') || '').trim();
+    const customerEmail = normalizeReviewEmail(formData.get('customerEmail'));
+    const orderNumber = Number(formData.get('orderNumber'));
+    const customerConsent = formData.get('customerConsent') === 'true';
     const reviewDateInput = formData.get('reviewDate');
     const images = formData.getAll('images');
     const videos = formData.getAll('videos');
 
-    if (!productId || !rating || !review || !customerName || !customerEmail) {
+    if (!productId || !Number.isInteger(rating) || rating < 1 || rating > 5
+      || !review || review.length > 5000 || !customerName || !customerEmail) {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    if (!productId || typeof productId !== 'string' || !productId.match(/^[a-fA-F0-9]{24}$/)) {
+    if (!productId.match(/^[a-fA-F0-9]{24}$/)) {
       return Response.json({ error: 'Product ID required or invalid format' }, { status: 400 });
+    }
+
+    if (!Number.isSafeInteger(orderNumber) || orderNumber < 1) {
+      return Response.json({ error: 'A valid delivered order number is required' }, { status: 400 });
+    }
+
+    if (!customerConsent) {
+      return Response.json({ error: 'Confirm that the customer submitted this review and consented to publication' }, { status: 400 });
     }
 
     let product;
@@ -303,6 +317,42 @@ export async function POST(request) {
 
     if (!product) {
       return Response.json({ error: 'Product not found or not authorized' }, { status: 403 });
+    }
+
+    const order = await Order.findOne({
+      storeId: String(storeId),
+      shortOrderNumber: orderNumber,
+      status: { $regex: /^delivered$/i },
+    }).lean();
+    if (!order || !orderContainsReviewProduct(order, productId)) {
+      return Response.json({ error: 'A delivered order for this product could not be verified' }, { status: 403 });
+    }
+
+    const orderIdentity = getOrderReviewIdentity(order);
+    if (!orderIdentity.email || orderIdentity.email !== customerEmail) {
+      return Response.json({ error: 'Customer email must match the verified delivered order' }, { status: 403 });
+    }
+    if (!reviewNamesMatch(orderIdentity.name, customerName)) {
+      return Response.json({ error: 'Customer name must match the verified delivered order' }, { status: 403 });
+    }
+
+    const reviewCreatedAt = parseReviewDateInput(reviewDateInput);
+    if (!reviewCreatedAt || Number.isNaN(reviewCreatedAt.getTime())) {
+      return Response.json({ error: 'Enter a valid review date' }, { status: 400 });
+    }
+    if (reviewCreatedAt > new Date()) {
+      return Response.json({ error: 'Review date cannot be in the future' }, { status: 400 });
+    }
+    if (order.createdAt && reviewCreatedAt < new Date(order.createdAt)) {
+      return Response.json({ error: 'Review date cannot be before the order date' }, { status: 400 });
+    }
+
+    const existingReview = await Rating.findOne({
+      productId,
+      orderId: String(order._id),
+    }).select('_id').lean();
+    if (existingReview) {
+      return Response.json({ error: 'This delivered order already has a review for this product' }, { status: 409 });
     }
 
     let imageUrls = [];
@@ -337,20 +387,8 @@ export async function POST(request) {
       );
     }
 
-    let user = await User.findOne({ email: customerEmail }).lean();
-
-    if (!user) {
-      user = await User.create({
-        _id: `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        email: customerEmail,
-        name: customerName,
-        image: '/placeholder-avatar.png',
-      });
-    }
-
-    const reviewCreatedAt = parseReviewDateInput(reviewDateInput);
     const newReview = await Rating.create({
-      userId: user._id.toString(),
+      userId: String(order.userId || `manual_${order._id}`),
       productId,
       rating,
       review,
@@ -358,24 +396,23 @@ export async function POST(request) {
       videos: videoUrls,
       customerName,
       customerEmail,
-      approved: true,
+      orderId: String(order._id),
+      reviewSource: 'verified_order',
+      verifiedPurchase: true,
+      customerConsentAt: new Date(),
+      consentRecordedBy: userId,
+      approved: false,
+      isApproved: false,
       createdAt: reviewCreatedAt,
       updatedAt: reviewCreatedAt,
     });
 
-    const populatedReview = {
-      ...newReview.toObject(),
-      user: {
-        _id: user._id,
-        name: user.name,
-        image: user.image,
-      },
-    };
+    invalidateProductReviewCaches(productId);
 
     return Response.json({
       success: true,
-      message: 'Review added successfully',
-      review: populatedReview,
+      message: 'Verified review added and queued for approval',
+      review: { ...newReview.toObject(), user: { name: customerName, image: '/placeholder-avatar.png' } },
     });
   } catch (error) {
     console.error('Manual review submission error:', error);
@@ -415,6 +452,7 @@ export async function DELETE(request) {
     }
 
     await Rating.findByIdAndDelete(reviewId);
+    invalidateProductReviewCaches(review.productId);
 
     return Response.json({
       success: true,

@@ -10,6 +10,7 @@ import { canBulkEditProducts, canChangeProductPricing } from '@/lib/productSaveG
 import { setProductsSupplierId } from '@/lib/supplierServer'
 import { assignProductSkus, findStoreProductsBySkus, parseSkuList } from '@/lib/productBulkSku'
 import { queueInventorySheetSync } from '@/lib/googleSheetsInventory'
+import { invalidateStorefrontProductCaches } from '@/lib/cache'
 
 export const runtime = 'nodejs'
 
@@ -76,6 +77,10 @@ export async function PATCH(request) {
     applyBooleanDirective(updateData, 'published', body?.published)
 
     const stockQuantity = parseOptionalNumber(body?.stockQuantity)
+    const stockQuantityWasProvided = body?.stockQuantity !== undefined
+      && body?.stockQuantity !== null
+      && body?.stockQuantity !== ''
+    const setZeroStockToFive = body?.inStock === 'enable' && !stockQuantityWasProvided
     const price = parseOptionalNumber(body?.price)
     const aed = parseOptionalNumber(body?.AED)
     const brand = typeof body?.brand === 'string' ? body.brand.trim() : undefined
@@ -114,7 +119,7 @@ export async function PATCH(request) {
       await assignProductSkus(Product, storeId, productIds, assignSkus)
     }
 
-    const stockChangeRequested = stockQuantity !== undefined
+    const stockChangeRequested = stockQuantity !== undefined || setZeroStockToFive
     const productsBeforeUpdate = stockChangeRequested
       ? await Product.find({ _id: { $in: productIds }, storeId: String(storeId) })
         .select('_id name sku stockQuantity hasVariants variants')
@@ -131,26 +136,63 @@ export async function PATCH(request) {
         )
       : { matchedCount: productIds.length, modifiedCount: supplierChangeRequested ? productIds.length : 0 }
 
+    const autoStockHistory = []
+    if (setZeroStockToFive && productsBeforeUpdate.length) {
+      await Promise.all(productsBeforeUpdate.map(async (product) => {
+        if (getCurrentStock(product) !== 0) return
+
+        const nextProduct = { ...product }
+        const update = { stockUpdatedAt: new Date() }
+        if (product.hasVariants && Array.isArray(product.variants) && product.variants.length) {
+          nextProduct.variants = product.variants.map((variant) => {
+            if (Number(variant?.stock ?? 0) > 0) return variant
+            return { ...variant, stock: 5 }
+          })
+          update.variants = nextProduct.variants
+        } else {
+          nextProduct.stockQuantity = 5
+          update.stockQuantity = 5
+        }
+
+        await Product.updateOne(
+          { _id: product._id, storeId: String(storeId) },
+          { $set: update },
+        )
+        autoStockHistory.push({ product, nextProduct })
+      }))
+    }
+
     if (stockChangeRequested && productsBeforeUpdate.length) {
       const actor = await resolveInventoryActor(userId, decodedToken)
-      await Promise.all(productsBeforeUpdate.map((product) => {
+      const historyProducts = stockQuantity !== undefined
+        ? productsBeforeUpdate.map((product) => ({
+            product,
+            nextStock: product.hasVariants && Array.isArray(product.variants) && product.variants.length
+              ? getCurrentStock(product)
+              : stockQuantity,
+          }))
+        : autoStockHistory.map(({ product, nextProduct }) => ({
+            product,
+            nextStock: getCurrentStock(nextProduct),
+          }))
+      await Promise.all(historyProducts.map(({ product, nextStock }) => {
         const previousStock = getCurrentStock(product)
-        const newStock = stockQuantity
         return recordInventoryHistory({
           ...actor,
           productId: String(product._id),
           productName: product.name || '',
           sku: product.sku || '',
           action: 'bulk_update',
-          quantityDelta: newStock - previousStock,
+          quantityDelta: nextStock - previousStock,
           previousStock,
-          newStock,
+          newStock: nextStock,
           source: 'bulk_update',
           details: `Bulk update for ${productIds.length} product(s)`,
         })
       }))
     }
 
+    invalidateStorefrontProductCaches()
     queueInventorySheetSync(storeId)
 
     return NextResponse.json({

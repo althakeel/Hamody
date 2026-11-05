@@ -218,7 +218,11 @@ Use the same items, address, and shipping fields as cash. Do not send `vaultsPay
 | `VAULTSPAY` | `{ "checkout_url", "orderId" }` | Open `checkout_url` |
 | `TABBY`, `TAMARA` | `{ "checkout_url", "orderId" }` | Open `checkout_url` |
 
-Open the hosted URL in a browser or in-app web view. Do not change it. A VaultsPay page expires about **15 minutes** after it is created. The order stays unpaid until verify succeeds.
+Open the hosted URL in a browser or in-app web view. Do not change it. Every VaultsPay page expires after **30 minutes** (`expiryInSeconds: 1800`). The order stays unpaid until verify succeeds.
+
+The server includes `https://www.store1920.com/api/vaultspay/callback` as `callBackUrl` on every VaultsPay initialization. The callback confirms the authoritative transaction with VaultsPay before it changes the order; the callback payload alone is not proof of payment.
+
+The callback handles provider updates as they arrive. A separate expiry check runs every minute and marks still-unpaid VaultsPay orders failed shortly after the 30-minute checkout expiry. Provider-confirmed success always takes precedence.
 
 Stay on checkout and show `error` when place order fails.
 
@@ -253,6 +257,8 @@ VaultsPay verify:
 | `{ "success": true, "paymentVerified": true }` | Paid. Open success |
 | `{ "success": true, "alreadyPaid": true }` | Already paid. Open success |
 | `{ "success": false, "pending": true }` | Still pending. Call verify again |
+| `{ "success": false, "pending": true }` while VaultsPay says `Initiated` | Unpaid. Keep waiting; do not fulfill the order |
+| `{ "success": false, "failed": true, "expired": true, "reason": "payment_expired" }` | Expired and unpaid. Open the failed screen |
 | `{ "success": false, "failed": true }` | Declined or cancelled. Open the failed screen |
 | `{ "success": false, "reason": "amount_mismatch" }` | Do not show success. Leave the order unpaid |
 | `500` `{ "error": "Failed to verify card payment" }` | Retry verify. Do not mark paid |

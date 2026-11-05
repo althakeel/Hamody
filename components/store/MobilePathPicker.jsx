@@ -33,7 +33,7 @@ function loadPathOptions(getToken) {
       const landingPages = (pageRes.data?.pages || []).flatMap((page) => {
         const slug = String(page?.slug || '').trim()
         if (!slug) return []
-        const value = `/c/${slug}`
+        const value = page.publicPath || `/c/${slug}`
         if (seenPages.has(value)) return []
         seenPages.add(value)
         return [{ value, label: page.title || slug, group: 'Pages' }]

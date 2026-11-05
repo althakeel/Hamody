@@ -29,7 +29,11 @@ import { allocateShortOrderNumber } from '@/lib/orderNumber';
 import { ensurePersistedShortOrderNumber, ensurePersistedShortOrderNumbers } from '@/lib/orderDisplayServer';
 import { fetchNormalizedDelhiveryTracking } from '@/lib/delhivery';
 import { createTamaraSession } from '@/lib/tamara';
-import { createVaultsPayCheckout } from '@/lib/vaultsPay';
+import {
+    VAULTSPAY_CALLBACK_PATH,
+    VAULTSPAY_EXPIRY_SECONDS,
+    createVaultsPayCheckout,
+} from '@/lib/vaultsPay';
 import { buildCustomerSitePath } from '@/lib/appUrl';
 import { buildCheckoutRedirectUrl, resolveCheckoutOrigin, resolveTamaraMerchantBaseUrl } from '@/lib/checkoutOrigin';
 import { getProductAbsoluteUrl } from '@/lib/productUrl';
@@ -1336,7 +1340,8 @@ export async function POST(request) {
                     orderId: primaryOrderId,
                     orderNumber: primaryOrder?.shortOrderNumber || '',
                     redirectUrl: `${origin}/order-success?orderId=${primaryOrderId}&vaultspay=1`,
-                    callbackUrl: buildCustomerSitePath('/api/webhooks/vaultspay'),
+                    callbackUrl: buildCustomerSitePath(VAULTSPAY_CALLBACK_PATH),
+                    expiryInSeconds: VAULTSPAY_EXPIRY_SECONDS,
                     method: walletMethod,
                     customer: {
                         name: customerName,
@@ -1363,6 +1368,9 @@ export async function POST(request) {
                         $set: {
                             vaultsPayTransactionId: checkout.transactionId || '',
                             vaultsPayPaymentStatus: 'pending',
+                            vaultsPayPaymentUrlExpiresAt: new Date(
+                              Date.now() + VAULTSPAY_EXPIRY_SECONDS * 1000,
+                            ),
                             paymentScheme: walletMethod === 'applepay'
                               ? 'Apple Pay'
                               : walletMethod === 'googlepay'

@@ -1,0 +1,2606 @@
+{
+  "generatedAt": "2026-10-30T08:51:23.124Z",
+  "malformedCategories": [
+    {
+      "_id": "6ae1ebcb59315dc1502378ba",
+      "name": "6a3bd17ebeeb62e6800f7ab5",
+      "nameAr": "",
+      "legacySourceId": null,
+      "slug": "6a3bd17ebeeb62e6800f7ab5",
+      "description": null,
+      "descriptionAr": "",
+      "image": null,
+      "bannerEn": "",
+      "bannerAr": "",
+      "bannerTabletEn": "",
+      "bannerTabletAr": "",
+      "bannerMobileEn": "",
+      "bannerMobileAr": "",
+      "url": "",
+      "storeId": null,
+      "parentId": null,
+      "level": 1,
+      "metaTitle": "",
+      "metaDescription": "",
+      "isActive": true,
+      "sortOrder": 0,
+      "merchandisedProductIds": [],
+      "createdAt": "2026-10-28T12:34:19.806Z",
+      "updatedAt": "2026-10-28T12:34:19.806Z",
+      "__v": 0
+    },
+    {
+      "_id": "6ae1ebcb59315dc1502378c8",
+      "name": "6a3bd17dbeeb62e6800f7a7b",
+      "nameAr": "",
+      "legacySourceId": null,
+      "slug": "6a3bd17dbeeb62e6800f7a7b",
+      "description": null,
+      "descriptionAr": "",
+      "image": null,
+      "bannerEn": "",
+      "bannerAr": "",
+      "bannerTabletEn": "",
+      "bannerTabletAr": "",
+      "bannerMobileEn": "",
+      "bannerMobileAr": "",
+      "url": "",
+      "storeId": null,
+      "parentId": null,
+      "level": 1,
+      "metaTitle": "",
+      "metaDescription": "",
+      "isActive": true,
+      "sortOrder": 0,
+      "merchandisedProductIds": [],
+      "createdAt": "2026-10-28T12:34:19.841Z",
+      "updatedAt": "2026-10-28T12:34:19.841Z",
+      "__v": 0
+    },
+    {
+      "_id": "6ae1ebcb59315dc1502378d9",
+      "name": "6a3bd17dbeeb62e6800f7a7e",
+      "nameAr": "",
+      "legacySourceId": null,
+      "slug": "6a3bd17dbeeb62e6800f7a7e",
+      "description": null,
+      "descriptionAr": "",
+      "image": null,
+      "bannerEn": "",
+      "bannerAr": "",
+      "bannerTabletEn": "",
+      "bannerTabletAr": "",
+      "bannerMobileEn": "",
+      "bannerMobileAr": "",
+      "url": "",
+      "storeId": null,
+      "parentId": null,
+      "level": 1,
+      "metaTitle": "",
+      "metaDescription": "",
+      "isActive": true,
+      "sortOrder": 0,
+      "merchandisedProductIds": [],
+      "createdAt": "2026-10-28T12:34:19.881Z",
+      "updatedAt": "2026-10-28T12:34:19.881Z",
+      "__v": 0
+    },
+    {
+      "_id": "6ae358ac22569bd6496222ed",
+      "name": "6ac8db174ba6fe30725c9dd4",
+      "nameAr": "",
+      "legacySourceId": null,
+      "slug": "6ac8db174ba6fe30725c9dd4",
+      "description": null,
+      "descriptionAr": "",
+      "image": null,
+      "bannerEn": "",
+      "bannerAr": "",
+      "bannerTabletEn": "",
+      "bannerTabletAr": "",
+      "bannerMobileEn": "",
+      "bannerMobileAr": "",
+      "url": "",
+      "storeId": null,
+      "parentId": null,
+      "level": 1,
+      "metaTitle": "",
+      "metaDescription": "",
+      "isActive": true,
+      "sortOrder": 0,
+      "merchandisedProductIds": [],
+      "createdAt": "2026-10-29T14:31:08.758Z",
+      "updatedAt": "2026-10-29T14:31:08.758Z",
+      "__v": 0
+    }
+  ],
+  "affectedProductCount": 86,
+  "changes": [
+    {
+      "productId": "6a3a8231a917bf49b3721136",
+      "sku": "PD-PBFCH064-BK",
+      "name": "Porodo 4G LTE | WIFI 6 Pocket Router 10000mAh Power Bank",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:31:19.597Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a825fa917bf49b372131d",
+      "sku": "PDLFST035BK",
+      "name": "Porodo 3-Axis | Ai Tracker &amp; Light Gimbal stabilizer",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:31:14.957Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8261a917bf49b3721338",
+      "sku": "PD-AITGM-GY",
+      "name": "Porodo 3-Axis Gimbal Stabilizer Al Tracking &amp; Gestures &amp; IOS/Android APP",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:31:14.915Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8262a917bf49b3721341",
+      "sku": "PD-GAIFTGR-WH",
+      "name": "Porodo 360° Rotation AI Face Tracking with Remote Control",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:31:14.901Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a83e7a917bf49b37222bc",
+      "sku": "PDCBL0034BK",
+      "name": "Porodo 4-In-1 Braided High-Speed Charging Cable",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:36.153Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8471a917bf49b37227f4",
+      "sku": "PDFWCH087WH",
+      "name": "Porodo TerraCharge 65W GaN Dual-Port Adapter",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:23.292Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a84efa917bf49b3722ccf",
+      "sku": "PD-FWCH062-BK",
+      "name": "Porodo Transparent Shell Wireless Charging Stand",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:10.669Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a84f6a917bf49b3722d10",
+      "sku": "PD-MGSC18-BK",
+      "name": "Porodo Transparent 15W Magsafe Charge Cable 1.8m/5.9ft",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:10.538Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a84f7a917bf49b3722d19",
+      "sku": "PD-MGSC12-BK",
+      "name": "Porodo Transparent 15W Magsafe Charge Cable 1.2m/4ft",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:09.271Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8500a917bf49b3722d82",
+      "sku": "PDPBFCH037WH",
+      "name": "Porodo SOVO 10000mAh MagSafe Power Bank with Charging LED",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:09.099Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8501a917bf49b3722d8b",
+      "sku": "PDPB15WBU",
+      "name": "Porodo Ravo 10000mAh Magsafe Power Bank",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:09.083Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8502a917bf49b3722d96",
+      "sku": "PDPBFCH099BK",
+      "name": "Porodo Magnex 20000mAh Magsafe Power Bank",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:09.065Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8505a917bf49b3722daa",
+      "sku": "PDPBFCH4560BK",
+      "name": "Porodo Cappadoc 60000mAh Multi-Port Power Bank With TFT Display",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:09.027Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8507a917bf49b3722dc5",
+      "sku": "PDPBFCH098BG",
+      "name": "Porodo Smart Display 20000mAh Power Bank",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:07.691Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a850ba917bf49b3722dec",
+      "sku": "PDNPB36SL",
+      "name": "Porodo Petite 10000mAh Power Bank",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:07.621Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a850ca917bf49b3722df5",
+      "sku": "PDNPB37SL",
+      "name": "Porodo Petite 20000mAh Power Bank",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:07.603Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a850ea917bf49b3722e07",
+      "sku": "PDPBJ281BK",
+      "name": "Porodo Lara 50000mAh Power Bank with Integrated Cables &amp; Flashlight",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:07.568Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8510a917bf49b3722e19",
+      "sku": "PDPBFCH092BK",
+      "name": "Porodo Sway 60000 mAh Power Bank PD 100W",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:07.533Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8510a917bf49b3722e22",
+      "sku": "PDPBFCH094GY",
+      "name": "Porodo SlimMag 5000mAh Magnetic Power Bank",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:07.515Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8513a917bf49b3722e36",
+      "sku": "PDPBXRT40WH",
+      "name": "Porodo PortaPower 40000mAh Power Bank with Built-In LED Lighting",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:07.475Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8514a917bf49b3722e3f",
+      "sku": "PDPBXRT50WH",
+      "name": "Porodo PortaPower 50000mAh Power Bank with Built-In LED Lighting",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:06.132Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8515a917bf49b3722e48",
+      "sku": "PDPBXRT60WH",
+      "name": "Porodo PortaPower 60000mAh Power Bank with Built-In LED Lighting",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:06.111Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8519a917bf49b3722e6f",
+      "sku": "PDPB15WSLYL",
+      "name": "Porodo 10000mAh MagSafe Power Bank PD20W",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:06.049Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a851ba917bf49b3722e81",
+      "sku": "PDPBXH002BK",
+      "name": "Porodo Arcadevolt 10000mAh MagSafe Power Bank",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:06.004Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a851ca917bf49b3722e95",
+      "sku": "PD-PBFCH084-PK",
+      "name": "Porodo 5000mAh MagSafe Power Bank Mirror + Dynamic Light Modes",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:05.971Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a851da917bf49b3722e9e",
+      "sku": "PDPBFCH085DG",
+      "name": "Porodo 10000mAh MagSafe Power Bank Total Output 5V/3A(MAX) TFT",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:05.954Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a851ea917bf49b3722ea7",
+      "sku": "PDPBFCH086DG",
+      "name": "Porodo 10000mAh Qi2 Wireless Power Bank",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:05.919Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a851fa917bf49b3722eb0",
+      "sku": "PDPBFCH088BK",
+      "name": "Porodo Chrome Volt 10000 mAh Power Bank",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:05.902Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8523a917bf49b3722ed2",
+      "sku": "PD-PBFCH083-BK",
+      "name": "Porodo 10000mAh MagSafe Power Bank",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:04.363Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8525a917bf49b3722ee4",
+      "sku": "PD-PBFCH081-BK",
+      "name": "Porodo 20000mAh Power Bank",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:04.298Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8526a917bf49b3722eed",
+      "sku": "PD-PBFCH082-BK",
+      "name": "Porodo 10000mAh MagSafe Power Bank",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:04.278Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a852aa917bf49b3722f14",
+      "sku": "PDPBFCH078BK",
+      "name": "Porodo 40000mAh Power Bank Multi-Device PD Charging",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:04.184Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a852aa917bf49b3722f1d",
+      "sku": "PDPBFCH079BK",
+      "name": "Porodo 60000mAh Power Bank Multi-Device PD Charging",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:04.159Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a852ea917bf49b3722f41",
+      "sku": "PDPBFCH065BK",
+      "name": "Porodo 10000mAh Power Bank Built-In Type-C &amp; Stand",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:03.712Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8530a917bf49b3722f4e",
+      "sku": "PDPBFCH080BK",
+      "name": "Porodo 10000mAh Magsafe Power Bank Built-In Lightning And Type-C",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:03.696Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8531a917bf49b3722f60",
+      "sku": "PDPBFCH060BK",
+      "name": "Porodo 10000mAh Power bank 58CM Retractable Type-C",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:02.375Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8533a917bf49b3722f6d",
+      "sku": "PDPBFCH067BK",
+      "name": "Porodo Oranzo 10000mAh Magsafe Power Bank PD20W",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:02.348Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8534a917bf49b3722f78",
+      "sku": "PD-PBFCH048-BK",
+      "name": "Porodo 5000mAh Power Bank with Type-C Connector",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:02.327Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8534a917bf49b3722f83",
+      "sku": "PD-PBFCH049-BK",
+      "name": "Porodo 5000mAh Power Bank with Lightning Connector",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:02.288Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8536a917bf49b3722f8e",
+      "sku": "PDPBFCH057BK",
+      "name": "Porodo 10000mAh Power bank Digital Display with C &amp; Lightning Cable",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:02.267Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8537a917bf49b3722f9c",
+      "sku": "PDPBFCH058BK",
+      "name": "Porodo 20000mAh Power bank Digital Display with C &amp; Lightning Cable",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:02.243Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8539a917bf49b3722fae",
+      "sku": "PDPBFCH061BK",
+      "name": "Porodo 50000mAh Power Bank Integrated Cables",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:02.206Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a853ca917bf49b3722fcd",
+      "sku": "PDPBFCH055BK",
+      "name": "Porodo 10000mAh Power Bank Built-In Type-C &amp; Lightning",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:02.127Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a853da917bf49b3722fd8",
+      "sku": "PDPBFCH056BK",
+      "name": "Porodo 20000mAh Power Bank Built-In Type-C &amp; Lightning",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:02.101Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8540a917bf49b3722fec",
+      "sku": "PD-PBFCH019-BK",
+      "name": "Porodo 10000mAh Power Bank Charge Two Devices Simultaneously",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:02.045Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8541a917bf49b3722ff5",
+      "sku": "PD-PBFCH026-BK",
+      "name": "Porodo 5000mAh Lightning&amp; Type-C Power Bank Station With Charging Base",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:02.018Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8542a917bf49b3722ffe",
+      "sku": "PD-PBFCH038-BK",
+      "name": "Porodo 10000mAh Power Bank Built-In Removable Cables Quick Charge &amp; Compact",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:00.707Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8543a917bf49b3723007",
+      "sku": "PD-PBFCH029-BK",
+      "name": "Porodo 10000mAh Slim Powerbank Built-in Type-C &amp; Lightning Cables",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:00.688Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8544a917bf49b3723010",
+      "sku": "PD-PBFCH008-BK",
+      "name": "Porodo Super Compact 20W PD &amp; QC3.0 Power Bank 30000mAh",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:00.664Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8546a917bf49b3723027",
+      "sku": "PD-PBFCH007-BK",
+      "name": "Porodo Super Compact 20W PD &amp; QC3.0 Power Bank 20000mAh With 3-Output Fast Charging",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:00.642Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8547a917bf49b3723030",
+      "sku": "PD-PBFCH006-BK",
+      "name": "Porodo Super Slim 20W PD &amp; QC3.0 Power Bank 10000mAh With 2O output Fast Charging",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:00.604Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8548a917bf49b3723039",
+      "sku": "PD-PBFCH001-BK",
+      "name": "Porodo Ultra-Compact 18W PD &amp; QC3.0 Power Bank 10000mAh",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:00.575Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8549a917bf49b3723042",
+      "sku": "PD-PBFCH001-PU",
+      "name": "Porodo Brand 10000mAh Ultra-Compact 20W PD &amp; QC Power Bank",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:00.549Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a854aa917bf49b372304b",
+      "sku": "PD-PBFCH041-BK",
+      "name": "Porodo 10000mAh Magsafe Power Bank Built-In Type-C &amp; Lightning",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:00.525Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a854ba917bf49b372305d",
+      "sku": "PD-PBFCH060-WH",
+      "name": "Porodo 10000mAh Power bank 58CM Retractable Type-C",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:00.477Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a854ca917bf49b3723066",
+      "sku": "PD-PBFCH040-WH",
+      "name": "Porodo 10000mAh Magsafe Grip Power Bank",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:00.436Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a854da917bf49b372306f",
+      "sku": "PD-PBFCH032-GD",
+      "name": "Porodo 20000mAh Mirror Power Bank Built-In Charge &amp; Re-Charge Cables",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:00.372Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a854fa917bf49b372307a",
+      "sku": "PD-PBFCH044-BK",
+      "name": "Porodo 10000mAh Powerbank Dual Built-In Cables Fast Charging",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:00.338Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8550a917bf49b3723085",
+      "sku": "PD-PBFCH043-BK",
+      "name": "Porodo 10000mAh 4 Power Bank Station Lightning/Type-C Integrated Cable",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378ba",
+        "categories": [
+          "6ae1ebcb59315dc1502378ba",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:00.302Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378ba",
+          "fromName": "6a3bd17ebeeb62e6800f7ab5",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a824ea917bf49b3721271",
+      "sku": "PD-SLSEDTR-BK",
+      "name": "Porodo 360° Tilt Handle Media Pod Folding Quad Base",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378c8",
+        "categories": [
+          "6ae1ebcb59315dc1502378c8",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:31:16.465Z"
+      },
+      "after": {
+        "category": "6a3bd17ebeeb62e6800f7aa9",
+        "categories": [
+          "6a3bd17ebeeb62e6800f7aa9",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378c8",
+          "fromName": "6a3bd17dbeeb62e6800f7a7b",
+          "toId": "6a3bd17ebeeb62e6800f7aa9",
+          "toName": "Photography Accessories",
+          "toSlug": "photography-accessories"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8253a917bf49b37212aa",
+      "sku": "PDRCFL33WH",
+      "name": "Porodo Glowring Portable Fill Light Clip-On Design",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378c8",
+        "categories": [
+          "6ae1ebcb59315dc1502378c8",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:31:16.393Z"
+      },
+      "after": {
+        "category": "6a3bd17ebeeb62e6800f7aa9",
+        "categories": [
+          "6a3bd17ebeeb62e6800f7aa9",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378c8",
+          "fromName": "6a3bd17dbeeb62e6800f7a7b",
+          "toId": "6a3bd17ebeeb62e6800f7aa9",
+          "toName": "Photography Accessories",
+          "toSlug": "photography-accessories"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8260a917bf49b3721326",
+      "sku": "PDLFST034BK",
+      "name": "Porodo 2-Axis Gimbal Stablizer",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378c8",
+        "categories": [
+          "6ae1ebcb59315dc1502378c8",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:31:14.941Z"
+      },
+      "after": {
+        "category": "6a3bd17ebeeb62e6800f7aa9",
+        "categories": [
+          "6a3bd17ebeeb62e6800f7aa9",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378c8",
+          "fromName": "6a3bd17dbeeb62e6800f7a7b",
+          "toId": "6a3bd17ebeeb62e6800f7aa9",
+          "toName": "Photography Accessories",
+          "toSlug": "photography-accessories"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a838ba917bf49b3721f20",
+      "sku": "PD-HSM11-BK",
+      "name": "Porodo Magsafe Magnetic Desk Mount",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378c8",
+        "categories": [
+          "6ae1ebcb59315dc1502378c8",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:46.795Z"
+      },
+      "after": {
+        "category": "6a3bd17ebeeb62e6800f7a9f",
+        "categories": [
+          "6a3bd17ebeeb62e6800f7a9f",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378c8",
+          "fromName": "6a3bd17dbeeb62e6800f7a7b",
+          "toId": "6a3bd17ebeeb62e6800f7a9f",
+          "toName": "Mobile Accessories",
+          "toSlug": "mobile-accessories"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a838ca917bf49b3721f32",
+      "sku": "PD-HSM01-GY",
+      "name": "Porodo HS01 DUO Mount Magsafe &amp; Suction",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378c8",
+        "categories": [
+          "6ae1ebcb59315dc1502378c8",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:45.485Z"
+      },
+      "after": {
+        "category": "6a3bd183beeb62e6800f7bf1",
+        "categories": [
+          "6a3bd183beeb62e6800f7bf1",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378c8",
+          "fromName": "6a3bd17dbeeb62e6800f7a7b",
+          "toId": "6a3bd183beeb62e6800f7bf1",
+          "toName": "Car Phone Mount",
+          "toSlug": "car-phone-mount"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a83a0a917bf49b3721ff4",
+      "sku": "PD-FE1CRM-BK",
+      "name": "Porodo Auto-Clamp Dashboard Mount Universal Design",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378c8",
+        "categories": [
+          "6ae1ebcb59315dc1502378c8",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:43.854Z"
+      },
+      "after": {
+        "category": "6a3bd183beeb62e6800f7bf1",
+        "categories": [
+          "6a3bd183beeb62e6800f7bf1",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378c8",
+          "fromName": "6a3bd17dbeeb62e6800f7a7b",
+          "toId": "6a3bd183beeb62e6800f7bf1",
+          "toName": "Car Phone Mount",
+          "toSlug": "car-phone-mount"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a83a2a917bf49b3722002",
+      "sku": "PD-MARMC-BK",
+      "name": "Porodo Magsafe Flexi-Mount Rotating Joints",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378c8",
+        "categories": [
+          "6ae1ebcb59315dc1502378c8",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:43.839Z"
+      },
+      "after": {
+        "category": "6a3bd17ebeeb62e6800f7a9f",
+        "categories": [
+          "6a3bd17ebeeb62e6800f7a9f",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378c8",
+          "fromName": "6a3bd17dbeeb62e6800f7a7b",
+          "toId": "6a3bd17ebeeb62e6800f7a9f",
+          "toName": "Mobile Accessories",
+          "toSlug": "mobile-accessories"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a83b2a917bf49b37220a6",
+      "sku": "PD-HSM21-SL",
+      "name": "Porodo Aluminum Alloy Mobile Stand",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378c8",
+        "categories": [
+          "6ae1ebcb59315dc1502378c8",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:42.257Z"
+      },
+      "after": {
+        "category": "6a3bd17ebeeb62e6800f7a9f",
+        "categories": [
+          "6a3bd17ebeeb62e6800f7a9f",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378c8",
+          "fromName": "6a3bd17dbeeb62e6800f7a7b",
+          "toId": "6a3bd17ebeeb62e6800f7a9f",
+          "toName": "Mobile Accessories",
+          "toSlug": "mobile-accessories"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a84b0a917bf49b3722a61",
+      "sku": "PD-WFPU2-WH",
+      "name": "Porodo Lifestyle Dual USB-Port Smart Wifi Plug UK 16A",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378c8",
+        "categories": [
+          "6ae1ebcb59315dc1502378c8",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:16.887Z"
+      },
+      "after": {
+        "category": "6a3bd17ebeeb62e6800f7abf",
+        "categories": [
+          "6a3bd17ebeeb62e6800f7abf",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378c8",
+          "fromName": "6a3bd17dbeeb62e6800f7a7b",
+          "toId": "6a3bd17ebeeb62e6800f7abf",
+          "toName": "Smart Home Devices",
+          "toSlug": "smart-home-devices"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a84eaa917bf49b3722c9d",
+      "sku": "PDXHX3BK",
+      "name": "Porodo 4-In-1 Powerdock Wireless Charging Station with 360° Adjustable Viewing",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378c8",
+        "categories": [
+          "6ae1ebcb59315dc1502378c8",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:10.764Z"
+      },
+      "after": {
+        "category": "6adb1aa70a96c3ebfd77d244",
+        "categories": [
+          "6adb1aa70a96c3ebfd77d244",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378c8",
+          "fromName": "6a3bd17dbeeb62e6800f7a7b",
+          "toId": "6adb1aa70a96c3ebfd77d244",
+          "toName": "Chargers",
+          "toSlug": "chargers"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a84f5a917bf49b3722d07",
+      "sku": "PD-FWCH035-BK",
+      "name": "Porodo Wireless Charging Rotating Stand",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378c8",
+        "categories": [
+          "6ae1ebcb59315dc1502378c8",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:10.557Z"
+      },
+      "after": {
+        "category": "6adb1aa70a96c3ebfd77d244",
+        "categories": [
+          "6adb1aa70a96c3ebfd77d244",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378c8",
+          "fromName": "6a3bd17dbeeb62e6800f7a7b",
+          "toId": "6adb1aa70a96c3ebfd77d244",
+          "toName": "Chargers",
+          "toSlug": "chargers"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a853ea917bf49b3722fe1",
+      "sku": "PD-PBFCH027-WH",
+      "name": "Porodo 5000mAh Slim Powerbank Integrated Lightning Cable",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378c8",
+        "categories": [
+          "6ae1ebcb59315dc1502378c8",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:02.077Z"
+      },
+      "after": {
+        "category": "6abf5819dcaed03913a3a431",
+        "categories": [
+          "6abf5819dcaed03913a3a431",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378c8",
+          "fromName": "6a3bd17dbeeb62e6800f7a7b",
+          "toId": "6abf5819dcaed03913a3a431",
+          "toName": "Power Banks",
+          "toSlug": "power-banks"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8216a917bf49b3721020",
+      "sku": "PDSPP7CWH",
+      "name": "Porodo Smart Stylus Pen for Ipad",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378d9",
+        "categories": [
+          "6ae1ebcb59315dc1502378d9",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:31:22.576Z"
+      },
+      "after": {
+        "category": "6a3bd17ebeeb62e6800f7a9f",
+        "categories": [
+          "6a3bd17ebeeb62e6800f7a9f",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378d9",
+          "fromName": "6a3bd17dbeeb62e6800f7a7e",
+          "toId": "6a3bd17ebeeb62e6800f7a9f",
+          "toName": "Mobile Accessories",
+          "toSlug": "mobile-accessories"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8218a917bf49b3721036",
+      "sku": "PDUSPTSWH",
+      "name": "Porodo Universal Pencil For Mobile &amp; Tablet",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378d9",
+        "categories": [
+          "6ae1ebcb59315dc1502378d9",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:31:22.548Z"
+      },
+      "after": {
+        "category": "6a3bd17ebeeb62e6800f7a9f",
+        "categories": [
+          "6a3bd17ebeeb62e6800f7a9f",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378d9",
+          "fromName": "6a3bd17dbeeb62e6800f7a7e",
+          "toId": "6a3bd17ebeeb62e6800f7a9f",
+          "toName": "Mobile Accessories",
+          "toSlug": "mobile-accessories"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a83b4a917bf49b37220b8",
+      "sku": "PDHSM23GD",
+      "name": "Porodo 360° Rotating Mobile &amp; Tablet Stand",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378d9",
+        "categories": [
+          "6ae1ebcb59315dc1502378d9",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:42.207Z"
+      },
+      "after": {
+        "category": "6a3bd17ebeeb62e6800f7a9f",
+        "categories": [
+          "6a3bd17ebeeb62e6800f7a9f",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378d9",
+          "fromName": "6a3bd17dbeeb62e6800f7a7e",
+          "toId": "6a3bd17ebeeb62e6800f7a9f",
+          "toName": "Mobile Accessories",
+          "toSlug": "mobile-accessories"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a83b5a917bf49b37220c1",
+      "sku": "PDHSM24GY",
+      "name": "Porodo Aluminum Stand Mobile &amp; Tablet",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378d9",
+        "categories": [
+          "6ae1ebcb59315dc1502378d9",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:42.181Z"
+      },
+      "after": {
+        "category": "6a3bd17ebeeb62e6800f7a9f",
+        "categories": [
+          "6a3bd17ebeeb62e6800f7a9f",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378d9",
+          "fromName": "6a3bd17dbeeb62e6800f7a7e",
+          "toId": "6a3bd17ebeeb62e6800f7a9f",
+          "toName": "Mobile Accessories",
+          "toSlug": "mobile-accessories"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a83b5a917bf49b37220ca",
+      "sku": "PDHSM25GY",
+      "name": "Porodo 360° Rotating Mobile &amp; Tablet Stand",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378d9",
+        "categories": [
+          "6ae1ebcb59315dc1502378d9",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:42.158Z"
+      },
+      "after": {
+        "category": "6a3bd17ebeeb62e6800f7a9f",
+        "categories": [
+          "6a3bd17ebeeb62e6800f7a9f",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378d9",
+          "fromName": "6a3bd17dbeeb62e6800f7a7e",
+          "toId": "6a3bd17ebeeb62e6800f7a9f",
+          "toName": "Mobile Accessories",
+          "toSlug": "mobile-accessories"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a83b7a917bf49b37220dc",
+      "sku": "PD-ACPS360-GY",
+      "name": "Porodo 360° Rotating Multi-Joint Mobile &amp; Tablet Stand",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378d9",
+        "categories": [
+          "6ae1ebcb59315dc1502378d9",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:40.850Z"
+      },
+      "after": {
+        "category": "6a3bd17ebeeb62e6800f7a9f",
+        "categories": [
+          "6a3bd17ebeeb62e6800f7a9f",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378d9",
+          "fromName": "6a3bd17dbeeb62e6800f7a7e",
+          "toId": "6a3bd17ebeeb62e6800f7a9f",
+          "toName": "Mobile Accessories",
+          "toSlug": "mobile-accessories"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a83b9a917bf49b37220e7",
+      "sku": "PD-ALFMB-GY",
+      "name": "Porodo Aluminum Mobile &amp; Tablet Stand",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378d9",
+        "categories": [
+          "6ae1ebcb59315dc1502378d9",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:40.834Z"
+      },
+      "after": {
+        "category": "6a3bd17ebeeb62e6800f7a9f",
+        "categories": [
+          "6a3bd17ebeeb62e6800f7a9f",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378d9",
+          "fromName": "6a3bd17dbeeb62e6800f7a7e",
+          "toId": "6a3bd17ebeeb62e6800f7a9f",
+          "toName": "Mobile Accessories",
+          "toSlug": "mobile-accessories"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a83baa917bf49b37220f0",
+      "sku": "PD-TRNSMS-WH",
+      "name": "Porodo Rotating Transparent Mobile &amp; Tablet Stand",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378d9",
+        "categories": [
+          "6ae1ebcb59315dc1502378d9",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:40.818Z"
+      },
+      "after": {
+        "category": "6a3bd17ebeeb62e6800f7a9f",
+        "categories": [
+          "6a3bd17ebeeb62e6800f7a9f",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378d9",
+          "fromName": "6a3bd17dbeeb62e6800f7a7e",
+          "toId": "6a3bd17ebeeb62e6800f7a9f",
+          "toName": "Mobile Accessories",
+          "toSlug": "mobile-accessories"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a83bba917bf49b37220f9",
+      "sku": "PD-TRN360S-WH",
+      "name": "Porodo Rotating Transparent Multi-Purpose Stand",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378d9",
+        "categories": [
+          "6ae1ebcb59315dc1502378d9",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:40.802Z"
+      },
+      "after": {
+        "category": "6a3bd17ebeeb62e6800f7a9f",
+        "categories": [
+          "6a3bd17ebeeb62e6800f7a9f",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378d9",
+          "fromName": "6a3bd17dbeeb62e6800f7a7e",
+          "toId": "6a3bd17ebeeb62e6800f7a9f",
+          "toName": "Mobile Accessories",
+          "toSlug": "mobile-accessories"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a83bca917bf49b372210b",
+      "sku": "PDCCT25BK",
+      "name": "Porodo Multi-Angle Dock Laptop &amp; Tablet Stand",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378d9",
+        "categories": [
+          "6ae1ebcb59315dc1502378d9",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:40.762Z"
+      },
+      "after": {
+        "category": "6a3bd17ebeeb62e6800f7a9f",
+        "categories": [
+          "6a3bd17ebeeb62e6800f7a9f",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378d9",
+          "fromName": "6a3bd17dbeeb62e6800f7a7e",
+          "toId": "6a3bd17ebeeb62e6800f7a9f",
+          "toName": "Mobile Accessories",
+          "toSlug": "mobile-accessories"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a83aaa917bf49b3722057",
+      "sku": "PDD158GY",
+      "name": "Porodo Zelo 360° Rotatable Tablet Holder",
+      "before": {
+        "category": "6ae1ebcb59315dc1502378d9",
+        "categories": [
+          "6ae1ebcb59315dc1502378d9",
+          "6abf47d0dcaed03913a2f451"
+        ],
+        "updatedAt": "2026-10-29T14:30:42.425Z"
+      },
+      "after": {
+        "category": "6a3bd17ebeeb62e6800f7a9f",
+        "categories": [
+          "6a3bd17ebeeb62e6800f7a9f",
+          "6abf47d0dcaed03913a2f451"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae1ebcb59315dc1502378d9",
+          "fromName": "6a3bd17dbeeb62e6800f7a7e",
+          "toId": "6a3bd17ebeeb62e6800f7a9f",
+          "toName": "Mobile Accessories",
+          "toSlug": "mobile-accessories"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8294a917bf49b3721555",
+      "sku": "PDLFST2511WH",
+      "name": "Porodo 4-In-1 Face & Body Electric Trimmer Smart LED Display",
+      "before": {
+        "category": "6ae358ac22569bd6496222ed",
+        "categories": [
+          "6ae358ac22569bd6496222ed"
+        ],
+        "updatedAt": "2026-10-29T14:31:10.290Z"
+      },
+      "after": {
+        "category": "6abf873cdcaed03913a4a754",
+        "categories": [
+          "6abf873cdcaed03913a4a754"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae358ac22569bd6496222ed",
+          "fromName": "6ac8db174ba6fe30725c9dd4",
+          "toId": "6abf873cdcaed03913a4a754",
+          "toName": "Men's Grooming",
+          "toSlug": "men-s-grooming"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a8296a917bf49b3721573",
+      "sku": "PDLFST8307BK",
+      "name": "Porodo Lifestyle Shapetrim Dual-Blade Trimmer",
+      "before": {
+        "category": "6ae358ac22569bd6496222ed",
+        "categories": [
+          "6ae358ac22569bd6496222ed"
+        ],
+        "updatedAt": "2026-10-29T14:31:10.242Z"
+      },
+      "after": {
+        "category": "6abf873cdcaed03913a4a754",
+        "categories": [
+          "6abf873cdcaed03913a4a754"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae358ac22569bd6496222ed",
+          "fromName": "6ac8db174ba6fe30725c9dd4",
+          "toId": "6abf873cdcaed03913a4a754",
+          "toName": "Men's Grooming",
+          "toSlug": "men-s-grooming"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a829ca917bf49b37215bb",
+      "sku": "PDLFST128BK",
+      "name": "Porodo Lifestyle Dual-Blade Pocket Shaver",
+      "before": {
+        "category": "6ae358ac22569bd6496222ed",
+        "categories": [
+          "6ae358ac22569bd6496222ed"
+        ],
+        "updatedAt": "2026-10-29T14:31:08.808Z"
+      },
+      "after": {
+        "category": "6abf873cdcaed03913a4a754",
+        "categories": [
+          "6abf873cdcaed03913a4a754"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae358ac22569bd6496222ed",
+          "fromName": "6ac8db174ba6fe30725c9dd4",
+          "toId": "6abf873cdcaed03913a4a754",
+          "toName": "Men's Grooming",
+          "toSlug": "men-s-grooming"
+        }
+      ]
+    },
+    {
+      "productId": "6a3a82a2a917bf49b37215ef",
+      "sku": "PDLSROBTBK",
+      "name": "Porodo Lifestyle Dual Blade Beard Trimmer",
+      "before": {
+        "category": "6ae358ac22569bd6496222ed",
+        "categories": [
+          "6ae358ac22569bd6496222ed"
+        ],
+        "updatedAt": "2026-10-29T14:31:08.764Z"
+      },
+      "after": {
+        "category": "6abf873cdcaed03913a4a754",
+        "categories": [
+          "6abf873cdcaed03913a4a754"
+        ]
+      },
+      "replacements": [
+        {
+          "fromId": "6ae358ac22569bd6496222ed",
+          "fromName": "6ac8db174ba6fe30725c9dd4",
+          "toId": "6abf873cdcaed03913a4a754",
+          "toName": "Men's Grooming",
+          "toSlug": "men-s-grooming"
+        }
+      ]
+    }
+  ]
+}

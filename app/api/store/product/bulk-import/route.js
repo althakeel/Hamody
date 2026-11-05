@@ -68,7 +68,7 @@ const parseNumber = (value, fallback = 0) => {
 };
 
 const parseStringArray = (value) => {
-  if (!value) return [];
+  if (value === null || value === undefined || value === '') return [];
   return String(value)
     .split(/[,|;\n]/)
     .map((item) => item.trim())
@@ -494,10 +494,23 @@ const hasMeaningfulRowContent = (row = {}) => {
   return Object.values(row).some((value) => String(value || '').trim() !== '');
 };
 
+const OBJECT_ID_CATEGORY_TOKEN = /^[a-fA-F0-9]{24}$/;
+
 const findOrCreateCategoryIds = async (categoryNames = []) => {
   const categoryIds = [];
+  const unresolvedCategoryIds = [];
 
   for (const categoryName of categoryNames) {
+    if (OBJECT_ID_CATEGORY_TOKEN.test(categoryName)) {
+      const existingById = await Category.findById(categoryName).lean();
+      if (existingById?._id) {
+        categoryIds.push(existingById._id.toString());
+      } else {
+        unresolvedCategoryIds.push(categoryName);
+      }
+      continue;
+    }
+
     const slug = slugify(categoryName);
     if (!slug) continue;
 
@@ -523,7 +536,10 @@ const findOrCreateCategoryIds = async (categoryNames = []) => {
     }
   }
 
-  return [...new Set(categoryIds)];
+  return {
+    categoryIds: [...new Set(categoryIds)],
+    unresolvedCategoryIds: [...new Set(unresolvedCategoryIds)],
+  };
 };
 
 const ensureFallbackCategoryId = async () => {
@@ -875,22 +891,14 @@ export async function POST(request) {
         const regularPrice = regularPriceProvided
           ? parseNumber(regularPriceRaw, price)
           : (salePriceProvided && !existingProduct ? price : (existingProduct?.AED ?? price));
-        const images = parseStringArray(
-          getFirstPresentValue(
-            row.Images,
-            row.images,
-            row.Image,
-            row.image,
-            row['Meta: fb_product_image'],
-            row['Meta: fb_product_images'],
-            parentRow?.Images,
-            parentRow?.images,
-            parentRow?.Image,
-            parentRow?.image,
-            parentRow?.['Meta: fb_product_image'],
-            parentRow?.['Meta: fb_product_images']
-          )
-        );
+        const images = [...new Set([
+          ...parseStringArray(getFirstPresentValue(row.Images, row.images, row.Image, row.image)),
+          ...parseStringArray(getFirstPresentValue(row['Images (2)'], row['images (2)'])),
+          ...parseStringArray(getFirstPresentValue(row['Meta: fb_product_image'], row['Meta: fb_product_images'])),
+          ...parseStringArray(getFirstPresentValue(parentRow?.Images, parentRow?.images, parentRow?.Image, parentRow?.image)),
+          ...parseStringArray(getFirstPresentValue(parentRow?.['Images (2)'], parentRow?.['images (2)'])),
+          ...parseStringArray(getFirstPresentValue(parentRow?.['Meta: fb_product_image'], parentRow?.['Meta: fb_product_images'])),
+        ])].slice(0, 16);
         const mirroredImageResult = await resolveImportedImages(images, { storeId, slug });
         mirroredImages += mirroredImageResult.mirroredCount;
         failedImageMirrors += mirroredImageResult.failed.length;
@@ -960,7 +968,18 @@ export async function POST(request) {
         const menuOrder = parseNumber(getFirstPresentValue(row.Position, row.position, parentRow?.Position, parentRow?.position), 0);
 
         const categoryNames = extractCategoryNames(getFirstPresentValue(row.Categories, row.categories, parentRow?.Categories, parentRow?.categories) || '');
-        let categoryIds = await findOrCreateCategoryIds(categoryNames);
+        const categoryResolution = await findOrCreateCategoryIds(categoryNames);
+        let categoryIds = categoryResolution.categoryIds;
+
+        // A stale/deleted category ID from an exported CSV must never become a
+        // new category name or remove the existing assignments during update.
+        if (existingProduct && categoryResolution.unresolvedCategoryIds.length) {
+          categoryIds = [...new Set([
+            ...(existingProduct.categories || []),
+            existingProduct.category,
+            ...categoryIds,
+          ].filter(Boolean).map(String))];
+        }
 
         if (!categoryIds.length && !existingProduct) {
           categoryIds = await ensureFallbackCategoryId();

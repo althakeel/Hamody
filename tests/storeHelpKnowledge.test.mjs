@@ -48,7 +48,7 @@ test('how many website pages does not look up orders', () => {
   const reply = matchStoreHelpKnowledge('how many pages are ther in this website');
   assert.match(reply.answer, /public website/i);
   assert.match(reply.answer, /dashboard/i);
-  assert.match(reply.answer, /Excel or PDF/);
+  assert.doesNotMatch(reply.answer, /Excel or PDF/);
   assert.equal(reply.links.some((link) => link.href === '/about-us'), true);
 });
 

@@ -14,6 +14,10 @@ const RatingSchema = new mongoose.Schema({
   isApproved: { type: Boolean, default: false },
   customerName: String, // For manually added reviews
   customerEmail: String, // For manually added reviews
+  reviewSource: { type: String, enum: ['customer', 'verified_order'], default: 'customer' },
+  verifiedPurchase: { type: Boolean, default: false },
+  customerConsentAt: { type: Date, default: null },
+  consentRecordedBy: { type: String, default: '' },
   helpfulCount: { type: Number, default: 0 },
   helpfulVoters: { type: [String], default: [] },
   // Add more fields as needed

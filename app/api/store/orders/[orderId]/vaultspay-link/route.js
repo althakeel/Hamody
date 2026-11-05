@@ -5,11 +5,13 @@ import { getAuth } from '@/lib/firebase-admin';
 import authSeller from '@/middlewares/authSeller';
 import { ACTIVE_RECORD_FILTER } from '@/lib/storeTrash';
 import { isPaymentFailedStoreOrder } from '@/lib/paymentFailedFollowUp';
-import { createVaultsPayCheckout } from '@/lib/vaultsPay';
+import {
+  VAULTSPAY_CALLBACK_PATH,
+  VAULTSPAY_EXPIRY_SECONDS,
+  createVaultsPayCheckout,
+} from '@/lib/vaultsPay';
 import { buildCustomerSitePath } from '@/lib/appUrl';
 import { logPaymentEvent } from '@/lib/paymentTransactionLog';
-
-const LINK_SECONDS = 24 * 60 * 60;
 
 export async function POST(request, { params }) {
   try {
@@ -66,9 +68,9 @@ export async function POST(request, { params }) {
       orderId: String(order._id),
       orderNumber: order.shortOrderNumber || '',
       redirectUrl: buildCustomerSitePath(`/order-success?orderId=${order._id}&vaultspay=1`),
-      callbackUrl: buildCustomerSitePath('/api/webhooks/vaultspay'),
+      callbackUrl: buildCustomerSitePath(VAULTSPAY_CALLBACK_PATH),
       method: 'card',
-      expiryInSeconds: LINK_SECONDS,
+      expiryInSeconds: VAULTSPAY_EXPIRY_SECONDS,
       customer: {
         name: address.name || order.guestName || '',
         email: address.email || order.guestEmail || '',
@@ -76,7 +78,7 @@ export async function POST(request, { params }) {
       },
     });
 
-    const expiresAt = new Date(Date.now() + LINK_SECONDS * 1000);
+    const expiresAt = new Date(Date.now() + VAULTSPAY_EXPIRY_SECONDS * 1000);
     await Order.updateOne(
       { _id: order._id, storeId: String(storeId), isPaid: { $ne: true } },
       {

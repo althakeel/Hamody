@@ -118,7 +118,7 @@ export default function BottomButtonCustomizePage() {
     if (!slug) return []
     const title = String(page?.title || slug).trim()
     const status = page?.status === 'published' ? 'Published' : 'Draft'
-    return [{ value: slug, label: `${title} · ${status}` }]
+    return [{ value: page.publicPath || `/c/${slug}`, label: `${title} · ${status}` }]
   }), [landingPages])
   const linkChoice = readBottomNavLinkChoice(offersPage.bottomNavHref)
   const activeLinkType = linkType || linkChoice.type

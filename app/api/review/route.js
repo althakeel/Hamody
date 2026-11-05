@@ -81,6 +81,8 @@ export async function POST(request) {
                 review,
                 images: imageUrls,
                 orderId: deliveredOrder._id.toString(),
+                reviewSource: 'customer',
+                verifiedPurchase: true,
                 approved: false
             },
             { upsert: true, new: true }
@@ -134,7 +136,7 @@ export async function GET(request) {
         })
             .sort({ createdAt: -1 })
             .limit(30)
-            .select('_id rating review images videos customerName customerEmail userId orderId helpfulCount createdAt')
+            .select('_id rating review images videos customerName userId orderId helpfulCount createdAt verifiedPurchase reviewSource')
             .lean();
 
         const userIds = [
@@ -146,7 +148,7 @@ export async function GET(request) {
         ];
 
         const users = userIds.length
-            ? await User.find({ _id: { $in: userIds } }).select('_id name image email').lean()
+            ? await User.find({ _id: { $in: userIds } }).select('_id name image').lean()
             : [];
 
         const userMap = new Map(users.map((user) => [String(user._id), user]));
@@ -155,7 +157,6 @@ export async function GET(request) {
             ...review,
             user: userMap.get(String(review.userId)) || {
                 name: review.customerName || 'Guest',
-                email: review.customerEmail,
                 image: '/placeholder-avatar.png',
             },
         }));

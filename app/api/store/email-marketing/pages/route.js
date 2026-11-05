@@ -5,8 +5,11 @@ import authSeller from '@/middlewares/authSeller';
 import { getAuth } from '@/lib/firebase-admin';
 import {
   ensureUniqueCampaignPageSlug,
+  getCampaignPageSectionProductIds,
   normalizeCampaignPageBanners,
+  normalizeCampaignPageDesign,
   normalizeCampaignPageProductIds,
+  normalizeCampaignPageSections,
   resolveStoreObjectId,
   slugifyCampaignPageTitle,
   toStoreCampaignPage,
@@ -34,6 +37,7 @@ async function requireSeller(request) {
 function parseBody(body = {}) {
   const title = String(body.title || '').trim();
   const status = body.status === 'published' ? 'published' : 'draft';
+  const sections = normalizeCampaignPageSections(body.sections);
   return {
     title,
     titleAr: String(body.titleAr || '').trim(),
@@ -41,7 +45,12 @@ function parseBody(body = {}) {
     subtitleAr: String(body.subtitleAr || '').trim(),
     banners: normalizeCampaignPageBanners(body.banners, body.heroImage),
     heroImage: String(body.heroImage || body.banners?.desktop?.en || '').trim(),
-    productIds: normalizeCampaignPageProductIds(body.productIds),
+    design: normalizeCampaignPageDesign(body.design),
+    sections,
+    productIds: normalizeCampaignPageProductIds([
+      ...(Array.isArray(body.productIds) ? body.productIds : []),
+      ...getCampaignPageSectionProductIds(sections),
+    ]),
     ctaLabel: String(body.ctaLabel || '').trim(),
     ctaUrl: String(body.ctaUrl || '').trim(),
     backgroundColor: String(body.backgroundColor || '#f8fafc').trim() || '#f8fafc',
@@ -107,6 +116,9 @@ export async function POST(request) {
       title: parsed.title,
       titleAr: parsed.titleAr,
       slug,
+      urlPrefix: 'pages',
+      design: parsed.design,
+      sections: parsed.sections,
       subtitle: parsed.subtitle,
       subtitleAr: parsed.subtitleAr,
       heroImage: parsed.heroImage || parsed.banners.desktop.en,

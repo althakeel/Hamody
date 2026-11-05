@@ -4,7 +4,11 @@ import Order from '@/models/Order';
 import { getAuth } from '@/lib/firebase-admin';
 import authSeller from '@/middlewares/authSeller';
 import { ACTIVE_RECORD_FILTER } from '@/lib/storeTrash';
-import { createVaultsPayCheckout } from '@/lib/vaultsPay';
+import {
+  VAULTSPAY_CALLBACK_PATH,
+  VAULTSPAY_EXPIRY_SECONDS,
+  createVaultsPayCheckout,
+} from '@/lib/vaultsPay';
 import { createTabbySession, buildTabbyBuyerHistory } from '@/lib/tabby';
 import { createTamaraSession } from '@/lib/tamara';
 import { buildCustomerSitePath } from '@/lib/appUrl';
@@ -12,8 +16,6 @@ import { formatPaymentProviderOrderReference } from '@/lib/orderPaymentReference
 import { appendOrderCommunicationLog } from '@/lib/orderCommunicationLog';
 import { collectedPaymentLabel } from '@/lib/collectedOrderPayment';
 import { logPaymentEvent } from '@/lib/paymentTransactionLog';
-
-const LINK_SECONDS = 24 * 60 * 60;
 
 function lineItems(order) {
   return (order.orderItems || []).map((item, index) => {
@@ -104,14 +106,14 @@ export async function POST(request, { params }) {
         orderId: String(order._id),
         orderNumber: order.shortOrderNumber || '',
         redirectUrl: buildCustomerSitePath(`/order-success?orderId=${order._id}&vaultspay=1`),
-        callbackUrl: buildCustomerSitePath('/api/webhooks/vaultspay'),
+        callbackUrl: buildCustomerSitePath(VAULTSPAY_CALLBACK_PATH),
         method,
-        expiryInSeconds: LINK_SECONDS,
+        expiryInSeconds: VAULTSPAY_EXPIRY_SECONDS,
         customer,
       });
       url = checkout.url;
       provider = 'VAULTSPAY';
-      expiresAt = new Date(Date.now() + LINK_SECONDS * 1000);
+      expiresAt = new Date(Date.now() + VAULTSPAY_EXPIRY_SECONDS * 1000);
       Object.assign(set, {
         vaultsPayTransactionId: checkout.transactionId,
         vaultsPayPaymentStatus: 'pending',

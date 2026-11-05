@@ -35,6 +35,8 @@ function getDefaultFormData() {
   return {
     customerName: '',
     customerEmail: '',
+    orderNumber: '',
+    customerConsent: false,
     rating: 5,
     review: '',
     images: [],
@@ -150,6 +152,11 @@ function ReviewCard({ review, onApprove, onReject, onDelete, deleting }) {
             >
               {review.approved ? 'Approved' : 'Pending'}
             </span>
+            {review.verifiedPurchase || review.orderId ? (
+              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">
+                Verified purchase
+              </span>
+            ) : null}
           </div>
 
           {review.user?.email || review.customerEmail ? (
@@ -532,6 +539,8 @@ export default function StoreReviews() {
       form.append('review', formData.review);
       form.append('customerName', formData.customerName);
       form.append('customerEmail', formData.customerEmail);
+      form.append('orderNumber', formData.orderNumber);
+      form.append('customerConsent', String(formData.customerConsent));
       if (formData.reviewDate) {
         form.append('reviewDate', formData.reviewDate);
       }
@@ -543,7 +552,7 @@ export default function StoreReviews() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      toast.success('Review added successfully');
+      toast.success('Verified review added and queued for approval');
       setShowAddModal(false);
       resetForm();
       await fetchReviews(pagination.page);
@@ -597,7 +606,7 @@ export default function StoreReviews() {
       <div>
         <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Product Reviews</h1>
         <p className="mt-1 text-xs text-slate-600 sm:text-sm">
-          Moderate customer feedback, approve pending reviews, and add testimonials for your products.
+          Moderate customer-submitted feedback. Added reviews require a delivered order and customer consent before publication.
         </p>
       </div>
 
@@ -776,7 +785,7 @@ export default function StoreReviews() {
                 <div className="flex min-w-0 items-start gap-3">
                   <ProductThumb product={selectedProduct} size={56} />
                   <div className="min-w-0">
-                    <p className="text-xs uppercase tracking-wide text-white/70">Add review</p>
+                    <p className="text-xs uppercase tracking-wide text-white/70">Add verified customer review</p>
                     <h2 className="truncate text-lg font-bold">{selectedProduct.name}</h2>
                     {selectedProduct.sku ? (
                       <p className="text-xs text-white/70">SKU: {selectedProduct.sku}</p>
@@ -798,6 +807,24 @@ export default function StoreReviews() {
             </div>
 
             <div className="space-y-4 overflow-y-auto px-5 py-5">
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                Only enter a review the customer actually submitted and agreed to publish. A delivered order for this product is required, and the review stays hidden until approved.
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Delivered order number *</label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  step="1"
+                  value={formData.orderNumber}
+                  onChange={(event) => setFormData({ ...formData, orderNumber: event.target.value })}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-slate-200 sm:max-w-xs"
+                  placeholder="Order number"
+                />
+              </div>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">Customer name *</label>
@@ -811,14 +838,14 @@ export default function StoreReviews() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Customer email *</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Customer email on order *</label>
                   <input
                     type="email"
                     required
                     value={formData.customerEmail}
                     onChange={(event) => setFormData({ ...formData, customerEmail: event.target.value })}
                     className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-slate-200"
-                    placeholder="john@example.com"
+                    placeholder="Email used for the order"
                   />
                 </div>
               </div>
@@ -853,7 +880,7 @@ export default function StoreReviews() {
                   className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-slate-200 sm:max-w-xs"
                 />
                 <p className="mt-1 text-xs text-slate-500">
-                  Defaults to today. Change this if the review was written on an earlier date.
+                  Enter the date the customer submitted this review. The date cannot be before the order date or in the future.
                 </p>
               </div>
 
@@ -868,6 +895,17 @@ export default function StoreReviews() {
                   placeholder="Share what the customer liked about this product..."
                 />
               </div>
+
+              <label className="flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  required
+                  checked={formData.customerConsent}
+                  onChange={(event) => setFormData({ ...formData, customerConsent: event.target.checked })}
+                  className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-slate-900"
+                />
+                <span>I confirm this is the customer’s own review and the customer gave permission for Store1920 to publish it. *</span>
+              </label>
 
               <div>
                 <label className="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700">

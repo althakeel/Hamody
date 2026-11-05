@@ -20,6 +20,7 @@ import {
     getPhoneValidationMessage,
     isValidPhoneNumber,
 } from '@/lib/phoneValidation';
+import { composeAddressStreetLine, splitAddressStreetLine } from '@/lib/addressLine';
 
 const indianStates = [
     "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Delhi", "Jammu and Kashmir", "Ladakh"
@@ -72,6 +73,9 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
         name: '',
         email: '',
         street: '',
+        buildingOrVilla: '',
+        streetName: '',
+        apartmentOrFloor: '',
         city: '',
         state: '',
         district: '',
@@ -149,6 +153,7 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
     useEffect(() => {
         const addressToEdit = editingAddress || initialAddress;
         if ((isEdit || editingAddress) && addressToEdit) {
+            const streetParts = splitAddressStreetLine(addressToEdit.street || '');
             // Extract phone number without country code if present
             let phoneNumber = addressToEdit.phone || '';
             // If phone starts with +, remove country code part
@@ -162,6 +167,9 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                 name: addressToEdit.name || '',
                 email: addressToEdit.email || '',
                 street: addressToEdit.street || '',
+                buildingOrVilla: addressToEdit.buildingOrVilla || streetParts.buildingOrVilla,
+                streetName: addressToEdit.streetName || streetParts.streetName,
+                apartmentOrFloor: addressToEdit.apartmentOrFloor || streetParts.apartmentOrFloor,
                 city: addressToEdit.city || '',
                 state: addressToEdit.state || '',
                 district: addressToEdit.district || '',
@@ -178,6 +186,9 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                 name: '',
                 email: '',
                 street: '',
+                buildingOrVilla: '',
+                streetName: '',
+                apartmentOrFloor: '',
                 city: '',
                 state: '',
                 district: '',
@@ -224,6 +235,9 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                 district: '',
             })
             setAreaError('')
+        } else if (['buildingOrVilla', 'streetName', 'apartmentOrFloor'].includes(name)) {
+            const next = { ...address, [name]: value };
+            setAddress({ ...next, street: composeAddressStreetLine(next) });
         } else {
             setAddress({
                 ...address,
@@ -340,7 +354,11 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
             const token = isGuestSave ? null : await getToken()
             
             // Prepare address data with userId from authenticated user
-            const addressData = { ...address, phone: cleanedPhone };
+            const addressData = {
+                ...address,
+                street: composeAddressStreetLine(address),
+                phone: cleanedPhone,
+            };
             if (!isGuestSave) {
                 addressData.userId = user.uid;
             }
@@ -369,12 +387,18 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                     onAddressAdded?.(localAddress);
                 }
             } else if (isEdit && addressData.id) {
+                delete addressData.buildingOrVilla;
+                delete addressData.streetName;
+                delete addressData.apartmentOrFloor;
                 const { data } = await axios.put('/api/address', { id: addressData.id, address: addressData }, { headers: { Authorization: `Bearer ${token}` } })
                 toast.success(data.message || 'Address updated')
                 if (onAddressUpdated) {
                     onAddressUpdated(data.updated)
                 }
             } else {
+                delete addressData.buildingOrVilla;
+                delete addressData.streetName;
+                delete addressData.apartmentOrFloor;
                 const { data } = await axios.post('/api/address', {address: addressData}, {headers: { Authorization: `Bearer ${token}` } })
                 dispatch(addAddress(data.newAddress))
                 // Immediately refresh address list in Redux after adding
@@ -391,6 +415,9 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                 name: '',
                 email: '',
                 street: '',
+                buildingOrVilla: '',
+                streetName: '',
+                apartmentOrFloor: '',
                 city: '',
                 state: '',
                 district: '',
@@ -590,7 +617,6 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#f59e0b] focus:bg-white focus:ring-2 focus:ring-[#fde7c2]" 
                             type="text" 
                             placeholder="Name" 
-                            required 
                         />
                     </div>
 
@@ -626,16 +652,45 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                     <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
                         <h3 className="text-sm font-bold text-slate-900">Address</h3>
 
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                            <label className="mb-1 block text-xs font-semibold text-slate-600">
+                                Building or villa <span className="text-red-600" aria-hidden="true">*</span>
+                            </label>
+                            <input
+                                name="buildingOrVilla"
+                                onChange={handleAddressChange}
+                                value={address.buildingOrVilla}
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#f59e0b] focus:bg-white focus:ring-2 focus:ring-[#fde7c2]"
+                                type="text"
+                                placeholder="Building or villa"
+                                required
+                            />
+                        </div>
+                    </div>
                     <div>
-                        <label className="mb-1 block text-xs font-semibold text-slate-600">Building and street</label>
-                        <input 
-                            name="street" 
-                            onChange={handleAddressChange} 
-                            value={address.street} 
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#f59e0b] focus:bg-white focus:ring-2 focus:ring-[#fde7c2]" 
-                            type="text" 
-                            placeholder="Building, street, apartment" 
-                            required 
+                        <label className="mb-1 block text-xs font-semibold text-slate-600">Apartment or floor (optional)</label>
+                        <input
+                            name="apartmentOrFloor"
+                            onChange={handleAddressChange}
+                            value={address.apartmentOrFloor}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#f59e0b] focus:bg-white focus:ring-2 focus:ring-[#fde7c2]"
+                            type="text"
+                            placeholder="Apartment or floor"
+                        />
+                    </div>
+                    <div>
+                        <label className="mb-1 block text-xs font-semibold text-slate-600">
+                            Street name <span className="text-red-600" aria-hidden="true">*</span>
+                        </label>
+                        <input
+                            name="streetName"
+                            onChange={handleAddressChange}
+                            value={address.streetName}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#f59e0b] focus:bg-white focus:ring-2 focus:ring-[#fde7c2]"
+                            type="text"
+                            placeholder="Street name"
+                            required
                         />
                     </div>
 
@@ -729,10 +784,10 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                     </div>
                     </div>
 
-                    <div className="mt-2 flex gap-3">
+                    <div className="sticky bottom-0 z-10 -mx-3 -mb-3 mt-2 grid grid-cols-1 gap-3 border-t border-slate-100 bg-white/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur sm:static sm:mx-0 sm:mb-0 sm:mt-2 sm:grid-cols-2 sm:border-0 sm:bg-transparent sm:p-0 sm:pb-0 sm:backdrop-blur-none min-[360px]:grid-cols-2">
                         <button 
                             type="submit"
-                            className="flex-1 rounded-xl bg-[#E52721] py-3 text-sm font-semibold text-white transition hover:bg-[#C41F1A]"
+                            className="w-full rounded-xl bg-[#E52721] py-3 text-sm font-semibold text-white transition hover:bg-[#C41F1A]"
                         >
                             {isEdit || editingAddress ? 'Save changes' : 'Save address'}
                         </button>
@@ -746,7 +801,7 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                                     setShowAddressModal(false);
                                 }
                             }}
-                            className="flex-1 rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                            className="w-full rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                         >
                             {mode === 'form' && addressList.length > 0 && !isEdit ? 'Back' : 'Cancel'}
                         </button>

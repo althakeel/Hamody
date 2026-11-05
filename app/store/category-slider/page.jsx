@@ -16,6 +16,7 @@ import {
   normalizeCategorySliderSideImagePosition,
   normalizeCategorySliderAutoSlide,
   normalizeCategorySliderAutoSlideInterval,
+  normalizeCategorySliderShowOutOfStock,
   CATEGORY_SLIDER_MOBILE_IMAGE_RATIOS,
   DEFAULT_CATEGORY_SLIDER_MOBILE_IMAGE_RATIO,
   normalizeCategorySliderMobileImageRatio,
@@ -70,6 +71,7 @@ export default function CategorySliderPage() {
     cardsPerRow: 6,
     autoSlide: false,
     autoSlideIntervalMs: DEFAULT_CATEGORY_SLIDER_AUTO_SLIDE_INTERVAL_MS,
+    showOutOfStock: false,
     backgroundColor: DEFAULT_CATEGORY_SLIDER_BACKGROUND,
     productIds: [],
     ...EMPTY_VIEW_ALL,
@@ -201,7 +203,7 @@ export default function CategorySliderPage() {
     if (!slug) return [];
     const title = String(page?.title || slug).trim();
     const status = page?.status === 'published' ? 'Published' : 'Draft';
-    return [{ value: slug, label: `${title} · ${status}` }];
+    return [{ value: page.publicPath || `/c/${slug}`, label: `${title} · ${status}` }];
   });
 
   const fetchData = async ({ silent = false } = {}) => {
@@ -361,7 +363,7 @@ export default function CategorySliderPage() {
   };
 
   const handleAddSlider = () => {
-    setFormData({ title: '', subtitle: '', titleAr: '', subtitleAr: '', sideImage: '', sideImageAr: '', mobileImage: '', mobileImageAr: '', mobileImageRatio: DEFAULT_CATEGORY_SLIDER_MOBILE_IMAGE_RATIO, sideImagePosition: 'left', cardsPerRow: 6, autoSlide: false, autoSlideIntervalMs: DEFAULT_CATEGORY_SLIDER_AUTO_SLIDE_INTERVAL_MS, backgroundColor: DEFAULT_CATEGORY_SLIDER_BACKGROUND, productIds: [], ...EMPTY_VIEW_ALL });
+    setFormData({ title: '', subtitle: '', titleAr: '', subtitleAr: '', sideImage: '', sideImageAr: '', mobileImage: '', mobileImageAr: '', mobileImageRatio: DEFAULT_CATEGORY_SLIDER_MOBILE_IMAGE_RATIO, sideImagePosition: 'left', cardsPerRow: 6, autoSlide: false, autoSlideIntervalMs: DEFAULT_CATEGORY_SLIDER_AUTO_SLIDE_INTERVAL_MS, showOutOfStock: false, backgroundColor: DEFAULT_CATEGORY_SLIDER_BACKGROUND, productIds: [], ...EMPTY_VIEW_ALL });
     setEditingIdx(null);
     setShowForm(true);
   };
@@ -393,6 +395,7 @@ export default function CategorySliderPage() {
       cardsPerRow: slider.cardsPerRow === 5 ? 5 : 6,
       autoSlide: normalizeCategorySliderAutoSlide(slider.autoSlide),
       autoSlideIntervalMs: normalizeCategorySliderAutoSlideInterval(slider.autoSlideIntervalMs),
+      showOutOfStock: normalizeCategorySliderShowOutOfStock(slider.showOutOfStock),
       backgroundColor: normalizeCategorySliderBackground(slider.backgroundColor),
       productIds: slider.productIds || [],
       slug: slider.slug || '',
@@ -560,6 +563,7 @@ export default function CategorySliderPage() {
           cardsPerRow: formData.cardsPerRow === 5 ? 5 : 6,
           autoSlide: normalizeCategorySliderAutoSlide(formData.autoSlide),
           autoSlideIntervalMs: normalizeCategorySliderAutoSlideInterval(formData.autoSlideIntervalMs),
+          showOutOfStock: normalizeCategorySliderShowOutOfStock(formData.showOutOfStock),
           backgroundColor: normalizeCategorySliderBackground(formData.backgroundColor),
           productIds: normalizeProductIds(formData.productIds),
           slug: String(formData.slug || '').trim(),
@@ -614,6 +618,7 @@ export default function CategorySliderPage() {
           cardsPerRow: formData.cardsPerRow === 5 ? 5 : 6,
           autoSlide: normalizeCategorySliderAutoSlide(formData.autoSlide),
           autoSlideIntervalMs: normalizeCategorySliderAutoSlideInterval(formData.autoSlideIntervalMs),
+          showOutOfStock: normalizeCategorySliderShowOutOfStock(formData.showOutOfStock),
           backgroundColor: normalizeCategorySliderBackground(formData.backgroundColor),
           productIds: normalizeProductIds(formData.productIds),
           slug: String(formData.slug || '').trim(),
@@ -1618,6 +1623,37 @@ export default function CategorySliderPage() {
 
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">
+                      Show out-of-stock products
+                    </label>
+                    <p className="mb-3 text-xs text-gray-500">
+                      When off, only in-stock products appear. When on, all selected published products can appear in the slider.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { value: false, label: 'Off' },
+                        { value: true, label: 'On' },
+                      ].map(({ value, label }) => {
+                        const selected = normalizeCategorySliderShowOutOfStock(formData.showOutOfStock) === value;
+                        return (
+                          <button
+                            key={label}
+                            type="button"
+                            onClick={() => setFormData((prev) => ({ ...prev, showOutOfStock: value }))}
+                            className={`rounded-lg border-2 px-4 py-3 text-sm font-semibold transition ${
+                              selected
+                                ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">
                       View all button
                     </label>
                     <p className="mb-3 text-xs text-gray-500">
@@ -1699,7 +1735,9 @@ export default function CategorySliderPage() {
                                 formData.viewAllTarget === 'category' && formData.viewAllValue
                                   ? `/category/${formData.viewAllValue}`
                                   : formData.viewAllTarget === 'landing' && formData.viewAllValue
-                                    ? `/c/${formData.viewAllValue}`
+                                    ? (formData.viewAllValue.replace(/^\//, '').startsWith('pages/')
+                                      ? `/${formData.viewAllValue.replace(/^\//, '')}`
+                                      : `/c/${formData.viewAllValue.replace(/^\/c\//, '').replace(/^\//, '')}`)
                                     : (formData.viewAllValue || '')
                               }
                               onChange={(event) => {
@@ -1718,6 +1756,10 @@ export default function CategorySliderPage() {
                                 }
                                 if (raw.startsWith('/c/')) {
                                   setFormData((prev) => ({ ...prev, viewAllTarget: 'landing', viewAllValue: raw.replace(/^\/c\//, '').split('/')[0] }));
+                                  return;
+                                }
+                                if (raw.startsWith('/pages/')) {
+                                  setFormData((prev) => ({ ...prev, viewAllTarget: 'landing', viewAllValue: raw.replace(/^\//, '').replace(/\/$/, '') }));
                                   return;
                                 }
                                 const knownPage = BOTTOM_NAV_PAGE_OPTIONS.some((page) => page.value === raw);
@@ -1744,8 +1786,15 @@ export default function CategorySliderPage() {
                         ) : null}
                         {formData.viewAllTarget === 'landing' ? (
                           <StoreDropdown
-                            value={formData.viewAllValue || ''}
-                            onChange={(value) => setFormData((prev) => ({ ...prev, viewAllValue: value }))}
+                            value={!formData.viewAllValue
+                              ? ''
+                              : formData.viewAllValue.replace(/^\//, '').startsWith('pages/')
+                                ? `/${formData.viewAllValue.replace(/^\//, '')}`
+                                : `/c/${formData.viewAllValue.replace(/^\/c\//, '').replace(/^\//, '')}`}
+                            onChange={(value) => setFormData((prev) => ({
+                              ...prev,
+                              viewAllValue: value.replace(/^\/c\//, '').replace(/^\//, ''),
+                            }))}
                             options={landingOptions}
                             placeholder="Choose a landing page"
                             searchable

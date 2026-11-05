@@ -6,8 +6,11 @@ import authSeller from '@/middlewares/authSeller';
 import { getAuth } from '@/lib/firebase-admin';
 import {
   ensureUniqueCampaignPageSlug,
+  getCampaignPageSectionProductIds,
   normalizeCampaignPageBanners,
+  normalizeCampaignPageDesign,
   normalizeCampaignPageProductIds,
+  normalizeCampaignPageSections,
   resolveStoreObjectId,
   slugifyCampaignPageTitle,
   toStoreCampaignPage,
@@ -85,6 +88,8 @@ export async function PATCH(request, { params }) {
     if (body.titleAr !== undefined) page.titleAr = String(body.titleAr || '').trim();
     if (body.subtitle !== undefined) page.subtitle = String(body.subtitle || '').trim();
     if (body.subtitleAr !== undefined) page.subtitleAr = String(body.subtitleAr || '').trim();
+    if (body.design !== undefined) page.design = normalizeCampaignPageDesign(body.design);
+    if (body.sections !== undefined) page.sections = normalizeCampaignPageSections(body.sections);
     if (body.heroImage !== undefined) page.heroImage = String(body.heroImage || '').trim();
     if (body.banners !== undefined || body.heroImage !== undefined) {
       const banners = normalizeCampaignPageBanners(
@@ -104,8 +109,15 @@ export async function PATCH(request, { params }) {
     }
     if (body.seoTitle !== undefined) page.seoTitle = String(body.seoTitle || '').trim();
     if (body.seoDescription !== undefined) page.seoDescription = String(body.seoDescription || '').trim();
-    if (body.productIds !== undefined) {
-      const productIds = normalizeCampaignPageProductIds(body.productIds);
+    if (body.productIds !== undefined || body.sections !== undefined) {
+      const productIds = normalizeCampaignPageProductIds([
+        ...(Array.isArray(body.productIds)
+          ? body.productIds
+          : body.sections !== undefined
+            ? []
+            : (page.productIds || [])),
+        ...getCampaignPageSectionProductIds(page.sections),
+      ]);
       if (!productIds.length) {
         return NextResponse.json({ error: 'Select at least one product' }, { status: 400 });
       }

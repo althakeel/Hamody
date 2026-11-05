@@ -11,11 +11,12 @@
     "clean": "node scripts/clean-next-cache.js",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "migrate:product-images-s3": "node scripts/migrateProductImagesToS3.js",
     "migrate:product-images-s3:dry-run": "node scripts/migrateProductImagesToS3.js --dry-run",
     "migrate:categories": "node scripts/migrateCategories.mjs --no-backup",
     "test:waslah": "node --experimental-default-type=module --test tests/waslahTracking.test.mjs tests/waslahAutoShipPolicy.test.mjs",
+    "test": "node --experimental-default-type=module --import ./scripts/registerModuleAliasLoader.mjs --test tests/*.test.mjs",
     "test:zoho-inventory": "node --env-file=.env scripts/testZohoInventory.js",
     "sync:zoho-products": "node scripts/syncZohoProducts.js",
     "sync:zoho-products:dry-run": "node scripts/syncZohoProducts.js --dry-run --limit=10",
@@ -78,6 +79,8 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.2.9",
     "tailwindcss": "^4"
   }
 }
