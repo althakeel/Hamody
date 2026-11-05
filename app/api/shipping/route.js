@@ -100,6 +100,7 @@ export async function GET(request) {
         ...setting,
         shippingOptions: resolveShippingOptions(setting),
       };
+      if (!isSeller) delete normalizedSetting.courierDeliveryCost;
       return NextResponse.json({ setting: normalizedSetting }, {
         headers: {
           "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -183,6 +184,13 @@ export async function PUT(request) {
 
     const shippingOptions = sanitizeShippingOptionsPayload(body.shippingOptions);
     const legacyFromOptions = syncLegacyFieldsFromOptions(shippingOptions);
+    const courierDeliveryCost = Number(body.courierDeliveryCost ?? 0);
+    if (!Number.isFinite(courierDeliveryCost) || courierDeliveryCost < 0) {
+      return NextResponse.json(
+        { error: "Courier delivery cost must be a non-negative number" },
+        { status: 400 },
+      );
+    }
     
     console.log('=== SHIPPING API PUT ===');
     console.log('Received body.maxCODAmount:', body.maxCODAmount, 'Type:', typeof body.maxCODAmount);
@@ -215,6 +223,7 @@ export async function PUT(request) {
       // Regional
       localDeliveryFee: body.localDeliveryFee ? Number(body.localDeliveryFee) : null,
       regionalDeliveryFee: body.regionalDeliveryFee ? Number(body.regionalDeliveryFee) : null,
+      courierDeliveryCost,
       // Delivery Time
       estimatedDays: legacyFromOptions.estimatedDays || body.estimatedDays || "2-5",
       // Payment methods (storefront checkout)

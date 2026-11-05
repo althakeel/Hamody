@@ -25,6 +25,15 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+function getExpenseStartSortKey(expense) {
+    const dateValue = expense?.startDate || expense?.createdAt;
+    const parsedDate = new Date(dateValue);
+    const dateKey = Number.isNaN(parsedDate.getTime())
+        ? '0000-00-00'
+        : parsedDate.toISOString().slice(0, 10);
+    return `${dateKey}T${expense?.startTime || '00:00'}`;
+}
+
 export default function MarketingExpenses() {
     const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || 'AED';
     const { user, getToken, loading: authLoading } = useAuth();
@@ -57,7 +66,9 @@ export default function MarketingExpenses() {
         reach: '',
         conversions: '',
         startDate: '',
+        startTime: '',
         endDate: '',
+        endTime: '',
         notes: ''
     });
     
@@ -140,7 +151,13 @@ export default function MarketingExpenses() {
             // Group expenses by campaign name and date range
             const expensesMap = new Map();
             (response.data.expenses || []).forEach(expense => {
-                const key = `${expense.campaignName}-${expense.platform}-${new Date(expense.startDate).toLocaleDateString()}`;
+                const key = [
+                    expense.campaignName,
+                    expense.platform,
+                    new Date(expense.startDate).toLocaleDateString(),
+                    expense.startTime || '',
+                    expense.endTime || '',
+                ].join('-');
                 
                 if (expensesMap.has(key)) {
                     // Merge duplicate campaigns - sum up metrics
@@ -157,9 +174,11 @@ export default function MarketingExpenses() {
             
             // Convert map back to array and sort
             const sortedExpenses = Array.from(expensesMap.values()).sort((a, b) => {
-                const dateA = new Date(a.startDate || a.createdAt);
-                const dateB = new Date(b.startDate || b.createdAt);
-                return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+                const dateA = getExpenseStartSortKey(a);
+                const dateB = getExpenseStartSortKey(b);
+                return sortOrder === 'desc'
+                    ? dateB.localeCompare(dateA)
+                    : dateA.localeCompare(dateB);
             });
             
             setExpenses(sortedExpenses);
@@ -193,7 +212,9 @@ export default function MarketingExpenses() {
                 reach: '',
                 conversions: '',
                 startDate: '',
+                startTime: '',
                 endDate: '',
+                endTime: '',
                 notes: ''
             });
             fetchExpenses();
@@ -315,9 +336,11 @@ export default function MarketingExpenses() {
         setSortOrder(newOrder);
         
         const sorted = [...expenses].sort((a, b) => {
-            const dateA = new Date(a.startDate || a.createdAt);
-            const dateB = new Date(b.startDate || b.createdAt);
-            return newOrder === 'desc' ? dateB - dateA : dateA - dateB;
+            const dateA = getExpenseStartSortKey(a);
+            const dateB = getExpenseStartSortKey(b);
+            return newOrder === 'desc'
+                ? dateB.localeCompare(dateA)
+                : dateA.localeCompare(dateB);
         });
         setExpenses(sorted);
     };
@@ -562,9 +585,9 @@ export default function MarketingExpenses() {
                                         <button 
                                             onClick={toggleSortOrder}
                                             className="flex items-center gap-1 hover:text-slate-900 transition-colors"
-                                            title="Sort by date"
+                                            title="Sort by start date and time"
                                         >
-                                            Date
+                                            Date & Time
                                             <ArrowUpDown size={14} />
                                             <span className="text-[10px] text-slate-500">({sortOrder === 'desc' ? 'Newest' : 'Oldest'})</span>
                                         </button>
@@ -620,9 +643,15 @@ export default function MarketingExpenses() {
                                                 <div>
                                                     {new Date(expense.startDate || expense.createdAt).toLocaleDateString()}
                                                 </div>
+                                                {expense.startTime && (
+                                                    <div className="text-xs font-medium text-slate-500 mt-1">
+                                                        {expense.startTime} Dubai time
+                                                    </div>
+                                                )}
                                                 {expense.startDate && expense.endDate && (
                                                     <div className="text-xs text-slate-400 mt-1">
                                                         to {new Date(expense.endDate).toLocaleDateString()}
+                                                        {expense.endTime ? ` at ${expense.endTime}` : ''}
                                                     </div>
                                                 )}
                                             </td>
@@ -778,14 +807,43 @@ export default function MarketingExpenses() {
                                         required
                                     />
                                 </div>
-                                
+
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-2">End Date</label>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Start Time (Dubai) *</label>
+                                    <input
+                                        type="time"
+                                        value={formData.startTime}
+                                        onChange={(e) => setFormData({...formData, startTime: e.target.value})}
+                                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">End Date (Optional)</label>
                                     <input
                                         type="date"
                                         value={formData.endDate}
-                                        onChange={(e) => setFormData({...formData, endDate: e.target.value})}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            endDate: e.target.value,
+                                            endTime: e.target.value ? formData.endTime : '',
+                                        })}
                                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                        min={formData.startDate || undefined}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">End Time (Dubai)</label>
+                                    <input
+                                        type="time"
+                                        value={formData.endTime}
+                                        onChange={(e) => setFormData({...formData, endTime: e.target.value})}
+                                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent disabled:bg-slate-100 disabled:text-slate-400"
+                                        min={formData.endDate === formData.startDate ? formData.startTime || undefined : undefined}
+                                        required={Boolean(formData.endDate)}
+                                        disabled={!formData.endDate}
                                     />
                                 </div>
                             </div>
@@ -830,8 +888,10 @@ export default function MarketingExpenses() {
                                         onChange={(e) => setFormData({...formData, amount: e.target.value})}
                                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                                         required
-                                        min="0"
+                                        min="0.01"
                                         step="0.01"
+                                        inputMode="decimal"
+                                        placeholder="0.00"
                                     />
                                 </div>
                                 

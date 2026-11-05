@@ -20,7 +20,9 @@ const MarketingExpenseSchema = new mongoose.Schema({
   reach: { type: Number, default: 0 },
   conversions: { type: Number, default: 0 },
   startDate: Date,
+  startTime: { type: String, default: '', trim: true },
   endDate: Date,
+  endTime: { type: String, default: '', trim: true },
   notes: String,
 }, { timestamps: true });
 

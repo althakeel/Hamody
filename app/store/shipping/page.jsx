@@ -50,6 +50,7 @@ function mapSettingToForm(setting) {
     regionalDeliveryFee: setting.regionalDeliveryFee != null && setting.regionalDeliveryFee !== ''
       ? parseSettingNumber(setting.regionalDeliveryFee, '')
       : '',
+    courierDeliveryCost: parseSettingNumber(setting.courierDeliveryCost, 0),
     stateCharges: Array.isArray(setting.stateCharges)
       ? setting.stateCharges.map((entry) => ({
           state: String(entry?.state || '').trim(),
@@ -149,6 +150,7 @@ export default function StoreShippingSettings() {
     enableProductSpecificFreeShipping: false,
     localDeliveryFee: '',
     regionalDeliveryFee: '',
+    courierDeliveryCost: 0,
     stateCharges: [],
     enableCOD: true,
     enableCODFee: true,
@@ -564,6 +566,39 @@ export default function StoreShippingSettings() {
 
         {form.enabled && (
           <>
+            {/* Internal courier cost */}
+            <ShippingSection
+              title='Courier Delivery Cost'
+              iconLabel={currency}
+              description={`${currency} ${form.courierDeliveryCost || 0} per order with an AWB`}
+              isOpen={isSectionOpen('courier-delivery-cost')}
+              onToggle={() => toggleSection('courier-delivery-cost')}
+            >
+              <div>
+                <label className='mb-2 block text-sm font-medium text-slate-700'>Cost per Courier Shipment</label>
+                <div className='flex items-center gap-2'>
+                  <span className='text-slate-600'>{currency}</span>
+                  <input
+                    type='number'
+                    min='0'
+                    step='0.01'
+                    value={form.courierDeliveryCost}
+                    onChange={(e) => {
+                      markDirty()
+                      setForm((current) => ({
+                        ...current,
+                        courierDeliveryCost: parseOptionalFeeInput(e.target.value),
+                      }))
+                    }}
+                    className='w-48 rounded border border-slate-300 px-3 py-2'
+                  />
+                </div>
+                <p className='mt-2 text-xs text-slate-500'>
+                  Internal courier cost used in the Google Sheets profit calculation. It is applied once to each order with a courier or AWB reference and does not change the customer checkout fee.
+                </p>
+              </div>
+            </ShippingSection>
+
             {/* Delivery Options */}
             <ShippingSection
               title='Delivery Options'

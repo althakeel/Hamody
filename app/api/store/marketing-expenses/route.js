@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import MarketingExpense from "@/models/MarketingExpense";
 import { getAuth } from '@/lib/firebase-admin';
+import { normalizeMarketingExpenseInput } from '@/lib/marketingExpenseInput';
 
 // GET - Fetch all marketing expenses
 export async function GET(req) {
@@ -148,40 +149,17 @@ export async function POST(req) {
         }
         
         const body = await req.json();
-        const { 
-            campaignName, 
-            campaignType, 
-            platform, 
-            amount, 
-            clicks, 
-            impressions,
-            reach,
-            conversions,
-            startDate,
-            endDate,
-            notes 
-        } = body;
-        
-        if (!amount || amount <= 0) {
+        const normalized = normalizeMarketingExpenseInput(body);
+        if (normalized.error) {
             return NextResponse.json(
-                { error: 'Valid amount is required' },
+                { error: normalized.error },
                 { status: 400 }
             );
         }
         
         const expense = new MarketingExpense({
             storeId: 'default', // Update with actual storeId from auth
-            campaignName,
-            campaignType,
-            platform,
-            amount,
-            clicks: clicks || 0,
-            impressions: impressions || 0,
-            reach: reach || 0,
-            conversions: conversions || 0,
-            startDate,
-            endDate,
-            notes
+            ...normalized.data,
         });
         
         await expense.save();
