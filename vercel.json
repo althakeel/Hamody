@@ -62,6 +62,14 @@
       "maxDuration": 300,
       "memory": 1024
     },
+    "app/api/cron/google-sheets-orders/route.js": {
+      "maxDuration": 300,
+      "memory": 1024
+    },
+    "app/api/store/google-sheets-orders/route.js": {
+      "maxDuration": 300,
+      "memory": 1024
+    },
     "app/api/store/home-menu-categories/route.js": {
       "maxDuration": 120,
       "memory": 2048

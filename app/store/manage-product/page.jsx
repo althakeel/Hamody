@@ -23,6 +23,7 @@ import {
     resolveCategoryName,
 } from '@/lib/categoryLookup'
 import { getProductThumbnailUrl } from '@/lib/productMedia'
+import { getProductDisplayPrice } from '@/lib/recommendedProductCatalog'
 import { readSellerCache } from '@/lib/storeDashboardCache'
 import { canBulkEditProducts, canChangeProductPricing } from '@/lib/productSaveGuards'
 import { importProductSpreadsheetFile } from '@/lib/productImportClient'
@@ -2525,7 +2526,7 @@ export default function StoreManageProducts() {
                             <td className={`px-4 py-3 max-w-xs text-slate-600 break-words ${showDetailColumns ? '' : 'hidden'}`} title={product.description?.replace(/<[^>]*>/g, ' ').trim() || '-'}>
                                 {truncateText(product.description, 100)}
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap">{currency} {formatAmount(product.price)}</td>
+                            <td className="px-4 py-3 whitespace-nowrap">{currency} {formatAmount(getProductDisplayPrice(product))}</td>
                             <td className="px-4 py-3 hidden sm:table-cell">
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input 
@@ -3273,7 +3274,7 @@ export default function StoreManageProducts() {
                                                             />
                                                             <div className="min-w-0 flex-1">
                                                                 <p className="truncate text-sm text-slate-900">{item.name}</p>
-                                                                <p className="text-xs text-slate-500">{currency} {formatAmount(item.price)}</p>
+                                                                <p className="text-xs text-slate-500">{currency} {formatAmount(getProductDisplayPrice(item))}</p>
                                                             </div>
                                                             <button
                                                                 type="button"
@@ -3332,7 +3333,7 @@ export default function StoreManageProducts() {
                                                                 />
                                                                 <div className="min-w-0 flex-1">
                                                                     <p className="truncate text-sm text-slate-900">{item.name}</p>
-                                                                    <p className="text-xs text-slate-500">{currency} {formatAmount(item.price)}</p>
+                                                                    <p className="text-xs text-slate-500">{currency} {formatAmount(getProductDisplayPrice(item))}</p>
                                                                 </div>
                                                                 <span className="text-xs font-semibold text-emerald-700">Add</span>
                                                             </button>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="220" viewBox="0 0 1400 220" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1400" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1a0508"/>
+      <stop offset="1" stop-color="#c41e2a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1400" height="220" rx="24" fill="url(#bg)"/>
+  <circle cx="1280" cy="40" r="100" fill="#fff" fill-opacity="0.06"/>
+  <text x="64" y="95" fill="#f5c451" font-family="Georgia, 'Times New Roman', serif" font-size="48" font-weight="700">11.11</text>
+  <text x="200" y="88" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700">Why shop this drop</text>
+  <text x="200" y="128" fill="#ffd7c2" font-family="Arial, Helvetica, sans-serif" font-size="18">Selected bestsellers and fresh picks  grab them while stock lasts.</text>
+  <rect x="1080" y="78" width="220" height="64" rx="32" fill="#f5c451"/>
+  <text x="1190" y="118" text-anchor="middle" fill="#1a0508" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">See all deals</text>
+</svg>

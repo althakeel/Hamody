@@ -18,6 +18,8 @@ import {
     CreditCard,
     Banknote,
     AlertTriangle,
+    RefreshCw,
+    ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -42,6 +44,8 @@ export default function SalesReport() {
         totalPages: 1,
     });
     const [tableLoading, setTableLoading] = useState(false);
+    const [sheetSyncing, setSheetSyncing] = useState(false);
+    const [sheetStatus, setSheetStatus] = useState(null);
     const reportDataRef = useRef(null);
 
     useEffect(() => {
@@ -97,6 +101,57 @@ export default function SalesReport() {
             fetchReportData(currentPage);
         }
     }, [user, authLoading, router, currentPage, fetchReportData]);
+
+    useEffect(() => {
+        if (!user) return undefined;
+        let cancelled = false;
+        (async () => {
+            try {
+                const token = await getToken(true);
+                if (!token || cancelled) return;
+                const response = await axios.get('/api/store/google-sheets-orders', {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!cancelled) setSheetStatus(response.data || null);
+            } catch {
+                if (!cancelled) setSheetStatus(null);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [user, getToken]);
+
+    const syncGoogleSheet = async () => {
+        if (sheetSyncing) return;
+        try {
+            setSheetSyncing(true);
+            toast.loading('Syncing Google Sheet…', { id: 'gsheet-orders-sync' });
+            const token = await getToken(true);
+            if (!token) {
+                toast.error('Authentication failed', { id: 'gsheet-orders-sync' });
+                return;
+            }
+            const response = await axios.post('/api/store/google-sheets-orders', {}, {
+                headers: { Authorization: `Bearer ${token}` },
+                timeout: 300000,
+            });
+            toast.success(response.data?.message || 'Google Sheet synced', { id: 'gsheet-orders-sync' });
+            if (response.data?.spreadsheetUrl) {
+                setSheetStatus((current) => ({
+                    ...(current || {}),
+                    configured: true,
+                    spreadsheetUrl: response.data.spreadsheetUrl,
+                }));
+            }
+        } catch (error) {
+            toast.error(error?.response?.data?.error || 'Failed to sync Google Sheet', {
+                id: 'gsheet-orders-sync',
+            });
+        } finally {
+            setSheetSyncing(false);
+        }
+    };
 
     const totalPages = Math.max(1, pagination.totalPages || 1);
     const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -172,7 +227,7 @@ export default function SalesReport() {
                         <p className="text-slate-600 mt-1">Track your business performance and profitability</p>
                     </div>
                     
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap gap-3">
                         <Link 
                             href="/store/marketing-expenses"
                             className="px-4 py-2 bg-white border-2 border-pink-500 text-pink-600 rounded-lg hover:bg-pink-50 transition-all flex items-center gap-2 font-medium"
@@ -187,6 +242,26 @@ export default function SalesReport() {
                             <Settings size={18} />
                             Product Pricing
                         </Link>
+                        {sheetStatus?.spreadsheetUrl ? (
+                            <a
+                                href={sheetStatus.spreadsheetUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-4 py-2 bg-white border-2 border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-all flex items-center gap-2 font-medium"
+                            >
+                                <ExternalLink size={18} />
+                                Open Sheet
+                            </a>
+                        ) : null}
+                        <button
+                            type="button"
+                            onClick={syncGoogleSheet}
+                            disabled={sheetSyncing}
+                            className="px-4 py-2 bg-white border-2 border-green-600 text-green-700 rounded-lg hover:bg-green-50 transition-all flex items-center gap-2 font-medium disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            <RefreshCw size={18} className={sheetSyncing ? 'animate-spin' : ''} />
+                            {sheetSyncing ? 'Syncing…' : 'Sync Google Sheet'}
+                        </button>
                         <button
                             onClick={exportReport}
                             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all flex items-center gap-2 font-medium"

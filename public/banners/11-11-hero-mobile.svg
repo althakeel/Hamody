@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="960" viewBox="0 0 800 960" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="800" y2="960" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0b0204"/>
+      <stop offset="0.45" stop-color="#7a0f1a"/>
+      <stop offset="1" stop-color="#d62828"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="80" y1="120" x2="720" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff1c2"/>
+      <stop offset="0.5" stop-color="#f6c453"/>
+      <stop offset="1" stop-color="#c89214"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="960" fill="url(#bg)"/>
+  <circle cx="680" cy="120" r="200" fill="#fff" fill-opacity="0.06"/>
+  <circle cx="120" cy="820" r="180" fill="#000" fill-opacity="0.2"/>
+  <circle cx="640" cy="560" r="150" fill="#ffd27a" fill-opacity="0.12"/>
+  <text x="400" y="280" text-anchor="middle" fill="url(#gold)" font-family="Georgia, 'Times New Roman', serif" font-size="168" font-weight="700" letter-spacing="-8">11.11</text>
+  <text x="400" y="360" text-anchor="middle" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700">Singles Day Sale</text>
+  <text x="400" y="415" text-anchor="middle" fill="#ffd7c2" font-family="Arial, Helvetica, sans-serif" font-size="22">Hand-picked deals. Limited stock.</text>
+  <rect x="220" y="460" width="360" height="64" rx="32" fill="#f5c451"/>
+  <text x="400" y="502" text-anchor="middle" fill="#1a0508" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700">Shop 11.11 deals</text>
+  <rect x="120" y="580" width="560" height="220" rx="28" fill="#14060a" fill-opacity="0.4" stroke="#ffd27a" stroke-opacity="0.35"/>
+  <text x="400" y="660" text-anchor="middle" fill="#ffe7a8" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700">Tonights drop</text>
+  <text x="400" y="710" text-anchor="middle" fill="#fff4e8" font-family="Arial, Helvetica, sans-serif" font-size="18">Home tools · Gadgets · Lifestyle</text>
+  <text x="400" y="750" text-anchor="middle" fill="#ffc9b0" font-family="Arial, Helvetica, sans-serif" font-size="16">While stocks last</text>
+</svg>

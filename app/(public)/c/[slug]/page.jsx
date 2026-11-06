@@ -1,10 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
 import { Filter, X } from 'lucide-react';
-import ProductCard from '@/components/ProductCard';
+import CampaignSaleProductCard from '@/components/CampaignSaleProductCard';
+import Campaign1111Hero from '@/components/Campaign1111Hero';
 import ProductFilterSidebar from '@/components/ProductFilterSidebar';
 import CampaignPageBannerSlider from '@/components/CampaignPageBannerSlider';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
@@ -16,6 +18,7 @@ import {
 } from '@/lib/emailCampaignPageHelpers';
 
 const LANDING_PAGE_SIZE = 20;
+const GRID_PAGE_SIZE = 20;
 
 const DEFAULT_FILTERS = {
   categories: [],
@@ -101,10 +104,29 @@ export default function CampaignLandingPage() {
   const [notFound, setNotFound] = useState(false);
   const [activeFilters, setActiveFilters] = useState(DEFAULT_FILTERS);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [portalReady, setPortalReady] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(GRID_PAGE_SIZE);
+  const [scrollLoading, setScrollLoading] = useState(false);
+  const gridTopRef = useRef(null);
   const sentinelRef = useRef(null);
   const nextPageRef = useRef(2);
   const hasMoreRef = useRef(false);
   const loadingMoreRef = useRef(false);
+  const visibleCountRef = useRef(GRID_PAGE_SIZE);
+  const scrollLoadingRef = useRef(false);
+
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileFiltersOpen) return undefined;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [mobileFiltersOpen]);
 
   useEffect(() => {
     if (!slug) {
@@ -117,6 +139,8 @@ export default function CampaignLandingPage() {
     hasMoreRef.current = false;
     setActiveFilters(DEFAULT_FILTERS);
     setMobileFiltersOpen(false);
+    setVisibleCount(GRID_PAGE_SIZE);
+    visibleCountRef.current = GRID_PAGE_SIZE;
     (async () => {
       setLoading(true);
       try {
@@ -135,14 +159,34 @@ export default function CampaignLandingPage() {
           setHasMore(false);
           return;
         }
-        const firstProducts = stampPageOrder(Array.isArray(data.products) ? data.products : []);
+        const sectionMap = data.productsBySection && typeof data.productsBySection === 'object'
+          ? data.productsBySection
+          : {};
+        const sectionFlat = Object.values(sectionMap)
+          .flatMap((list) => (Array.isArray(list) ? list : []))
+          .filter((item) => item?.id || item?._id);
+        const sectionUnique = [];
+        const seenSection = new Set();
+        sectionFlat.forEach((item) => {
+          const id = String(item.id || item._id);
+          if (!id || seenSection.has(id)) return;
+          seenSection.add(id);
+          sectionUnique.push(item);
+        });
+        const firstProducts = stampPageOrder(
+          sectionUnique.length
+            ? sectionUnique
+            : (Array.isArray(data.products) ? data.products : []),
+        );
         setNotFound(false);
         setPage(pageDoc);
         setProducts(firstProducts);
-        setProductsBySection(data.productsBySection && typeof data.productsBySection === 'object' ? data.productsBySection : {});
-        setTotal(Number(data.total) || firstProducts.length);
-        hasMoreRef.current = Boolean(data.hasMore);
-        setHasMore(Boolean(data.hasMore));
+        setProductsBySection(sectionMap);
+        setTotal(sectionUnique.length || Number(data.total) || firstProducts.length);
+        // Section grids already return their full product lists on page 1.
+        const more = sectionUnique.length ? false : Boolean(data.hasMore);
+        hasMoreRef.current = more;
+        setHasMore(more);
         nextPageRef.current = 2;
       } catch {
         if (!cancelled) {
@@ -190,19 +234,6 @@ export default function CampaignLandingPage() {
     }
   }, [slug, urlPrefix]);
 
-  useEffect(() => {
-    const node = sentinelRef.current;
-    if (!node || loading || !hasMore) return undefined;
-
-    const observer = new IntersectionObserver((entries) => {
-      if (!entries.some((entry) => entry.isIntersecting)) return;
-      void loadNextPage();
-    }, { root: null, rootMargin: '900px 0px', threshold: 0 });
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [hasMore, loadNextPage, loading, products.length]);
-
   const title = useMemo(() => {
     if (!page) return '';
     if (isArabic && page.titleAr) return page.titleAr;
@@ -215,8 +246,9 @@ export default function CampaignLandingPage() {
     return page.subtitle || '';
   }, [page, isArabic]);
 
-  const accent = page?.accentColor || '#0f766e';
-  const background = page?.backgroundColor || '#f8fafc';
+  const is1111 = slug === '11-11' || String(page?.slug || '') === '11-11';
+  const accent = is1111 ? '#18181b' : (page?.accentColor || '#0f766e');
+  const background = is1111 ? '#f7f7f8' : (page?.backgroundColor || '#f8fafc');
   const design = page?.design || null;
   const titleSizeClass = design?.titleSize === 'large'
     ? 'text-3xl sm:text-4xl'
@@ -232,7 +264,7 @@ export default function CampaignLandingPage() {
     4: 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
     5: 'grid-cols-2 md:grid-cols-3 lg:grid-cols-5',
     6: 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6',
-  }[design?.gridColumns] || 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
+  }[is1111 ? 5 : design?.gridColumns] || (is1111 ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-5' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4');
   const bannerSources = useMemo(
     () => (page ? resolveCampaignPageBannerSources(page, language) : { desktop: '', tablet: '', mobile: '', fallback: '' }),
     [page, language],
@@ -253,11 +285,30 @@ export default function CampaignLandingPage() {
         && current.priceRange.min === filters.priceRange.min
         && current.priceRange.max === filters.priceRange.max;
       if (unchanged) return current;
+      setVisibleCount(GRID_PAGE_SIZE);
+      visibleCountRef.current = GRID_PAGE_SIZE;
       return filters;
     });
   }, []);
   const clearFilters = useCallback(() => {
+    setVisibleCount(GRID_PAGE_SIZE);
+    visibleCountRef.current = GRID_PAGE_SIZE;
     setActiveFilters(DEFAULT_FILTERS);
+  }, []);
+  const revealMoreProducts = useCallback((totalAvailable) => {
+    if (scrollLoadingRef.current) return;
+    if (visibleCountRef.current >= totalAvailable) return;
+    scrollLoadingRef.current = true;
+    setScrollLoading(true);
+    window.setTimeout(() => {
+      setVisibleCount((current) => {
+        const next = Math.min(current + GRID_PAGE_SIZE, totalAvailable);
+        visibleCountRef.current = next;
+        return next;
+      });
+      scrollLoadingRef.current = false;
+      setScrollLoading(false);
+    }, 120);
   }, []);
   const filteredProducts = useMemo(
     () => sortProducts(applyProductFilters(products, activeFilters), activeFilters.sortBy),
@@ -269,6 +320,31 @@ export default function CampaignLandingPage() {
     || activeFilters.sortBy !== 'popularity'
     || activeFilters.priceRange.min > 0
     || activeFilters.priceRange.max < 100000;
+
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || loading) return undefined;
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      if (hasMoreRef.current) {
+        void loadNextPage();
+        return;
+      }
+      if (visibleCountRef.current < filteredProducts.length) {
+        revealMoreProducts(filteredProducts.length);
+      }
+    }, { root: null, rootMargin: '700px 0px', threshold: 0 });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [
+    filteredProducts.length,
+    hasMore,
+    loadNextPage,
+    loading,
+    products.length,
+    revealMoreProducts,
+    visibleCount,
+  ]);
 
   if (loading) {
     return (
@@ -306,7 +382,9 @@ export default function CampaignLandingPage() {
     );
   }
 
-  const pageWidthClass = 'mx-auto w-full px-4 sm:px-6';
+  const pageWidthClass = is1111
+    ? 'mx-auto w-full px-2 sm:px-4 lg:px-6'
+    : 'mx-auto w-full px-4 sm:px-6';
   const pageWidthStyle = { maxWidth: EMAIL_CAMPAIGN_BANNER_MAX_WIDTH };
 
   return (
@@ -324,44 +402,58 @@ export default function CampaignLandingPage() {
         </nav>
       </div>
 
-      {hasBanner && bannerSources.fallback && !hasConfiguredSlider ? (
+      {hasBanner && bannerSources.fallback && !hasConfiguredSlider && !is1111 ? (
         <div className="w-full">
           <div className={pageWidthClass} style={pageWidthStyle}>
-            <picture>
-              {bannerSources.desktop ? (
-                <source media="(min-width: 1024px)" srcSet={bannerSources.desktop} />
-              ) : null}
-              {bannerSources.tablet ? (
-                <source media="(min-width: 768px)" srcSet={bannerSources.tablet} />
-              ) : null}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={bannerSources.fallback}
-                alt=""
-                className="block h-auto w-full max-w-full rounded-xl object-contain"
-              />
-            </picture>
+            <div className="overflow-hidden rounded-2xl shadow-[0_18px_50px_-28px_rgba(15,23,42,0.45)] ring-1 ring-black/5">
+              <picture>
+                {bannerSources.desktop ? (
+                  <source media="(min-width: 1024px)" srcSet={bannerSources.desktop} />
+                ) : null}
+                {bannerSources.tablet ? (
+                  <source media="(min-width: 768px)" srcSet={bannerSources.tablet} />
+                ) : null}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={bannerSources.fallback}
+                  alt=""
+                  className="block h-auto w-full max-w-full object-contain"
+                />
+              </picture>
+            </div>
           </div>
-          <div className="mt-4 border-b border-slate-200/80 bg-white/70">
+          <div className="mt-4 border-b border-black/5" style={{ background: `linear-gradient(180deg, ${accent}12 0%, transparent 100%)` }}>
             <div className={`${pageWidthClass} py-6`} style={pageWidthStyle}>
-              <h1 className={`font-bold ${design ? titleSizeClass : 'text-2xl sm:text-3xl'}`} style={titleStyle}>{title}</h1>
-              {subtitle ? <p className="mt-1 max-w-2xl text-sm text-slate-600 sm:text-base">{subtitle}</p> : null}
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: accent }}>
+                {isArabic ? 'عرض خاص' : 'Limited-time drop'}
+              </p>
+              <h1 className={`mt-1 font-bold tracking-tight ${design ? titleSizeClass : 'text-2xl sm:text-3xl'}`} style={titleStyle}>{title}</h1>
+              {subtitle ? <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">{subtitle}</p> : null}
             </div>
           </div>
         </div>
-      ) : (
-        <div className="border-b border-slate-200/80 bg-white/70">
-          <div className={`${pageWidthClass} py-8`} style={pageWidthStyle}>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: accent }}>
+      ) : !is1111 ? (
+        <div
+          className="border-b border-black/5"
+          style={{ background: `linear-gradient(135deg, ${accent}18 0%, #ffffff 55%)` }}
+        >
+          <div className={`${pageWidthClass} py-8 sm:py-10`} style={pageWidthStyle}>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: accent }}>
               {isArabic ? 'عروض مختارة' : 'Selected for you'}
             </p>
-            <h1 className={`mt-2 font-bold ${design ? titleSizeClass : 'text-2xl sm:text-3xl'}`} style={titleStyle}>{title}</h1>
-            {subtitle ? <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">{subtitle}</p> : null}
+            <h1 className={`mt-2 font-bold tracking-tight ${design ? titleSizeClass : 'text-2xl sm:text-3xl'}`} style={titleStyle}>
+              {title}
+            </h1>
+            {subtitle ? (
+              <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
+                {subtitle}
+              </p>
+            ) : null}
           </div>
         </div>
-      )}
+      ) : null}
 
-      <div className={`${pageWidthClass} min-h-[70vh] py-8`} style={pageWidthStyle}>
+      <div className={`${pageWidthClass} min-h-[70vh] ${is1111 ? 'py-4 sm:py-6' : 'py-8'}`} style={pageWidthStyle}>
         {page.ctaLabel && page.ctaUrl ? (
           <div className="mb-6">
             <a
@@ -387,15 +479,28 @@ export default function CampaignLandingPage() {
               {pageSections.map((section, index) => {
                 const sectionDesign = section.style || {};
                 const widthMap = { narrow: 720, normal: 960, wide: 1200, full: EMAIL_CAMPAIGN_BANNER_MAX_WIDTH };
+                const hasSectionBg = Boolean(sectionDesign.backgroundColor);
                 const sectionStyle = {
                   maxWidth: widthMap[sectionDesign.contentWidth] || EMAIL_CAMPAIGN_BANNER_MAX_WIDTH,
                   marginInline: 'auto',
-                  padding: `${Number(sectionDesign.padding ?? 16)}px`,
+                  padding: is1111 ? 0 : `${Number(sectionDesign.padding ?? 16)}px`,
                   backgroundColor: sectionDesign.backgroundColor || 'transparent',
                   color: sectionDesign.textColor || undefined,
                   textAlign: sectionDesign.alignment || 'left',
+                  borderRadius: hasSectionBg ? 20 : undefined,
+                  overflow: hasSectionBg ? 'hidden' : undefined,
                 };
                 if (section.type === 'bannerSlider') {
+                  if (is1111) {
+                    return (
+                      <section key={section.id || `banner-${index}`} className="min-w-0">
+                        <Campaign1111Hero
+                          products={filteredProducts.length ? filteredProducts : products}
+                          isArabic={isArabic}
+                        />
+                      </section>
+                    );
+                  }
                   return (
                     <section key={section.id || `banner-${index}`} style={sectionStyle}>
                       <CampaignPageBannerSlider slides={section.slides} title={title} className="overflow-hidden" />
@@ -403,15 +508,22 @@ export default function CampaignLandingPage() {
                   );
                 }
                 if (section.type === 'textBlock') {
-                  const textSize = section.textSize === 'large' ? 'text-lg sm:text-xl' : section.textSize === 'small' ? 'text-xs sm:text-sm' : 'text-sm sm:text-base';
+                  if (is1111) return null;
+                  const textSize = section.textSize === 'large' ? 'text-base sm:text-lg' : section.textSize === 'small' ? 'text-xs sm:text-sm' : 'text-sm sm:text-base';
+                  const headingSize = section.textSize === 'large'
+                    ? 'text-2xl sm:text-4xl tracking-tight'
+                    : section.textSize === 'small'
+                      ? 'text-lg'
+                      : 'text-xl sm:text-2xl';
                   return (
                     <section key={section.id || `text-${index}`} style={sectionStyle}>
-                      {section.heading ? <h2 className="mb-2 text-xl font-bold">{section.heading}</h2> : null}
-                      <p className={`${textSize} whitespace-pre-line leading-relaxed`}>{section.content}</p>
+                      {section.heading ? <h2 className={`mb-2 font-bold ${headingSize}`}>{section.heading}</h2> : null}
+                      <p className={`${textSize} whitespace-pre-line leading-relaxed opacity-95`}>{section.content}</p>
                     </section>
                   );
                 }
                 if (section.type === 'image') {
+                  if (is1111 && String(section.imageUrl || '').includes('/banners/11-11')) return null;
                   if (!section.imageUrl) return null;
                   const image = (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -424,6 +536,7 @@ export default function CampaignLandingPage() {
                   );
                 }
                 if (section.type === 'button') {
+                  if (is1111) return null;
                   if (!section.label || !section.url) return null;
                   const sizeClass = section.size === 'large' ? 'px-7 py-3.5 text-base' : section.size === 'small' ? 'px-4 py-2 text-xs' : 'px-5 py-2.5 text-sm';
                   return (
@@ -475,204 +588,295 @@ export default function CampaignLandingPage() {
                   applyProductFilters(sectionProducts, activeFilters),
                   activeFilters.sortBy,
                 );
-                const columns = Number(section.gridColumns || design?.gridColumns || 4);
-                const desktopColumns = Math.min(6, Math.max(2, columns));
-                const tabletColumns = Math.min(6, Math.max(1, Number(section.tabletGridColumns || design?.tabletGridColumns || 3)));
+                const columns = Number(section.gridColumns || design?.gridColumns || (is1111 ? 5 : 4));
+                const desktopColumns = Math.min(6, Math.max(2, is1111 ? 5 : columns));
+                const tabletColumns = Math.min(6, Math.max(1, Number(section.tabletGridColumns || design?.tabletGridColumns || (is1111 ? 3 : 3))));
                 const mobileColumns = Math.min(3, Math.max(1, Number(section.mobileGridColumns || design?.mobileGridColumns || 2)));
+                const isFirstGrid = index === pageSections.findIndex((item) => item.type === 'productGrid');
                 const isLastGrid = !pageSections.slice(index + 1).some((item) => item.type === 'productGrid');
+                const displayTotal = visibleGridProducts.length;
+                const safeVisible = Math.min(visibleCount, displayTotal || GRID_PAGE_SIZE);
+                const pagedProducts = visibleGridProducts.slice(0, safeVisible);
+                const rangeFrom = pagedProducts.length ? 1 : 0;
+                const rangeTo = pagedProducts.length;
+                const canScrollMore = safeVisible < displayTotal;
                 return (
-                  <section key={section.id || `products-${index}`} className="min-w-0" style={sectionStyle}>
-                  {section.title ? (
-                    <h2 className="mb-4 text-xl font-bold" style={titleStyle}>{section.title}</h2>
-                  ) : null}
-                  {index === pageSections.findIndex((item) => item.type === 'productGrid') ? (
-                    <div className="mb-4 flex items-center justify-between lg:hidden">
-                      <p className="text-sm text-gray-600">
-                        {t('shop.showingRange', {
-                          from: filteredProducts.length ? 1 : 0,
-                          to: filteredProducts.length,
-                          total: total || filteredProducts.length,
-                          label: (total || filteredProducts.length) === 1 ? t('common.product') : t('common.products'),
-                        })}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setMobileFiltersOpen(true)}
-                        className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  <section
+                    key={section.id || `products-${index}`}
+                    id={isFirstGrid ? 'deals-grid' : undefined}
+                    ref={isFirstGrid ? gridTopRef : undefined}
+                    className="min-w-0"
+                    style={{
+                      ...sectionStyle,
+                      backgroundColor: is1111 ? 'transparent' : sectionStyle.backgroundColor,
+                    }}
+                  >
+                    {is1111 ? (
+                      <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-zinc-200 pb-3">
+                        <div>
+                          <h2 className="text-lg font-semibold tracking-tight text-zinc-900 sm:text-xl">
+                            {isArabic ? 'كل عروض 11.11' : 'All 11.11 deals'}
+                          </h2>
+                          <p className="mt-1 text-sm text-zinc-500">
+                            {t('shop.showingRange', {
+                              from: rangeFrom,
+                              to: rangeTo,
+                              total: displayTotal,
+                              label: displayTotal === 1 ? t('common.product') : t('common.products'),
+                            })}
+                          </p>
+                        </div>
+                        {isFirstGrid ? (
+                          <button
+                            type="button"
+                            onClick={() => setMobileFiltersOpen(true)}
+                            className="inline-flex items-center gap-2 border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
+                          >
+                            <Filter size={15} />
+                            {t('category.filtersAndSort')}
+                          </button>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <>
+                        <div
+                          className="mb-5 overflow-hidden rounded-2xl border border-black/5 px-5 py-6 text-center text-white shadow-[0_18px_40px_-28px_rgba(15,23,42,0.55)] sm:px-8"
+                          style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}cc 100%)` }}
+                        >
+                          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                            {section.title || title}
+                          </h2>
+                        </div>
+                        {isFirstGrid ? (
+                          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-black/5 bg-white/90 px-4 py-3 shadow-sm backdrop-blur">
+                            <p className="text-sm font-medium text-slate-700">
+                              {t('shop.showingRange', {
+                                from: rangeFrom,
+                                to: rangeTo,
+                                total: displayTotal,
+                                label: displayTotal === 1 ? t('common.product') : t('common.products'),
+                              })}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => setMobileFiltersOpen(true)}
+                              className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-95"
+                              style={{ background: accent }}
+                            >
+                              <Filter size={15} />
+                              {t('category.filtersAndSort')}
+                            </button>
+                          </div>
+                        ) : null}
+                      </>
+                    )}
+
+                    {pagedProducts.length ? (
+                      <div
+                        className={`campaign-page-grid grid items-stretch ${is1111 ? 'gap-2 sm:gap-3 lg:gap-4' : ''}`}
+                        style={{
+                          ...(is1111
+                            ? {}
+                            : { gap: `${Math.max(16, Number(section.gridGap || design?.gridGap || 16))}px` }),
+                          '--campaign-mobile-columns': mobileColumns,
+                          '--campaign-tablet-columns': tabletColumns,
+                          '--campaign-desktop-columns': desktopColumns,
+                        }}
                       >
-                        <Filter size={16} />
-                        {t('category.filtersAndSort')}
-                      </button>
-                    </div>
-                  ) : null}
-                  <div className="flex gap-6">
-                    {index === pageSections.findIndex((item) => item.type === 'productGrid') ? (
-                      <div className="hidden w-56 shrink-0 lg:block">
-                        <ProductFilterSidebar
-                          products={products}
-                          onFilterChange={handleFilterChange}
-                          initialFilters={activeFilters}
-                        />
+                        {pagedProducts.map((product, productIndex) => (
+                          <CampaignSaleProductCard
+                            key={`${section.id || index}-${product.id}-${productIndex}`}
+                            product={product}
+                            accent={accent}
+                            itemListId={`campaign-${slug}`}
+                            itemListName={title || 'Campaign'}
+                            itemListIndex={productIndex}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-14 text-center">
+                        <p className="text-lg text-gray-500">{t('category.noMatch')}</p>
+                      </div>
+                    )}
+
+                    {isLastGrid && (canScrollMore || hasMore) ? (
+                      <div ref={sentinelRef} className="mt-8 flex min-h-20 flex-col items-center justify-center gap-3 py-6">
+                        {(scrollLoading || loadingMore) ? (
+                          <p className="text-sm text-slate-500">{t('category.loadingMore')}</p>
+                        ) : canScrollMore ? (
+                          <button
+                            type="button"
+                            onClick={() => revealMoreProducts(displayTotal)}
+                            className="inline-flex rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50"
+                          >
+                            {isArabic ? 'عرض المزيد' : 'Load more'}
+                          </button>
+                        ) : null}
                       </div>
                     ) : null}
-                    <div className="min-w-0 flex-1">
-                      {index === pageSections.findIndex((item) => item.type === 'productGrid') ? (
-                        <p className="mb-4 hidden text-sm text-gray-600 lg:block">
-                          {t('shop.showingRange', {
-                            from: filteredProducts.length ? 1 : 0,
-                            to: filteredProducts.length,
-                            total: total || filteredProducts.length,
-                            label: (total || filteredProducts.length) === 1 ? t('common.product') : t('common.products'),
-                          })}
-                        </p>
-                      ) : null}
-                      {visibleGridProducts.length ? (
-                        <div
-                          className="campaign-page-grid grid items-stretch"
-                          style={{
-                            gap: `${Number(section.gridGap || design?.gridGap || 12)}px`,
-                            '--campaign-mobile-columns': mobileColumns,
-                            '--campaign-tablet-columns': tabletColumns,
-                            '--campaign-desktop-columns': desktopColumns,
-                          }}
-                        >
-                          {visibleGridProducts.map((product) => (
-                            <ProductCard key={`${section.id || index}-${product.id}`} product={product} />
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="rounded-lg border border-gray-200 bg-white py-12 text-center">
-                          <p className="text-lg text-gray-500">{t('category.noMatch')}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  {isLastGrid && hasMore ? (
-                    <div ref={sentinelRef} className="mt-8 flex min-h-16 items-center justify-center py-6 text-sm text-gray-500">
-                      {loadingMore ? t('category.loadingMore') : null}
-                    </div>
-                  ) : null}
-                </section>
-              );
+                  </section>
+                );
             })}
           </div>
         ) : null}
 
         {!hasBuilderSections ? (
           <>
-        <div className={`mb-4 flex items-center justify-between lg:hidden ${isArabic ? 'flex-row-reverse' : ''}`}>
-          <p className="text-sm text-gray-600">
-            {t('shop.showingRange', {
-              from: filteredProducts.length ? 1 : 0,
-              to: filteredProducts.length,
-              total: total || filteredProducts.length,
-              label: (total || filteredProducts.length) === 1 ? t('common.product') : t('common.products'),
-            })}
-          </p>
-          <button
-            type="button"
-            onClick={() => setMobileFiltersOpen(true)}
-            className={`flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${isArabic ? 'flex-row-reverse' : ''}`}
-          >
-            <Filter size={16} />
-            {t('category.filtersAndSort')}
-          </button>
-        </div>
-
-        <div className="flex gap-6">
-          <div className="hidden w-56 shrink-0 lg:block">
-            <ProductFilterSidebar
-              products={products}
-              onFilterChange={handleFilterChange}
-              initialFilters={activeFilters}
-            />
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <p className="mb-4 hidden text-sm text-gray-600 lg:block">
-              {t('shop.showingRange', {
-                from: filteredProducts.length ? 1 : 0,
-                to: filteredProducts.length,
-                total: total || filteredProducts.length,
-                label: (total || filteredProducts.length) === 1 ? t('common.product') : t('common.products'),
-              })}
-            </p>
-
-            {filteredProducts.length === 0 ? (
-              <div className="rounded-lg border border-gray-200 bg-white py-16 text-center">
-                <p className="text-lg text-gray-500">{t('category.noMatch')}</p>
-                {hasActiveFilters ? (
-                  <button
-                    type="button"
-                    onClick={clearFilters}
-                    className="mt-4 rounded-lg bg-orange-500 px-6 py-2 text-white transition hover:bg-orange-600"
-                  >
-                    {t('category.clearFilters')}
-                  </button>
-                ) : null}
+            {is1111 ? (
+              <div className="mb-6">
+                <Campaign1111Hero
+                  products={filteredProducts.length ? filteredProducts : products}
+                  isArabic={isArabic}
+                />
               </div>
             ) : (
               <div
-                className={`grid items-stretch ${design ? gridColumnsClass : 'grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4'}`}
-                style={design ? { gap: `${design.gridGap || 12}px` } : undefined}
+                className="mb-5 overflow-hidden rounded-2xl border border-black/5 px-5 py-6 text-center text-white shadow-[0_18px_40px_-28px_rgba(15,23,42,0.55)] sm:px-8"
+                style={{ background: 'linear-gradient(135deg, #0b1220 0%, #1e293b 55%, #0f172a 100%)' }}
               >
-                {filteredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
+                <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h2>
               </div>
             )}
 
-            {hasMore ? (
-              <div ref={sentinelRef} className="mt-8 flex min-h-16 items-center justify-center py-6 text-sm text-gray-500">
-                {loadingMore ? t('category.loadingMore') : null}
-              </div>
-            ) : null}
-          </div>
-        </div>
-              </>
-            ) : null}
+            {(() => {
+              const legacyTotal = filteredProducts.length;
+              const legacyVisible = Math.min(visibleCount, legacyTotal || GRID_PAGE_SIZE);
+              const legacyPaged = filteredProducts.slice(0, legacyVisible);
+              const canScrollMore = legacyVisible < legacyTotal;
+              return (
+                <>
+                  <div
+                    ref={gridTopRef}
+                    id="deals-grid"
+                    className={`mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-zinc-200 pb-3 ${isArabic ? 'flex-row-reverse' : ''}`}
+                  >
+                    <div className={isArabic ? 'text-right' : 'text-left'}>
+                      <h2 className="text-lg font-semibold tracking-tight text-zinc-900 sm:text-xl">
+                        {isArabic ? 'كل عروض 11.11' : 'All 11.11 deals'}
+                      </h2>
+                      <p className="mt-1 text-sm text-zinc-500">
+                        {t('shop.showingRange', {
+                          from: legacyPaged.length ? 1 : 0,
+                          to: legacyPaged.length,
+                          total: legacyTotal,
+                          label: legacyTotal === 1 ? t('common.product') : t('common.products'),
+                        })}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setMobileFiltersOpen(true)}
+                      className={`inline-flex items-center gap-2 border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50 ${isArabic ? 'flex-row-reverse' : ''}`}
+                    >
+                      <Filter size={15} />
+                      {t('category.filtersAndSort')}
+                    </button>
+                  </div>
 
-        {mobileFiltersOpen ? (
-          <div className="fixed inset-0 z-50 lg:hidden">
+                  {legacyPaged.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center">
+                      <p className="text-lg text-gray-500">{t('category.noMatch')}</p>
+                      {hasActiveFilters ? (
+                        <button
+                          type="button"
+                          onClick={clearFilters}
+                          className="mt-4 rounded-full px-6 py-2 text-white"
+                          style={{ background: accent }}
+                        >
+                          {t('category.clearFilters')}
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <div
+                      className={`grid items-stretch ${design ? gridColumnsClass : 'grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4'}`}
+                      style={design ? { gap: `${Math.max(16, design.gridGap || 16)}px` } : undefined}
+                    >
+                      {legacyPaged.map((product, productIndex) => (
+                        <CampaignSaleProductCard
+                          key={product.id}
+                          product={product}
+                          accent={accent}
+                          itemListId={`campaign-${slug}`}
+                          itemListName={title || 'Campaign'}
+                          itemListIndex={productIndex}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {canScrollMore || hasMore ? (
+                    <div ref={sentinelRef} className="mt-8 flex min-h-20 flex-col items-center justify-center gap-3 py-6">
+                      {(scrollLoading || loadingMore) ? (
+                        <p className="text-sm text-slate-500">{t('category.loadingMore')}</p>
+                      ) : canScrollMore ? (
+                        <button
+                          type="button"
+                          onClick={() => revealMoreProducts(legacyTotal)}
+                          className="inline-flex rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50"
+                        >
+                          {isArabic ? 'عرض المزيد' : 'Load more'}
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </>
+              );
+            })()}
+          </>
+        ) : null}
+
+      </div>
+
+      {portalReady && mobileFiltersOpen
+        ? createPortal(
+          <div className="fixed inset-0 z-[200] flex items-stretch justify-end">
             <button
               type="button"
-              className="absolute inset-0 bg-black/40"
+              className="absolute inset-0 bg-black/45"
               aria-label={t('category.closeFilters')}
               onClick={() => setMobileFiltersOpen(false)}
             />
-            <div className={`absolute top-0 flex h-full w-[min(100%,340px)] flex-col bg-white shadow-xl ${isArabic ? 'left-0' : 'right-0'}`}>
-              <div className={`flex items-center justify-between border-b border-gray-200 px-4 py-3 ${isArabic ? 'flex-row-reverse' : ''}`}>
-                <h2 className="text-lg font-semibold text-gray-900">{t('category.filtersAndSort')}</h2>
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('category.filtersAndSort')}
+              className={`relative flex h-full w-full max-w-full flex-col bg-white shadow-2xl sm:w-[min(100%,380px)] ${isArabic ? 'mr-auto' : 'ml-auto'}`}
+            >
+              <div className={`flex shrink-0 items-center justify-between border-b border-zinc-200 px-4 py-3 ${isArabic ? 'flex-row-reverse' : ''}`}>
+                <h2 className="text-lg font-semibold text-zinc-900">{t('category.filtersAndSort')}</h2>
                 <button
                   type="button"
                   onClick={() => setMobileFiltersOpen(false)}
-                  className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"
+                  className="rounded-md p-2 text-zinc-500 hover:bg-zinc-100"
                   aria-label={t('category.closeFilters')}
                 >
                   <X size={20} />
                 </button>
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-3">
                 <ProductFilterSidebar
                   products={products}
                   onFilterChange={handleFilterChange}
                   initialFilters={activeFilters}
-                  className="!static !max-h-none !w-full !border-0 !shadow-none"
+                  embedded
                 />
               </div>
-              <div className="border-t border-gray-200 p-4">
+              <div className="shrink-0 border-t border-zinc-200 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
                 <button
                   type="button"
                   onClick={() => setMobileFiltersOpen(false)}
-                  className="w-full rounded-lg bg-orange-500 py-3 text-sm font-semibold text-white hover:bg-orange-600"
+                  className="w-full rounded-md bg-zinc-900 py-3 text-sm font-semibold text-white hover:bg-zinc-800"
                 >
                   {t('category.showProducts', { count: filteredProducts.length })}
                 </button>
               </div>
             </div>
-          </div>
-        ) : null}
-      </div>
+          </div>,
+          document.body,
+        )
+        : null}
     </div>
   );
 }

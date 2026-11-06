@@ -15,6 +15,7 @@ export default function ProductFilterSidebar({
   showCategoryFilter = true,
   className = '',
   categoryOptions = null,
+  embedded = false,
 }) {
   const { t, language } = useStorefrontI18n();
   const isArabic = language === 'ar';
@@ -235,9 +236,13 @@ export default function ProductFilterSidebar({
   return (
     <div
       dir={isArabic ? 'rtl' : 'ltr'}
-      className={`sticky top-40 flex h-fit w-full max-h-[calc(100vh-12rem)] flex-col overflow-visible rounded-xl border border-gray-200 bg-white lg:w-56 ${className}`.trim()}
+      className={
+        embedded
+          ? `flex w-full min-w-0 flex-col overflow-hidden bg-white ${className}`.trim()
+          : `sticky top-40 flex h-fit w-full max-h-[calc(100vh-12rem)] flex-col overflow-visible rounded-xl border border-gray-200 bg-white lg:w-56 ${className}`.trim()
+      }
     >
-      <div className="shrink-0 border-b border-gray-100 p-4 pb-3">
+      <div className={`shrink-0 border-b border-gray-100 pb-3 ${embedded ? 'px-0 pt-0' : 'p-4'}`}>
         {subcategoryLinks.length > 0 ? (
           <div className="mb-4 border-b border-gray-200 pb-4">
             <h3 className={`mb-3 text-lg font-bold text-gray-900 ${isArabic ? 'text-right' : ''}`}>
@@ -318,7 +323,7 @@ export default function ProductFilterSidebar({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4 pt-3">
+      <div className={`min-h-0 flex-1 overflow-x-hidden overflow-y-auto pt-3 ${embedded ? 'px-0' : 'p-4'}`}>
       {hasActiveFilters() ? (
         <div className={`mb-4 flex justify-end ${isArabic ? 'flex-row-reverse' : ''}`}>
           <button

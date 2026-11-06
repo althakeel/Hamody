@@ -62,6 +62,8 @@ const nextConfig = {
     // Keep SEO metadata in the initial <head> for every user agent. Next's
     // streamed metadata can otherwise place title, description, and canonical
     // tags after <body>, which causes strict HTML/SEO audits to flag them.
+    // Paired with scripts/patch-next-streaming-metadata.mjs so empty-UA
+    // ISR/export paths also stay blocking (Next otherwise forces streaming).
     htmlLimitedBots: /.*/,
     images: {
         unoptimized: false,
@@ -73,7 +75,9 @@ const nextConfig = {
     },
     compress: true,
     experimental: {
-        inlineCss: true,
+        // Keep CSS out of <head> so title/canonical stay early for HTML crawlers
+        // (Screaming Frog flagged metadata when the head was 300KB+ of inline CSS).
+        inlineCss: false,
         proxyClientMaxBodySize: '200mb',
         serverActions: {
             bodySizeLimit: '200mb'

@@ -24,7 +24,7 @@ import { TableHeader } from '@tiptap/extension-table-header'
 import { useAuth } from '@/lib/useAuth';
 import { getBadgePlacementClass, getBadgeShadowClass, getBadgeSizeClass, getNewBadgeStyle } from '@/lib/newProductTag';
 import { readSellerCache } from '@/lib/storeDashboardCache';
-import { canChangeProductPricing, explicitVariantStock, stripAutoPackSku } from '@/lib/productSaveGuards';
+import { canChangeProductPricing, explicitVariantStock, getMinPositiveVariantPrice, stripAutoPackSku } from '@/lib/productSaveGuards';
 import { Trash2, X } from 'lucide-react';
 import { formatStorefrontMoney } from '@/lib/storefrontMarket';
 import { getProductImageAspectRatioClass } from '@/lib/productMedia';
@@ -2385,10 +2385,10 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                 aPlusDesktopImages: productInfo.aPlusDesktopImages || [],
                 aPlusMobileImages: productInfo.aPlusMobileImages || [],
                 price: Number(productInfo.price)
-                    || (variantsToSend.length > 0 ? Number(variantsToSend[0].price) : 0)
+                    || getMinPositiveVariantPrice(variantsToSend, ['price', 'salePrice'])
                     || 0,
                 AED: Number(productInfo.AED)
-                    || (variantsToSend.length > 0 ? Number(variantsToSend[0].AED || variantsToSend[0].price) : 0)
+                    || getMinPositiveVariantPrice(variantsToSend, ['AED', 'price', 'salePrice'])
                     || 0,
                 // SKU updates only when the seller typed in the SKU field (never AI/import).
                 ...(product?._id

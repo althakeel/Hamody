@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="420" viewBox="0 0 1400 420" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1400" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2a0b12"/>
+      <stop offset="0.5" stop-color="#6d1020"/>
+      <stop offset="1" stop-color="#c41e2a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1400" height="420" fill="url(#bg)"/>
+  <path d="M0 340c180-80 320-40 480-70s280-110 460-90 280 90 460 70v170H0V340z" fill="#000" fill-opacity="0.18"/>
+  <circle cx="1120" cy="150" r="110" fill="#f5c451" fill-opacity="0.15"/>
+  <text x="90" y="145" fill="#ffd7c2" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" letter-spacing="5">HOME &amp; TECH</text>
+  <text x="90" y="225" fill="#ffffff" font-family="Georgia, 'Times New Roman', serif" font-size="68" font-weight="700">Smart living picks</text>
+  <text x="90" y="280" fill="#ffe8d4" font-family="Arial, Helvetica, sans-serif" font-size="22">Tools, gadgets, and everyday upgrades for 11.11.</text>
+  <rect x="90" y="315" width="240" height="50" rx="25" fill="#f5c451"/>
+  <text x="210" y="347" text-anchor="middle" fill="#1a0508" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700">Explore the edit</text>
+  <g fill="#fff" fill-opacity="0.9">
+    <rect x="980" y="100" width="150" height="190" rx="18"/>
+    <rect x="1150" y="130" width="150" height="190" rx="18" fill-opacity="0.75"/>
+  </g>
+  <g fill="#1a0508">
+    <text x="1055" y="210" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">TECH</text>
+    <text x="1225" y="240" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">HOME</text>
+  </g>
+</svg>

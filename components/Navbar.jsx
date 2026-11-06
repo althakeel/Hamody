@@ -1829,7 +1829,7 @@ const Navbar = () => {
           <Link
             href="/"
             onClick={handleLogoNavigation}
-            className="flex items-center gap-2 flex-shrink-0"
+            className="flex flex-shrink-0 items-center gap-2 outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
           >
             {renderNavbarLogoImage({
               width: navbarAppearance.logoWidth,
@@ -2120,28 +2120,30 @@ const Navbar = () => {
           className="flex min-w-0 items-center overflow-visible px-2 py-2 sm:px-3 sm:py-2.5"
           style={{ gap: `${Number(navbarAppearance.mobileItemGap) || 0}px` }}
         >
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen((prev) => !prev)}
-            className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${mobileNavbarControlClass}`}
-            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
-          >
-            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+          <div className="flex shrink-0 items-center">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${mobileNavbarControlClass}`}
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
 
-          <Link
-            href="/"
-            onClick={handleLogoNavigation}
-            className="flex shrink-0 items-center"
-          >
-            {renderNavbarLogoImage({
-              width: navbarAppearance.logoWidth,
-              height: navbarAppearance.logoHeight,
-              className: 'h-7 w-[72px] max-w-[72px] object-contain sm:w-[96px] sm:max-w-[96px]',
-              style: { maxHeight: '32px' },
-              priority: true,
-            })}
-          </Link>
+            <Link
+              href="/"
+              onClick={handleLogoNavigation}
+              className="-ms-1 flex shrink-0 items-center outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
+            >
+              {renderNavbarLogoImage({
+                width: navbarAppearance.logoWidth,
+                height: navbarAppearance.logoHeight,
+                className: 'h-7 w-auto max-w-[40px] object-contain sm:max-w-[48px]',
+                style: { maxHeight: '32px' },
+                priority: true,
+              })}
+            </Link>
+          </div>
 
           <form onSubmit={handleSearch} className="relative z-[70] min-w-0 flex-1">
             <div
@@ -2217,46 +2219,8 @@ const Navbar = () => {
               </a>
             );
           })() : null}
-          {!isHomePage && (
-            firebaseUser ? (
-              renderAccountMenuTrigger({
-                signedIn: true,
-                onClick: () => setMobileMenuOpen(true),
-                tone: mobileNavbarUsesBrandColor ? 'light' : 'dark',
-                variant: 'icon',
-                compactIcon: true,
-              })
-            ) : (
-              renderAccountMenuTrigger({
-                signedIn: false,
-                onClick: () => {
-                  setSignInMode('login');
-                  setSignInOpen(true);
-                },
-                tone: mobileNavbarUsesBrandColor ? 'light' : 'dark',
-                variant: 'icon',
-                compactIcon: true,
-              })
-            )
-          )}
-
-          {navActionsVisibility.wishlist && renderLabeledNavAction({
-            href: firebaseUser ? '/dashboard/wishlist' : '/wishlist',
-            icon: HeartIcon,
-            label: t('navbar.wishlist'),
-            badgeCount: wishlistCount,
-            tone: mobileNavbarUsesBrandColor ? 'light' : 'dark',
-            iconOnly: true,
-          })}
-
-          {!isHomePage && navActionsVisibility.cart && renderLabeledNavAction({
-            onClick: handleCartClick,
-            icon: ShoppingCart,
-            label: t('navbar.cart'),
-            badgeCount: isClient ? cartCount : 0,
-            tone: mobileNavbarUsesBrandColor ? 'light' : 'dark',
-            iconOnly: true,
-          })}
+          {/* Account, wishlist, and cart stay in the menu / bottom nav so the
+              mobile top bar stays the same on every page: menu, logo, search, phone. */}
           </div>
         </div>
       </nav>
@@ -2377,7 +2341,7 @@ const Navbar = () => {
             >
               <div className="shrink-0 border-b border-slate-200 bg-white px-4 pb-3 pt-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <button type="button" onClick={handleLogoNavigation} className="flex min-w-0 max-w-[140px] items-center overflow-hidden">
+                  <button type="button" onClick={handleLogoNavigation} className="flex min-w-0 max-w-[140px] items-center overflow-hidden outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0">
                     {renderNavbarLogoImage({
                       width: navbarAppearance.logoWidth || 120,
                       height: navbarAppearance.logoHeight || 40,

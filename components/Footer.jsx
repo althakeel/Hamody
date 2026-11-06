@@ -162,9 +162,6 @@ const Footer = () => {
         <path d="M12 3.2c2.7 0 4.7 1.9 4.7 4.9v1.3c0 .4.1.8.4 1.1.5.5 1.3.7 2 .5.2 0 .4.2.3.4-.4 1.1-1.5 1.7-2.4 2.2-.4.2-.7.5-.7.9 0 .5.5 1 1.1 1.3.9.4 1.9.7 2.2 1.1.2.3 0 .7-.3.8-1 .4-1.7.2-2.4 0-.3-.1-.6-.1-.9.1-.7.5-1.6 1.2-2.6 1.5-.2.1-.4.1-.6.1h-.8c-.2 0-.4 0-.6-.1-1-.3-1.9-1-2.6-1.5-.3-.2-.6-.2-.9-.1-.7.2-1.4.4-2.4 0-.3-.1-.5-.5-.3-.8.3-.4 1.3-.7 2.2-1.1.6-.3 1.1-.8 1.1-1.3 0-.4-.3-.7-.7-.9-.9-.5-2-1.1-2.4-2.2-.1-.2.1-.4.3-.4.7.2 1.5 0 2-.5.3-.3.4-.7.4-1.1V8.1c0-3 2-4.9 4.7-4.9z" stroke="#90A1B9" strokeWidth="1.4" strokeLinejoin="round" />
       </svg>
     )
-    const GooglePlayIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.25 2.8L13.88 13.43L3.28 20.05C3.1 19.76 3 19.42 3 19.05V3.79C3 3.43 3.09 3.09 3.25 2.8Z" fill="#22D3EE"/><path d="M16.22 10.95L19.8 8.74C20.29 8.44 20.29 7.72 19.8 7.42L15.5 4.75L13.88 13.43L16.22 10.95Z" fill="#F59E0B"/><path d="M15.5 4.75L3.25 2.8C3.42 2.52 3.68 2.29 4 2.11L16.22 10.95L13.88 13.43L15.5 4.75Z" fill="#34D399"/><path d="M16.22 10.95L4 21.73C3.67 21.55 3.41 21.31 3.23 21.02L13.88 13.43L16.22 10.95Z" fill="#F43F5E"/></svg>)
-    const AppleIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15.93 3.54C16.6 2.73 17.09 1.62 17 0.5C16 0.54 14.8 1.16 14.11 1.97C13.49 2.69 12.94 3.83 13.06 4.92C14.18 5.01 15.25 4.37 15.93 3.54Z" fill="#E2E8F0"/><path d="M20.4 17.15C19.98 18.08 19.79 18.49 19.25 19.32C18.5 20.49 17.45 21.95 16.15 21.97C15 21.98 14.7 21.2 13.15 21.21C11.59 21.22 11.26 21.99 10.1 21.98C8.8 21.96 7.81 20.64 7.06 19.47C4.96 16.2 4.74 12.36 6.03 10.38C6.94 8.96 8.38 8.13 9.74 8.13C11.13 8.13 12 8.93 13.12 8.93C14.22 8.93 14.9 8.13 16.49 8.13C17.7 8.13 18.98 8.79 19.89 9.94C16.91 11.58 17.39 15.83 20.4 17.15Z" fill="#E2E8F0"/></svg>)
-
     const pickFooterText = (english, arabic) => (
         isArabic && String(arabic || '').trim() ? arabic : english
     );
@@ -216,18 +213,7 @@ const Footer = () => {
         }))
         .filter((column) => column.title && column.links.length);
 
-    const appDownloadLinks = [
-        {
-            icon: GooglePlayIcon,
-            title: t('footer.getItOn'),
-            platform: t('footer.googlePlay'),
-        },
-        {
-            icon: AppleIcon,
-            title: t('footer.downloadOnThe'),
-            platform: t('footer.appStore'),
-        },
-    ];
+    const PLAY_STORE_URL = 'https://play.google.com/store/search?q=store1920&c=apps&hl=en';
 
     const renderAppComingSoonPopup = () => {
         if (!appComingSoonOpen || !portalReady) return null;
@@ -264,8 +250,8 @@ const Footer = () => {
     return (
         <footer id="storefront-footer" className="bg-black text-slate-200 border-t border-slate-800 pt-0 pb-[5.25rem] lg:pb-12 lg:pt-12" dir={isArabic ? 'rtl' : 'ltr'}>
             <div className={HOME_SECTION_INNER_CLASS}>
-                <div className="py-2 grid grid-cols-2 gap-2 md:grid-cols-2 lg:grid-cols-6 md:gap-4 lg:gap-6">
-                    <div className="col-span-2 lg:col-span-2">
+                <div className="space-y-8 py-6 lg:grid lg:grid-cols-6 lg:gap-6 lg:space-y-0 lg:py-2">
+                    <div className="min-w-0 lg:col-span-2">
                         {footerLogoLoading ? (
                             <div
                                 className="mb-4 animate-pulse rounded-md bg-slate-700/80"
@@ -283,25 +269,25 @@ const Footer = () => {
                                     width={footerLogo.logoWidth || 72}
                                     height={footerLogo.logoHeight || 72}
                                     className={footerLogo.usingBrandMark
-                                        ? 'h-[72px] w-[72px] rounded-2xl object-contain'
+                                        ? 'h-[64px] w-[64px] rounded-2xl object-contain sm:h-[72px] sm:w-[72px]'
                                         : 'h-auto max-h-12 w-auto object-contain'}
                                     priority
                                 />
                             </Link>
                         )}
-                        <p className="text-sm text-slate-400 leading-relaxed mb-3 max-w-sm">
+                        <p className="mb-3 max-w-sm text-sm leading-relaxed text-slate-400">
                             {footerDescription}
                         </p>
                         {operatedByLine ? (
-                            <p className="text-xs text-slate-500 mb-6 max-w-sm">
+                            <p className="mb-5 max-w-sm text-xs text-slate-500 sm:mb-6">
                                 {operatedByLine}
                             </p>
                         ) : null}
-                        <div className="space-y-3 mb-6">
+                        <div className="mb-5 space-y-3 sm:mb-6">
                             {phoneHref ? (
                             <div className="flex items-center gap-2 text-sm">
                                 <PhoneIcon />
-                                <a href={phoneHref} className="text-slate-400 hover:text-white transition">
+                                <a href={phoneHref} className="text-slate-400 transition hover:text-white">
                                     {phoneDisplay}
                                 </a>
                             </div>
@@ -309,14 +295,14 @@ const Footer = () => {
                             {footerContent.email ? (
                             <div className="flex items-center gap-2 text-sm">
                                 <MailIcon />
-                                <a href={`mailto:${footerContent.email}`} className="text-slate-400 hover:text-white transition">
+                                <a href={`mailto:${footerContent.email}`} className="break-all text-slate-400 transition hover:text-white">
                                     {footerContent.email}
                                 </a>
                             </div>
                             ) : null}
                             <div className="flex items-start gap-2 text-sm">
                                 <MapPinIcon />
-                                <span className="text-slate-400 leading-relaxed">
+                                <span className="min-w-0 leading-relaxed text-slate-400">
                                     <span className="block text-[11px] uppercase tracking-wide text-slate-500">
                                         {pickFooterText(footerContent.registeredOfficeLabel, footerContent.registeredOfficeLabelAr)}
                                     </span>
@@ -332,72 +318,127 @@ const Footer = () => {
                                 </span>
                             </div>
                         </div>
-                        <div className="mb-6 flex flex-wrap items-center gap-2.5" aria-label={t('footer.paymentMethods')}>
+                        <div className="mb-4 hidden flex-wrap items-center gap-2 lg:flex" aria-label={t('footer.paymentMethods')}>
                             {visiblePaymentMethods.map((method) => (
                                 <span
                                     key={method.id}
-                                    className="inline-flex h-8 items-center justify-center sm:h-9"
+                                    className="inline-flex h-9 items-center justify-center"
                                     title={method.label}
                                 >
                                     <img
                                         src={method.image}
                                         alt={method.label || 'Payment'}
-                                        className="h-8 w-auto max-w-[96px] object-contain sm:h-9"
+                                        className="h-9 w-auto max-w-[96px] object-contain"
                                     />
                                 </span>
                             ))}
                         </div>
-                        {/* App download buttons hidden for now (coming-soon placeholders). */}
-                        {false ? (
-                        <div className="flex flex-wrap items-center gap-2">
-                            {appDownloadLinks.map((item) => (
-                                <button
-                                    key={item.platform}
-                                    type="button"
-                                    onClick={() => setAppComingSoonOpen(true)}
-                                    className="group min-w-[156px] h-12 px-3 rounded-xl border border-slate-700 bg-slate-900/60 hover:bg-slate-800 transition flex items-center gap-2 text-start"
-                                    aria-label={item.platform}
-                                >
-                                    <item.icon />
-                                    <span className="flex flex-col leading-tight">
-                                        <span className="text-[10px] text-slate-400 group-hover:text-slate-300">{item.title}</span>
-                                        <span className="text-sm text-slate-100 font-semibold">{item.platform}</span>
-                                    </span>
-                                </button>
-                            ))}
+                        <div className="hidden items-center gap-2 lg:flex">
+                            <a
+                                href={PLAY_STORE_URL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex transition hover:opacity-90"
+                                aria-label={t('footer.googlePlay')}
+                            >
+                                <img
+                                    src="/badges/google-play.png"
+                                    alt={t('footer.googlePlay')}
+                                    className="h-11 w-auto object-contain"
+                                />
+                            </a>
+                            <button
+                                type="button"
+                                onClick={() => setAppComingSoonOpen(true)}
+                                className="inline-flex transition hover:opacity-90"
+                                aria-label={`${t('footer.appStore')} — ${t('footer.comingSoon')}`}
+                            >
+                                <img
+                                    src="/badges/app-store.png"
+                                    alt={t('footer.appStore')}
+                                    className="h-11 w-auto object-contain"
+                                />
+                            </button>
                         </div>
-                        ) : null}
                     </div>
 
-                    {linkSections.map((section) => (
-                        <div key={section.title}>
-                            <h3 className="text-white font-semibold text-sm mb-4 tracking-wider">{section.title}</h3>
-                            <ul className="space-y-3">
-                                {section.links.map((link) => (
-                                    <li key={link.path}>
-                                        <Link
-                                            href={link.path}
-                                            className="text-sm text-slate-400 hover:text-white transition inline-block"
-                                            onClick={(event) => {
-                                                if (!link.requiresAuth || isSignedIn) return;
-                                                event.preventDefault();
-                                                window.dispatchEvent(new CustomEvent('openSignInModal', {
-                                                    detail: { mode: 'login' },
-                                                }));
-                                            }}
-                                        >
-                                            {link.text}
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    ))}
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 lg:col-span-4 lg:contents">
+                        {linkSections.map((section) => (
+                            <div key={section.title} className="min-w-0">
+                                <h3 className="mb-3 text-xs font-semibold tracking-wider text-white sm:mb-4 sm:text-sm">
+                                    {section.title}
+                                </h3>
+                                <ul className="space-y-2.5 sm:space-y-3">
+                                    {section.links.map((link) => (
+                                        <li key={link.path} className="min-w-0">
+                                            <Link
+                                                href={link.path}
+                                                className="inline-block text-sm leading-snug text-slate-400 transition hover:text-white"
+                                                onClick={(event) => {
+                                                    if (!link.requiresAuth || isSignedIn) return;
+                                                    event.preventDefault();
+                                                    window.dispatchEvent(new CustomEvent('openSignInModal', {
+                                                        detail: { mode: 'login' },
+                                                    }));
+                                                }}
+                                            >
+                                                {link.text}
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                <div className="border-t border-slate-800 py-8 mt-4 w-full flex flex-col items-center justify-end">
-                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 w-full">
-                        <div className="flex items-center justify-center lg:justify-start gap-3">
+                <div className="mt-8 flex w-full flex-col border-t border-slate-800 py-6 sm:mt-4 sm:py-8">
+                    <div className="mb-6 flex flex-col items-center gap-4 lg:hidden">
+                        <div className="flex flex-wrap items-center justify-center gap-2" aria-label={t('footer.paymentMethods')}>
+                            {visiblePaymentMethods.map((method) => (
+                                <span
+                                    key={`mobile-${method.id}`}
+                                    className="inline-flex h-7 items-center justify-center"
+                                    title={method.label}
+                                >
+                                    <img
+                                        src={method.image}
+                                        alt={method.label || 'Payment'}
+                                        className="h-7 w-auto max-w-[76px] object-contain"
+                                    />
+                                </span>
+                            ))}
+                        </div>
+                        <div className="flex items-center justify-center gap-2.5">
+                            <a
+                                href={PLAY_STORE_URL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex shrink-0 transition hover:opacity-90"
+                                aria-label={t('footer.googlePlay')}
+                            >
+                                <img
+                                    src="/badges/google-play.png"
+                                    alt={t('footer.googlePlay')}
+                                    className="h-9 w-auto object-contain"
+                                />
+                            </a>
+                            <button
+                                type="button"
+                                onClick={() => setAppComingSoonOpen(true)}
+                                className="inline-flex shrink-0 transition hover:opacity-90"
+                                aria-label={`${t('footer.appStore')} — ${t('footer.comingSoon')}`}
+                            >
+                                <img
+                                    src="/badges/app-store.png"
+                                    alt={t('footer.appStore')}
+                                    className="h-9 w-auto object-contain"
+                                />
+                            </button>
+                        </div>
+                    </div>
+                    <div className="flex w-full flex-col items-center gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="flex items-center justify-center gap-3 lg:justify-start">
                             {socialIcons.map((item) => (
                                 <Link
                                     href={item.link}
@@ -406,13 +447,13 @@ const Footer = () => {
                                     rel="noopener noreferrer"
                                     aria-label={item.label}
                                     title={item.label}
-                                    className="flex items-center justify-center w-8 h-8 bg-white/5 hover:bg-white/10 border border-slate-800 hover:border-slate-700 transition rounded-lg"
+                                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-800 bg-white/5 transition hover:border-slate-700 hover:bg-white/10"
                                 >
                                     <item.icon />
                                 </Link>
                             ))}
                         </div>
-                        <p className="text-sm text-slate-500 text-center">
+                        <p className="px-2 text-center text-xs leading-relaxed text-slate-500 sm:text-sm">
                             {copyrightLine}
                         </p>
                     </div>
