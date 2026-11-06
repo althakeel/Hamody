@@ -145,6 +145,21 @@ test('dashboard groups order status and EMX updates and includes recent details'
   assert.equal(dashboard.values[8][5], 1);
   assert.equal(dashboard.values[dashboard.periodSectionRow - 1][0], 'Order overview');
   assert.equal(dashboard.values[dashboard.statusSectionRow - 1][0], 'Status and courier updates');
+  assert.equal(dashboard.values[dashboard.dailySalesSectionRow - 1][0], 'Daily sales report');
+  assert.deepEqual(dashboard.values[dashboard.dailySalesStartRow - 1], [
+    'Order Date',
+    'Orders',
+    'Sales',
+    'Product Cost',
+    'Gross Profit',
+    'Delivery Cost',
+    'Marketing Expense',
+    'Net Profit',
+  ]);
+  assert.deepEqual(
+    dashboard.dailySalesRows.find(([date]) => date === '2026-11-05'),
+    ['2026-11-05', 3, 300, 80, 220, 30, 50, 140],
+  );
   assert.deepEqual(dashboard.periodRows.map((row) => row.slice(0, 2)), [
     ['Today (10am to 10am)', 3],
     ['This week', 3],
