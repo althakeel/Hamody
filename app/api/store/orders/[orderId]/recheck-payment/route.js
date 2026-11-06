@@ -6,7 +6,7 @@ import { reconcileStoreOrderPaymentById } from '@/lib/orderPaymentReconciliation
 export const dynamic = 'force-dynamic';
 
 /**
- * Recheck one PAYMENT_FAILED order against Tabby / Tamara / Stripe / card.
+ * Recheck one awaiting/failed order against Tabby / Tamara / Stripe / card.
  * Used by the seller dashboard "Recheck payment" button.
  */
 export async function POST(request, { params }) {
@@ -25,10 +25,10 @@ export async function POST(request, { params }) {
     if (result?.reason === 'order_not_found') {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
-    if (result?.reason === 'not_payment_failed') {
+    if (result?.reason === 'not_recheckable_payment_status') {
       return NextResponse.json(
         {
-          error: 'Recheck is only available for payment-failed orders',
+          error: 'Recheck is only available for awaiting-payment or payment-failed orders',
           reason: result.reason,
           status: result.status,
           isPaid: result.isPaid,

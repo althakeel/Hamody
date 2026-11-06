@@ -199,6 +199,13 @@ function formatPaymentRecheckReason(reason = '', paymentMethod = '') {
     return `Still unpaid at ${method} — ${raw.replace(/_/g, ' ')}`;
 }
 
+function isPaymentRecheckableStoreOrder(order = {}) {
+    const status = String(order?.status || '').trim().toUpperCase();
+    const method = String(order?.paymentMethod || '').trim().toUpperCase();
+    return ['AWAITING_PAYMENT', 'PAYMENT_FAILED'].includes(status)
+        && ['TABBY', 'TAMARA', 'STRIPE', 'CARD', 'VAULTSPAY'].includes(method);
+}
+
 function normalizeOrderSearchQuery(value = '') {
     return String(value || '').trim().toLowerCase();
 }
@@ -772,7 +779,7 @@ export default function StoreOrders() {
     const [showOrderFilters, setShowOrderFilters] = useState(false);
     const [paymentReconcileStatus, setPaymentReconcileStatus] = useState(null);
     const paymentReconcileRunningRef = useRef(false);
-    const PAYMENT_RECONCILE_INTERVAL_MS = 5 * 60 * 1000;
+    const PAYMENT_RECONCILE_INTERVAL_MS = 30 * 1000;
     const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);
     const suppressLiveAlertsRef = useRef(false);
     const [selectedOrderIds, setSelectedOrderIds] = useState([]);
@@ -2155,7 +2162,7 @@ export default function StoreOrders() {
 
     const recheckFailedOrderPayment = async (order) => {
         const orderId = String(order?._id || '').trim();
-        if (!orderId || !isPaymentFailedStoreOrder(order)) return;
+        if (!orderId || !isPaymentRecheckableStoreOrder(order)) return;
         if (recheckingPaymentOrderId) return;
 
         setRecheckingPaymentOrderId(orderId);
@@ -2191,6 +2198,12 @@ export default function StoreOrders() {
                 return;
             }
 
+            if (data?.resolved && data?.resolution === 'PAYMENT_FAILED') {
+                toast.error(formatPaymentRecheckReason(data?.reason, order?.paymentMethod), { duration: 8000 });
+                await fetchOrders({ silent: true });
+                return;
+            }
+
             const method = String(data?.paymentMethod || order?.paymentMethod || 'provider').toUpperCase();
             toast.error(formatPaymentRecheckReason(data?.reason, method), { duration: 8000 });
         } catch (error) {
@@ -2210,16 +2223,17 @@ export default function StoreOrders() {
 
             const { data } = await axios.post(
                 '/api/store/orders/reconcile-payments',
-                { hours: 24 },
+                { hours: 24, awaitingOnly: true },
                 { headers: { Authorization: `Bearer ${token}` } },
             );
 
             const summary = data?.summary || null;
             setPaymentReconcileStatus(summary);
 
-            if (summary?.fixed > 0) {
+            if (summary?.fixed > 0 || summary?.resolved > 0) {
+                const updates = Number(summary.fixed || 0) + Number(summary.resolved || 0);
                 toast.success(
-                    `Fixed ${summary.fixed} order(s) that were paid but showing failed/pending`,
+                    `Updated ${updates} payment status${updates === 1 ? '' : 'es'} from the provider`,
                     { id: 'payment-reconcile-fixed' },
                 );
                 await fetchOrders({ silent: true });
@@ -2343,7 +2357,7 @@ export default function StoreOrders() {
 
         const initialTimer = setTimeout(() => {
             runPaymentReconciliation({ silent: true });
-        }, 45000);
+        }, 3000);
 
         const intervalId = setInterval(() => {
             runPaymentReconciliation({ silent: true });
@@ -5657,14 +5671,14 @@ export default function StoreOrders() {
                                                     </button>
                                                 )}
                                             </div>
-                                            {isPaymentFailedStoreOrder(order) ? (
+                                            {isPaymentRecheckableStoreOrder(order) ? (
                                                 <div className="flex flex-wrap items-center gap-2">
                                                     <button
                                                         type="button"
                                                         disabled={recheckingPaymentOrderId === String(order._id)}
                                                         onClick={() => recheckFailedOrderPayment(order)}
                                                         className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                                        title="Check Tabby / Tamara / Stripe if this order was actually paid"
+                                                        title="Check the payment provider for the latest status"
                                                     >
                                                         <RefreshCw
                                                             size={13}
@@ -7350,7 +7364,7 @@ export default function StoreOrders() {
                                             }
                                         }}
                                     />
-                                    {isPaymentFailedStoreOrder(selectedOrder) ? (
+                                    {isPaymentRecheckableStoreOrder(selectedOrder) ? (
                                         <div className="mt-3 flex flex-wrap gap-2">
                                             <button
                                                 type="button"

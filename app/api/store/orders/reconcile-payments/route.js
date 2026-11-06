@@ -13,9 +13,10 @@ export async function POST(request) {
 
     const body = await request.json().catch(() => ({}));
     const hours = Number(body?.hours || 24);
+    const awaitingOnly = body?.awaitingOnly === true;
 
     await connectDB();
-    const summary = await reconcileStoreOrderPayments(auth.storeId, { hours });
+    const summary = await reconcileStoreOrderPayments(auth.storeId, { hours, awaitingOnly });
 
     return NextResponse.json({ success: true, summary });
   } catch (error) {
