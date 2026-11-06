@@ -179,6 +179,61 @@ export async function POST(req) {
     }
 }
 
+// PATCH - Update an existing marketing expense
+export async function PATCH(req) {
+    try {
+        await connectDB();
+
+        const authHeader = req.headers.get('authorization');
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const token = authHeader.split('Bearer ')[1];
+        const decoded = await getAuth().verifyIdToken(token);
+        if (!decoded || !decoded.uid) {
+            return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+        }
+
+        const { searchParams } = new URL(req.url);
+        const expenseId = searchParams.get('id');
+        if (!expenseId) {
+            return NextResponse.json({ error: 'Expense ID is required' }, { status: 400 });
+        }
+
+        const body = await req.json();
+        const normalized = normalizeMarketingExpenseInput(body);
+        if (normalized.error) {
+            return NextResponse.json({ error: normalized.error }, { status: 400 });
+        }
+
+        const expense = await MarketingExpense.findByIdAndUpdate(
+            expenseId,
+            { $set: normalized.data },
+            { new: true, runValidators: true }
+        );
+
+        if (!expense) {
+            return NextResponse.json({ error: 'Marketing expense not found' }, { status: 404 });
+        }
+
+        return NextResponse.json({
+            success: true,
+            message: 'Marketing expense updated successfully',
+            expense
+        });
+    } catch (error) {
+        if (error?.name === 'CastError') {
+            return NextResponse.json({ error: 'Invalid expense ID' }, { status: 400 });
+        }
+        console.error('Marketing expense update error:', error);
+        return NextResponse.json(
+            { error: 'Failed to update marketing expense' },
+            { status: 500 }
+        );
+    }
+}
+
 // DELETE - Remove marketing expense
 export async function DELETE(req) {
     try {

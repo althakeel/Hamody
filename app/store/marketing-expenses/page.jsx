@@ -14,6 +14,7 @@ import {
     Target,
     Calendar,
     Plus,
+    Pencil,
     Trash2,
     Facebook,
     Instagram,
@@ -46,6 +47,7 @@ export default function MarketingExpenses() {
     const [fromDate, setFromDate] = useState('');
     const [toDate, setToDate] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
+    const [editingExpenseId, setEditingExpenseId] = useState(null);
     const [showConnectModal, setShowConnectModal] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const [metaConnected, setMetaConnected] = useState(false);
@@ -191,36 +193,84 @@ export default function MarketingExpenses() {
         }
     };
     
+    const resetExpenseForm = () => {
+        setEditingExpenseId(null);
+        setFormData({
+            campaignName: '',
+            campaignType: 'SALES',
+            platform: 'FACEBOOK',
+            amount: '',
+            clicks: '',
+            impressions: '',
+            reach: '',
+            conversions: '',
+            startDate: '',
+            startTime: '',
+            endDate: '',
+            endTime: '',
+            notes: ''
+        });
+    };
+
+    const closeExpenseModal = () => {
+        setShowAddModal(false);
+        resetExpenseForm();
+    };
+
+    const handleAddExpense = () => {
+        resetExpenseForm();
+        setShowAddModal(true);
+    };
+
+    const handleEditExpense = (expense) => {
+        const toDateInput = (value) => {
+            if (!value) return '';
+            const parsed = new Date(value);
+            return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString().slice(0, 10);
+        };
+
+        setEditingExpenseId(expense._id);
+        setFormData({
+            campaignName: expense.campaignName || '',
+            campaignType: expense.campaignType || 'SALES',
+            platform: expense.platform || 'FACEBOOK',
+            amount: expense.amount ?? '',
+            clicks: expense.clicks ?? '',
+            impressions: expense.impressions ?? '',
+            reach: expense.reach ?? '',
+            conversions: expense.conversions ?? '',
+            startDate: toDateInput(expense.startDate || expense.createdAt),
+            startTime: expense.startTime || '00:00',
+            endDate: toDateInput(expense.endDate),
+            endTime: expense.endTime || '',
+            notes: expense.notes || ''
+        });
+        setShowAddModal(true);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             const token = await getToken(true);
-            
-            await axios.post('/api/store/marketing-expenses', formData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            toast.success('Marketing expense added successfully!');
-            setShowAddModal(false);
-            setFormData({
-                campaignName: '',
-                campaignType: 'SALES',
-                platform: 'FACEBOOK',
-                amount: '',
-                clicks: '',
-                impressions: '',
-                reach: '',
-                conversions: '',
-                startDate: '',
-                startTime: '',
-                endDate: '',
-                endTime: '',
-                notes: ''
-            });
+
+            const request = editingExpenseId
+                ? axios.patch(`/api/store/marketing-expenses?id=${editingExpenseId}`, formData, {
+                    headers: { Authorization: `Bearer ${token}` }
+                })
+                : axios.post('/api/store/marketing-expenses', formData, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+            await request;
+
+            toast.success(editingExpenseId
+                ? 'Marketing expense updated successfully!'
+                : 'Marketing expense added successfully!');
+            closeExpenseModal();
             fetchExpenses();
         } catch (error) {
-            console.error('Error adding expense:', error);
-            toast.error(error?.response?.data?.error || 'Failed to add expense');
+            console.error('Error saving expense:', error);
+            toast.error(error?.response?.data?.error || 'Failed to save expense');
         }
     };
     
@@ -439,7 +489,7 @@ export default function MarketingExpenses() {
                             </button>
                         )}
                         <button
-                            onClick={() => setShowAddModal(true)}
+                            onClick={handleAddExpense}
                             className="px-4 py-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-lg hover:from-pink-700 hover:to-purple-700 transition-all flex items-center gap-2 font-medium shadow-lg"
                         >
                             <Plus size={18} />
@@ -656,13 +706,24 @@ export default function MarketingExpenses() {
                                                 )}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <button
-                                                    onClick={() => handleDelete(expense._id)}
-                                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                    title="Delete expense"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        onClick={() => handleEditExpense(expense)}
+                                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                        title="Edit expense"
+                                                        aria-label={`Edit ${expense.campaignName || 'expense'}`}
+                                                    >
+                                                        <Pencil size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(expense._id)}
+                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                        title="Delete expense"
+                                                        aria-label={`Delete ${expense.campaignName || 'expense'}`}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))
@@ -774,13 +835,17 @@ export default function MarketingExpenses() {
                 </div>
             )}
             
-            {/* Add Manually Modal */}
+            {/* Add/Edit Manually Modal */}
             {showAddModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
                     <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full my-8">
                         <div className="p-6 border-b border-slate-200 bg-gradient-to-r from-pink-50 to-purple-50">
-                            <h2 className="text-2xl font-bold text-slate-800">Add Marketing Expense</h2>
-                            <p className="text-sm text-slate-600 mt-1">Manually track your campaign expenses</p>
+                            <h2 className="text-2xl font-bold text-slate-800">
+                                {editingExpenseId ? 'Edit Marketing Expense' : 'Add Marketing Expense'}
+                            </h2>
+                            <p className="text-sm text-slate-600 mt-1">
+                                {editingExpenseId ? 'Update your campaign expense details' : 'Manually track your campaign expenses'}
+                            </p>
                         </div>
                         
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -956,11 +1021,11 @@ export default function MarketingExpenses() {
                                     type="submit"
                                     className="flex-1 px-6 py-3 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-lg hover:from-pink-700 hover:to-purple-700 transition-all font-medium"
                                 >
-                                    Add Expense
+                                    {editingExpenseId ? 'Save Changes' : 'Add Expense'}
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setShowAddModal(false)}
+                                    onClick={closeExpenseModal}
                                     className="px-6 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-all font-medium"
                                 >
                                     Cancel
