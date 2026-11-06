@@ -87,7 +87,7 @@ import {
   matchMatrixVariant,
   normalizeSellerVariantOptions,
 } from '@/lib/productVariantOptions';
-import { getAvailableBundlePacks } from '@/lib/bundleSharedStock';
+import { getAvailableBundlePacks, isSingleSharedPackPool } from '@/lib/bundleSharedStock';
 
 const MANSORY_NOON_SLUG = 'mansory-special-edition-scooter-sm10';
 const MANSORY_NOON_CODE = 'SAVE500';
@@ -1531,11 +1531,21 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
   const hasAnyVariantStock = variants.some((v) => getVariantStock(v) > 0);
   const hasProductStockQty = Number(product.stockQuantity) > 0;
   const hasBaseStock = typeof product.stockQuantity === 'number' ? product.stockQuantity > 0 : true;
+  const sharedPackPool = isSingleSharedPackPool(product);
   // Matrix / variant products: treat as in-stock if any row has stock, or Stock Qty is set
   // (legacy rows often have stock 0 while Stock Qty still holds inventory).
-  const isGloballyOutOfStock = variants.length > 0
-    ? !(hasAnyVariantStock || hasProductStockQty)
-    : product.inStock === false || !hasBaseStock;
+  // Shared Buy 1 / Bundle packs use one Stock Qty — 0 / inStock false means out of stock
+  // even if old pack rows still have a leftover stock number.
+  const isGloballyOutOfStock = (() => {
+    if (product.inStock === false) return true;
+    if (typeof product.stockQuantity === 'number' && product.stockQuantity <= 0) {
+      if (!variants.length || sharedPackPool || isBulkBundleProduct) return true;
+    }
+    if (variants.length > 0) {
+      return !(hasAnyVariantStock || hasProductStockQty);
+    }
+    return !hasBaseStock;
+  })();
   const discountPercent = effAED > effPrice
     ? Math.round(((effAED - effPrice) / effAED) * 100)
     : 0;
@@ -1874,10 +1884,9 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
     if (!selectedVariant) {
       return !hasAnyVariantStock && hasProductStockQty;
     }
-    if (isBulkBundleProduct || isMatrixProduct) {
+    if (isBulkBundleProduct || isMatrixProduct || sharedPackPool) {
       const tier = Number(activeBundleTier || selectedVariant?.options?.bundleQty) || 1;
-      return getAvailableBundlePacks(product, selectedVariant.options, tier) > 0
-        || (!hasAnyVariantStock && hasProductStockQty);
+      return getAvailableBundlePacks(product, selectedVariant.options, tier) > 0;
     }
     const variantStock = getVariantStock(selectedVariant);
     if (variantStock > 0) return true;

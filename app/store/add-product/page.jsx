@@ -1137,6 +1137,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                 category: product.category?._id || product.category || "",
                 sku: product.sku || "",
                 stockQuantity: product.stockQuantity ?? '',
+                inStock: product.inStock !== false && Number(product.stockQuantity || 0) > 0,
                 soldCount: product.soldCount ?? 0,
                 colors: product.colors || [],
                 sizes: product.sizes || [],
@@ -1376,6 +1377,13 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                 freeShippingEligible: autoOn
                     ? true
                     : (freeShippingManualRef.current ? prev.freeShippingEligible : false),
+            }))
+        } else if (name === 'stockQuantity') {
+            const qty = Math.max(0, Number(value) || 0)
+            setProductInfo((prev) => ({
+                ...prev,
+                stockQuantity: value,
+                inStock: qty > 0,
             }))
         } else {
             if (name === 'supplierId') markDirty()
@@ -2132,9 +2140,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                 if (validRows.length === 0) {
                     return toast.error('Bundle rows need a Qty and Sale (AED) greater than 0. Rows with 0.00 are not saved.')
                 }
-                if (!(Number(productInfo.stockQuantity) > 0)) {
-                    return toast.error('Set Stock Qty greater than 0. All pack sizes share that stock.')
-                }
+                // Stock Qty may be 0 (out of stock). Pack sizes still share that same stock pool.
             } else if (variantBundleMode === 'matrix') {
                 // Matrix mode stock is validated after expanding rows below.
             }
@@ -2234,10 +2240,6 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                     setLoading(false)
                     return toast.error('Add a color/size variant, or enter Sale (AED) on each pack row so prices can save.')
                 }
-                if (!(sharedAdminStock > 0)) {
-                    setLoading(false)
-                    return toast.error('Set Stock Qty greater than 0. All pack sizes share that stock.')
-                }
                 variantsToSend = packVariants
                 hasVariantsFlag = true
             } else if (isMatrixMode) {
@@ -2279,10 +2281,6 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                 if (expanded.length === 0) {
                     setLoading(false)
                     return toast.error('Fill price for at least one color/size × pack combination in the matrix.')
-                }
-                if (!expanded.some((row) => Number(row.stock) > 0)) {
-                    setLoading(false)
-                    return toast.error('Set Stock greater than 0 on the variant (or Stock Qty). All pack sizes share that stock.')
                 }
                 variantsToSend = expanded
                 hasVariantsFlag = expanded.length > 0
@@ -2838,9 +2836,29 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                     <div>
                         <label className="block text-xs font-semibold mb-1 text-gray-500 uppercase tracking-wide">Stock Qty</label>
                         <input type="number" name="stockQuantity" value={productInfo.stockQuantity ?? ''} onChange={onChangeHandler} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200" placeholder="0" min="0" />
+                        <label className="mt-2 flex items-center gap-2 text-xs cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={!(Number(productInfo.stockQuantity) > 0) || productInfo.inStock === false}
+                            onChange={(e) => {
+                              const outOfStock = e.target.checked
+                              setProductInfo((prev) => ({
+                                ...prev,
+                                inStock: !outOfStock,
+                                stockQuantity: outOfStock
+                                  ? 0
+                                  : (Number(prev.stockQuantity) > 0 ? prev.stockQuantity : 1),
+                              }))
+                            }}
+                            className="accent-red-500 w-3.5 h-3.5"
+                          />
+                          <span className="text-gray-600">Out of stock (sets Stock Qty to 0)</span>
+                        </label>
                         {bulkEnabled ? (
-                          <p className="mt-1 text-[11px] text-slate-500">Units on the shelf. Buy 1 uses 1 unit, Bundle of 3 uses 3 units from this same stock.</p>
-                        ) : null}
+                          <p className="mt-1 text-[11px] text-slate-500">Units on the shelf. Buy 1 uses 1 unit, Bundle of 3 uses 3 units from this same stock. Qty 0 = out of stock.</p>
+                        ) : (
+                          <p className="mt-1 text-[11px] text-slate-500">Qty 0 automatically marks the product out of stock.</p>
+                        )}
                     </div>
                     )}
                     <div>

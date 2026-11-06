@@ -2,74 +2,100 @@ import dbConnect from "@/lib/mongodb";
 import Product from "@/models/Product";
 import authSeller from "@/middlewares/authSeller";
 import { invalidateStorefrontProductCaches } from "@/lib/cache";
+import { getAuth } from "@/lib/firebase-admin";
 
 import { NextResponse } from "next/server";
 
-// toggle stock of a product
+function zeroVariantStocks(variants = []) {
+  return (Array.isArray(variants) ? variants : []).map((variant) => ({
+    ...variant,
+    stock: 0,
+  }));
+}
 
-export async function POST(request){
-    try {
-        // Firebase Auth: Extract token from Authorization header
-        const authHeader = request.headers.get('authorization');
-        let userId = null;
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            const idToken = authHeader.split('Bearer ')[1];
-            const { getAuth } = await import('firebase-admin/auth');
-            const { initializeApp, applicationDefault, getApps } = await import('firebase-admin/app');
-            if (getApps().length === 0) {
-                initializeApp({ credential: applicationDefault() });
-            }
-            try {
-                const decodedToken = await getAuth().verifyIdToken(idToken);
-                userId = decodedToken.uid;
-            } catch (e) {
-                // Not signed in, userId remains null
-            }
-        }
-        const { productId } = await request.json()
-        if (!userId) {
-            return NextResponse.json({ error: 'not authorized' }, { status: 401 });
-        }
+function restoreVariantStocks(variants = [], qty = 1) {
+  const nextQty = Math.max(1, Number(qty) || 1);
+  return (Array.isArray(variants) ? variants : []).map((variant) => ({
+    ...variant,
+    stock: nextQty,
+  }));
+}
 
-        if(!productId){
-            return NextResponse.json({ error: "missing details: productId" }, { status: 400 });
-        }
+// Toggle stock of a product.
+// Out of stock → Stock Qty 0 (and pack/variant rows 0).
+// Back in stock with qty 0 → Stock Qty 1 so the storefront can sell again.
 
-        const storeId = await authSeller(userId)
-
-        if (!storeId) {
-            return NextResponse.json({ error: 'not authorized' }, { status: 401 });
-        }
-
-        await dbConnect();
-        // Validate productId
-        if (!productId || typeof productId !== 'string' || !productId.match(/^[a-fA-F0-9]{24}$/)) {
-            console.error('Invalid or missing productId:', productId);
-            return NextResponse.json({ error: "Product ID required or invalid format" }, { status: 400 });
-        }
-
-        // check if product exists
-        let product;
-        try {
-            product = await Product.findOne({ _id: productId, storeId }).lean();
-        } catch (err) {
-            console.error('Product.findOne error:', err, 'productId:', productId);
-            return NextResponse.json({ error: "Invalid productId format" }, { status: 400 });
-        }
-
-        if(!product){
-            return NextResponse.json({ error: 'no product found' }, { status: 404 });
-        }
-
-        await Product.findByIdAndUpdate(productId, {
-            inStock: !product.inStock
-        });
-
-        invalidateStorefrontProductCaches();
-
-        return NextResponse.json({message: "Product stock updated successfully"});
-    } catch (error) {
-        console.error(error);
-        return NextResponse.json({ error: error.code || error.message }, { status: 400 })
+export async function POST(request) {
+  try {
+    const authHeader = request.headers.get("authorization") || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return NextResponse.json({ error: "not authorized" }, { status: 401 });
     }
+
+    let userId = null;
+    try {
+      const decodedToken = await getAuth().verifyIdToken(authHeader.slice(7));
+      userId = decodedToken.uid;
+    } catch {
+      return NextResponse.json({ error: "not authorized" }, { status: 401 });
+    }
+
+    const { productId } = await request.json();
+    if (!productId || typeof productId !== "string" || !productId.match(/^[a-fA-F0-9]{24}$/)) {
+      return NextResponse.json({ error: "Product ID required or invalid format" }, { status: 400 });
+    }
+
+    const storeId = await authSeller(userId);
+    if (!storeId) {
+      return NextResponse.json({ error: "not authorized" }, { status: 401 });
+    }
+
+    await dbConnect();
+
+    const product = await Product.findOne({ _id: productId, storeId })
+      .select("_id inStock stockQuantity hasVariants variants")
+      .lean();
+
+    if (!product) {
+      return NextResponse.json({ error: "no product found" }, { status: 404 });
+    }
+
+    const nextInStock = !product.inStock;
+    const update = {
+      inStock: nextInStock,
+      stockUpdatedAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    if (!nextInStock) {
+      update.stockQuantity = 0;
+      if (Array.isArray(product.variants) && product.variants.length) {
+        update.variants = zeroVariantStocks(product.variants);
+      }
+    } else {
+      const currentQty = Math.max(0, Number(product.stockQuantity) || 0);
+      const restoredQty = currentQty > 0 ? currentQty : 1;
+      update.stockQuantity = restoredQty;
+      if (Array.isArray(product.variants) && product.variants.length) {
+        const hasPositiveVariant = product.variants.some((variant) => Number(variant?.stock) > 0);
+        if (!hasPositiveVariant) {
+          update.variants = restoreVariantStocks(product.variants, restoredQty);
+        }
+      }
+    }
+
+    await Product.findByIdAndUpdate(productId, update);
+    invalidateStorefrontProductCaches();
+
+    return NextResponse.json({
+      message: nextInStock
+        ? "Product marked in stock"
+        : "Product marked out of stock (Stock Qty set to 0)",
+      inStock: nextInStock,
+      stockQuantity: update.stockQuantity,
+    });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: error.code || error.message }, { status: 400 });
+  }
 }

@@ -795,7 +795,18 @@ export default function StoreManageProducts() {
     const toggleStock = async (productId) => {
         const token = await getToken()
         const { data } = await axios.post('/api/store/stock-toggle',{ productId }, {headers: { Authorization: `Bearer ${token}` } })
-        setProducts(prevProducts => prevProducts.map(product =>  product._id === productId ? {...product, inStock: !product.inStock} : product))
+        setProducts((prevProducts) => prevProducts.map((product) => {
+            if (product._id !== productId) return product
+            const nextInStock = typeof data?.inStock === 'boolean' ? data.inStock : !product.inStock
+            const nextQty = Number.isFinite(Number(data?.stockQuantity))
+                ? Number(data.stockQuantity)
+                : (nextInStock ? Math.max(1, Number(product.stockQuantity) || 1) : 0)
+            return {
+                ...product,
+                inStock: nextInStock,
+                stockQuantity: nextQty,
+            }
+        }))
         return data.message
     }
 
