@@ -59,6 +59,10 @@ try {
 const nextConfig = {
     // EC2 home has its own package-lock.json; keep tracing inside this repo.
     outputFileTracingRoot: projectRoot,
+    // Keep SEO metadata in the initial <head> for every user agent. Next's
+    // streamed metadata can otherwise place title, description, and canonical
+    // tags after <body>, which causes strict HTML/SEO audits to flag them.
+    htmlLimitedBots: /.*/,
     images: {
         unoptimized: false,
         remotePatterns: imageRemotePatterns,
