@@ -39,8 +39,9 @@ This folder is the **full API documentation set** — from public storefront / m
 | **0j** | [ANDROID_HOME_PAGE.md](./ANDROID_HOME_PAGE.md) | Android | Home page only: section order, design, and APIs |
 | **0k** | [ANDROID_SHOP_PAGE.md](./ANDROID_SHOP_PAGE.md) | Android | Shop tab: category rail, banner size, spotlight |
 | **0l** | [ANDROID_CATEGORY_BAR.md](./ANDROID_CATEGORY_BAR.md) | Android | Black category strip: settings API and category API |
-| **0m** | [ANDROID_PRODUCT_PAGE.md](./ANDROID_PRODUCT_PAGE.md) | Android | Product page: every API, including Notify Me, reviews, cart, wishlist |
-| **0m4** | [APP_PRODUCT.md](./APP_PRODUCT.md) | Android / Flutter | Product page: name, prices, app discount, images, badges, time badge, bundle, variant, and add to cart |
+| **0m** | **[APP_PRODUCT_PAGE.md](./APP_PRODUCT_PAGE.md)** | **Android / Flutter** | **Full product page: layout, APIs on open, prices, variants/bundles, cart, Notify Me, reviews, FBT, related** |
+| **0m1** | [ANDROID_PRODUCT_PAGE.md](./ANDROID_PRODUCT_PAGE.md) | Android | Product page: every API in detail, including Notify Me, reviews, cart, wishlist |
+| **0m4** | [APP_PRODUCT.md](./APP_PRODUCT.md) | Android / Flutter | Buy box depth: name, prices, app discount, images, badges, bundle, variant, add to cart |
 | **0m3** | [APP_PRODUCT_SHARE.md](./APP_PRODUCT_SHARE.md) | Android / Flutter | Product share sheet: WhatsApp, Facebook, Gmail, copy link, and the system share sheet |
 | **0m2** | [APP_PRODUCT_BADGES.md](./APP_PRODUCT_BADGES.md) | Android / Flutter | Product image badges, delivery-time badge, sale price, and app discount |
 | **0n** | [ANDROID_CATEGORY_SLIDER.md](./ANDROID_CATEGORY_SLIDER.md) | Android | Home category slider: app image, ratio, and products |
@@ -58,6 +59,7 @@ This folder is the **full API documentation set** — from public storefront / m
 | 2c | [MOBILE_FEATURES_DOCUMENTATION.md](./MOBILE_FEATURES_DOCUMENTATION.md) | App home banners only | Four banner sections, dashboard, public GETs, Flutter checklist |
 | 3 | [STORE_DASHBOARD_API.md](./STORE_DASHBOARD_API.md) | Seller `/store` dashboard | Products, orders, shipping, Mobile Features, marketing (~160+ routes) |
 | 4 | [ADMIN_API.md](./ADMIN_API.md) | Platform admins | Store approval, home merchandising, coupons |
+| 4b | **[STORE_LOGIN_AND_SUPER_ADMIN.md](./STORE_LOGIN_AND_SUPER_ADMIN.md)** | **Owner / IT / Super Admin** | **Full login & credentials doc: `/store/login`, Super Admin email list, team invites, PIN, password reset, `/admin`** |
 | 5 | [WEBHOOKS_AND_CRONS.md](./WEBHOOKS_AND_CRONS.md) | Backend / DevOps | Stripe, Tabby, Tamara, Razorpay, Waslah, crons |
 | 6 | [ORDER_DETAILS.md](./ORDER_DETAILS.md) | All builders | Order document fields & statuses |
 | 7 | [AUTH_SECURITY.md](./AUTH_SECURITY.md) | Auth / security | CAPTCHA, lockout, MFA, sessions |
@@ -72,6 +74,8 @@ This folder is the **full API documentation set** — from public storefront / m
 | 11f | [warehouse-return-scan-api.md](./warehouse-return-scan-api.md) | Warehouse Flutter | **Return scan API** — lookup + collect → RETURNED, product ids, stock |
 | 11g | [warehouse-return-collect-api.md](./warehouse-return-collect-api.md) | Warehouse Flutter | Legacy collect endpoint (`/returns/collect`) |
 | 12 | [warehouse-inventory-api.md](./warehouse-inventory-api.md) | Warehouse app | Inventory |
+| 12b | **[ERP_INTEGRATION_API.md](./ERP_INTEGRATION_API.md)** | **ERP dashboard** | **Zoho Inventory–style API: attributes, request/response examples for all 6 ERP routes** |
+| 12c | [ERP_API_LIST.json](./ERP_API_LIST.json) | ERP dashboard | Attribute schemas + endpoint list (JSON) |
 | 13 | [warehouse-android-firebase-setup.md](./warehouse-android-firebase-setup.md) | Warehouse setup | Firebase |
 | 14 | [GOOGLE_MERCHANT_CENTER_COMPLIANCE.md](./GOOGLE_MERCHANT_CENTER_COMPLIANCE.md) | Ads / Merchant Center | Compliance |
 

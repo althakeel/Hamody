@@ -82,6 +82,7 @@ test('dashboard groups order status and EMX updates and includes recent details'
 
   const summary = summarizeGoogleSheetsOrderRows(rows);
   assert.deepEqual(summary.statusRows, [
+    ['Order placed', 0],
     ['Processing', 2],
     ['Pending payment', 0],
     ['Cancelled', 0],
@@ -171,6 +172,7 @@ test('dashboard groups order status and EMX updates and includes recent details'
 
 test('processing and complaints views select the intended current-month orders', () => {
   const rows = [
+    ['620749', 'Order placed', 'SALE', '2026-11-05 09:50:00', 'Lina', '+971500000000', 'Dubai', 'Cash on delivery', '', '', '', '2026-11-05 09:55:00', ''],
     ['620750', 'Processing', 'SALE', '2026-11-05 10:00:00', 'Amina', '+971500000001', 'Dubai', 'Cash on delivery', '100000', '', '', '2026-11-05 10:05:00', ''],
     ['620751', 'Completed', 'SALE', '2026-11-04 09:00:00', 'Omar', '+971500000002', 'Sharjah', 'Tabby', '100001', '', 'Delivered', '2026-11-04 09:15:00', ''],
     ['620752', 'Cancelled', 'SALE', '2026-11-05 10:20:00', 'Sara', '+971500000003', 'Abu Dhabi', 'Credit / Debit Card', '', 'Customer changed mind', '', '2026-11-05 10:25:00', ''],
@@ -180,6 +182,7 @@ test('processing and complaints views select the intended current-month orders',
   ];
 
   const productsByOrderNumber = new Map([
+    ['620749', 'Desk Lamp'],
     ['620750', 'Camping Chair × 2'],
     ['620752', 'Portable Fan'],
     ['620755', 'Camping Tent'],
@@ -203,11 +206,12 @@ test('processing and complaints views select the intended current-month orders',
     pickupRequestedAtByOrderNumber,
     reportingRanges,
   });
-  assert.equal(views.allOrdersRows.length, 6);
-  assert.deepEqual(views.allOrdersRows[0].slice(-5), [30, 100, 70, 15, 55]);
+  assert.equal(views.allOrdersRows.length, 7);
+  assert.deepEqual(views.allOrdersRows[1].slice(-5), [30, 100, 70, 15, 55]);
   const yesterdayHistoryRow = views.orderHistoryRows.find((row) => row[3] === '620751');
   assert.deepEqual(yesterdayHistoryRow.slice(0, 3), ['Yes', 'Yes', 'Yes']);
-  assert.deepEqual(views.processingRows.map((row) => row[0]), ['620750']);
+  assert.deepEqual(views.processingRows.map((row) => row[0]), ['620749', '620750']);
+  assert.deepEqual(views.processingRows.map((row) => row[2]), ['Order placed', 'Processing']);
   assert.deepEqual(views.complaintRows.map((row) => row[0]), ['620752', '620753', '620754']);
   assert.deepEqual(views.pickupRequestedRows.map((row) => row.slice(0, 4)), [
     ['620753', '', 'Shipped', '2026-11-05 09:59:59'],

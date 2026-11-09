@@ -26,7 +26,7 @@ async function loadCatalogProducts(productIds = []) {
   const ids = [...new Set((productIds || []).map(String).filter(Boolean))];
   if (!ids.length) return [];
   return Product.find({ _id: { $in: ids } })
-    .select('name nameAr title sku brand category categories slug images inStock')
+    .select('name nameAr title sku brand category categories slug images inStock variants.sku variants.options zoho.sku')
     .lean();
 }
 
