@@ -46,6 +46,17 @@ export default function StorefrontActionToast({
       className={`flex w-[min(92vw,320px)] items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-lg ${
         visible ? '' : 'opacity-0 transition-opacity duration-200'
       }`}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.75rem',
+        width: 'min(92vw, 320px)',
+        borderRadius: '0.5rem',
+        border: '1px solid #e2e8f0',
+        background: '#ffffff',
+        padding: '0.75rem 1rem',
+        boxShadow: '0 10px 24px rgba(15, 23, 42, 0.12)',
+      }}
     >
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100">
         <Icon

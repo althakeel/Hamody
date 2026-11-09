@@ -224,9 +224,13 @@ export async function GET(request) {
     const ownerId = await resolveStorefrontOwnerId(userId || '');
     const doc = await findSharedNavbarSettings(ownerId);
     const merged = mergeWithDefaults(doc || inMemorySettings.public);
+    // Unauthenticated storefront reads can be CDN-cached briefly.
+    const cacheControl = userId
+      ? 'private, no-store'
+      : 'public, s-maxage=120, stale-while-revalidate=600';
     return NextResponse.json(
       { ...merged, updatedAt: doc?.updatedAt || null },
-      { status: 200, headers: { 'Cache-Control': 'no-store' } },
+      { status: 200, headers: { 'Cache-Control': cacheControl } },
     );
   } catch (error) {
     console.error('[API /store/settings GET] fallback to in-memory:', error?.message || error);

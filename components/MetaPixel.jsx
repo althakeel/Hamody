@@ -12,10 +12,6 @@ export default function MetaPixel() {
   useEffect(() => {
     if (typeof window === "undefined" || !pathname) return;
 
-    if (window.fbq) {
-      window.fbq('set', 'autoConfig', false, META_PIXEL_ID);
-    }
-
     const pathOnly = pathname.split('?')[0];
     if (pathOnly === '/order-success') return;
     if (
@@ -24,8 +20,24 @@ export default function MetaPixel() {
       || pathOnly.startsWith('/dashboard')
     ) return;
 
-    ensureMetaClickId();
-    trackPageView({ pagePath: pathOnly });
+    let cancelled = false;
+    let tries = 0;
+
+    const fire = () => {
+      if (cancelled) return;
+      if (!window.fbq) {
+        if (tries++ < 40) {
+          window.setTimeout(fire, 250);
+        }
+        return;
+      }
+      window.fbq('set', 'autoConfig', false, META_PIXEL_ID);
+      ensureMetaClickId();
+      trackPageView({ pagePath: pathOnly });
+    };
+
+    fire();
+    return () => { cancelled = true; };
   }, [pathname]);
 
   return (

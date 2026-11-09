@@ -954,6 +954,22 @@ body::-webkit-scrollbar-thumb:hover {
     }
 }
 
+/* Product buybox “already in cart” panel — keep layout stable before Tailwind settles. */
+.product-cart-matched {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    isolation: isolate;
+    min-width: 0;
+}
+
+.product-cart-matched-qty {
+    overflow: hidden;
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+}
+
 .storefront-toaster {
     pointer-events: none !important;
     padding-top: 6.75rem;
@@ -967,9 +983,15 @@ body::-webkit-scrollbar-thumb:hover {
     }
 }
 
-/* Toast slot wrappers span the full toaster width; never let them steal clicks. */
+/* Toast slots: no default chrome (avoids grey bars on load) and never steal clicks. */
 .storefront-toaster > div {
     pointer-events: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    max-width: min(92vw, 320px) !important;
 }
 
 /* Only the actual toast card inside each slot should be clickable. */

@@ -16,7 +16,23 @@ export default function TikTokPixel() {
       || pathOnly.startsWith('/admin')
       || pathOnly.startsWith('/dashboard')
     ) return;
-    trackTikTokPageView({ pagePath: pathOnly });
+
+    let cancelled = false;
+    let tries = 0;
+
+    const fire = () => {
+      if (cancelled) return;
+      if (!window.ttq) {
+        if (tries++ < 40) {
+          window.setTimeout(fire, 250);
+        }
+        return;
+      }
+      trackTikTokPageView({ pagePath: pathOnly });
+    };
+
+    fire();
+    return () => { cancelled = true; };
   }, [pathname]);
 
   return null;

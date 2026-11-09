@@ -39,10 +39,11 @@ const BestSelling = ({
   initialSectionDescriptionAr = null,
   initialLayout = null,
 }) => {
-  const hasInitialProducts = Array.isArray(initialProducts) && filterStorefrontInStockProducts(initialProducts).length > 0
+  // Homepage SSR already applies published/in-stock filters — trust that list.
+  const hasInitialProducts = Array.isArray(initialProducts) && initialProducts.length > 0
   const { getToken, user, loading: authLoading } = useAuth()
   const { t, isArabic } = useStorefrontI18n()
-  const [featuredProducts, setFeaturedProducts] = useState(hasInitialProducts ? filterStorefrontInStockProducts(initialProducts) : [])
+  const [featuredProducts, setFeaturedProducts] = useState(hasInitialProducts ? initialProducts : [])
   const [isLoading, setIsLoading] = useState(!hasInitialProducts)
   const [error, setError] = useState(null)
   const [sectionTitle, setSectionTitle] = useState(initialSectionTitle || 'Craziest sale of the year!')
@@ -198,15 +199,26 @@ const BestSelling = ({
   }, [])
 
   useEffect(() => {
-    if (authLoading && !hasInitialProducts) return
     if (skipInitialFetchRef.current) {
       skipInitialFetchRef.current = false
-      // SSR already has products; still refresh copy (EN/AR) without blocking.
-      fetchFeaturedAndSectionText()
+      // SSR already provided featured products — skip the mount refetch.
       return
     }
+    if (hasInitialProducts) return
+    // Public featured list is backend-filtered; do not wait on Firebase auth.
+    if (authLoading) return
     fetchFeaturedAndSectionText()
   }, [fetchFeaturedAndSectionText, user?.uid, authLoading, hasInitialProducts])
+
+  // If SSR had no products and auth stays busy, still load the public list.
+  useEffect(() => {
+    if (hasInitialProducts || featuredProducts.length > 0) return undefined
+    if (!authLoading) return undefined
+    const timer = window.setTimeout(() => {
+      fetchFeaturedAndSectionText()
+    }, 800)
+    return () => window.clearTimeout(timer)
+  }, [authLoading, fetchFeaturedAndSectionText, featuredProducts.length, hasInitialProducts])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -327,7 +339,7 @@ const BestSelling = ({
                 </div>
               ))
             : visibleProducts.map((product, index) => (
-                <ProductCard key={product._id || product.id} product={product} priorityImages={index < 4} />
+                <ProductCard key={product._id || product.id} product={product} priorityImages={index < 2} />
               ))}
         </div>
       )}

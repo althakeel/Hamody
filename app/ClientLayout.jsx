@@ -9,7 +9,7 @@ import Footer from "@/components/Footer";
 import DynamicMetaTags from "@/components/DynamicMetaTags";
 import MetaPixel from "@/components/MetaPixel";
 import TikTokPixel from "@/components/TikTokPixel";
-import GtmBootstrap from "@/components/GtmBootstrap";
+import DeferredMarketingScripts from "@/components/DeferredMarketingScripts";
 import GtmPageView from "@/components/GtmPageView";
 import { Toaster } from "react-hot-toast";
 import SilentDomErrorBoundary from "@/components/SilentDomErrorBoundary";
@@ -76,8 +76,11 @@ function DeferredWidgets() {
 
   return (
     <>
+      <AuthSessionGuard />
       <GiveawayCartManager />
       {!hideStorefrontChrome ? <SpinWheelWidget /> : null}
+      {!hideStorefrontChrome ? <GoogleOneTap /> : null}
+      {!hideStorefrontChrome ? <HomeWelcomePopup /> : null}
       <TawkToWidget />
     </>
   );
@@ -120,7 +123,7 @@ export default function ClientLayout({ children, initialStorefrontLanguage = 'en
   return (
     <ReduxProvider>
       <Suspense fallback={null}>
-        <GtmBootstrap />
+        <DeferredMarketingScripts />
         <GtmPageView />
         <MetaPixel />
         <TikTokPixel />
@@ -165,8 +168,6 @@ export default function ClientLayout({ children, initialStorefrontLanguage = 'en
         }
       />
       <DynamicMetaTags />
-      <AuthSessionGuard />
-      {!hideStorefrontChrome ? <GoogleOneTap /> : null}
       <SilentDomErrorBoundary
         className={hideStorefrontChrome ? 'h-dvh max-h-dvh min-w-0 overflow-hidden bg-slate-50' : 'min-w-0'}
       >
@@ -178,7 +179,6 @@ export default function ClientLayout({ children, initialStorefrontLanguage = 'en
         ) : null}
         {children}
         <DeferredWidgets />
-        {!hideStorefrontChrome ? <HomeWelcomePopup /> : null}
         {!hideStorefrontChrome ? <ScrollToTopButton /> : null}
         {!hideStorefrontChrome ? (
           <StorefrontChromeErrorBoundary>

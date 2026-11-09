@@ -71,7 +71,7 @@ const nextConfig = {
         formats: ['image/avif', 'image/webp'],
         deviceSizes: [320, 420, 640, 768, 1024, 1280, 1536, 1920],
         imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-        qualities: [75, 85, 90, 100]
+        qualities: [65, 70, 75, 85]
     },
     compress: true,
     experimental: {
@@ -328,6 +328,16 @@ const nextConfig = {
                         key: 'Permissions-Policy',
                         value: 'camera=(), microphone=(), geolocation=()'
                     }
+                ],
+            },
+            {
+                // Edge/CDN can serve a warm homepage shell while Next revalidates.
+                source: '/',
+                headers: [
+                    {
+                        key: 'Cache-Control',
+                        value: 'public, s-maxage=120, stale-while-revalidate=600',
+                    },
                 ],
             },
             {

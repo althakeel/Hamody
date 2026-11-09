@@ -7,13 +7,13 @@ import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 import { findTopDealsSection } from '@/lib/homeTopDeals';
 
 import HeroBannerSlider from '@/components/HeroBannerSlider';
-import LatestProducts from '@/components/LatestProducts';
 import ShopShowcaseSection from '@/components/ShopShowcaseSection';
-import HomeCategories from '@/components/HomeCategories';
-import BannerSlider from '@/components/BannerSlider';
-import BannerSlider2 from '@/components/BannerSlider2';
+import LatestProducts from '@/components/LatestProducts';
 import Section3 from '@/components/section3';
 import Section4 from '@/components/section4';
+import BannerSlider from '@/components/BannerSlider';
+import BannerSlider2 from '@/components/BannerSlider2';
+import HomeCategories from '@/components/HomeCategories';
 import CategoryInterestSection from '@/components/CategoryInterestSection';
 import RecentSearchProducts from '@/components/RecentSearchProducts';
 import RecommendedProducts from '@/components/RecommendedProducts';
@@ -32,6 +32,7 @@ export default function HomePageClient({ initialData }) {
   } = initialData || {};
 
   const shopShowcaseConfig = shopShowcase?.config || null;
+  const featuredList = Array.isArray(featuredProducts?.products) ? featuredProducts.products : [];
 
   const showHeroCategories = useMemo(
     () =>
@@ -78,8 +79,9 @@ export default function HomePageClient({ initialData }) {
         />
         {showSecondaryBannerAt('below_small_banners') && <BannerSlider2 config={shopShowcaseConfig} />}
         {showHeroCategories ? <HomeCategories /> : null}
+
         <LatestProducts
-          initialProducts={featuredProducts.products}
+          initialProducts={featuredList}
           initialSectionTitle={featuredProducts.sectionTitleEn || featuredProducts.sectionTitle}
           initialSectionDescription={
             featuredProducts.sectionDescriptionEn || featuredProducts.sectionDescription
@@ -100,9 +102,9 @@ export default function HomePageClient({ initialData }) {
 
         {showSecondaryBannerAt('below_top_deals') && <BannerSlider2 config={shopShowcaseConfig} />}
 
-        {featuredSectionsCount > 0 && (
+        {featuredSectionsCount > 0 ? (
           <Section4 sections={featuredSections} loading={false} />
-        )}
+        ) : null}
 
         <CategoryInterestSection />
         <RecentSearchProducts />

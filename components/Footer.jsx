@@ -88,11 +88,8 @@ const Footer = () => {
 
         const fetchNavbarAppearance = async () => {
             try {
-                const response = await fetch('/api/store/navbar-menu', {
-                    cache: 'no-store',
-                });
-                if (!response.ok) return;
-                const data = await response.json();
+                const { fetchNavbarMenu } = await import('@/lib/storefrontPublicFetch');
+                const data = await fetchNavbarMenu();
                 setFooterLogo(resolveFooterLogoFromAppearance(data));
             } catch {
                 // Keep skeleton / text — never flash a bundled static logo.
@@ -105,9 +102,8 @@ const Footer = () => {
 
         const fetchFooterContent = async () => {
             try {
-                const response = await fetch('/api/store/appearance/sections/public', { cache: 'no-store' });
-                if (!response.ok) return;
-                const data = await response.json();
+                const { fetchAppearanceSectionsPublic } = await import('@/lib/storefrontPublicFetch');
+                const data = await fetchAppearanceSectionsPublic();
                 setFooterContent(normalizeFooter(data?.footer || DEFAULT_FOOTER));
             } catch {
                 setFooterContent(DEFAULT_FOOTER);
@@ -213,7 +209,7 @@ const Footer = () => {
         }))
         .filter((column) => column.title && column.links.length);
 
-    const PLAY_STORE_URL = 'https://play.google.com/store/search?q=store1920&c=apps&hl=en';
+    const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.store1920.com&hl=en';
 
     const renderAppComingSoonPopup = () => {
         if (!appComingSoonOpen || !portalReady) return null;
@@ -271,7 +267,7 @@ const Footer = () => {
                                     className={footerLogo.usingBrandMark
                                         ? 'h-[64px] w-[64px] rounded-2xl object-contain sm:h-[72px] sm:w-[72px]'
                                         : 'h-auto max-h-12 w-auto object-contain'}
-                                    priority
+                                    loading="lazy"
                                 />
                             </Link>
                         )}

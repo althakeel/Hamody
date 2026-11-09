@@ -37,15 +37,16 @@ export default function TopDeals({
 }) {
   const { language } = useStorefrontI18n()
   const configuredSection = findTopDealsSection(homeSections)
-  const hasInitialProducts = Array.isArray(initialProducts) && filterStorefrontInStockProducts(initialProducts).length > 0
-  const [products, setProducts] = useState(hasInitialProducts ? filterStorefrontInStockProducts(initialProducts) : [])
+  // Backend homepage query already filters published/in-stock — trust SSR payload.
+  const hasInitialProducts = Array.isArray(initialProducts) && initialProducts.length > 0
+  const [products, setProducts] = useState(hasInitialProducts ? initialProducts : [])
   const [loading, setLoading] = useState(!hasInitialProducts)
   const [title, setTitle] = useState(initialTitle || configuredSection?.title || '')
   const [titleAr, setTitleAr] = useState(configuredSection?.titleAr || '')
 
   useEffect(() => {
     if (hasInitialProducts) {
-      setProducts(filterStorefrontInStockProducts(initialProducts))
+      setProducts(initialProducts)
       setTitle(initialTitle || configuredSection?.title || '')
       setTitleAr(configuredSection?.titleAr || '')
       setLoading(false)
@@ -128,7 +129,7 @@ export default function TopDeals({
         ) : (
           <div className={HOME_PRODUCT_GRID_CLASS}>
             {products.slice(0, 12).map((product, index) => (
-              <ProductCard key={product._id || product.id || index} product={product} priorityImages={index < 6} />
+              <ProductCard key={product._id || product.id || index} product={product} priorityImages={index < 2} />
             ))}
           </div>
         )}

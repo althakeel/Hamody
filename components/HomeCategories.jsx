@@ -55,7 +55,7 @@ export default function HomeCategories() {
         }
        
         
-        const response = await fetch('/api/store/home-menu-categories', { cache: 'no-store' });
+        const response = await fetch('/api/store/home-menu-categories', { cache: 'default' });
 
         if (response.ok) {
           const data = await response.json();
@@ -223,7 +223,7 @@ export default function HomeCategories() {
                       const fallback = e.target.nextElementSibling;
                       if (fallback) fallback.style.display = 'flex';
                     }}
-                    unoptimized={true}
+                    unoptimized={false}
                   />
                   {/* Gradient fallback shown on image error */}
                   <div style={{ display: 'none' }} className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${getCategoryGradient(cat.name)} text-white text-2xl font-bold`}>

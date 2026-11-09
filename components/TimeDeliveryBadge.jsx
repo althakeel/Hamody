@@ -16,8 +16,8 @@ let pending = null;
 function loadTimeBadges() {
   if (cachedSettings) return Promise.resolve(cachedSettings);
   if (!pending) {
-    pending = fetch('/api/store/appearance/sections/public', { cache: 'no-store' })
-      .then((response) => (response.ok ? response.json() : {}))
+    pending = import('@/lib/storefrontPublicFetch')
+      .then(({ fetchAppearanceSectionsPublic }) => fetchAppearanceSectionsPublic())
       .then((data) => {
         cachedSettings = normalizeTimeBadges(data?.timeBadges);
         return cachedSettings;

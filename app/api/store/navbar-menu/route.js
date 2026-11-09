@@ -230,7 +230,9 @@ export async function GET(req) {
       },
       {
         status: 200,
-        headers: { 'Cache-Control': 'no-store' },
+        headers: {
+          'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600',
+        },
       }
     );
   } catch (error) {

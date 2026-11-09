@@ -4,6 +4,7 @@ import { Search, ShoppingCart, Menu, X, HeartIcon, StarIcon, ArrowLeft, LogOut, 
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { useDispatch, useSelector } from "react-redux";
 import { auth, waitForAuthReady } from '../lib/firebase';
 import { AUTH_SYNC_KEY } from '@/lib/authClient';
@@ -14,11 +15,12 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import WalletIcon from '@/assets/icons/wallet.png';
 import { isStorefrontWalletEnabled } from '@/lib/storefrontWallet';
-import SignInModal from './SignInModal';
 import NavbarMenuBar from './NavbarMenuBar';
 import StorefrontLanguageMarketSwitch from './StorefrontLanguageMarketSwitch';
-import AddressModal from './AddressModal';
-import ImageSearchModal from './ImageSearchModal';
+
+const SignInModal = dynamic(() => import('./SignInModal'), { ssr: false });
+const AddressModal = dynamic(() => import('./AddressModal'), { ssr: false });
+const ImageSearchModal = dynamic(() => import('./ImageSearchModal'), { ssr: false });
 import { clearCart, fetchCart, uploadCart } from '@/lib/features/cart/cartSlice';
 import { fetchAddress, clearAddresses } from '@/lib/features/address/addressSlice';
 import {
@@ -607,9 +609,8 @@ const Navbar = () => {
 
     const loadVisibility = async () => {
       try {
-        const response = await fetch('/api/store/settings', { cache: 'no-store' });
-        if (!response.ok) return;
-        const data = await response.json();
+        const { fetchStoreSettings } = await import('@/lib/storefrontPublicFetch');
+        const data = await fetchStoreSettings();
         if (data?.navActionsVisibility) applyVisibility(data.navActionsVisibility);
         if (data?.navbarPhone) applyNavbarPhone(data.navbarPhone);
         applyNavbarLanguage(data?.navbarLanguage || {});
@@ -618,7 +619,20 @@ const Navbar = () => {
       }
     };
 
-    void loadVisibility();
+    const hasCachedChrome = Boolean(
+      window.sessionStorage.getItem('nav:phone:v1')
+      || window.sessionStorage.getItem('nav:language:v1')
+      || window.sessionStorage.getItem('nav:actions:v1')
+    );
+    if (hasCachedChrome) {
+      if (typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(() => { void loadVisibility(); }, { timeout: 4000 });
+      } else {
+        window.setTimeout(() => { void loadVisibility(); }, 2500);
+      }
+    } else {
+      void loadVisibility();
+    }
 
     const handleVisibilityUpdate = (event) => {
       applyVisibility(event?.detail || {});
@@ -681,24 +695,8 @@ const Navbar = () => {
 
     const fetchNavbarAppearance = async () => {
       try {
-        const response = await fetch(`/api/store/navbar-menu?t=${Date.now()}`, {
-          // Always use public storefront navbar appearance.
-          // Passing auth headers can switch to user-scoped settings and clear the logo.
-          cache: 'no-store',
-          headers: {},
-          signal: controller.signal,
-        });
-        if (!response.ok) {
-          console.warn('[Navbar] API returned status:', response.status);
-          return;
-        }
-        const data = await response.json();
-        console.log('[Navbar] Backend Response:', {
-          logoUrl: data.logoUrl || '(empty)',
-          logoWidth: data.logoWidth,
-          logoHeight: data.logoHeight,
-          backgroundColor: data.backgroundColor || '(empty)',
-        });
+        const { fetchNavbarMenu } = await import('@/lib/storefrontPublicFetch');
+        const data = await fetchNavbarMenu({ signal: controller.signal });
 
         const nextAppearance = normalizeNavbarAppearance(data);
         const cachedAppearance = readCachedNavbarAppearance();
@@ -719,14 +717,9 @@ const Navbar = () => {
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('navbarAppearanceUpdated', { detail: nextAppearance }));
         }
-        console.log('[Navbar] Applied Appearance:', {
-          usingCustomLogo: !!nextAppearance.logoUrl,
-          dims: `${nextAppearance.logoWidth}x${nextAppearance.logoHeight}`,
-        });
       } catch (error) {
         // Ignore AbortError on cleanup
         if (error?.name === 'AbortError' || error?.message?.includes('abort')) {
-          console.log('[Navbar] Fetch cancelled (cleanup)');
           return;
         }
         if (String(error?.message || '').includes('Failed to fetch')) return;
@@ -735,16 +728,21 @@ const Navbar = () => {
       }
     };
 
-    fetchNavbarAppearance();
+    const cachedReady = isCachedAppearanceReady(readCachedNavbarAppearance());
+    if (cachedReady) {
+      if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+        window.requestIdleCallback(() => { void fetchNavbarAppearance(); }, { timeout: 4000 });
+      } else {
+        window.setTimeout(() => { void fetchNavbarAppearance(); }, 2500);
+      }
+    } else {
+      void fetchNavbarAppearance();
+    }
 
     const fetchDealsNavLabel = async () => {
       try {
-        const response = await fetch(`/api/store/appearance/sections/public?t=${Date.now()}`, {
-          cache: 'no-store',
-          signal: controller.signal,
-        });
-        if (!response.ok) return;
-        const data = await response.json();
+        const { fetchAppearanceSectionsPublic } = await import('@/lib/storefrontPublicFetch');
+        const data = await fetchAppearanceSectionsPublic({ signal: controller.signal });
         const nextLabels = {
           en: String(data?.offersPage?.navLabel || DEFAULT_OFFERS_NAV_LABEL).trim() || DEFAULT_OFFERS_NAV_LABEL,
           ar: String(data?.offersPage?.navLabelAr || DEFAULT_OFFERS_NAV_LABEL_AR).trim() || DEFAULT_OFFERS_NAV_LABEL_AR,
@@ -767,7 +765,11 @@ const Navbar = () => {
         if (error?.name === 'AbortError' || String(error?.message || '').includes('abort')) return;
       }
     };
-    fetchDealsNavLabel();
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      window.requestIdleCallback(() => { void fetchDealsNavLabel(); }, { timeout: 4500 });
+    } else {
+      window.setTimeout(() => { void fetchDealsNavLabel(); }, 2800);
+    }
 
     const handleNavbarAppearanceUpdate = (event) => {
       const detail = event?.detail || {};
@@ -950,41 +952,27 @@ const Navbar = () => {
     const controller = new AbortController();
     let active = true;
 
-    const fetchCategories = async () => {
+    const fetchCategoriesList = async () => {
       try {
-        const endpoints = ['/api/categories', '/api/store/categories'];
-
-        for (const endpoint of endpoints) {
-          try {
-            const res = await fetch(endpoint, {
-              method: 'GET',
-              cache: endpoint === '/api/categories' ? 'default' : 'no-store',
-              signal: controller.signal,
-            });
-
-            if (!res.ok) {
-              continue;
-            }
-
-            const data = await res.json();
-            if (active && Array.isArray(data?.categories)) {
-              setCategories(data.categories);
-              return;
-            }
-          } catch (innerError) {
-            if (innerError?.name === 'AbortError') return;
-          }
+        const { fetchCategories } = await import('@/lib/storefrontPublicFetch');
+        const data = await fetchCategories({ signal: controller.signal });
+        if (active && Array.isArray(data?.categories)) {
+          setCategories(data.categories);
+          return;
         }
-
         if (active) setCategories([]);
       } catch (error) {
         if (error?.name !== 'AbortError') {
-          console.warn('Categories could not be loaded right now.');
+          // Keep empty categories quietly on storefront.
         }
       }
     };
 
-    fetchCategories();
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      window.requestIdleCallback(() => { void fetchCategoriesList(); }, { timeout: 5000 });
+    } else {
+      window.setTimeout(() => { void fetchCategoriesList(); }, 3000);
+    }
 
     return () => {
       active = false;
@@ -2665,23 +2653,25 @@ const Navbar = () => {
           )}
 
 
-      <ImageSearchModal
-        open={showSearchModal}
-        initialFile={imageSearchFile}
-        onClose={() => {
-          setShowSearchModal(false);
-          setImageSearchFile(null);
-        }}
-      />
+      {showSearchModal ? (
+        <ImageSearchModal
+          open={showSearchModal}
+          initialFile={imageSearchFile}
+          onClose={() => {
+            setShowSearchModal(false);
+            setImageSearchFile(null);
+          }}
+        />
+      ) : null}
 
-      {/* Sign In Modal (always at Navbar root) */}
-      {!firebaseUser && (
+      {/* Sign In Modal — loaded only when opened */}
+      {!firebaseUser && signInOpen ? (
         <SignInModal
           open={signInOpen}
           onClose={() => setSignInOpen(false)}
           defaultMode={signInMode}
         />
-      )}
+      ) : null}
       {showAddressModal && firebaseUser && (
         <AddressModal
           open={showAddressModal}

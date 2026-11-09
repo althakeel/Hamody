@@ -1,5 +1,4 @@
 import "./globals.css";
-import Script from "next/script";
 import React from "react";
 import { cookies, headers } from "next/headers";
 import { Montserrat, Poppins, Shadows_Into_Light } from "next/font/google";
@@ -11,15 +10,14 @@ import {
   detectLanguageFromAcceptLanguage,
 } from "@/lib/storefrontLanguage";
 import { getGtmNoscriptSrc } from "@/lib/gtm";
-import { META_PIXEL_ID, getMetaPixelBootstrapScript } from "@/lib/metaPixelConfig";
-import { TIKTOK_PIXEL_ID, getTikTokPixelBootstrapScript } from "@/lib/tiktokPixelConfig";
+import { META_PIXEL_ID, getMetaPixelNoscriptSrc } from "@/lib/metaPixelConfig";
 import OrganizationJsonLd from "@/components/OrganizationJsonLd";
 import { SITE_URL } from "@/lib/sitemapData";
 import { getRequestHostFromHeaders, isStagingStoreHost } from "@/lib/stagingHost";
 
 const poppins = Poppins({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
   variable: "--font-poppins",
   preload: true,
@@ -27,7 +25,7 @@ const poppins = Poppins({
 
 const montserrat = Montserrat({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["500", "600", "700"],
   display: "swap",
   variable: "--font-montserrat",
   preload: false,
@@ -127,12 +125,7 @@ export default async function RootLayout({ children }) {
             <link rel="preconnect" href={imageKitOrigin} crossOrigin="anonymous" />
           </>
         )}
-        <link rel="dns-prefetch" href="https://connect.facebook.net" />
-        <link rel="preconnect" href="https://connect.facebook.net" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-        <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://analytics.tiktok.com" />
-        <link rel="preconnect" href="https://analytics.tiktok.com" crossOrigin="anonymous" />
+        {/* Analytics preconnects intentionally omitted — pixels load after idle/interaction. */}
         <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
       </head>
       <body className={`${poppins.className} overflow-x-clip antialiased`} suppressHydrationWarning>
@@ -144,21 +137,7 @@ export default async function RootLayout({ children }) {
         </div>
         <noscript
           dangerouslySetInnerHTML={{
-            __html: `<iframe src="${getGtmNoscriptSrc()}" height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager"></iframe>`,
-          }}
-        />
-        <Script
-          id="meta-pixel"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: getMetaPixelBootstrapScript(META_PIXEL_ID),
-          }}
-        />
-        <Script
-          id="tiktok-pixel"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: getTikTokPixelBootstrapScript(TIKTOK_PIXEL_ID),
+            __html: `<iframe src="${getGtmNoscriptSrc()}" height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager"></iframe><img height="1" width="1" style="display:none" src="${getMetaPixelNoscriptSrc(META_PIXEL_ID)}" alt="" />`,
           }}
         />
       </body>

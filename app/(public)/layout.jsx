@@ -1,6 +1,5 @@
 
 'use client'
-import MobileBottomNav from "@/components/MobileBottomNav";
 import GuestOrderLinker from "@/components/GuestOrderLinker";
 import SilentDomErrorBoundary from "@/components/SilentDomErrorBoundary";
 import dynamic from "next/dynamic";
@@ -8,6 +7,10 @@ import { useEffect, Suspense, useState } from "react";
 import { usePathname } from "next/navigation";
 import { isProductDetailPath } from "@/lib/productUrl";
 
+const MobileBottomNav = dynamic(() => import("@/components/MobileBottomNav"), {
+  ssr: false,
+  loading: () => null,
+});
 const UtmTracker = dynamic(() => import("@/components/UtmTracker"), { ssr: false });
 const EmailTrackCapture = dynamic(() => import("@/components/EmailTrackCapture"), { ssr: false });
 const AdsAttribution = dynamic(() => import("@/components/AdsAttribution"), { ssr: false });

@@ -48,8 +48,8 @@ export default function ScrollToTopButton() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch('/api/store/appearance/sections/public', { cache: 'no-store', signal: controller.signal })
-      .then((response) => (response.ok ? response.json() : null))
+    import('@/lib/storefrontPublicFetch')
+      .then(({ fetchAppearanceSectionsPublic }) => fetchAppearanceSectionsPublic({ signal: controller.signal }))
       .then((data) => {
         if (data?.scrollToTop) setSettings(normalizeScrollToTop(data.scrollToTop));
       })

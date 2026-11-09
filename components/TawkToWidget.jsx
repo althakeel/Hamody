@@ -121,8 +121,8 @@ export default function TawkToWidget() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch('/api/store/appearance/sections/public', { cache: 'no-store', signal: controller.signal })
-      .then((response) => (response.ok ? response.json() : null))
+    import('@/lib/storefrontPublicFetch')
+      .then(({ fetchAppearanceSectionsPublic }) => fetchAppearanceSectionsPublic({ signal: controller.signal }))
       .then((data) => {
         setStoreEnabled(data?.tawkChat ? normalizeTawkChat(data.tawkChat).enabled : true);
       })

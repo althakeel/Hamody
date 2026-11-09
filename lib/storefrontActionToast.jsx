@@ -39,6 +39,15 @@ export function showStorefrontActionToast({
       id: toastId,
       duration,
       position,
+      // Prevent default toast chrome (grey bars / padding) while CSS loads.
+      style: {
+        background: 'transparent',
+        boxShadow: 'none',
+        border: '0',
+        padding: 0,
+        margin: 0,
+      },
+      className: 'storefront-action-toast-slot',
     },
   );
 }

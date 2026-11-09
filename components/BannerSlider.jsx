@@ -72,7 +72,7 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
 
     const fetchShowcase = async () => {
       try {
-        const response = await fetch('/api/public/shop-showcase', { cache: 'no-store' });
+        const response = await fetch('/api/public/shop-showcase', { cache: 'default' });
         if (!response.ok) {
           if (!cancelled) setFetchedConfig(null);
           return;

@@ -60,8 +60,8 @@ export default function TopBar({ initialLanguage = 'en' }) {
     let active = true;
     const loadSettings = async () => {
       try {
-        const response = await fetch('/api/store/settings', { cache: 'no-store' });
-        const data = response.ok ? await response.json() : {};
+        const { fetchStoreSettings } = await import('@/lib/storefrontPublicFetch');
+        const data = await fetchStoreSettings();
         if (!active) return;
         const next = normalizeBnplTopBar(data?.bnplTopBar, DEFAULT_BNPL_TOP_BAR);
         setBnplTopBar(next);
@@ -70,6 +70,22 @@ export default function TopBar({ initialLanguage = 'en' }) {
         setBnplTopBar(DEFAULT_BNPL_TOP_BAR);
       }
     };
+
+    if (cached && typeof cached === 'object') {
+      const idleId = typeof window.requestIdleCallback === 'function'
+        ? window.requestIdleCallback(() => { void loadSettings(); }, { timeout: 4000 })
+        : null;
+      const timerId = idleId == null ? window.setTimeout(() => { void loadSettings(); }, 2500) : null;
+      window.addEventListener('navMenuUpdated', loadSettings);
+      window.addEventListener('bnplTopBarUpdated', loadSettings);
+      return () => {
+        active = false;
+        if (idleId != null) window.cancelIdleCallback(idleId);
+        if (timerId != null) window.clearTimeout(timerId);
+        window.removeEventListener('navMenuUpdated', loadSettings);
+        window.removeEventListener('bnplTopBarUpdated', loadSettings);
+      };
+    }
 
     loadSettings();
     window.addEventListener('navMenuUpdated', loadSettings);

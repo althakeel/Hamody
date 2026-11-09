@@ -13,7 +13,12 @@ export default function GtmPageView() {
 
   useEffect(() => {
     if (typeof window === 'undefined' || !pathname) return;
-    ensureGa4CategoryCache();
+
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(() => ensureGa4CategoryCache(), { timeout: 5000 });
+    } else {
+      window.setTimeout(() => ensureGa4CategoryCache(), 3000);
+    }
 
     if (shouldSkipGtmPageView(pathname)) return;
 

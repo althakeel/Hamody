@@ -87,9 +87,8 @@ export default function StorefrontLanguageMarketSwitch({
 
     const loadAppearance = async () => {
       try {
-        const response = await fetch('/api/store/settings', { cache: 'no-store' });
-        if (!response.ok) return;
-        const data = await response.json();
+        const { fetchStoreSettings } = await import('@/lib/storefrontPublicFetch');
+        const data = await fetchStoreSettings();
         if (data?.navbarLanguage) applyAppearance(data.navbarLanguage);
       } catch {
         // Keep current values if the request fails.

@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { usePathname } from "next/navigation"
-import axios from "axios"
 import { HOME_PAGE_META_DESCRIPTION, HOME_PAGE_META_TITLE } from "@/lib/homepageSeo"
+import { fetchAppearanceSectionsPublic } from "@/lib/storefrontPublicFetch"
 
 function normalizePath(path = "/") {
   const raw = String(path || "").trim()
@@ -35,11 +35,7 @@ export default function DynamicMetaTags() {
 
     const loadSeoMap = async () => {
       try {
-        const { data } = await axios.get("/api/store/appearance/sections/public", {
-          headers: { "Cache-Control": "no-cache" },
-          params: { t: Date.now() },
-        })
-
+        const data = await fetchAppearanceSectionsPublic()
         if (!active) return
         const pageSeo = data?.pageSeo && typeof data.pageSeo === "object" ? data.pageSeo : {}
         setSeoMap(pageSeo)

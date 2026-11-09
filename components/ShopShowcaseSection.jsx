@@ -78,12 +78,14 @@ function useNavbarBackgroundColor() {
 
     const controller = new AbortController()
 
-    fetch(`/api/store/navbar-menu?t=${Date.now()}`, { cache: 'no-store', signal: controller.signal })
-      .then((response) => (response.ok ? response.json() : null))
+    // Prefer cache/events from Navbar — avoid a duplicate cache-busting request on homepage.
+    import('@/lib/storefrontPublicFetch')
+      .then(({ fetchNavbarMenu }) => fetchNavbarMenu({ signal: controller.signal }))
       .then((data) => {
+        if (!data) return
         const nextBg = String(data?.backgroundColor || '').trim()
         if (nextBg) setNavbarBg(nextBg)
-        if (data) setNavbarLayout(normalizeNavbarLayout(data))
+        setNavbarLayout(normalizeNavbarLayout(data))
       })
       .catch(() => {})
 
@@ -448,17 +450,23 @@ export default function ShopShowcaseSection({
     };
 
     const loadNavigation = async () => {
-      const [settingsRes, navbarRes, categoriesRes] = await Promise.all([
-        axios.get('/api/store/settings').catch(() => ({ data: {} })),
-        axios.get('/api/store/navbar-menu').catch(() => ({ data: {} })),
-        axios.get('/api/categories').catch(() => ({ data: { categories: [] } })),
+      const {
+        fetchStoreSettings,
+        fetchNavbarMenu,
+        fetchCategories,
+      } = await import('@/lib/storefrontPublicFetch');
+
+      const [settingsData, navbarData, categoriesData] = await Promise.all([
+        fetchStoreSettings().catch(() => ({})),
+        fetchNavbarMenu().catch(() => ({})),
+        fetchCategories().catch(() => ({ categories: [] })),
       ]);
 
-      const parsedCategories = Array.isArray(categoriesRes.data?.categories)
-        ? categoriesRes.data.categories
+      const parsedCategories = Array.isArray(categoriesData?.categories)
+        ? categoriesData.categories
         : [];
-      const legacyItems = Array.isArray(navbarRes.data?.items)
-        ? navbarRes.data.items.map((item) => ({
+      const legacyItems = Array.isArray(navbarData?.items)
+        ? navbarData.items.map((item) => ({
             name: String(item?.name || item?.label || '').trim(),
             link: String(item?.link || item?.url || '#').trim() || '#',
             icon: String(item?.icon || '').trim(),
@@ -468,8 +476,8 @@ export default function ShopShowcaseSection({
           }))
         : [];
 
-      applyNavigation(settingsRes.data || {}, parsedCategories, legacyItems);
-      applyMenuStyle(settingsRes.data || {});
+      applyNavigation(settingsData || {}, parsedCategories, legacyItems);
+      applyMenuStyle(settingsData || {});
     };
 
     const load = async () => {
@@ -505,45 +513,22 @@ export default function ShopShowcaseSection({
       applyMenuStyle(initialStoreSettings || {});
       setLoading(false);
 
-      const refreshShowcase = () => {
-        axios.get('/api/public/shop-showcase', { headers: { 'Cache-Control': 'no-store' } })
-          .then((res) => {
-            const showcaseData = res.data || { config: null, sectionProducts: [], products: [], categories: [] };
-            setData(showcaseData);
-          })
-          .catch(() => {});
-      };
-
       const hasInitialNavigation = Boolean(
         initialStoreSettings?.resolvedNavMenuItems?.length
         || initialStoreSettings?.navMenuItems?.length,
       );
 
-      refreshShowcase();
-
+      // SSR already hydrated the homepage. Do not refetch showcase/nav on mount —
+      // that was causing a multi-second client waterfall after first paint.
       if (!hasInitialNavigation) {
         loadNavigation()
           .catch(() => {})
           .finally(() => setLoading(false));
-      } else {
-        const scheduleNavigationRefresh = () => {
-          loadNavigation().catch(() => {});
-        };
-
-        if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-          const idleId = window.requestIdleCallback(scheduleNavigationRefresh, { timeout: 5000 });
-          return () => {
-            window.removeEventListener('navMenuUpdated', handleMenuUpdated);
-            window.cancelIdleCallback(idleId);
-          };
-        }
-
-        const timerId = window.setTimeout(scheduleNavigationRefresh, 2500);
-        return () => {
-          window.removeEventListener('navMenuUpdated', handleMenuUpdated);
-          window.clearTimeout(timerId);
-        };
       }
+
+      return () => {
+        window.removeEventListener('navMenuUpdated', handleMenuUpdated);
+      };
     } else {
       load();
     }

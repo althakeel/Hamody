@@ -130,7 +130,7 @@ function GalleryMediaLayer({
       fill
       unoptimized
       sizes={sizes}
-      quality={90}
+      quality={75}
       className={imageClassName}
       priority={priority}
       onLoad={onReady}
@@ -701,7 +701,22 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
   }, [deliveryInfoOpen]);
 
   useEffect(() => {
-    setCartUiReady(true);
+    // Wait for CSS + cart rehydrate so the matched buybox does not flash unstyled.
+    let cancelled = false;
+    let raf2 = 0;
+    const raf1 = window.requestAnimationFrame(() => {
+      raf2 = window.requestAnimationFrame(() => {
+        if (cancelled) return;
+        window.setTimeout(() => {
+          if (!cancelled) setCartUiReady(true);
+        }, 60);
+      });
+    });
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(raf1);
+      window.cancelAnimationFrame(raf2);
+    };
   }, []);
 
   useEffect(() => {
@@ -2338,7 +2353,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
               alt={`${safeProductName} ${fullViewIndex + 1}`}
               width={1200}
               height={1200}
-              quality={95}
+              quality={75}
               className="max-h-[85vh] w-auto max-w-full object-contain"
               priority
               onError={(event) => { event.currentTarget.src = PLACEHOLDER_IMAGE; }}
@@ -2587,6 +2602,8 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
   };
 
   const notifyCartAdded = () => {
+    // Buybox already switches to the matched cart UI — skip the floating toast there.
+    if (cartUiReady) return;
     showActionToast({
       variant: 'cart',
       title: t('product.addedToCartToast'),
@@ -3412,7 +3429,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                             fill
                             unoptimized
                             sizes="100vw"
-                            quality={90}
+                            quality={75}
                             className="object-cover"
                             priority={index === 0}
                             draggable={false}
@@ -4039,7 +4056,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                 </div>
                 )
               ) : (
-                <div className="space-y-2.5">
+                <div className="product-cart-matched space-y-2.5">
                   <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5">
                     <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white">
                       <Check size={14} strokeWidth={3} />
@@ -4052,9 +4069,12 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                     </p>
                   </div>
 
-                  <div ref={cartQtyAnchorRef} className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+                  <div ref={cartQtyAnchorRef} className="product-cart-matched-qty overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
                     {cartStockNotice}
-                    <div className="grid grid-cols-[1fr_auto_1fr] items-stretch">
+                    <div
+                      className="grid grid-cols-[1fr_auto_1fr] items-stretch"
+                      style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'stretch' }}
+                    >
                       <button
                         type="button"
                         onClick={async () => {

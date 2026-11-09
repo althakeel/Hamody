@@ -41,8 +41,8 @@ function useBrandColor() {
     setBrandColor(readCachedBrandColor())
 
     const controller = new AbortController()
-    fetch(`/api/store/navbar-menu?t=${Date.now()}`, { cache: 'no-store', signal: controller.signal })
-      .then((response) => (response.ok ? response.json() : null))
+    import('@/lib/storefrontPublicFetch')
+      .then(({ fetchNavbarMenu }) => fetchNavbarMenu({ signal: controller.signal }))
       .then((data) => {
         const next = String(data?.backgroundColor || '').trim()
         if (next) setBrandColor(next)
@@ -276,11 +276,10 @@ export default function MobileBottomNav() {
     }
 
     const controller = new AbortController()
-    fetch(`/api/store/appearance/sections/public?t=${Date.now()}`, {
-      cache: 'no-store',
-      signal: controller.signal,
-    })
-      .then((response) => (response.ok ? response.json() : null))
+    import('@/lib/storefrontPublicFetch')
+      .then(({ fetchAppearanceSectionsPublic }) => (
+        fetchAppearanceSectionsPublic({ signal: controller.signal })
+      ))
       .then((data) => {
         if (!data?.offersPage) return
         applyOffersNav(data.offersPage)

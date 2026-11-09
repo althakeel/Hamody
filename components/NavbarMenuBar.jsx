@@ -466,13 +466,11 @@ export default function NavbarMenuBar({ barBackgroundColor = '' } = {}) {
 
     const revalidate = async () => {
       try {
-        const [categoriesRes, settingsRes] = await Promise.all([
-          fetch('/api/categories', { cache: 'no-store' }),
-          fetch('/api/store/settings', { cache: 'no-store' }),
+        const { fetchCategories, fetchStoreSettings } = await import('@/lib/storefrontPublicFetch');
+        const [nextCategories, nextSettings] = await Promise.all([
+          fetchCategories().catch(() => ({ categories: [] })),
+          fetchStoreSettings().catch(() => ({})),
         ]);
-
-        const nextCategories = categoriesRes.ok ? await categoriesRes.json() : { categories: [] };
-        const nextSettings = settingsRes.ok ? await settingsRes.json() : {};
 
         if (!active) return;
 

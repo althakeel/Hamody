@@ -62,8 +62,8 @@ export default function HomeWelcomePopup() {
   useEffect(() => {
     const controller = new AbortController();
     let timer = 0;
-    fetch('/api/store/appearance/sections/public', { cache: 'no-store', signal: controller.signal })
-      .then((response) => (response.ok ? response.json() : null))
+    import('@/lib/storefrontPublicFetch')
+      .then(({ fetchAppearanceSectionsPublic }) => fetchAppearanceSectionsPublic({ signal: controller.signal }))
       .then((data) => {
         const next = getLiveHomePopup(data?.homeWelcomePopup);
         setSettings(next);

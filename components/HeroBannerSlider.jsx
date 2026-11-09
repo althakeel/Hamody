@@ -83,14 +83,15 @@ export default function HeroBannerSlider({ showcaseConfig: showcaseConfigProp = 
 
   useEffect(() => {
     if (showcaseConfigProp || showcaseReady) {
-      setShowcaseConfig(showcaseConfigProp);
+      setShowcaseConfig(showcaseConfigProp || null);
       setShowcaseLoaded(true);
+      return undefined;
     }
 
     let cancelled = false;
     const fetchShowcase = async () => {
       try {
-        const res = await fetch('/api/public/shop-showcase', { cache: 'no-store' });
+        const res = await fetch('/api/public/shop-showcase', { cache: 'default' });
         if (!res.ok || cancelled) return;
         const data = await res.json();
         if (!cancelled) setShowcaseConfig(data?.config || null);
@@ -239,11 +240,12 @@ export default function HeroBannerSlider({ showcaseConfig: showcaseConfigProp = 
                   alt={`Banner ${i + 1}`}
                   width={1400}
                   height={desktopHeight}
-                  priority={true}
-                  loading="eager"
-                  quality={75}
+                  priority={i === 0}
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  quality={i === 0 ? 70 : 65}
+                  fetchPriority={i === 0 ? 'high' : 'auto'}
                   placeholder="empty"
-                  unoptimized={slide.image.startsWith('http')}
+                  // Let next/image optimize S3/ImageKit hosts; SafeNextImage-style bypass not needed here.
                   style={{
                     width: '100%',
                     height: '100%',
