@@ -65,7 +65,7 @@ export default function StoreOrderAddressForm({
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" lang="en" dir="ltr">
       <div>
         <h3 className="text-sm font-semibold text-slate-900">Contact details</h3>
         <p className="mt-0.5 text-xs text-slate-500">Same fields customers fill at checkout.</p>
@@ -110,76 +110,102 @@ export default function StoreOrderAddressForm({
 
       <div>
         <h3 className="text-sm font-semibold text-slate-900">Delivery address</h3>
-        <p className="mt-0.5 text-xs text-slate-500">Emirate and area first, then street — same order as checkout.</p>
+        <p className="mt-0.5 text-xs text-slate-500">Same address options as the customer checkout form.</p>
       </div>
 
-      <div className={`grid gap-4 ${isUaeCountry(form.country) && form.state ? 'sm:grid-cols-2' : ''}`}>
-        <div id="store-order-state">
-          <label className="mb-1 block text-xs font-medium text-slate-600">
-            {isUaeCountry(form.country) ? 'Emirate' : 'State / Emirate'}
-          </label>
-          {form.country === 'India' ? (
-            <SearchableSelect
-              value={form.state}
-              onChange={handleStateChange}
-              options={indiaStatesAndDistricts.map((entry) => entry.state)}
-              placeholder="Select state"
-              searchPlaceholder="Search state..."
-              hasError={hasError('guest-state')}
-              triggerClassName={`${selectClass} ${errorClass('guest-state')}`}
-            />
-          ) : isUaeCountry(form.country) ? (
-            <SearchableSelect
-              value={form.state}
-              onChange={handleStateChange}
-              options={UAE_EMIRATES}
-              placeholder="Select emirate"
-              searchPlaceholder="Search emirate..."
-              hasError={hasError('guest-state')}
-              triggerClassName={`${selectClass} ${errorClass('guest-state')}`}
-            />
-          ) : (
-            <input
-              className={`${fieldClass} ${errorClass('guest-state')}`}
-              value={form.state || ''}
-              onChange={(e) => updateField('state', e.target.value)}
-              placeholder="State / emirate"
-              required
-            />
-          )}
-        </div>
-
-        {isUaeCountry(form.country) && form.state ? (
-          <div id="store-order-area">
-            <label className="mb-1 block text-xs font-medium text-slate-600">Area</label>
-            <SearchableSelect
-              value={form.district}
-              onChange={(value) => updateField('district', value)}
-              options={getUaeAreaOptionsForEmirate(form.state, form.district)}
-              placeholder="Select area"
-              searchPlaceholder="Search area..."
-              emptyMessage="No areas found"
-              allowCustomValue
-              formatCustomOption={(area) => `Use "${area}"`}
-              hasError={hasError('guest-area')}
-              triggerClassName={`${selectClass} ${errorClass('guest-area')}`}
-            />
-            <p className="mt-1 text-xs text-slate-500">Building, villa, or street number goes in the field below.</p>
-          </div>
-        ) : null}
-      </div>
-
-      <div id="store-order-street">
-        <label className="mb-1 block text-xs font-medium text-slate-600">Full address line</label>
+      <div id="guest-building">
+        <label className="mb-1 block text-xs font-medium text-slate-600">
+          Building or villa <span className="text-red-600" aria-hidden="true">*</span>
+        </label>
         <input
-          className={`${fieldClass} ${errorClass('guest-street')}`}
-          value={form.street || ''}
-          onChange={(e) => updateField('street', e.target.value)}
-          placeholder="Building, villa, street number"
+          className={`${fieldClass} ${errorClass('guest-building')}`}
+          value={form.buildingOrVilla || ''}
+          onChange={(e) => updateField('buildingOrVilla', e.target.value)}
+          placeholder="Building or villa"
           required
         />
-        <p className="mt-1 text-xs text-slate-500">Do not put the area name here — select it above.</p>
       </div>
+
+      <div id="guest-apartment">
+        <label className="mb-1 block text-xs font-medium text-slate-600">
+          Apartment or floor (optional)
+        </label>
+        <input
+          className={fieldClass}
+          value={form.apartmentOrFloor || ''}
+          onChange={(e) => updateField('apartmentOrFloor', e.target.value)}
+          placeholder="Apartment or floor"
+        />
+      </div>
+
+      <div id="guest-street">
+        <label className="mb-1 block text-xs font-medium text-slate-600">
+          Street name <span className="text-red-600" aria-hidden="true">*</span>
+        </label>
+        <input
+          className={`${fieldClass} ${errorClass('guest-street')}`}
+          value={form.streetName || ''}
+          onChange={(e) => updateField('streetName', e.target.value)}
+          placeholder="Street name"
+          required
+        />
+      </div>
+
+      <div id="guest-state">
+        <label className="mb-1 block text-xs font-medium text-slate-600">
+          {isUaeCountry(form.country) ? 'Emirate' : 'State / Emirate'}{' '}
+          <span className="text-red-600" aria-hidden="true">*</span>
+        </label>
+        {form.country === 'India' ? (
+          <SearchableSelect
+            value={form.state}
+            onChange={handleStateChange}
+            options={indiaStatesAndDistricts.map((entry) => entry.state)}
+            placeholder="Select state"
+            searchPlaceholder="Search state..."
+            hasError={hasError('guest-state')}
+            triggerClassName={`${selectClass} ${errorClass('guest-state')}`}
+          />
+        ) : isUaeCountry(form.country) ? (
+          <SearchableSelect
+            value={form.state}
+            onChange={handleStateChange}
+            options={UAE_EMIRATES}
+            placeholder="Select emirate"
+            searchPlaceholder="Search emirate..."
+            hasError={hasError('guest-state')}
+            triggerClassName={`${selectClass} ${errorClass('guest-state')}`}
+          />
+        ) : (
+          <input
+            className={`${fieldClass} ${errorClass('guest-state')}`}
+            value={form.state || ''}
+            onChange={(e) => updateField('state', e.target.value)}
+            placeholder="State / emirate"
+            required
+          />
+        )}
+      </div>
+
+      {isUaeCountry(form.country) && form.state ? (
+        <div id="guest-area">
+          <label className="mb-1 block text-xs font-medium text-slate-600">
+            Area <span className="text-red-600" aria-hidden="true">*</span>
+          </label>
+          <SearchableSelect
+            value={form.district}
+            onChange={(value) => updateField('district', value)}
+            options={getUaeAreaOptionsForEmirate(form.state, form.district)}
+            placeholder="Select area"
+            searchPlaceholder="Search area..."
+            emptyMessage="No areas found"
+            allowCustomValue
+            formatCustomOption={(area) => `Use "${area}"`}
+            hasError={hasError('guest-area')}
+            triggerClassName={`${selectClass} ${errorClass('guest-area')}`}
+          />
+        </div>
+      ) : null}
 
       {form.country === 'India' && form.state ? (
         <div id="store-order-district">
@@ -212,7 +238,7 @@ export default function StoreOrderAddressForm({
         </div>
       ) : null}
 
-      <div id="store-order-country">
+      <div id="guest-country">
         <label className="mb-1 block text-xs font-medium text-slate-600">Country</label>
         <SearchableSelect
           value={form.country}

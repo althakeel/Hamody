@@ -14,6 +14,7 @@ import {
   mapStoreOrderPaymentMethod,
   storeOrderPaymentNeedsReference,
 } from '@/lib/storeCreateOrder';
+import { composeAddressStreetLine } from '@/lib/addressLine';
 import { calculateShipping, fetchShippingSettings } from '@/lib/shipping';
 import {
   buildStoreOrderLineFromProduct,
@@ -364,10 +365,19 @@ export default function StoreCreateOrderModal({ open, onClose, getToken, onCreat
         return;
       }
 
+      const composedStreet = composeAddressStreetLine({
+        buildingOrVilla: form.buildingOrVilla,
+        streetName: form.streetName,
+        apartmentOrFloor: form.apartmentOrFloor,
+      }) || String(form.street || '').trim();
+
       const { data } = await axios.post(
         '/api/store/orders/create',
         {
-          form,
+          form: {
+            ...form,
+            street: composedStreet,
+          },
           items: validLineItems.map((item) => {
             const payload = getStoreOrderLineSubmitPayload(item);
             return {
