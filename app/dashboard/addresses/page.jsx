@@ -77,6 +77,7 @@ export default function AddressesPage() {
         addressId: editingId || '',
         address: {
           ...formData,
+          country: 'United Arab Emirates',
           email: formData.email || user.email || '',
           phone: String(formData.phone || '').replace(/\D/g, ''),
         },
@@ -103,7 +104,7 @@ export default function AddressesPage() {
       city: address.city || '',
       state: address.state || '',
       zip: address.zip || '',
-      country: address.country || 'United Arab Emirates',
+      country: 'United Arab Emirates',
       phone: address.phone || '',
       phoneCode: address.phoneCode || '+971',
     });
@@ -238,11 +239,10 @@ export default function AddressesPage() {
               <input
                 type="text"
                 name="country"
-                placeholder="Country"
-                value={formData.country}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                value="United Arab Emirates"
+                readOnly
+                aria-readonly="true"
+                className="w-full cursor-default rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 text-gray-700"
               />
 
               <div className="flex gap-4">

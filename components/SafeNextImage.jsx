@@ -6,14 +6,21 @@ import { isRetiredStoreMediaUrl, PLACEHOLDER_IMAGE } from '@/lib/mediaUrls';
 /**
  * Hosts we optimize through next/image. Marketplace CDNs (Noon, Amazon, Flipkart,
  * Shopify imports, etc.) use a plain <img> so a missing next.config host never crashes.
+ *
+ * S3 product host is intentionally NOT optimized here: when ap-south-1 is slow,
+ * Next's image optimizer waits and returns 504, stalling the whole page. Browser
+ * loads S3 (or ImageKit) directly with loading="lazy" instead.
  */
 const OPTIMIZED_HOSTS = [
-  'store1920-images.s3.ap-south-1.amazonaws.com',
   'ik.imagekit.io',
   'www.store1920.com',
   'store1920.com',
   'placehold.co',
   'lh3.googleusercontent.com',
+];
+
+const DIRECT_IMG_HOSTS = [
+  'store1920-images.s3.ap-south-1.amazonaws.com',
 ];
 
 /** Resolve next/image StaticImport objects to a usable URL string. */
@@ -42,6 +49,13 @@ export function shouldBypassNextImageOptimizer(src) {
     const { hostname, protocol } = new URL(value);
     if (protocol !== 'http:' && protocol !== 'https:') return true;
     if (hostname.toLowerCase() === 'db.store1920.com') return true;
+
+    const direct = DIRECT_IMG_HOSTS.some(
+      (host) => hostname === host || hostname.endsWith(`.${host}`),
+    );
+    if (direct || hostname.includes('.s3.') || hostname.endsWith('.amazonaws.com')) {
+      return true;
+    }
 
     const allowed = OPTIMIZED_HOSTS.some(
       (host) => hostname === host || hostname.endsWith(`.${host}`),

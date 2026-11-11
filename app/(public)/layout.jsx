@@ -21,13 +21,43 @@ function DeferredTrackers() {
     const [ready, setReady] = useState(false);
 
     useEffect(() => {
-        const start = () => setReady(true);
-        if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-            const id = window.requestIdleCallback(start, { timeout: 2500 });
-            return () => window.cancelIdleCallback(id);
+        let cancelled = false;
+        let started = false;
+        let idleId = null;
+        let timerId = null;
+
+        const cleanup = () => {
+            ['pointerdown', 'keydown', 'touchstart', 'scroll'].forEach((eventName) => {
+                window.removeEventListener(eventName, start, { capture: true });
+            });
+            if (idleId != null && typeof window.cancelIdleCallback === 'function') {
+                window.cancelIdleCallback(idleId);
+            }
+            if (timerId != null) window.clearTimeout(timerId);
+        };
+
+        const start = () => {
+            if (cancelled || started) return;
+            started = true;
+            cleanup();
+            setReady(true);
+        };
+
+        // Keep first scroll/clicks free of heatmap/session capture listeners.
+        ['pointerdown', 'keydown', 'touchstart', 'scroll'].forEach((eventName) => {
+            window.addEventListener(eventName, start, { once: true, passive: true, capture: true });
+        });
+
+        if (typeof window.requestIdleCallback === 'function') {
+            idleId = window.requestIdleCallback(start, { timeout: 6000 });
+        } else {
+            timerId = window.setTimeout(start, 5000);
         }
-        const timer = setTimeout(start, 1500);
-        return () => clearTimeout(timer);
+
+        return () => {
+            cancelled = true;
+            cleanup();
+        };
     }, []);
 
     if (!ready) return null;

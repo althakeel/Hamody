@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { startTransition, useEffect, useRef, useState } from 'react';
 
 /**
  * Mounts children only when the placeholder nears the viewport.
@@ -20,9 +20,13 @@ export default function LazyMount({
     if (visible && once) return undefined;
     const node = ref.current;
     if (!node || typeof IntersectionObserver === 'undefined') {
-      setVisible(true);
+      startTransition(() => setVisible(true));
       return undefined;
     }
+
+    const show = () => {
+      startTransition(() => setVisible(true));
+    };
 
     // If already near the viewport on mount, show immediately (no blank gray gap).
     const rect = node.getBoundingClientRect();
@@ -30,14 +34,14 @@ export default function LazyMount({
     const marginPx = Number.parseInt(String(rootMargin), 10);
     const expand = Number.isFinite(marginPx) ? Math.abs(marginPx) : 400;
     if (rect.top < viewportH + expand && rect.bottom > -expand) {
-      setVisible(true);
+      show();
       return undefined;
     }
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
-          setVisible(true);
+          show();
           if (once) observer.disconnect();
         }
       },
@@ -49,7 +53,14 @@ export default function LazyMount({
   }, [once, rootMargin, visible]);
 
   return (
-    <div ref={ref} style={visible ? undefined : { minHeight }}>
+    <div
+      ref={ref}
+      style={
+        visible
+          ? { contentVisibility: 'auto', containIntrinsicSize: `auto ${Math.max(minHeight, 1)}px` }
+          : { minHeight, contentVisibility: 'auto', containIntrinsicSize: `auto ${Math.max(minHeight, 1)}px` }
+      }
+    >
       {visible ? children : fallback}
     </div>
   );

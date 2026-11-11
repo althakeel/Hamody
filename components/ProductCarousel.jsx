@@ -9,6 +9,7 @@ import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
 import { DEFAULT_CATEGORY_SLIDER_AUTO_SLIDE_INTERVAL_MS } from '@/lib/categorySliderTheme'
 import {
   buildAutoSlideLoopProducts,
+  capCarouselProducts,
   getAutoSlidePixelsPerMs,
   measureAutoSlideLoopWidth,
   wrapAutoSlideOffset,
@@ -40,6 +41,8 @@ export default function ProductCarousel({
   const { isArabic } = useStorefrontI18n()
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
+  const rootRef = useRef(null)
+  const isInViewRef = useRef(true)
   const isHoverPausedRef = useRef(false)
   const isTouchPausedRef = useRef(false)
   const isDraggingRef = useRef(false)
@@ -51,16 +54,17 @@ export default function ProductCarousel({
   const autoSlideReadyRef = useRef(false)
   const transformTrackRef = useRef(null)
 
+  const cappedProducts = useMemo(() => capCarouselProducts(products), [products])
   const isCategorySlider = cardWidthVariant === 'categorySlider'
-  const useTransformAutoSlide = autoSlide && products.length > 1
+  const useTransformAutoSlide = autoSlide && cappedProducts.length > 1
   /** Transform auto-slide only works reliably in LTR; manual scroll mirrors in Arabic RTL. */
   const carouselDir = isCategorySlider
     ? (useTransformAutoSlide ? 'ltr' : (isArabic ? 'rtl' : 'ltr'))
     : undefined
 
   const displayProducts = useMemo(
-    () => (useTransformAutoSlide ? buildAutoSlideLoopProducts(products) : products),
-    [products, useTransformAutoSlide]
+    () => (useTransformAutoSlide ? buildAutoSlideLoopProducts(cappedProducts) : cappedProducts),
+    [cappedProducts, useTransformAutoSlide]
   )
 
   const {
@@ -103,7 +107,7 @@ export default function ProductCarousel({
     const gap = parseFloat(styles.columnGap || styles.gap || '12') || 12
     autoSlideStepRef.current = cardWidth > 0 ? cardWidth + gap : getSnapStep()
 
-    const loopWidth = measureAutoSlideLoopWidth(measureTarget, products.length)
+    const loopWidth = measureAutoSlideLoopWidth(measureTarget, cappedProducts.length)
     loopWidthRef.current = loopWidth
     autoSlideReadyRef.current = loopWidth > 0 && autoSlideStepRef.current > 0
 
@@ -111,7 +115,7 @@ export default function ProductCarousel({
       autoSlideOffsetRef.current = wrapAutoSlideOffset(autoSlideOffsetRef.current, loopWidth)
       applyTransformOffset(autoSlideOffsetRef.current)
     }
-  }, [applyTransformOffset, getSnapStep, products.length, scrollRef, useTransformAutoSlide])
+  }, [applyTransformOffset, cappedProducts.length, getSnapStep, scrollRef, useTransformAutoSlide])
 
   useLayoutEffect(() => {
     measureAutoSlideMetrics()
@@ -122,16 +126,26 @@ export default function ProductCarousel({
       return () => window.removeEventListener('resize', measureAutoSlideMetrics)
     }
 
+    let resizeRaf = null
+    const scheduleMeasure = () => {
+      if (resizeRaf) cancelAnimationFrame(resizeRaf)
+      resizeRaf = requestAnimationFrame(() => {
+        resizeRaf = null
+        measureAutoSlideMetrics()
+      })
+    }
+
     const observer = typeof ResizeObserver !== 'undefined'
-      ? new ResizeObserver(() => measureAutoSlideMetrics())
+      ? new ResizeObserver(scheduleMeasure)
       : null
 
     observer?.observe(resizeTarget)
-    window.addEventListener('resize', measureAutoSlideMetrics)
+    window.addEventListener('resize', scheduleMeasure)
 
     return () => {
+      if (resizeRaf) cancelAnimationFrame(resizeRaf)
       observer?.disconnect()
-      window.removeEventListener('resize', measureAutoSlideMetrics)
+      window.removeEventListener('resize', scheduleMeasure)
     }
   }, [measureAutoSlideMetrics, displayProducts.length, cardsPerRow, useTransformAutoSlide])
 
@@ -247,21 +261,82 @@ export default function ProductCarousel({
     const container = scrollRef.current
     if (!container) return undefined
 
+    let scrollRaf = null
     const updateScrollState = () => {
       const maxScroll = container.scrollWidth - container.clientWidth
       setCanScrollLeft(container.scrollLeft > 1)
       setCanScrollRight(container.scrollLeft < maxScroll - 1)
     }
+    const scheduleScrollState = () => {
+      if (scrollRaf) return
+      scrollRaf = requestAnimationFrame(() => {
+        scrollRaf = null
+        updateScrollState()
+      })
+    }
 
     updateScrollState()
-    container.addEventListener('scroll', updateScrollState, { passive: true })
-    window.addEventListener('resize', updateScrollState)
+    container.addEventListener('scroll', scheduleScrollState, { passive: true })
+    window.addEventListener('resize', scheduleScrollState)
 
     return () => {
-      container.removeEventListener('scroll', updateScrollState)
-      window.removeEventListener('resize', updateScrollState)
+      if (scrollRaf) cancelAnimationFrame(scrollRaf)
+      container.removeEventListener('scroll', scheduleScrollState)
+      window.removeEventListener('resize', scheduleScrollState)
     }
-  }, [products, displayProducts, scrollRef, cardsPerRow, autoSlide, useTransformAutoSlide])
+  }, [cappedProducts, displayProducts, scrollRef, cardsPerRow, autoSlide, useTransformAutoSlide])
+
+  useEffect(() => {
+    if (!useTransformAutoSlide) return undefined
+
+    const node = rootRef.current
+    const syncInView = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        isInViewRef.current = false
+        return
+      }
+      if (!node) {
+        isInViewRef.current = true
+        return
+      }
+    }
+
+    let observer = null
+    if (node && typeof IntersectionObserver !== 'undefined') {
+      observer = new IntersectionObserver(
+        (entries) => {
+          const intersecting = entries.some((entry) => entry.isIntersecting)
+          isInViewRef.current =
+            intersecting && (typeof document === 'undefined' || document.visibilityState !== 'hidden')
+        },
+        { rootMargin: '80px 0px', threshold: 0.01 },
+      )
+      observer.observe(node)
+    } else {
+      isInViewRef.current = true
+    }
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        isInViewRef.current = false
+      } else {
+        syncInView()
+        if (node) {
+          const rect = node.getBoundingClientRect()
+          const vh = window.innerHeight || 0
+          isInViewRef.current = rect.bottom > -80 && rect.top < vh + 80
+        } else {
+          isInViewRef.current = true
+        }
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+
+    return () => {
+      observer?.disconnect()
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [useTransformAutoSlide])
 
   useEffect(() => {
     if (!useTransformAutoSlide) return undefined
@@ -272,7 +347,7 @@ export default function ProductCarousel({
     const tick = (timestamp) => {
       rafId = requestAnimationFrame(tick)
 
-      if (!autoSlideReadyRef.current) {
+      if (!autoSlideReadyRef.current || !isInViewRef.current) {
         lastTimestamp = timestamp
         return
       }
@@ -302,9 +377,9 @@ export default function ProductCarousel({
     return () => {
       if (rafId) cancelAnimationFrame(rafId)
     }
-  }, [applyTransformOffset, autoSlideIntervalMs, products.length, cardsPerRow, useTransformAutoSlide])
+  }, [applyTransformOffset, autoSlideIntervalMs, cappedProducts.length, cardsPerRow, useTransformAutoSlide])
 
-  if (!products.length && !leading) return null
+  if (!cappedProducts.length && !leading) return null
 
   const resolvedTransformTrackClassName = [
     'flex w-full min-w-0 will-change-transform [backface-visibility:hidden]',
@@ -348,6 +423,7 @@ export default function ProductCarousel({
 
   return (
     <div
+      ref={rootRef}
       dir={carouselDir}
       className={`relative w-full min-w-0 max-lg:overflow-visible lg:overflow-x-clip ${bleedClass} ${className}`.trim()}
       onMouseEnter={() => { isHoverPausedRef.current = true }}

@@ -40,10 +40,11 @@ function useBrandColor() {
   useEffect(() => {
     setBrandColor(readCachedBrandColor())
 
-    const controller = new AbortController()
+    let cancelled = false
     import('@/lib/storefrontPublicFetch')
-      .then(({ fetchNavbarMenu }) => fetchNavbarMenu({ signal: controller.signal }))
+      .then(({ fetchNavbarMenu }) => fetchNavbarMenu())
       .then((data) => {
+        if (cancelled) return
         const next = String(data?.backgroundColor || '').trim()
         if (next) setBrandColor(next)
       })
@@ -60,7 +61,7 @@ function useBrandColor() {
 
     window.addEventListener('navbarAppearanceUpdated', handleUpdate)
     return () => {
-      controller.abort()
+      cancelled = true
       window.removeEventListener('navbarAppearanceUpdated', handleUpdate)
     }
   }, [])
@@ -275,17 +276,17 @@ export default function MobileBottomNav() {
       }
     }
 
-    const controller = new AbortController()
+    let cancelled = false
     import('@/lib/storefrontPublicFetch')
-      .then(({ fetchAppearanceSectionsPublic }) => (
-        fetchAppearanceSectionsPublic({ signal: controller.signal })
-      ))
+      .then(({ fetchAppearanceSectionsPublic }) => fetchAppearanceSectionsPublic())
       .then((data) => {
-        if (!data?.offersPage) return
+        if (cancelled || !data?.offersPage) return
         applyOffersNav(data.offersPage)
       })
       .catch(() => {})
-      .finally(() => setBottomNavReady(true))
+      .finally(() => {
+        if (!cancelled) setBottomNavReady(true)
+      })
 
     const handleOffersNavLabelUpdate = (event) => {
       const detail = event?.detail || {}
@@ -305,7 +306,7 @@ export default function MobileBottomNav() {
     window.addEventListener('offersNavLabelUpdated', handleOffersNavLabelUpdate)
 
     return () => {
-      controller.abort()
+      cancelled = true
       window.removeEventListener('offersNavLabelUpdated', handleOffersNavLabelUpdate)
     }
   }, [])
@@ -340,7 +341,7 @@ export default function MobileBottomNav() {
     <nav
       aria-label="Mobile navigation"
       dir={isArabic ? 'rtl' : 'ltr'}
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200/80 bg-white/95 backdrop-blur-md lg:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200/80 bg-white lg:hidden"
       style={{
         paddingBottom: 'max(0.35rem, env(safe-area-inset-bottom))',
         boxShadow: '0 -8px 24px rgba(15, 23, 42, 0.06)',

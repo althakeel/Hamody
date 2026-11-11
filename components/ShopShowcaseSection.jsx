@@ -76,13 +76,13 @@ function useNavbarBackgroundColor() {
     setNavbarBg(readCachedNavbarBg())
     setNavbarLayout(readCachedNavbarLayout())
 
-    const controller = new AbortController()
+    let cancelled = false
 
     // Prefer cache/events from Navbar — avoid a duplicate cache-busting request on homepage.
     import('@/lib/storefrontPublicFetch')
-      .then(({ fetchNavbarMenu }) => fetchNavbarMenu({ signal: controller.signal }))
+      .then(({ fetchNavbarMenu }) => fetchNavbarMenu())
       .then((data) => {
-        if (!data) return
+        if (cancelled || !data) return
         const nextBg = String(data?.backgroundColor || '').trim()
         if (nextBg) setNavbarBg(nextBg)
         setNavbarLayout(normalizeNavbarLayout(data))
@@ -99,7 +99,7 @@ function useNavbarBackgroundColor() {
 
     window.addEventListener('navbarAppearanceUpdated', handleNavbarAppearanceUpdate)
     return () => {
-      controller.abort()
+      cancelled = true
       window.removeEventListener('navbarAppearanceUpdated', handleNavbarAppearanceUpdate)
     }
   }, [])

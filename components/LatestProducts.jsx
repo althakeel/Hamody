@@ -10,7 +10,7 @@ import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
 import { filterStorefrontInStockProducts } from '@/lib/productVisibility'
 import Title from './Title'
 
-const DEFAULT_ITEMS_PER_ROW = 6
+const DEFAULT_ITEMS_PER_ROW = 5
 const DEFAULT_ROWS = 2
 
 function clampItemsPerRow(value, fallback = DEFAULT_ITEMS_PER_ROW) {
@@ -297,10 +297,10 @@ const BestSelling = ({
         <div className="mt-6">
           {isLoading && featuredProducts.length === 0 ? (
             <div className="flex gap-3 overflow-hidden">
-              {Array(Math.min(visibleCount, 6)).fill(0).map((_, idx) => (
+              {Array(Math.min(visibleCount, clampItemsPerRow(layoutSettings.itemsPerRow))).fill(0).map((_, idx) => (
                 <div
                   key={idx}
-                  className={`${PRODUCT_CARD_CELL_CLASS} w-[42%] shrink-0 animate-pulse overflow-hidden rounded-[2px] border border-slate-200 bg-white sm:w-[28%] lg:w-[15%]`}
+                  className={`${PRODUCT_CARD_CELL_CLASS} w-[42%] shrink-0 animate-pulse overflow-hidden rounded-[2px] border border-slate-200 bg-white sm:w-[28%] lg:w-[calc((100%-3rem)/5)]`}
                 >
                   <div className="aspect-square w-full bg-gray-200" />
                   <div className="space-y-2 p-2.5">
@@ -314,7 +314,7 @@ const BestSelling = ({
           ) : (
             <ProductCarousel
               products={visibleProducts}
-              priorityCount={4}
+              priorityCount={2}
               cardsPerRow={clampItemsPerRow(layoutSettings.itemsPerRow)}
               showArrows
               showMobileArrows
@@ -324,7 +324,7 @@ const BestSelling = ({
         </div>
       ) : (
         <div
-          className="featured-products-grid mt-6 grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3"
+          className="featured-products-grid mt-6 grid grid-cols-2 items-stretch gap-3 md:grid-cols-3 lg:grid-cols-5"
           style={{ '--desktop-cols': String(clampItemsPerRow(layoutSettings.itemsPerRow)) }}
         >
           {isLoading && featuredProducts.length === 0
@@ -345,7 +345,7 @@ const BestSelling = ({
       )}
 
       <style jsx>{`
-        @media (min-width: 768px) {
+        @media (min-width: 1024px) {
           .featured-products-grid {
             grid-template-columns: repeat(var(--desktop-cols), minmax(0, 1fr)) !important;
           }

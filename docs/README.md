@@ -61,14 +61,16 @@ This folder is the **full API documentation set** — from public storefront / m
 | 4 | [ADMIN_API.md](./ADMIN_API.md) | Platform admins | Store approval, home merchandising, coupons |
 | 4b | **[STORE_LOGIN_AND_SUPER_ADMIN.md](./STORE_LOGIN_AND_SUPER_ADMIN.md)** | **Owner / IT / Super Admin** | **Full login & credentials doc: `/store/login`, Super Admin email list, team invites, PIN, password reset, `/admin`** |
 | 5 | [WEBHOOKS_AND_CRONS.md](./WEBHOOKS_AND_CRONS.md) | Backend / DevOps | Stripe, Tabby, Tamara, Razorpay, Waslah, crons |
+| 5b | **[ORDER_TRACKING_SHIPPING.md](./ORDER_TRACKING_SHIPPING.md)** | **Ops / warehouse / backend** | **Couriers: EMX direct (new), Waslah→EMX, C3Xpress, Delhivery + APIs / track / crons** |
 | 6 | [ORDER_DETAILS.md](./ORDER_DETAILS.md) | All builders | Order document fields & statuses |
 | 7 | [AUTH_SECURITY.md](./AUTH_SECURITY.md) | Auth / security | CAPTCHA, lockout, MFA, sessions |
 | 8 | [PAYMENT_SECURITY.md](./PAYMENT_SECURITY.md) | Payments | PCI / fraud / refunds |
 | 9 | [WHATSAPP_INTEGRATION_API.md](./WHATSAPP_INTEGRATION_API.md) | Messaging | WhatsApp abandoned cart & orders |
 | 10 | [STORE1920_API_AND_ZOHO_CRM.md](./STORE1920_API_AND_ZOHO_CRM.md) | CRM | Zoho sync |
-| 11 | [warehouse-order-packing-api.md](./warehouse-order-packing-api.md) | Warehouse app | Packing |
+| 11 | **[WAREHOUSE_BARCODE_SCANNER.md](./WAREHOUSE_BARCODE_SCANNER.md)** | **Warehouse Flutter / ops** | **Full barcode scanner doc: what is inside the EMX `1000…` label, normalize, APIs, pack, return** |
+| 11a | [warehouse-order-packing-api.md](./warehouse-order-packing-api.md) | Warehouse app | Packing |
 | 11b | [warehouse-app-emx-tracking-pickup.md](./warehouse-app-emx-tracking-pickup.md) | Warehouse app | EMX tracking, pickup, labels, details |
-| 11c | [warehouse-emx-label-scan.md](./warehouse-emx-label-scan.md) | Warehouse app | Door To Door barcode scan |
+| 11c | [warehouse-emx-label-scan.md](./warehouse-emx-label-scan.md) | Warehouse app | Door To Door barcode scan (short) |
 | 11d | [warehouse-tracking-api.md](./warehouse-tracking-api.md) | Warehouse app | Tracking endpoint short reference |
 | 11e | [warehouse-app-scan-handoff-reply.md](./warehouse-app-scan-handoff-reply.md) | Warehouse app | Backend reply: AWB lookup / prod deploy |
 | 11f | [warehouse-return-scan-api.md](./warehouse-return-scan-api.md) | Warehouse Flutter | **Return scan API** — lookup + collect → RETURNED, product ids, stock |

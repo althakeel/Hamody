@@ -115,32 +115,34 @@ export default function SpinWheelWidget() {
       return undefined;
     }
 
-    const controller = new AbortController();
+    let cancelled = false;
 
     const loadCampaign = async () => {
       try {
         setLoading(true);
         const res = await fetch("/api/spin/campaign", {
-          signal: controller.signal,
           cache: "no-store",
         });
+        if (cancelled) return;
         const data = await res.json().catch(() => null);
-        if (controller.signal.aborted) return;
+        if (cancelled) return;
         if (res.ok && data?.isEnabled && data?.campaign?.slices?.length) {
           setCampaign(data.campaign);
         } else {
           setCampaign(null);
         }
-      } catch (err) {
-        if (err?.name === "AbortError" || controller.signal.aborted) return;
+      } catch {
+        if (cancelled) return;
         setCampaign(null);
       } finally {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     loadCampaign();
-    return () => controller.abort();
+    return () => {
+      cancelled = true;
+    };
   }, [hiddenByPath]);
 
   useEffect(() => {

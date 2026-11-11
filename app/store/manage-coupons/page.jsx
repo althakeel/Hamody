@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/useAuth';
+import { isAdminEmail } from '@/lib/adminEmails';
 
 export default function ManageCouponsPage() {
-  const { getToken } = useAuth();
+  const { getToken, user } = useAuth();
+  const isSuperAdmin = isAdminEmail(user?.email);
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -353,7 +355,7 @@ export default function ManageCouponsPage() {
 
             <form onSubmit={handleSubmit} className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Coupon Code */}
+                {/* Coupon Code — only Super Admin can rename an existing code */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Coupon Code *
@@ -361,13 +363,24 @@ export default function ManageCouponsPage() {
                   <input
                     type="text"
                     required
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 uppercase"
+                    disabled={Boolean(editingCoupon) && !isSuperAdmin}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 uppercase disabled:bg-gray-100 disabled:text-gray-500"
                     value={formData.code}
                     onChange={(e) =>
-                      setFormData({ ...formData, code: e.target.value })
+                      setFormData({
+                        ...formData,
+                        code: e.target.value.toUpperCase().trim(),
+                      })
                     }
                     placeholder="SAVE10"
                   />
+                  {editingCoupon ? (
+                    <p className="mt-1 text-xs text-gray-500">
+                      {isSuperAdmin
+                        ? 'Super admin can change the code. Customers must use the new code after Update.'
+                        : 'Only the super admin can change an existing coupon code.'}
+                    </p>
+                  ) : null}
                 </div>
 
                 {/* Title */}

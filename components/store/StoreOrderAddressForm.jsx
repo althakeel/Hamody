@@ -1,7 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
-import { countryCodes } from '@/assets/countryCodes';
+import { useEffect, useMemo } from 'react';
 import { indiaStatesAndDistricts } from '@/assets/indiaStatesAndDistricts';
 import SearchableSelect from '@/components/SearchableSelect';
 import PhoneNumberField from '@/components/PhoneNumberField';
@@ -11,20 +10,13 @@ import {
   isUaeCountry,
 } from '@/lib/uaeEmirateAreas';
 
+const FIXED_COUNTRY = 'United Arab Emirates';
+
 const fieldClass =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100';
 
 const selectClass =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100';
-
-function getCountryOptions() {
-  return countryCodes.map((entry) => entry.label.replace(/ \(.*\)/, ''));
-}
-
-function getCountryCode(countryName) {
-  const match = countryCodes.find((entry) => entry.label.replace(/ \(.*\)/, '') === countryName);
-  return match?.code || '+971';
-}
 
 export default function StoreOrderAddressForm({
   form,
@@ -37,22 +29,20 @@ export default function StoreOrderAddressForm({
     return stateData?.districts || [];
   }, [form.country, form.state]);
 
+  useEffect(() => {
+    if (form.country === FIXED_COUNTRY) return;
+    onChange((current) => ({
+      ...current,
+      country: FIXED_COUNTRY,
+      phoneCode: '+971',
+    }));
+  }, [form.country, onChange]);
+
   const hasError = (id) => invalidFieldIds.has(id);
   const errorClass = (id) => (hasError(id) ? 'border-red-400 ring-2 ring-red-100' : '');
 
   const updateField = (name, value) => {
     onChange((current) => ({ ...current, [name]: value }));
-  };
-
-  const handleCountryChange = (country) => {
-    onChange((current) => ({
-      ...current,
-      country,
-      phoneCode: getCountryCode(country),
-      state: isUaeCountry(country) ? 'Dubai' : country === 'India' ? '' : current.state,
-      district: '',
-      pincode: '',
-    }));
   };
 
   const handleStateChange = (state) => {
@@ -240,14 +230,12 @@ export default function StoreOrderAddressForm({
 
       <div id="guest-country">
         <label className="mb-1 block text-xs font-medium text-slate-600">Country</label>
-        <SearchableSelect
-          value={form.country}
-          onChange={handleCountryChange}
-          options={getCountryOptions()}
-          placeholder="Select country"
-          searchPlaceholder="Search country..."
-          hasError={hasError('guest-country')}
-          triggerClassName={`${selectClass} ${errorClass('guest-country')}`}
+        <input
+          type="text"
+          value={FIXED_COUNTRY}
+          readOnly
+          aria-readonly="true"
+          className={`${fieldClass} cursor-default bg-slate-100 text-slate-700`}
         />
       </div>
     </div>

@@ -71,7 +71,9 @@ const nextConfig = {
         formats: ['image/avif', 'image/webp'],
         deviceSizes: [320, 420, 640, 768, 1024, 1280, 1536, 1920],
         imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-        qualities: [65, 70, 75, 85]
+        qualities: [65, 70, 75, 85],
+        // Keep optimized CDN images warm so warm requests are not re-fetched often.
+        minimumCacheTTL: 60 * 60 * 24 * 7,
     },
     compress: true,
     experimental: {

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Coupon from "@/models/Coupon";
 import { requireStorePermission } from "@/lib/storeAccessControl";
+import { isAdminEmail } from "@/lib/adminEmails";
+import { couponCodeEqualsQuery, normalizeCouponCode } from "@/lib/couponAccess";
 
 // PUT - Update a coupon
 export async function PUT(request, { params }) {
@@ -29,8 +31,9 @@ export async function PUT(request, { params }) {
     if (seller.error) {
       return NextResponse.json({ error: seller.error }, { status: seller.status });
     }
+    const isSuperAdmin = isAdminEmail(decodedToken.email);
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     const coupon = await Coupon.findOne({
@@ -42,13 +45,35 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: "Coupon not found" }, { status: 404 });
     }
 
+    const nextCode = normalizeCouponCode(body?.code);
+    const currentCode = normalizeCouponCode(coupon.code);
+    if (nextCode && nextCode !== currentCode) {
+      if (!isSuperAdmin) {
+        return NextResponse.json(
+          { error: "Only the super admin can change a coupon code." },
+          { status: 403 },
+        );
+      }
+      const clash = await Coupon.findOne({
+        code: couponCodeEqualsQuery(nextCode) || nextCode,
+        _id: { $ne: coupon._id },
+      }).select("_id").lean();
+      if (clash) {
+        return NextResponse.json(
+          { error: "That coupon code is already in use." },
+          { status: 400 },
+        );
+      }
+    }
+
     // Update fields
     Object.keys(body).forEach((key) => {
       if (key === "code") {
-        coupon[key] = body[key].toUpperCase();
+        if (!isSuperAdmin) return;
+        coupon[key] = normalizeCouponCode(body[key]);
       } else if (key === "expiresAt" && body[key]) {
         coupon[key] = new Date(body[key]);
-      } else {
+      } else if (key !== "_id" && key !== "storeId") {
         coupon[key] = body[key];
       }
     });

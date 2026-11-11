@@ -1400,8 +1400,9 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     const selectedAddr = (form.addressId && checkoutAddressList.find((a) => a._id === form.addressId)) || null;
     const resolvedPhone =
       cleanedPhone || cleanDigits(selectedAddr?.phone) || cleanDigits(user?.phoneNumber || user?.phone);
-    const resolvedCountry = form.country || selectedAddr?.country || 'United Arab Emirates';
-    const resolvedPincode = isIndiaCountry(resolvedCountry) ? sanitizePincode(form.pincode) : '';
+    // Store1920 delivers in UAE only — country is fixed.
+    const resolvedCountry = 'United Arab Emirates';
+    const resolvedPincode = '';
     return { resolvedPhone, resolvedCountry, resolvedPincode };
   };
 
@@ -1938,15 +1939,16 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     const selectedAddr = (form.addressId && checkoutAddressList.find(a => a._id === form.addressId)) || null;
     const fallbackPhone = cleanDigits(selectedAddr?.phone) || cleanDigits(user?.phoneNumber || user?.phone);
     const resolvedPhone = cleanedPhone || fallbackPhone;
-    const resolvedCountry = form.country || selectedAddr?.country || 'United Arab Emirates';
-    const isIndiaCheckout = isIndiaCountry(resolvedCountry);
+    // Store1920 delivers in UAE only — country is fixed.
+    const resolvedCountry = 'United Arab Emirates';
+    const isIndiaCheckout = false;
     let resolvedPincode = sanitizePincode(form.pincode);
 
     if (!cleanedPhone && resolvedPhone) {
       setForm((f) => ({ ...f, phone: resolvedPhone }));
     }
 
-    if (!form.country && resolvedCountry) {
+    if (form.country !== resolvedCountry) {
       setForm((f) => ({ ...f, country: resolvedCountry }));
     }
 
@@ -3553,22 +3555,13 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
 
                     <div id="guest-country" className="min-w-0">
                       <label className={guestLabelClass}>{t('checkout.country')}</label>
-                      <SearchableSelect
-                        value={form.country}
-                        onChange={(value) => {
-                          setInvalidFieldIds(new Set());
-                          setValidationAlertOpen(false);
-                          handleGuestCountryChange(value);
-                        }}
-                        options={getGuestCountryOptions()}
-                        placeholder="Select Country"
-                        searchPlaceholder="Search country..."
-                        emptyMessage="No countries found"
-                        required
-                        hasError={fieldHasError('guest-country')}
-                        triggerClassName={checkoutSelectClass}
+                      <input
+                        type="text"
+                        value="United Arab Emirates"
+                        readOnly
+                        aria-readonly="true"
+                        className="w-full cursor-default rounded-xl border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm text-slate-700 outline-none"
                       />
-                      {fieldRequiredHint('guest-country')}
                     </div>
                   </div>
                   ) : null}

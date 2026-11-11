@@ -97,32 +97,58 @@ const ProductCard = ({
   const { getToken } = useAuth()
   const { market, convertPrice, formatNumber } = useStorefrontMarket()
   const { t, language } = useStorefrontI18n()
-  const cartItems = useSelector((state) => state.cart.cartItems)
-  const [hovered, setHovered] = useState(false)
-  const [showCardVideo, setShowCardVideo] = useState(false)
-  const [isCartHydrated, setIsCartHydrated] = useState(false)
-  const cardVideoRef = useRef(null)
-
-  const cartEntry = cartItems[product._id]
-  const itemQuantity = (() => {
+  const productId = String(product._id || '')
+  // Subscribe only to this product's qty so cart updates don't re-render every card.
+  const itemQuantity = useSelector((state) => {
+    const cartEntry = state.cart.cartItems?.[productId]
     if (!cartEntry) return 0
     if (typeof cartEntry === 'number') return cartEntry
     if (typeof cartEntry === 'object' && typeof cartEntry.quantity === 'number') return cartEntry.quantity
     return 0
-  })()
+  })
+  const [hovered, setHovered] = useState(false)
+  const [showCardVideo, setShowCardVideo] = useState(false)
+  const [isCartHydrated, setIsCartHydrated] = useState(false)
+  const cardVideoRef = useRef(null)
+  const cardRef = useRef(null)
 
   useEffect(() => {
     setIsCartHydrated(true)
   }, [])
 
   useEffect(() => {
-    registerItemListImpression(product, {
-      itemListId,
-      itemListName,
-      index: itemListIndex,
-      pathname,
-    })
-  }, [product?._id, itemListId, itemListName, itemListIndex, pathname])
+    // Skip per-card observers on dense homepage grids unless a list id is provided.
+    if (!productId || !itemListId) return undefined
+    const node = cardRef.current
+    const report = () => {
+      registerItemListImpression(product, {
+        itemListId,
+        itemListName,
+        index: itemListIndex,
+        pathname,
+      })
+    }
+
+    if (!node || typeof IntersectionObserver === 'undefined') {
+      report()
+      return undefined
+    }
+
+    let reported = false
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (reported || !entries.some((entry) => entry.isIntersecting)) return
+        reported = true
+        report()
+        observer.disconnect()
+      },
+      { rootMargin: '80px 0px', threshold: 0.2 },
+    )
+    observer.observe(node)
+    return () => observer.disconnect()
+    // Intentionally keyed by product id — avoid re-firing when parent re-creates the product object.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productId, itemListId, itemListName, itemListIndex, pathname])
 
   let priceNum = getSalePrice(product)
   let AEDNum = getAEDPrice(product)
@@ -325,6 +351,7 @@ const ProductCard = ({
 
   return (
     <Link
+      ref={cardRef}
       href={getProductPath(product)}
       draggable={false}
       onDragStart={(event) => event.preventDefault()}
@@ -339,7 +366,7 @@ const ProductCard = ({
       }}
       onMouseEnter={hasSecondary ? () => setHovered(true) : undefined}
       onMouseLeave={hasSecondary ? () => setHovered(false) : undefined}
-      className={`group ${PRODUCT_CARD_SHELL_CLASS} transition-colors duration-200 ${hasCarouselWidth ? 'hover:-translate-y-0.5 hover:shadow-md' : 'shadow-none hover:bg-slate-50/80'} ${hasCarouselWidth ? '' : hasCustomGridWidth ? 'min-w-0' : PRODUCT_CARD_CELL_CLASS} ${compactAll ? 'h-full' : ''} ${className}`.trim()}
+      className={`group ${PRODUCT_CARD_SHELL_CLASS} transition-colors duration-200 ${hasCarouselWidth ? 'hover:shadow-sm' : 'shadow-none hover:bg-slate-50/80'} ${hasCarouselWidth ? '' : hasCustomGridWidth ? 'min-w-0' : PRODUCT_CARD_CELL_CLASS} ${compactAll ? 'h-full' : ''} ${className}`.trim()}
     >
       <div className={`relative w-full shrink-0 overflow-hidden bg-white ${imageAspectClass}`}>
         {cardPreview.type === 'delayed-video' && !showCardVideo ? (
@@ -349,7 +376,8 @@ const ProductCard = ({
               alt={productName}
               fill
               className="object-cover object-center scale-110"
-              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 16vw"
+              sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, 14vw"
+              quality={priorityImages ? 70 : 55}
               priority={priorityImages}
               loading={priorityImages ? undefined : 'lazy'}
               onError={(e) => {
@@ -364,7 +392,7 @@ const ProductCard = ({
               className="pointer-events-none absolute h-0 w-0 opacity-0"
               muted
               playsInline
-              preload="auto"
+              preload="none"
               aria-hidden="true"
             />
           </>
@@ -386,7 +414,8 @@ const ProductCard = ({
               alt={productName}
               fill
               className={`object-cover object-center scale-110 ${hasSecondary ? 'transition-opacity duration-500' : ''} ${hasSecondary && hovered ? 'opacity-0' : 'opacity-100'}`}
-              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 16vw"
+              sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, 14vw"
+              quality={priorityImages ? 70 : 55}
               priority={priorityImages}
               loading={priorityImages ? undefined : 'lazy'}
               onError={(e) => {
@@ -401,7 +430,8 @@ const ProductCard = ({
                 alt={productName}
                 fill
                 className={`absolute inset-0 object-cover object-center scale-110 transition-opacity duration-500 ${hovered ? 'opacity-100' : 'opacity-0'}`}
-                sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 16vw"
+                sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, 14vw"
+                quality={55}
                 loading="lazy"
                 onError={(e) => {
                   if (e.currentTarget.src !== PLACEHOLDER) {

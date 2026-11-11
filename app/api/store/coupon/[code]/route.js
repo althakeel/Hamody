@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import Coupon from '@/models/Coupon';
 import authSeller from '@/middlewares/authSeller';
 import { getAuth } from '@/lib/firebase-admin';
+import { isAdminEmail } from '@/lib/adminEmails';
 import { couponCodeEqualsQuery, normalizeCouponCode } from '@/lib/couponAccess';
 
 function parseCouponNumber(value, emptyValue) {
@@ -11,13 +12,19 @@ function parseCouponNumber(value, emptyValue) {
     return Number.isFinite(parsed) ? parsed : emptyValue;
 }
 
-async function resolveStoreId(req) {
+async function resolveSeller(req) {
     const authHeader = req.headers.get('authorization') || '';
     if (!authHeader.startsWith('Bearer ')) return null;
 
     try {
         const decoded = await getAuth().verifyIdToken(authHeader.replace('Bearer ', ''));
-        return authSeller(decoded.uid);
+        const storeId = await authSeller(decoded.uid);
+        if (!storeId) return null;
+        return {
+            storeId,
+            email: decoded.email || '',
+            isSuperAdmin: isAdminEmail(decoded.email),
+        };
     } catch {
         return null;
     }
@@ -26,10 +33,11 @@ async function resolveStoreId(req) {
 // PUT - Update a coupon
 export async function PUT(req, { params }) {
     try {
-        const storeId = await resolveStoreId(req);
-        if (!storeId) {
+        const seller = await resolveSeller(req);
+        if (!seller?.storeId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+        const { storeId, isSuperAdmin } = seller;
 
         await connectDB();
 
@@ -48,6 +56,7 @@ export async function PUT(req, { params }) {
 
         const body = await req.json();
         const {
+            code: nextCodeRaw,
             description,
             discount,
             discountType,
@@ -66,6 +75,26 @@ export async function PUT(req, { params }) {
         } = body;
 
         const updateData = {};
+        const nextCode = normalizeCouponCode(nextCodeRaw);
+        if (nextCode && nextCode !== normalizeCouponCode(existingCoupon.code)) {
+            if (!isSuperAdmin) {
+                return NextResponse.json(
+                    { error: 'Only the super admin can change a coupon code.' },
+                    { status: 403 },
+                );
+            }
+            const clash = await Coupon.findOne({
+                code: couponCodeEqualsQuery(nextCode) || nextCode,
+                _id: { $ne: existingCoupon._id },
+            }).select('_id').lean();
+            if (clash) {
+                return NextResponse.json(
+                    { error: 'That coupon code is already in use.' },
+                    { status: 400 },
+                );
+            }
+            updateData.code = nextCode;
+        }
         if (description !== undefined) updateData.description = description;
         if (discount !== undefined) {
             const parsedDiscount = parseCouponNumber(discount, NaN);
@@ -125,10 +154,11 @@ export async function PUT(req, { params }) {
 // DELETE - Delete a coupon
 export async function DELETE(req, { params }) {
     try {
-        const storeId = await resolveStoreId(req);
-        if (!storeId) {
+        const seller = await resolveSeller(req);
+        if (!seller?.storeId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+        const { storeId } = seller;
 
         await connectDB();
 

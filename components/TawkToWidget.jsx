@@ -120,17 +120,20 @@ export default function TawkToWidget() {
   const enabled = isTawkEnabled() && storeEnabled === true && shouldShowTawk(pathname);
 
   useEffect(() => {
-    const controller = new AbortController();
+    let cancelled = false;
     import('@/lib/storefrontPublicFetch')
-      .then(({ fetchAppearanceSectionsPublic }) => fetchAppearanceSectionsPublic({ signal: controller.signal }))
+      .then(({ fetchAppearanceSectionsPublic }) => fetchAppearanceSectionsPublic())
       .then((data) => {
+        if (cancelled) return;
         setStoreEnabled(data?.tawkChat ? normalizeTawkChat(data.tawkChat).enabled : true);
       })
-      .catch((error) => {
-        if (error?.name === 'AbortError') return;
+      .catch(() => {
+        if (cancelled) return;
         setStoreEnabled(true);
       });
-    return () => controller.abort();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {

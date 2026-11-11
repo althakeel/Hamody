@@ -47,14 +47,17 @@ export default function ScrollToTopButton() {
   }, []);
 
   useEffect(() => {
-    const controller = new AbortController();
+    let cancelled = false;
     import('@/lib/storefrontPublicFetch')
-      .then(({ fetchAppearanceSectionsPublic }) => fetchAppearanceSectionsPublic({ signal: controller.signal }))
+      .then(({ fetchAppearanceSectionsPublic }) => fetchAppearanceSectionsPublic())
       .then((data) => {
+        if (cancelled) return;
         if (data?.scrollToTop) setSettings(normalizeScrollToTop(data.scrollToTop));
       })
       .catch(() => {});
-    return () => controller.abort();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -63,17 +66,23 @@ export default function ScrollToTopButton() {
       return undefined;
     }
 
+    let rafId = null;
     const onScroll = () => {
-      const next = readScrollProgress();
-      setProgress(next.progress);
-      setVisible(next.y > SHOW_AFTER_PX);
-      setOverFooter(isOverFooter());
+      if (rafId != null) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        const next = readScrollProgress();
+        setProgress(next.progress);
+        setVisible(next.y > SHOW_AFTER_PX);
+        setOverFooter(isOverFooter());
+      });
     };
 
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);
     return () => {
+      if (rafId != null) window.cancelAnimationFrame(rafId);
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
     };

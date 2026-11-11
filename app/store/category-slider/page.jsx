@@ -26,8 +26,16 @@ import { sortCategorySliders } from '@/lib/categorySliderOrder';
 import { flattenShowcaseCategories } from '@/lib/showcaseBannerLinks';
 import { BOTTOM_NAV_PAGE_OPTIONS } from '@/lib/bottomNavLinkChoices';
 import { categorySliderDefaultPath, normalizeCategorySliderViewAll } from '@/lib/categorySliderViewAll';
+import {
+  normalizeCategorySliderSideImageLink,
+} from '@/lib/categorySliderSideImageLink';
 import { slugifyCategory } from '@/lib/categorySlug';
 import StoreDropdown from '@/components/store/StoreDropdown';
+import {
+  hasShowcaseBannerImage,
+  serializeShowcaseImageFields,
+} from '@/lib/showcaseBannerImages';
+import { normalizeCategorySliderSectionType } from '@/lib/categorySliderBanner';
 
 const VIEW_ALL_TARGETS = [
   { id: 'default', label: 'Default page' },
@@ -37,7 +45,84 @@ const VIEW_ALL_TARGETS = [
   { id: 'custom', label: 'Custom URL' },
 ];
 
+const SIDE_IMAGE_LINK_TARGETS = [
+  { id: 'category', label: 'Category' },
+  { id: 'brand', label: 'Brand' },
+  { id: 'landing', label: 'Landing page' },
+  { id: 'page', label: 'Existing page' },
+  { id: 'custom', label: 'Custom URL' },
+];
+
 const EMPTY_VIEW_ALL = { viewAllEnabled: false, viewAllTarget: 'default', viewAllValue: '' };
+const EMPTY_SIDE_IMAGE_LINK = {
+  sideImageLinkEnabled: false,
+  sideImageLinkTarget: 'category',
+  sideImageLinkValue: '',
+};
+
+const EMPTY_BANNER_FIELDS = {
+  bannerImage: '',
+  bannerTabletImage: '',
+  bannerMobileImage: '',
+  bannerImageAr: '',
+  bannerTabletImageAr: '',
+  bannerMobileImageAr: '',
+  bannerLink: '',
+  bannerAlt: '',
+};
+
+function bannerFieldsFromSlider(slider = {}) {
+  const banner = slider?.banner && typeof slider.banner === 'object' ? slider.banner : {};
+  const images = serializeShowcaseImageFields(banner);
+  return {
+    bannerImage: images.image || '',
+    bannerTabletImage: images.tabletImage || '',
+    bannerMobileImage: images.mobileImage || '',
+    bannerImageAr: images.imageAr || '',
+    bannerTabletImageAr: images.tabletImageAr || '',
+    bannerMobileImageAr: images.mobileImageAr || '',
+    bannerLink: String(banner.link || '').trim(),
+    bannerAlt: String(banner.alt || '').trim(),
+  };
+}
+
+function bannerPayloadFromForm(form = {}) {
+  return {
+    image: String(form.bannerImage || '').trim(),
+    tabletImage: String(form.bannerTabletImage || '').trim(),
+    mobileImage: String(form.bannerMobileImage || '').trim(),
+    imageAr: String(form.bannerImageAr || '').trim(),
+    tabletImageAr: String(form.bannerTabletImageAr || '').trim(),
+    mobileImageAr: String(form.bannerMobileImageAr || '').trim(),
+    link: String(form.bannerLink || '').trim(),
+    alt: String(form.bannerAlt || '').trim(),
+  };
+}
+
+function emptySliderForm(sectionType = 'slider') {
+  return {
+    sectionType: normalizeCategorySliderSectionType(sectionType),
+    title: '',
+    subtitle: '',
+    titleAr: '',
+    subtitleAr: '',
+    sideImage: '',
+    sideImageAr: '',
+    mobileImage: '',
+    mobileImageAr: '',
+    mobileImageRatio: DEFAULT_CATEGORY_SLIDER_MOBILE_IMAGE_RATIO,
+    sideImagePosition: 'left',
+    cardsPerRow: 6,
+    autoSlide: false,
+    autoSlideIntervalMs: DEFAULT_CATEGORY_SLIDER_AUTO_SLIDE_INTERVAL_MS,
+    showOutOfStock: false,
+    backgroundColor: DEFAULT_CATEGORY_SLIDER_BACKGROUND,
+    productIds: [],
+    ...EMPTY_BANNER_FIELDS,
+    ...EMPTY_VIEW_ALL,
+    ...EMPTY_SIDE_IMAGE_LINK,
+  };
+}
 
 function appImageFrameStyle(ratio) {
   const parts = categorySliderMobileImageRatioParts(ratio);
@@ -57,25 +142,8 @@ export default function CategorySliderPage() {
   const [showAllSliders, setShowAllSliders] = useState(false);
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
 
-  const [formData, setFormData] = useState({
-    title: '',
-    subtitle: '',
-    titleAr: '',
-    subtitleAr: '',
-    sideImage: '',
-    sideImageAr: '',
-    mobileImage: '',
-    mobileImageAr: '',
-    mobileImageRatio: DEFAULT_CATEGORY_SLIDER_MOBILE_IMAGE_RATIO,
-    sideImagePosition: 'left',
-    cardsPerRow: 6,
-    autoSlide: false,
-    autoSlideIntervalMs: DEFAULT_CATEGORY_SLIDER_AUTO_SLIDE_INTERVAL_MS,
-    showOutOfStock: false,
-    backgroundColor: DEFAULT_CATEGORY_SLIDER_BACKGROUND,
-    productIds: [],
-    ...EMPTY_VIEW_ALL,
-  });
+  const [formData, setFormData] = useState(() => emptySliderForm('slider'));
+  const isBannerForm = normalizeCategorySliderSectionType(formData.sectionType) === 'banner';
   const [translatingCopy, setTranslatingCopy] = useState(false);
   const [uploadingSideImage, setUploadingSideImage] = useState('');
   const [reorderingId, setReorderingId] = useState(null);
@@ -88,6 +156,8 @@ export default function CategorySliderPage() {
   const [pickBrand, setPickBrand] = useState('');
   const [pickerResults, setPickerResults] = useState([]);
   const [pickerLoading, setPickerLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const normalizeProductIds = (ids = []) => (
     [...new Set(
@@ -155,10 +225,13 @@ export default function CategorySliderPage() {
         if (!active) return;
         setCategories(Array.isArray(categoryRes.data?.categories) ? categoryRes.data.categories : []);
         setLandingPages(Array.isArray(landingRes.data?.pages) ? landingRes.data.pages : []);
-        setBrandOptions((Array.isArray(brandRes.data?.brands) ? brandRes.data.brands : []).map((brand) => ({
-          value: brand,
-          label: brand,
-        })));
+        setBrandOptions((Array.isArray(brandRes.data?.brands) ? brandRes.data.brands : []).map((brand) => {
+          const label = String(brand || '').trim();
+          return {
+            value: slugifyCategory(label) || label,
+            label,
+          };
+        }).filter((item) => item.value));
       } catch (error) {
         console.error('Failed to load View all destinations', error);
       }
@@ -263,6 +336,8 @@ export default function CategorySliderPage() {
         return {
           ...section,
           id: normalizedId,
+          sectionType: normalizeCategorySliderSectionType(section.sectionType),
+          banner: section.banner && typeof section.banner === 'object' ? section.banner : {},
           subtitle: subtitleValue,
           sideImage: section.sideImage ? String(section.sideImage).trim() : '',
           sideImageAr: section.sideImageAr ? String(section.sideImageAr).trim() : '',
@@ -275,6 +350,7 @@ export default function CategorySliderPage() {
           autoSlideIntervalMs: normalizeCategorySliderAutoSlideInterval(section.autoSlideIntervalMs),
           backgroundColor: normalizeCategorySliderBackground(section.backgroundColor),
           ...normalizeCategorySliderViewAll(section),
+          ...normalizeCategorySliderSideImageLink(section),
         };
       });
       console.log('📊 Fetched sliders:', normalizedSliders);
@@ -363,25 +439,25 @@ export default function CategorySliderPage() {
   };
 
   const handleAddSlider = () => {
-    setFormData({ title: '', subtitle: '', titleAr: '', subtitleAr: '', sideImage: '', sideImageAr: '', mobileImage: '', mobileImageAr: '', mobileImageRatio: DEFAULT_CATEGORY_SLIDER_MOBILE_IMAGE_RATIO, sideImagePosition: 'left', cardsPerRow: 6, autoSlide: false, autoSlideIntervalMs: DEFAULT_CATEGORY_SLIDER_AUTO_SLIDE_INTERVAL_MS, showOutOfStock: false, backgroundColor: DEFAULT_CATEGORY_SLIDER_BACKGROUND, productIds: [], ...EMPTY_VIEW_ALL });
+    setFormData(emptySliderForm('slider'));
+    setEditingIdx(null);
+    setShowForm(true);
+  };
+
+  const handleAddBanner = () => {
+    setFormData(emptySliderForm('banner'));
     setEditingIdx(null);
     setShowForm(true);
   };
 
   const handleEditSlider = (slider) => {
     const sliderId = normalizeId(slider.id || slider._id);
-    console.log('📝 === EDIT SLIDER STARTED ===');
-    console.log('📝 Full slider object:', slider);
-    console.log('📝 Subtitle raw value:', slider.subtitle);
-    console.log('📝 Subtitle type:', typeof slider.subtitle);
-    console.log('📝 Subtitle length:', slider.subtitle?.length);
-    
-    // Ensure subtitle is a string
     const subtitleValue = slider.subtitle ? String(slider.subtitle).trim() : '';
-    console.log('📝 Processed subtitle value:', subtitleValue);
-    
+    const sectionType = normalizeCategorySliderSectionType(slider.sectionType);
     const newFormData = {
+      ...emptySliderForm(sectionType),
       _id: sliderId,
+      sectionType,
       title: slider.title || '',
       subtitle: subtitleValue,
       titleAr: slider.titleAr ? String(slider.titleAr).trim() : '',
@@ -399,13 +475,13 @@ export default function CategorySliderPage() {
       backgroundColor: normalizeCategorySliderBackground(slider.backgroundColor),
       productIds: slider.productIds || [],
       slug: slider.slug || '',
+      ...bannerFieldsFromSlider(slider),
       ...normalizeCategorySliderViewAll(slider),
+      ...normalizeCategorySliderSideImageLink(slider),
     };
-    console.log('📝 New form data being set:', newFormData);
     setFormData(newFormData);
     setEditingIdx(sliderId);
     setShowForm(true);
-    console.log('📝 === EDIT SLIDER COMPLETED ===');
   };
 
   const handleMoveSlider = async (sliderId, direction) => {
@@ -454,6 +530,12 @@ export default function CategorySliderPage() {
       sideImageAr: 'Arabic side image uploaded',
       mobileImage: 'App image uploaded',
       mobileImageAr: 'Arabic app image uploaded',
+      bannerImage: 'Desktop banner uploaded',
+      bannerTabletImage: 'Tablet banner uploaded',
+      bannerMobileImage: 'Mobile banner uploaded',
+      bannerImageAr: 'Arabic desktop banner uploaded',
+      bannerTabletImageAr: 'Arabic tablet banner uploaded',
+      bannerMobileImageAr: 'Arabic mobile banner uploaded',
     };
     const imageField = imageFields[field] ? field : 'sideImage';
 
@@ -504,18 +586,57 @@ export default function CategorySliderPage() {
     }
   };
 
+  const deleteSectionById = async (sliderId, token) => {
+    const deleteId = normalizeId(sliderId);
+    if (!deleteId || deleteId === 'undefined' || deleteId === 'null') {
+      throw new Error('Invalid slider ID');
+    }
+    try {
+      await axios.delete('/api/store/category-slider', {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { id: String(deleteId) },
+      });
+    } catch (err) {
+      if (err?.response?.status === 404) {
+        await axios.delete(`/api/store/category-slider/${encodeURIComponent(String(deleteId))}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else {
+        throw err;
+      }
+    }
+  };
+
   const handleSaveSlider = async () => {
-    if (!formData.title.trim()) {
+    if (saving) return;
+    const sectionType = normalizeCategorySliderSectionType(formData.sectionType);
+    const isBanner = sectionType === 'banner';
+    if (!isBanner && !formData.title.trim()) {
       toast.error('Please enter a slider title');
       return;
     }
-    if (formData.productIds.length === 0) {
+    const banner = bannerPayloadFromForm(formData);
+    if (isBanner) {
+      if (!hasShowcaseBannerImage(banner)) {
+        toast.error('Upload at least one banner image (desktop, tablet, or mobile)');
+        return;
+      }
+    } else if (formData.productIds.length === 0) {
       toast.error('Please select at least one product');
       return;
     }
     const viewAll = normalizeCategorySliderViewAll(formData);
-    if (viewAll.viewAllEnabled && viewAll.viewAllTarget !== 'default' && !viewAll.viewAllValue) {
+    if (!isBanner && viewAll.viewAllEnabled && viewAll.viewAllTarget !== 'default' && !viewAll.viewAllValue) {
       toast.error('Choose where View all opens');
+      return;
+    }
+    const sideImageLink = normalizeCategorySliderSideImageLink(formData);
+    if (
+      !isBanner &&
+      sideImageLink.sideImageLinkEnabled &&
+      !sideImageLink.sideImageLinkValue
+    ) {
+      toast.error('Choose a side image link destination');
       return;
     }
     if (!isPlatformAdmin && showAllSliders && editingIdx !== null) {
@@ -526,13 +647,49 @@ export default function CategorySliderPage() {
       }
     }
 
+    setSaving(true);
     try {
       let token = await getToken();
       if (!token) {
         toast.error('Please sign in again');
         return;
       }
-      console.log('💾 Saving slider with data:', formData);
+
+      const subtitleValue = formData.subtitle ? String(formData.subtitle).trim() : '';
+      const payload = isBanner
+        ? {
+            sectionType: 'banner',
+            title: formData.title.trim(),
+            subtitle: subtitleValue,
+            titleAr: formData.titleAr ? String(formData.titleAr).trim() : '',
+            subtitleAr: formData.subtitleAr ? String(formData.subtitleAr).trim() : '',
+            productIds: [],
+            banner,
+            slug: String(formData.slug || '').trim(),
+          }
+        : {
+            sectionType: 'slider',
+            title: formData.title.trim(),
+            subtitle: subtitleValue,
+            titleAr: formData.titleAr ? String(formData.titleAr).trim() : '',
+            subtitleAr: formData.subtitleAr ? String(formData.subtitleAr).trim() : '',
+            sideImage: formData.sideImage ? String(formData.sideImage).trim() : '',
+            sideImageAr: formData.sideImageAr ? String(formData.sideImageAr).trim() : '',
+            mobileImage: formData.mobileImage ? String(formData.mobileImage).trim() : '',
+            mobileImageAr: formData.mobileImageAr ? String(formData.mobileImageAr).trim() : '',
+            mobileImageRatio: normalizeCategorySliderMobileImageRatio(formData.mobileImageRatio),
+            sideImagePosition: normalizeCategorySliderSideImagePosition(formData.sideImagePosition),
+            cardsPerRow: formData.cardsPerRow === 5 ? 5 : 6,
+            autoSlide: normalizeCategorySliderAutoSlide(formData.autoSlide),
+            autoSlideIntervalMs: normalizeCategorySliderAutoSlideInterval(formData.autoSlideIntervalMs),
+            showOutOfStock: normalizeCategorySliderShowOutOfStock(formData.showOutOfStock),
+            backgroundColor: normalizeCategorySliderBackground(formData.backgroundColor),
+            productIds: normalizeProductIds(formData.productIds),
+            slug: String(formData.slug || '').trim(),
+            ...normalizeCategorySliderViewAll(formData),
+            ...normalizeCategorySliderSideImageLink(formData),
+            banner: {},
+          };
 
       if (editingIdx !== null) {
         const editId = normalizeId(editingIdx);
@@ -540,41 +697,10 @@ export default function CategorySliderPage() {
           toast.error('Invalid slider ID');
           return;
         }
-        // Update existing slider
-        console.log('💾 === UPDATE START ===');
-        console.log('💾 editingIdx:', editingIdx);
-        console.log('💾 formData.subtitle raw:', JSON.stringify(formData.subtitle));
-        console.log('💾 formData.subtitle type:', typeof formData.subtitle);
-        
-        const subtitleValue = formData.subtitle ? String(formData.subtitle).trim() : '';
-        console.log('💾 After processing subtitle:', JSON.stringify(subtitleValue));
-        
-        const updatePayload = { 
-          title: formData.title.trim(), 
-          subtitle: subtitleValue,
-          titleAr: formData.titleAr ? String(formData.titleAr).trim() : '',
-          subtitleAr: formData.subtitleAr ? String(formData.subtitleAr).trim() : '',
-          sideImage: formData.sideImage ? String(formData.sideImage).trim() : '',
-          sideImageAr: formData.sideImageAr ? String(formData.sideImageAr).trim() : '',
-          mobileImage: formData.mobileImage ? String(formData.mobileImage).trim() : '',
-          mobileImageAr: formData.mobileImageAr ? String(formData.mobileImageAr).trim() : '',
-          mobileImageRatio: normalizeCategorySliderMobileImageRatio(formData.mobileImageRatio),
-          sideImagePosition: normalizeCategorySliderSideImagePosition(formData.sideImagePosition),
-          cardsPerRow: formData.cardsPerRow === 5 ? 5 : 6,
-          autoSlide: normalizeCategorySliderAutoSlide(formData.autoSlide),
-          autoSlideIntervalMs: normalizeCategorySliderAutoSlideInterval(formData.autoSlideIntervalMs),
-          showOutOfStock: normalizeCategorySliderShowOutOfStock(formData.showOutOfStock),
-          backgroundColor: normalizeCategorySliderBackground(formData.backgroundColor),
-          productIds: normalizeProductIds(formData.productIds),
-          slug: String(formData.slug || '').trim(),
-          ...normalizeCategorySliderViewAll(formData),
-        };
-        console.log('💾 Final update payload:', JSON.stringify(updatePayload));
-        console.log('💾 === UPDATE PAYLOAD READY ===');
         try {
           await axios.put(
             `/api/store/category-slider/${encodeURIComponent(String(editId))}`,
-            updatePayload,
+            payload,
             { headers: { Authorization: `Bearer ${token}` } }
           );
         } catch (error) {
@@ -582,99 +708,99 @@ export default function CategorySliderPage() {
             token = await getToken(true);
             await axios.put(
               `/api/store/category-slider/${encodeURIComponent(String(editId))}`,
-              updatePayload,
+              payload,
               { headers: { Authorization: `Bearer ${token}` } }
             );
           } else {
             throw error;
           }
         }
-        const successMsg = updatePayload.subtitle 
-          ? `Slider "${updatePayload.title}" with subtitle updated!`
-          : `Slider "${updatePayload.title}" updated!`;
-        toast.success(`${successMsg} Refresh the homepage to see changes.`);
+        toast.success(
+          isBanner
+            ? (payload.title ? `Banner "${payload.title}" updated!` : 'Banner updated!') + ' Refresh the homepage to see changes.'
+            : `Slider "${payload.title}" updated! Refresh the homepage to see changes.`
+        );
       } else {
-        // Create new slider
-        console.log('💾 === CREATE START ===');
-        console.log('💾 formData.subtitle raw:', JSON.stringify(formData.subtitle));
-        console.log('💾 formData.subtitle type:', typeof formData.subtitle);
-        console.log('💾 formData.subtitle isEmpty:', formData.subtitle === '');
-        console.log('💾 formData.subtitle isFalsy:', !formData.subtitle);
-        
-        const subtitleValue = formData.subtitle ? String(formData.subtitle).trim() : '';
-        console.log('💾 After processing subtitle:', JSON.stringify(subtitleValue));
-        
-        const createPayload = {
-          title: formData.title.trim(),
-          subtitle: subtitleValue,
-          titleAr: formData.titleAr ? String(formData.titleAr).trim() : '',
-          subtitleAr: formData.subtitleAr ? String(formData.subtitleAr).trim() : '',
-          sideImage: formData.sideImage ? String(formData.sideImage).trim() : '',
-          sideImageAr: formData.sideImageAr ? String(formData.sideImageAr).trim() : '',
-          mobileImage: formData.mobileImage ? String(formData.mobileImage).trim() : '',
-          mobileImageAr: formData.mobileImageAr ? String(formData.mobileImageAr).trim() : '',
-          mobileImageRatio: normalizeCategorySliderMobileImageRatio(formData.mobileImageRatio),
-          sideImagePosition: normalizeCategorySliderSideImagePosition(formData.sideImagePosition),
-          cardsPerRow: formData.cardsPerRow === 5 ? 5 : 6,
-          autoSlide: normalizeCategorySliderAutoSlide(formData.autoSlide),
-          autoSlideIntervalMs: normalizeCategorySliderAutoSlideInterval(formData.autoSlideIntervalMs),
-          showOutOfStock: normalizeCategorySliderShowOutOfStock(formData.showOutOfStock),
-          backgroundColor: normalizeCategorySliderBackground(formData.backgroundColor),
-          productIds: normalizeProductIds(formData.productIds),
-          slug: String(formData.slug || '').trim(),
-          ...normalizeCategorySliderViewAll(formData),
-        };
-        console.log('💾 Create payload:', createPayload);
-        await axios.post('/api/store/category-slider', createPayload, {
+        await axios.post('/api/store/category-slider', payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const successMsg = createPayload.subtitle 
-          ? `Slider "${createPayload.title}" with subtitle created!`
-          : `Slider "${createPayload.title}" created!`;
-        toast.success(`${successMsg} Refresh the homepage to see changes.`);
+        toast.success(
+          isBanner
+            ? (payload.title ? `Banner "${payload.title}" created!` : 'Banner created!') + ' Refresh the homepage to see changes.'
+            : `Slider "${payload.title}" created! Refresh the homepage to see changes.`
+        );
       }
 
       setShowForm(false);
       setEditingIdx(null);
-      await fetchData();
+      await fetchData({ silent: true });
     } catch (error) {
       console.error('Error saving slider:', error);
       const message = error?.response?.data?.error || error.message || 'Failed to save slider';
       toast.error(message);
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDeleteSlider = async (sliderId) => {
-    if (!confirm('Delete this slider?')) return;
+    if (!confirm('Delete this section?')) return;
 
     const deleteId = normalizeId(sliderId);
-    if (!deleteId || deleteId === 'undefined' || deleteId === 'null') {
-      toast.error('Invalid slider ID');
-      return;
-    }
+    const previous = sliders;
+    setSliders((prev) => prev.filter((item) => normalizeId(item.id) !== deleteId));
 
     try {
       const token = await getToken();
-      try {
-        await axios.delete('/api/store/category-slider', {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { id: String(deleteId) },
-        });
-      } catch (err) {
-        if (err?.response?.status === 404) {
-          await axios.delete(`/api/store/category-slider/${encodeURIComponent(String(deleteId))}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-        } else {
-          throw err;
+      await deleteSectionById(deleteId, token);
+      toast.success('Section deleted');
+      await fetchData({ silent: true });
+    } catch (error) {
+      setSliders(previous);
+      console.error('Error deleting slider:', error);
+      const message = error?.response?.data?.error || 'Failed to delete section';
+      toast.error(message);
+    }
+  };
+
+  const untitledBanners = sliders.filter(
+    (slider) =>
+      normalizeCategorySliderSectionType(slider.sectionType) === 'banner' &&
+      !String(slider.title || '').trim() &&
+      canManageSlider(slider)
+  );
+
+  const handleDeleteUntitledBanners = async () => {
+    if (untitledBanners.length < 2 || bulkDeleting) return;
+    // Keep the newest untitled banner; remove accidental duplicate creates.
+    const sorted = [...untitledBanners].sort((a, b) => {
+      const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return bTime - aTime;
+    });
+    const toDelete = sorted.slice(1);
+    if (!confirm(`Remove ${toDelete.length} duplicate untitled banner${toDelete.length === 1 ? '' : 's'}? The newest one will be kept.`)) {
+      return;
+    }
+    setBulkDeleting(true);
+    try {
+      const token = await getToken();
+      let deleted = 0;
+      for (const banner of toDelete) {
+        try {
+          await deleteSectionById(banner.id, token);
+          deleted += 1;
+        } catch (error) {
+          console.error('Failed to delete untitled banner', banner.id, error);
         }
       }
-      toast.success('Slider deleted');
-      await fetchData();
+      toast.success(deleted ? `Removed ${deleted} duplicate banner${deleted === 1 ? '' : 's'}` : 'No banners deleted');
+      await fetchData({ silent: true });
     } catch (error) {
-      console.error('Error deleting slider:', error);
-      const message = error?.response?.data?.error || 'Failed to delete slider';
-      toast.error(message);
+      console.error('Bulk delete failed:', error);
+      toast.error(error?.response?.data?.error || 'Failed to delete untitled banners');
+    } finally {
+      setBulkDeleting(false);
     }
   };
 
@@ -897,6 +1023,44 @@ export default function CategorySliderPage() {
     );
   };
 
+  const renderBannerImageField = (field, label, hint) => (
+    <div>
+      <label className="mb-2 block text-sm font-bold text-gray-700">{label}</label>
+      {hint ? <p className="mb-2 text-xs text-gray-500">{hint}</p> : null}
+      <input
+        type="file"
+        accept="image/*"
+        disabled={Boolean(uploadingSideImage)}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleSideImageUpload(file, field);
+          e.target.value = '';
+        }}
+        className="w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:font-medium file:text-slate-700 hover:file:bg-slate-200"
+      />
+      {uploadingSideImage === field ? (
+        <p className="mt-2 text-xs text-blue-600">Uploading…</p>
+      ) : null}
+      {formData[field] ? (
+        <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={formData[field]}
+            alt=""
+            className="mx-auto max-h-36 w-full rounded-lg object-contain"
+          />
+          <button
+            type="button"
+            onClick={() => setFormData((prev) => ({ ...prev, [field]: '' }))}
+            className="mt-2 w-full rounded-lg border border-red-200 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
+          >
+            Remove
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+
   if (loading) return <Loading />;
 
   return (
@@ -904,12 +1068,12 @@ export default function CategorySliderPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">📊 Category Sliders</h1>
-              <p className="text-gray-600">Create and manage product sliders for your store</p>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">Category sections</h1>
+              <p className="text-gray-600">Product sliders and full-width banners for the homepage, in display order</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={handleAddSlider}
@@ -918,6 +1082,25 @@ export default function CategorySliderPage() {
                 <FiPlus size={18} /> New slider
               </button>
               <button
+                type="button"
+                onClick={handleAddBanner}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white transition hover:bg-blue-700"
+              >
+                <FiPlus size={18} /> New banner
+              </button>
+              {untitledBanners.length > 1 ? (
+                <button
+                  type="button"
+                  onClick={handleDeleteUntitledBanners}
+                  disabled={bulkDeleting}
+                  className="inline-flex items-center gap-2 rounded-lg border border-red-300 bg-white px-4 py-2 font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {bulkDeleting
+                    ? 'Deleting…'
+                    : `Remove ${untitledBanners.length - 1} duplicate banners`}
+                </button>
+              ) : null}
+              <button
                 onClick={() => setShowAllSliders(!showAllSliders)}
                 className={`px-4 py-2 rounded-lg font-semibold transition ${
                   showAllSliders 
@@ -925,7 +1108,7 @@ export default function CategorySliderPage() {
                     : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
                 }`}
               >
-                {showAllSliders ? '🌍 Viewing All Sliders' : '👤 My Sliders Only'}
+                {showAllSliders ? 'Viewing all' : 'My sections only'}
               </button>
             </div>
           </div>
@@ -960,14 +1143,22 @@ export default function CategorySliderPage() {
           <div>
             {sliders.length === 0 ? (
               <div className="bg-white rounded-xl shadow-sm p-12 text-center border-2 border-dashed border-gray-300">
-                <p className="text-xl text-gray-500 font-semibold mb-2">No sliders yet</p>
-                <p className="text-gray-400 mb-6">Create your first slider to get started</p>
-                <button
-                  onClick={handleAddSlider}
-                  className="inline-flex items-center gap-2 bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 font-semibold transition"
-                >
-                  <FiPlus size={20} /> Create First Slider
-                </button>
+                <p className="text-xl text-gray-500 font-semibold mb-2">No sections yet</p>
+                <p className="text-gray-400 mb-6">Create a product slider or a homepage banner</p>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <button
+                    onClick={handleAddSlider}
+                    className="inline-flex items-center gap-2 bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 font-semibold transition"
+                  >
+                    <FiPlus size={20} /> New slider
+                  </button>
+                  <button
+                    onClick={handleAddBanner}
+                    className="inline-flex items-center gap-2 bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 font-semibold transition"
+                  >
+                    <FiPlus size={20} /> New banner
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
@@ -976,9 +1167,18 @@ export default function CategorySliderPage() {
                   const canManage = canManageSlider(slider);
                   const previousSlider = orderedSliders[sliderIndex - 1];
                   const nextSlider = orderedSliders[sliderIndex + 1];
-                  const canMoveUp = canManage && sliderIndex > 0 && (isPlatformAdmin || sliderBelongsToCurrentStore(previousSlider));
-                  const canMoveDown = canManage && sliderIndex < orderedSliders.length - 1 && (isPlatformAdmin || sliderBelongsToCurrentStore(nextSlider));
+                  // When viewing only this store's sections, allow free reorder among them.
+                  const canMoveUp = canManage && sliderIndex > 0 && (
+                    isPlatformAdmin || !showAllSliders || sliderBelongsToCurrentStore(previousSlider)
+                  );
+                  const canMoveDown = canManage && sliderIndex < orderedSliders.length - 1 && (
+                    isPlatformAdmin || !showAllSliders || sliderBelongsToCurrentStore(nextSlider)
+                  );
                   const isReordering = reorderingId === normalizeId(slider.id);
+                  const isBannerSection = normalizeCategorySliderSectionType(slider.sectionType) === 'banner';
+                  const bannerPreview = isBannerSection
+                    ? (slider.banner?.image || slider.banner?.tabletImage || slider.banner?.mobileImage || '')
+                    : '';
                   return (
                   <div key={slider.id} className={`bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition border-l-4 ${isOwnSlider ? 'border-blue-500' : 'border-orange-500'}`}>
                     <div className="flex justify-between items-start mb-4 gap-3">
@@ -1014,8 +1214,18 @@ export default function CategorySliderPage() {
                           </button>
                         </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-xl font-bold text-gray-900">{slider.title}</h3>
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <h3 className="text-xl font-bold text-gray-900">
+                            {slider.title?.trim()
+                              || (isBannerSection ? 'Untitled banner' : 'Untitled slider')}
+                          </h3>
+                          <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                            isBannerSection
+                              ? 'bg-sky-100 text-sky-800'
+                              : 'bg-emerald-100 text-emerald-800'
+                          }`}>
+                            {isBannerSection ? 'Banner' : 'Slider'}
+                          </span>
                           {!isOwnSlider && (
                             <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-semibold">
                               Other Store
@@ -1031,7 +1241,24 @@ export default function CategorySliderPage() {
                         {slider.subtitleAr ? (
                           <p className="text-sm text-gray-500 mb-2 italic" dir="rtl">"{slider.subtitleAr}"</p>
                         ) : null}
-                        {(slider.sideImage || slider.sideImageAr || slider.mobileImage || slider.mobileImageAr) ? (
+                        {isBannerSection ? (
+                          <div className="mb-2 flex flex-wrap items-center gap-3">
+                            {bannerPreview ? (
+                              <div className="flex items-center gap-2">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={bannerPreview}
+                                  alt=""
+                                  className="h-12 w-28 rounded-lg border border-gray-200 object-cover"
+                                />
+                                <span className="text-xs text-gray-500">Banner image</span>
+                              </div>
+                            ) : null}
+                            {slider.banner?.link ? (
+                              <p className="text-xs text-blue-700 break-all">{slider.banner.link}</p>
+                            ) : null}
+                          </div>
+                        ) : (slider.sideImage || slider.sideImageAr || slider.mobileImage || slider.mobileImageAr) ? (
                           <div className="mb-2 flex items-center gap-3">
                             {slider.sideImage ? (
                               <div className="flex items-center gap-2">
@@ -1079,10 +1306,21 @@ export default function CategorySliderPage() {
                             ) : null}
                           </div>
                         ) : null}
-                        <p className="text-sm text-gray-500 mt-1">📦 {slider.productIds?.length || 0} products · 🖥️ {slider.cardsPerRow === 5 ? 5 : 6} cards/row{slider.autoSlide ? ` · Auto slide ${Math.round((normalizeCategorySliderAutoSlideInterval(slider.autoSlideIntervalMs) || 4000) / 1000)}s` : ''}</p>
-                        {normalizeCategorySliderViewAll(slider).viewAllEnabled ? (
+                        {isBannerSection ? (
+                          <p className="text-sm text-gray-500 mt-1">
+                            Homepage banner · {hasShowcaseBannerImage(slider.banner) ? 'Image ready' : 'No image yet'}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-gray-500 mt-1">📦 {slider.productIds?.length || 0} products · 🖥️ {slider.cardsPerRow === 5 ? 5 : 6} cards/row{slider.autoSlide ? ` · Auto slide ${Math.round((normalizeCategorySliderAutoSlideInterval(slider.autoSlideIntervalMs) || 4000) / 1000)}s` : ''}</p>
+                        )}
+                        {!isBannerSection && normalizeCategorySliderViewAll(slider).viewAllEnabled ? (
                           <p className="mt-1 text-xs font-medium text-blue-700">
                             View all · {VIEW_ALL_TARGETS.find((item) => item.id === normalizeCategorySliderViewAll(slider).viewAllTarget)?.label || 'Default page'}
+                          </p>
+                        ) : null}
+                        {!isBannerSection && normalizeCategorySliderSideImageLink(slider).sideImageLinkEnabled ? (
+                          <p className="mt-1 text-xs font-medium text-sky-700">
+                            Side image link · {SIDE_IMAGE_LINK_TARGETS.find((item) => item.id === normalizeCategorySliderSideImageLink(slider).sideImageLinkTarget)?.label || 'Link'}
                           </p>
                         ) : null}
                         {slider.storeId && showAllSliders && (
@@ -1117,21 +1355,23 @@ export default function CategorySliderPage() {
                         </button>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {(slider.productIds || []).slice(0, 4).map(pid => {
-                        const prod = products.find(p => p.id === pid);
-                        return prod ? (
-                          <span key={pid} className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
-                            {prod.name.substring(0, 25)}...
+                    {!isBannerSection ? (
+                      <div className="flex flex-wrap gap-2">
+                        {(slider.productIds || []).slice(0, 4).map(pid => {
+                          const prod = products.find(p => p.id === pid);
+                          return prod ? (
+                            <span key={pid} className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+                              {prod.name.substring(0, 25)}...
+                            </span>
+                          ) : null;
+                        })}
+                        {(slider.productIds?.length || 0) > 4 && (
+                          <span className="text-xs bg-gray-200 text-gray-700 px-3 py-1 rounded-full">
+                            +{slider.productIds.length - 4} more
                           </span>
-                        ) : null;
-                      })}
-                      {(slider.productIds?.length || 0) > 4 && (
-                        <span className="text-xs bg-gray-200 text-gray-700 px-3 py-1 rounded-full">
-                          +{slider.productIds.length - 4} more
-                        </span>
-                      )}
-                    </div>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                 )})}
               </div>
@@ -1153,7 +1393,9 @@ export default function CategorySliderPage() {
             <div className="relative z-10 flex max-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:max-h-[calc(100vh-4rem)]" lang="en" dir="ltr">
               <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
                 <h2 className="text-2xl font-bold text-gray-900">
-                  {editingIdx !== null ? 'Edit Slider' : 'New Slider'}
+                  {isBannerForm
+                    ? (editingIdx !== null ? 'Edit banner' : 'New banner')
+                    : (editingIdx !== null ? 'Edit slider' : 'New slider')}
                 </h2>
                 <button
                   type="button"
@@ -1172,13 +1414,13 @@ export default function CategorySliderPage() {
                   {/* Title Input */}
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">
-                      Slider Title *
+                      {isBannerForm ? 'Banner title (optional)' : 'Slider title *'}
                     </label>
                     <input
                       type="text"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder="e.g., Best Electronics"
+                      placeholder={isBannerForm ? 'Optional — image-only banners are fine' : 'e.g., Best Electronics'}
                       className="w-full border-2 border-gray-200 rounded-lg p-3 focus:outline-none focus:border-blue-500 text-sm"
                     />
                   </div>
@@ -1251,6 +1493,45 @@ export default function CategorySliderPage() {
                     />
                   </div>
 
+                  {isBannerForm ? (
+                    <div className="space-y-4 rounded-xl border border-sky-200 bg-sky-50/60 p-4">
+                      <div>
+                        <p className="text-sm font-bold text-sky-950">Banner images</p>
+                        <p className="mt-1 text-xs text-sky-800">
+                          Upload at least one image. Desktop / tablet / mobile and Arabic variants are optional fallbacks.
+                        </p>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {renderBannerImageField('bannerImage', 'Desktop (English)', 'Shown on large screens in English.')}
+                        {renderBannerImageField('bannerTabletImage', 'Tablet (English)', 'Optional. Falls back to desktop.')}
+                        {renderBannerImageField('bannerMobileImage', 'Mobile (English)', 'Optional. Falls back to tablet/desktop.')}
+                        {renderBannerImageField('bannerImageAr', 'Desktop (Arabic)', 'Optional Arabic desktop image.')}
+                        {renderBannerImageField('bannerTabletImageAr', 'Tablet (Arabic)', 'Optional Arabic tablet image.')}
+                        {renderBannerImageField('bannerMobileImageAr', 'Mobile (Arabic)', 'Optional Arabic mobile image.')}
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-sm font-bold text-gray-700">Link URL (optional)</label>
+                        <input
+                          type="text"
+                          value={formData.bannerLink || ''}
+                          onChange={(e) => setFormData({ ...formData, bannerLink: e.target.value })}
+                          placeholder="/shop or https://example.com"
+                          className="w-full rounded-lg border-2 border-gray-200 p-3 text-sm focus:border-blue-500 focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-sm font-bold text-gray-700">Alt text (optional)</label>
+                        <input
+                          type="text"
+                          value={formData.bannerAlt || ''}
+                          onChange={(e) => setFormData({ ...formData, bannerAlt: e.target.value })}
+                          placeholder="Short description for accessibility"
+                          className="w-full rounded-lg border-2 border-gray-200 p-3 text-sm focus:border-blue-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                  <>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">
                       Side image (English)
@@ -1472,6 +1753,119 @@ export default function CategorySliderPage() {
                           );
                         })}
                       </div>
+                    </div>
+                  ) : null}
+
+                  {(formData.sideImage || formData.sideImageAr) ? (
+                    <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4">
+                      <label className="block text-sm font-bold text-gray-700 mb-1">
+                        Side image link
+                      </label>
+                      <p className="mb-3 text-xs text-gray-500">
+                        Make the desktop side image open a category, brand, landing page, or custom URL.
+                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
+                          { value: false, label: 'Off' },
+                          { value: true, label: 'On' },
+                        ].map(({ value, label }) => {
+                          const selected = normalizeCategorySliderSideImageLink(formData).sideImageLinkEnabled === value;
+                          return (
+                            <button
+                              key={label}
+                              type="button"
+                              onClick={() => setFormData((prev) => ({ ...prev, sideImageLinkEnabled: value }))}
+                              className={`rounded-lg border-2 px-4 py-3 text-sm font-semibold transition ${
+                                selected
+                                  ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                  : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {normalizeCategorySliderSideImageLink(formData).sideImageLinkEnabled ? (
+                        <div className="mt-4 space-y-3">
+                          <p className="text-sm font-bold text-gray-700">Where it opens</p>
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                            {SIDE_IMAGE_LINK_TARGETS.map((option) => {
+                              const selected = normalizeCategorySliderSideImageLink(formData).sideImageLinkTarget === option.id;
+                              return (
+                                <button
+                                  key={option.id}
+                                  type="button"
+                                  onClick={() => setFormData((prev) => ({
+                                    ...prev,
+                                    sideImageLinkTarget: option.id,
+                                    sideImageLinkValue: '',
+                                  }))}
+                                  className={`rounded-lg border-2 px-3 py-2 text-sm font-semibold transition ${
+                                    selected
+                                      ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                                  }`}
+                                >
+                                  {option.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {formData.sideImageLinkTarget === 'category' ? (
+                            <StoreDropdown
+                              value={formData.sideImageLinkValue || ''}
+                              onChange={(value) => setFormData((prev) => ({ ...prev, sideImageLinkValue: value }))}
+                              options={categoryOptions}
+                              placeholder="Choose a category"
+                              searchable
+                            />
+                          ) : null}
+                          {formData.sideImageLinkTarget === 'brand' ? (
+                            <StoreDropdown
+                              value={formData.sideImageLinkValue || ''}
+                              onChange={(value) => setFormData((prev) => ({ ...prev, sideImageLinkValue: value }))}
+                              options={brandOptions}
+                              placeholder="Choose a brand"
+                              searchable
+                            />
+                          ) : null}
+                          {formData.sideImageLinkTarget === 'landing' ? (
+                            <StoreDropdown
+                              value={!formData.sideImageLinkValue
+                                ? ''
+                                : formData.sideImageLinkValue.replace(/^\//, '').startsWith('pages/')
+                                  ? `/${formData.sideImageLinkValue.replace(/^\//, '')}`
+                                  : `/c/${formData.sideImageLinkValue.replace(/^\/c\//, '').replace(/^\//, '')}`}
+                              onChange={(value) => setFormData((prev) => ({
+                                ...prev,
+                                sideImageLinkValue: value.replace(/^\/c\//, '').replace(/^\//, ''),
+                              }))}
+                              options={landingOptions}
+                              placeholder="Choose a landing page"
+                              searchable
+                            />
+                          ) : null}
+                          {formData.sideImageLinkTarget === 'page' ? (
+                            <StoreDropdown
+                              value={formData.sideImageLinkValue || ''}
+                              onChange={(value) => setFormData((prev) => ({ ...prev, sideImageLinkValue: value }))}
+                              options={BOTTOM_NAV_PAGE_OPTIONS}
+                              placeholder="Choose a page"
+                              searchable
+                            />
+                          ) : null}
+                          {formData.sideImageLinkTarget === 'custom' ? (
+                            <input
+                              type="text"
+                              value={formData.sideImageLinkValue || ''}
+                              onChange={(event) => setFormData((prev) => ({ ...prev, sideImageLinkValue: event.target.value }))}
+                              placeholder="/shop or https://example.com"
+                              className="w-full rounded-lg border-2 border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                            />
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
 
@@ -1999,6 +2393,8 @@ export default function CategorySliderPage() {
                       Clear All
                     </button>
                   )}
+                  </>
+                  )}
 
                   {/* Action Buttons */}
                   <div className="grid grid-cols-2 gap-3 pt-4 border-t-2 border-gray-200">
@@ -2013,9 +2409,14 @@ export default function CategorySliderPage() {
                     </button>
                     <button
                       onClick={handleSaveSlider}
-                      className="px-4 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:shadow-lg font-semibold transition text-sm"
+                      disabled={saving || Boolean(uploadingSideImage)}
+                      className="px-4 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:shadow-lg font-semibold transition text-sm disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {editingIdx !== null ? '💾 Update' : '✨ Create'}
+                      {saving
+                        ? (editingIdx !== null ? 'Saving…' : 'Creating…')
+                        : editingIdx !== null
+                          ? (isBannerForm ? 'Update banner' : 'Update slider')
+                          : (isBannerForm ? 'Create banner' : 'Create slider')}
                     </button>
                   </div>
                 </div>

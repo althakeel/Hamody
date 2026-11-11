@@ -4,8 +4,8 @@ import React, { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import ProductCarousel from '@/components/ProductCarousel'
+import LazyMount from '@/components/LazyMount'
 import {
-  CAROUSEL_PRODUCT_CARD_CLASS,
   CATEGORY_SLIDER_SIDE_IMAGE_CLASS,
   CATEGORY_SLIDER_LAYOUT_CLASS,
   HOME_SECTION_CLASS,
@@ -17,10 +17,16 @@ import {
 } from '@/lib/storefrontCarousel'
 import { normalizeCategorySliderBackground, normalizeCategorySliderSideImagePosition, normalizeCategorySliderAutoSlide, normalizeCategorySliderAutoSlideInterval, filterCategorySliderProducts } from '@/lib/categorySliderTheme'
 import { HomeSideImageSliderSkeleton } from '@/components/home/HomeSectionSkeletons'
-import BannerSlider from '@/components/BannerSlider'
+import CategorySliderBanner from '@/components/CategorySliderBanner'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
 import { getContentDirection } from '@/lib/storefrontLanguage'
 import { getLocalizedCategorySliderSideImage, getLocalizedCategorySliderSubtitle, getLocalizedCategorySliderTitle } from '@/lib/categorySliderCopy'
+import { capCarouselProducts } from '@/lib/categorySliderAutoSlide'
+
+const SECTION_CONTAIN_STYLE = {
+  contentVisibility: 'auto',
+  containIntrinsicSize: 'auto 320px',
+}
 
 const Section4 = ({ sections: initialSections = null, loading: loadingProp = false }) => {
   const shouldSelfFetch = initialSections == null
@@ -58,18 +64,10 @@ const Section4 = ({ sections: initialSections = null, loading: loadingProp = fal
 
     loadSections()
 
-    const refreshOnVisible = () => {
-      if (document.visibilityState === 'visible') loadSections()
-    }
-    document.addEventListener('visibilitychange', refreshOnVisible)
-
     return () => {
       cancelled = true
-      document.removeEventListener('visibilitychange', refreshOnVisible)
     }
   }, [initialSections])
-
-  const bannerInsertAfterIndex = sections.length > 1 ? Math.floor((sections.length - 1) / 2) : -1
 
   if (loading) {
     return (
@@ -88,14 +86,35 @@ const Section4 = ({ sections: initialSections = null, loading: loadingProp = fal
   return (
     <div className={HOME_SECTION_CLASS}>
       <div className={`${HOME_SECTION_GRID_INNER_CLASS} space-y-4 lg:space-y-8`}>
-        {sections.map((section, sectionIdx) => (
-          <React.Fragment key={section._id || sectionIdx}>
-            <HorizontalSlider section={section} />
-            {sectionIdx === bannerInsertAfterIndex && (
-              <BannerSlider className="mt-0 mb-0 !mx-0 !max-w-none !px-0" />
-            )}
-          </React.Fragment>
-        ))}
+        {sections.map((section, sectionIdx) => {
+          const isBanner = String(section?.sectionType || '').toLowerCase() === 'banner'
+          const key = section._id || section.id || sectionIdx
+          // First section mounts immediately; the rest wait until near the viewport.
+          const body = isBanner ? (
+            <CategorySliderBanner section={section} />
+          ) : (
+            <HorizontalSlider section={section} priority={sectionIdx === 0} />
+          )
+
+          if (sectionIdx === 0) {
+            return (
+              <div key={key} style={SECTION_CONTAIN_STYLE}>
+                {body}
+              </div>
+            )
+          }
+
+          return (
+            <LazyMount
+              key={key}
+              rootMargin="220px 0px"
+              minHeight={isBanner ? 140 : 280}
+              fallback={<div style={{ minHeight: isBanner ? 140 : 280 }} aria-hidden />}
+            >
+              <div style={SECTION_CONTAIN_STYLE}>{body}</div>
+            </LazyMount>
+          )
+        })}
       </div>
     </div>
   )
@@ -129,12 +148,12 @@ function resolveSectionProducts(section) {
   return filterCategorySliderProducts(products, section?.showOutOfStock)
 }
 
-const HorizontalSlider = ({ section }) => {
+const HorizontalSlider = ({ section, priority = false }) => {
   const { language, t } = useStorefrontI18n()
   const title = getLocalizedCategorySliderTitle(section, language)
   const subtitle = getLocalizedCategorySliderSubtitle(section, language)
   const embeddedProducts = useMemo(
-    () => resolveSectionProducts(section),
+    () => capCarouselProducts(resolveSectionProducts(section)),
     [section.products, section.showOutOfStock],
   )
   const [sectionProducts, setSectionProducts] = useState(embeddedProducts)
@@ -142,10 +161,13 @@ const HorizontalSlider = ({ section }) => {
   const [loading, setLoading] = useState(
     () => !catalogAlreadyResolved && embeddedProducts.length === 0 && Array.isArray(section.productIds) && section.productIds.length > 0
   )
-  const productIdsKey = useMemo(
-    () => (Array.isArray(section.productIds) ? section.productIds.join(',') : ''),
-    [section.productIds]
-  )
+  const cappedProductIds = useMemo(() => {
+    const ids = Array.isArray(section.productIds)
+      ? section.productIds.map((id) => String(id || '').trim()).filter(Boolean)
+      : []
+    return ids.slice(0, 12)
+  }, [section.productIds])
+  const productIdsKey = useMemo(() => cappedProductIds.join(','), [cappedProductIds])
 
   useEffect(() => {
     if (catalogAlreadyResolved || embeddedProducts.length > 0) {
@@ -157,7 +179,7 @@ const HorizontalSlider = ({ section }) => {
     let cancelled = false
 
     const resolveProducts = async () => {
-      if (!section.productIds || !Array.isArray(section.productIds) || section.productIds.length === 0) {
+      if (!cappedProductIds.length) {
         if (!cancelled) {
           setSectionProducts([])
           setLoading(false)
@@ -171,16 +193,16 @@ const HorizontalSlider = ({ section }) => {
         const response = await fetch('/api/products/batch', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ productIds: section.productIds }),
+          body: JSON.stringify({ productIds: cappedProductIds }),
         })
 
         if (response.ok) {
           const data = await response.json()
           if (!cancelled) {
-            setSectionProducts(filterCategorySliderProducts(
+            setSectionProducts(capCarouselProducts(filterCategorySliderProducts(
               Array.isArray(data?.products) ? data.products : [],
               section.showOutOfStock,
-            ))
+            )))
             setLoading(false)
           }
           return
@@ -200,7 +222,7 @@ const HorizontalSlider = ({ section }) => {
     return () => {
       cancelled = true
     }
-  }, [catalogAlreadyResolved, embeddedProducts, productIdsKey, section.productIds, section.showOutOfStock])
+  }, [catalogAlreadyResolved, cappedProductIds, embeddedProducts, productIdsKey, section.showOutOfStock])
 
   if (sectionProducts.length === 0 && !loading) return null
 
@@ -213,21 +235,47 @@ const HorizontalSlider = ({ section }) => {
   const viewAllHref = String(section.viewAllHref || '').trim()
   const viewAllExternal = /^https?:\/\//i.test(viewAllHref)
   const viewAllClass = 'inline-flex shrink-0 items-center gap-1 pt-0.5 text-sm font-semibold text-slate-900 hover:text-blue-700'
+  const sideImageHref = String(section.sideImageHref || '').trim()
+  const sideImageExternal = /^https?:\/\//i.test(sideImageHref)
   const shouldAutoSlide =
     sectionProducts.length > 1 &&
     normalizeCategorySliderAutoSlide(section.autoSlide)
 
+  const sideImageMedia = (
+    <Image
+      src={sideImage}
+      alt={title || 'Featured collection'}
+      fill
+      className="object-cover"
+      sizes="(max-width: 1023px) 100vw, (min-width: 1536px) 320px, (min-width: 1280px) 280px, 240px"
+      priority={false}
+    />
+  )
+
   const sideImageBlock = hasSideImage ? (
-    <div className={CATEGORY_SLIDER_SIDE_IMAGE_CLASS}>
-      <Image
-        src={sideImage}
-        alt={title || 'Featured collection'}
-        fill
-        className="object-cover"
-        sizes="(max-width: 1023px) 100vw, (min-width: 1536px) 320px, (min-width: 1280px) 280px, 240px"
-        priority={false}
-      />
-    </div>
+    sideImageHref ? (
+      sideImageExternal ? (
+        <a
+          href={sideImageHref}
+          className={`${CATEGORY_SLIDER_SIDE_IMAGE_CLASS} block transition hover:opacity-95`}
+          aria-label={title || 'Open linked page'}
+        >
+          {sideImageMedia}
+        </a>
+      ) : (
+        <Link
+          href={sideImageHref}
+          className={`${CATEGORY_SLIDER_SIDE_IMAGE_CLASS} block transition hover:opacity-95`}
+          aria-label={title || 'Open linked page'}
+        >
+          {sideImageMedia}
+        </Link>
+      )
+    ) : (
+      <div className={CATEGORY_SLIDER_SIDE_IMAGE_CLASS}>
+        {sideImageMedia}
+      </div>
+    )
   ) : null
 
   const sliderPanel = (
@@ -235,7 +283,7 @@ const HorizontalSlider = ({ section }) => {
       className={`min-w-0 w-full ${hasSideImage ? SIDE_IMAGE_SLIDER_PANEL_CLASS : CATEGORY_SLIDER_PANEL_CLASS} rounded-2xl px-3 py-3 xl:px-4 xl:py-4`}
       style={{ backgroundColor: panelBackground }}
     >
-      <div className={`${hasSideImage ? 'mb-3 lg:mb-2 lg:shrink-0' : 'mb-3 lg:mb-5'}`}>
+      <div className={`${hasSideImage ? 'mb-3 shrink-0 lg:mb-2' : 'mb-3 lg:mb-5'}`}>
         <div className="flex items-start justify-between gap-3">
           <h2 className={`min-w-0 text-start font-bold text-gray-900 ${hasSideImage ? 'text-lg lg:line-clamp-1 lg:text-base xl:text-lg' : 'text-xl lg:text-2xl'}`}>
             <bdi dir={getContentDirection(title)}>{title}</bdi>
@@ -264,14 +312,14 @@ const HorizontalSlider = ({ section }) => {
       </div>
 
       {loading ? (
-        <div className={`px-0 ${hasSideImage ? 'lg:min-h-0 lg:flex-1' : ''}`}>
+        <div className={`px-0 ${hasSideImage ? 'min-h-0 flex-1' : ''}`}>
           <SkeletonLoader hasSideImage={hasSideImage} cardsPerRow={cardsPerRow} />
         </div>
       ) : (
-        <div className={hasSideImage ? 'min-w-0 max-lg:overflow-visible lg:min-h-0 lg:flex-1 lg:w-full lg:overflow-hidden' : 'min-w-0 max-lg:overflow-visible'}>
+        <div className={hasSideImage ? 'min-h-0 min-w-0 max-lg:overflow-visible lg:flex-1 lg:w-full lg:overflow-hidden lg:flex lg:items-end' : 'min-w-0 max-lg:overflow-visible'}>
           <ProductCarousel
             products={sectionProducts}
-            priorityCount={hasSideImage ? 5 : 4}
+            priorityCount={priority ? (hasSideImage ? 4 : 3) : 0}
             cardsPerRow={cardsPerRow}
             cardWidthVariant="categorySlider"
             autoSlide={shouldAutoSlide}

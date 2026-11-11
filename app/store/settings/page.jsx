@@ -94,7 +94,7 @@ const TAB_META = {
   stockAlerts: {
     label: "Stock Alerts",
     icon: BellRing,
-    description: "Low-stock threshold, schedule, and recipients",
+    description: "Catalog alerts plus custom product watch-list emails",
   },
   passwords: {
     label: "Passwords",
@@ -249,6 +249,7 @@ export default function SettingsPage() {
   const [isStoreOwner, setIsStoreOwner] = useState(false);
   const [canManageTeamAccess, setCanManageTeamAccess] = useState(false);
   const [canViewActivityHistory, setCanViewActivityHistory] = useState(false);
+  const [canManageStockAlerts, setCanManageStockAlerts] = useState(false);
   const [canEditStoreSettings, setCanEditStoreSettings] = useState(true);
   const [dashboardTheme, setDashboardTheme] = useState("light");
   const [dashboardScale, setDashboardScale] = useState(100);
@@ -264,10 +265,10 @@ export default function SettingsPage() {
     if (canManageTeamAccess) tabs.splice(4, 0, "dashboardAccess");
     if (canViewActivityHistory) tabs.push("history");
     if (isSuperAdmin || isStoreOwner) tabs.push("cache");
-    if (isSuperAdmin) tabs.push("stockAlerts");
+    if (isSuperAdmin || isStoreOwner || canManageStockAlerts) tabs.push("stockAlerts");
     if (isSuperAdmin || isStoreOwner) tabs.push("passwords");
     return tabs;
-  }, [canEditStoreSettings, canManageTeamAccess, canViewActivityHistory, isSuperAdmin, isStoreOwner]);
+  }, [canEditStoreSettings, canManageTeamAccess, canViewActivityHistory, canManageStockAlerts, isSuperAdmin, isStoreOwner]);
 
   const isFormTab = ["profile", "store", "preferences", "payments"].includes(activeTab);
   const activeMeta = TAB_META[activeTab] || TAB_META.profile;
@@ -401,9 +402,15 @@ export default function SettingsPage() {
         setCanManageCustomerPickup(
           Boolean(data?.isSuperAdmin) || data?.permissions?.customerPickup === true
         );
+        setCanManageStockAlerts(
+          Boolean(data?.isSuperAdmin)
+          || Boolean(data?.isOwner)
+          || data?.permissions?.stockAlerts === true
+        );
       } catch {
         setIsStoreOwner(false);
         setCanViewActivityHistory(false);
+        setCanManageStockAlerts(false);
       }
     };
 
@@ -2052,7 +2059,9 @@ export default function SettingsPage() {
           {activeTab === "dashboardAccess" && canManageTeamAccess ? teamContent : null}
           {activeTab === "dataImport" ? importContent : null}
           {activeTab === "cache" && canManageCache ? <StoreCacheSettings /> : null}
-          {activeTab === "stockAlerts" && isSuperAdmin ? <LowStockAlertSettings /> : null}
+          {activeTab === "stockAlerts" && (isSuperAdmin || isStoreOwner || canManageStockAlerts) ? (
+            <LowStockAlertSettings />
+          ) : null}
           {activeTab === "passwords" && (isSuperAdmin || isStoreOwner) ? (
             <SuperAdminPasswordReset initialQuery={passwordResetQuery} />
           ) : null}

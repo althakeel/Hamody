@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { isAuthorizedCronRequest } from '@/lib/cronAuth';
-import { runLowStockDigest } from '@/lib/lowStockDigest';
+import { runAllLowStockDigests } from '@/lib/lowStockDigest';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -12,7 +12,7 @@ export async function GET(request) {
 
   try {
     const dryRun = new URL(request.url).searchParams.get('dryRun') === '1';
-    const result = await runLowStockDigest({ dryRun });
+    const result = await runAllLowStockDigests({ dryRun });
     return NextResponse.json({ success: true, ...result });
   } catch (error) {
     console.error('[cron/low-stock-digest]', error);

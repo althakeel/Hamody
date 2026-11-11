@@ -5,8 +5,15 @@ import { invalidateCategorySliderCaches } from '@/lib/categorySliderCache';
 import { resolveCategorySliderAccess, buildCategorySliderFilter } from '@/lib/categorySliderAccess';
 import { normalizeCategorySliderBackground, normalizeCategorySliderSideImagePosition, normalizeCategorySliderAutoSlide, normalizeCategorySliderAutoSlideInterval, normalizeCategorySliderShowOutOfStock, normalizeCategorySliderMobileImageRatio } from '@/lib/categorySliderTheme';
 import { normalizeCategorySliderViewAll } from '@/lib/categorySliderViewAll';
+import { normalizeCategorySliderSideImageLink, serializeCategorySliderSideImageLink } from '@/lib/categorySliderSideImageLink';
 import { allocateCategorySliderSlug, nextCategorySliderSlugAliases } from '@/lib/categorySliderSlug';
 import { isTestSliderCopy } from '@/lib/categorySliderCopy';
+import {
+  normalizeCategorySliderBanner,
+  normalizeCategorySliderSectionType,
+  serializeCategorySliderBanner,
+  validateCategorySliderBanner,
+} from '@/lib/categorySliderBanner';
 
 function parseAuthHeader(req) {
   const auth = req.headers.get('authorization') || req.headers.get('Authorization');
@@ -38,25 +45,52 @@ export async function PUT(req, { params }) {
       return NextResponse.json({ error: 'Slider ID is required' }, { status: 400 });
     }
 
-    const { title, subtitle, titleAr, subtitleAr, productIds, sideImage, sideImageAr, mobileImage, mobileImageAr, mobileImageRatio, sideImagePosition, cardsPerRow, backgroundColor, autoSlide, autoSlideIntervalMs, showOutOfStock, viewAllEnabled, viewAllTarget, viewAllValue, slug: requestedSlug } = await req.json();
-    console.log('=== 💾 PUT SLIDER START ===');
-    console.log('💾 Received ID:', id);
-    console.log('💾 Received title:', title);
-    console.log('💾 Received subtitle:', JSON.stringify(subtitle), 'Type:', typeof subtitle);
-    console.log('💾 Received productIds:', productIds);
+    const body = await req.json();
+    const {
+      title,
+      subtitle,
+      titleAr,
+      subtitleAr,
+      productIds,
+      sideImage,
+      sideImageAr,
+      mobileImage,
+      mobileImageAr,
+      mobileImageRatio,
+      sideImagePosition,
+      cardsPerRow,
+      backgroundColor,
+      autoSlide,
+      autoSlideIntervalMs,
+      showOutOfStock,
+      viewAllEnabled,
+      viewAllTarget,
+      viewAllValue,
+      sideImageLinkEnabled,
+      sideImageLinkTarget,
+      sideImageLinkValue,
+      slug: requestedSlug,
+      sectionType: sectionTypeRaw,
+      banner: bannerRaw,
+    } = body;
+    const sectionType = normalizeCategorySliderSectionType(sectionTypeRaw);
+    const banner = normalizeCategorySliderBanner(bannerRaw || body);
 
-    if (!title || !title.trim()) {
-      return NextResponse.json(
-        { error: 'Title is required' },
-        { status: 400 }
-      );
+    const titleValue = title !== undefined && title !== null ? String(title).trim() : '';
+    if (sectionType !== 'banner' && !titleValue) {
+      return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
     const productIdsValue = Array.isArray(productIds)
       ? productIds.map((productId) => String(productId)).filter(Boolean)
       : [];
 
-    if (productIdsValue.length === 0) {
+    if (sectionType === 'banner') {
+      const bannerError = validateCategorySliderBanner(banner);
+      if (bannerError) {
+        return NextResponse.json({ error: bannerError }, { status: 400 });
+      }
+    } else if (productIdsValue.length === 0) {
       return NextResponse.json(
         { error: 'At least one product is required' },
         { status: 400 }
@@ -65,7 +99,7 @@ export async function PUT(req, { params }) {
 
     // Explicitly handle subtitle - ensure it's a string
     const subtitleValue = subtitle !== undefined && subtitle !== null ? String(subtitle).trim() : '';
-    if (isTestSliderCopy(subtitleValue) || isTestSliderCopy(title)) {
+    if (isTestSliderCopy(subtitleValue) || isTestSliderCopy(titleValue)) {
       return NextResponse.json({ error: 'Test slider text cannot be saved.' }, { status: 400 });
     }
 
@@ -83,14 +117,20 @@ export async function PUT(req, { params }) {
       : '';
 
     const current = await CategorySlider.findOne(buildCategorySliderFilter(id, scope)).select('slug slugAliases').lean();
-    const slug = await allocateCategorySliderSlug(CategorySlider, String(requestedSlug || '').trim() || title.trim(), id);
+    const slug = await allocateCategorySliderSlug(
+      CategorySlider,
+      String(requestedSlug || '').trim() || titleValue || (sectionType === 'banner' ? 'banner' : 'slider'),
+      id
+    );
 
     const updateData = {
-      title: title.trim(),
+      sectionType,
+      title: titleValue,
       subtitle: subtitleValue,
       titleAr: titleAr !== undefined && titleAr !== null ? String(titleAr).trim() : '',
       subtitleAr: subtitleAr !== undefined && subtitleAr !== null ? String(subtitleAr).trim() : '',
-      productIds: productIdsValue,
+      productIds: sectionType === 'banner' ? [] : productIdsValue,
+      banner: sectionType === 'banner' ? banner : {},
       sideImage: sideImageValue,
       sideImageAr: sideImageArValue,
       mobileImage: mobileImageValue,
@@ -103,6 +143,7 @@ export async function PUT(req, { params }) {
       autoSlideIntervalMs: normalizeCategorySliderAutoSlideInterval(autoSlideIntervalMs),
       showOutOfStock: normalizeCategorySliderShowOutOfStock(showOutOfStock),
       ...normalizeCategorySliderViewAll({ viewAllEnabled, viewAllTarget, viewAllValue }),
+      ...normalizeCategorySliderSideImageLink({ sideImageLinkEnabled, sideImageLinkTarget, sideImageLinkValue }),
       slug,
       slugAliases: nextCategorySliderSlugAliases(current?.slug, current?.slugAliases, slug),
     };
@@ -133,9 +174,11 @@ export async function PUT(req, { params }) {
 
     return NextResponse.json(
       {
-        message: 'Slider updated',
+        message: sectionType === 'banner' ? 'Banner section updated' : 'Slider updated',
         slider: {
           ...sliderData,
+          ...serializeCategorySliderBanner(sliderData),
+          ...serializeCategorySliderSideImageLink(sliderData),
           backgroundColor: normalizeCategorySliderBackground(sliderData.backgroundColor),
           autoSlide: normalizeCategorySliderAutoSlide(sliderData.autoSlide),
           autoSlideIntervalMs: normalizeCategorySliderAutoSlideInterval(sliderData.autoSlideIntervalMs),

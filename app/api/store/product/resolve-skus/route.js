@@ -3,12 +3,11 @@ import connectDB from '@/lib/mongodb';
 import Product from '@/models/Product';
 import authSeller from '@/middlewares/authSeller';
 import { getAuth } from '@/lib/firebase-admin';
-import { resolveDashboardAccess } from '@/lib/storeAccessControl';
-import { canBulkEditProducts } from '@/lib/productSaveGuards';
 import { findStoreProductsBySkus } from '@/lib/productBulkSku';
 
 export const runtime = 'nodejs';
 
+/** Read-only SKU lookup for store users (watched products, bulk tools, etc.). */
 export async function POST(request) {
   try {
     const authHeader = request.headers.get('authorization') || '';
@@ -20,13 +19,6 @@ export async function POST(request) {
     const storeId = await authSeller(decodedToken.uid);
     if (!storeId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const access = await resolveDashboardAccess(decodedToken.uid, decodedToken);
-    if (!canBulkEditProducts(access)) {
-      return NextResponse.json({
-        error: 'You do not have permission to bulk edit products. Ask the store owner to enable Bulk edit products in Team Access.',
-      }, { status: 403 });
     }
 
     const body = await request.json();

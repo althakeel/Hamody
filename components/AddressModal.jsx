@@ -174,7 +174,7 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                 state: addressToEdit.state || '',
                 district: addressToEdit.district || '',
                 zip: addressToEdit.zip || '',
-                country: addressToEdit.country || 'United Arab Emirates',
+                country: 'United Arab Emirates',
                 phone: phoneNumber,
                 phoneCode: addressToEdit.phoneCode || '+971',
                 alternatePhone: addressToEdit.alternatePhone || '',
@@ -339,6 +339,7 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
 
             const addressForValidation = {
                 ...address,
+                country: 'United Arab Emirates',
                 zip: normalizedZip,
                 phone: cleanedPhone,
             };
@@ -356,6 +357,7 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
             // Prepare address data with userId from authenticated user
             const addressData = {
                 ...address,
+                country: 'United Arab Emirates',
                 street: composeAddressStreetLine(address),
                 phone: cleanedPhone,
             };
@@ -760,27 +762,14 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
 
                     <div>
                         <label className="mb-1 block text-xs font-semibold text-slate-600">Country</label>
-                        <SearchableSelect
-                            value={address.country}
-                            onChange={(value) => {
-                                const selectedCountry = countries.find((country) => country.name === value);
-                                setAddress({
-                                    ...address,
-                                    country: value,
-                                    state: '',
-                                    district: '',
-                                    zip: '',
-                                    phoneCode: selectedCountry?.code || '+971',
-                                });
-                                setPincodeError('');
-                            }}
-                            options={countries.map((country) => country.name)}
-                            placeholder="Select country"
-                            triggerClassName="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left text-sm text-slate-900 outline-none"
-                            searchPlaceholder="Search country..."
-                            emptyMessage="No countries found"
-                            required
+                        <input
+                            type="text"
+                            value="United Arab Emirates"
+                            readOnly
+                            aria-readonly="true"
+                            className="w-full cursor-default rounded-xl border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm text-slate-700 outline-none"
                         />
+                        <input type="hidden" name="country" value="United Arab Emirates" />
                     </div>
                     </div>
 

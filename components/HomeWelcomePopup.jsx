@@ -60,23 +60,24 @@ export default function HomeWelcomePopup() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    const controller = new AbortController();
+    let cancelled = false;
     let timer = 0;
     import('@/lib/storefrontPublicFetch')
-      .then(({ fetchAppearanceSectionsPublic }) => fetchAppearanceSectionsPublic({ signal: controller.signal }))
+      .then(({ fetchAppearanceSectionsPublic }) => fetchAppearanceSectionsPublic())
       .then((data) => {
+        if (cancelled) return;
         const next = getLiveHomePopup(data?.homeWelcomePopup);
         setSettings(next);
         if (!next.enabled || !popupMatchesPath(next, pathname) || dismissedRecently(next.dismissFor)) return;
         timer = window.setTimeout(() => {
-          if (controller.signal.aborted) return;
+          if (cancelled) return;
           setOpen(true);
           trackPopupEvent(next.id, 'view');
         }, next.delaySeconds * 1000);
       })
       .catch(() => {});
     return () => {
-      controller.abort();
+      cancelled = true;
       window.clearTimeout(timer);
     };
   }, [pathname]);

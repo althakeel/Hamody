@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { HOME_SECTION_STACK_CLASS } from '@/lib/storefrontCarousel';
 import { hasShowcaseBannerImage } from '@/lib/showcaseBannerImages';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
@@ -8,15 +9,45 @@ import { findTopDealsSection } from '@/lib/homeTopDeals';
 
 import HeroBannerSlider from '@/components/HeroBannerSlider';
 import ShopShowcaseSection from '@/components/ShopShowcaseSection';
-import LatestProducts from '@/components/LatestProducts';
-import Section3 from '@/components/section3';
-import Section4 from '@/components/section4';
-import BannerSlider from '@/components/BannerSlider';
-import BannerSlider2 from '@/components/BannerSlider2';
-import HomeCategories from '@/components/HomeCategories';
-import CategoryInterestSection from '@/components/CategoryInterestSection';
-import RecentSearchProducts from '@/components/RecentSearchProducts';
-import RecommendedProducts from '@/components/RecommendedProducts';
+import LazyMount from '@/components/LazyMount';
+
+// Keep above-the-fold light: defer heavy product sections until near viewport / after JS chunks load.
+const LatestProducts = dynamic(() => import('@/components/LatestProducts'), {
+  ssr: false,
+  loading: () => <div className="min-h-[220px]" aria-hidden />,
+});
+const Section3 = dynamic(() => import('@/components/section3'), {
+  ssr: false,
+  loading: () => <div className="min-h-[200px]" aria-hidden />,
+});
+const Section4 = dynamic(() => import('@/components/section4'), {
+  ssr: false,
+  loading: () => <div className="min-h-[240px]" aria-hidden />,
+});
+const BannerSlider = dynamic(() => import('@/components/BannerSlider'), {
+  ssr: false,
+  loading: () => null,
+});
+const BannerSlider2 = dynamic(() => import('@/components/BannerSlider2'), {
+  ssr: false,
+  loading: () => null,
+});
+const HomeCategories = dynamic(() => import('@/components/HomeCategories'), {
+  ssr: false,
+  loading: () => null,
+});
+const CategoryInterestSection = dynamic(() => import('@/components/CategoryInterestSection'), {
+  ssr: false,
+  loading: () => null,
+});
+const RecentSearchProducts = dynamic(() => import('@/components/RecentSearchProducts'), {
+  ssr: false,
+  loading: () => null,
+});
+const RecommendedProducts = dynamic(() => import('@/components/RecommendedProducts'), {
+  ssr: false,
+  loading: () => null,
+});
 
 export default function HomePageClient({ initialData }) {
   const { isArabic } = useStorefrontI18n();
@@ -77,38 +108,70 @@ export default function HomePageClient({ initialData }) {
           initialStoreSettings={storeSettings}
           skipInitialFetch
         />
-        {showSecondaryBannerAt('below_small_banners') && <BannerSlider2 config={shopShowcaseConfig} />}
-        {showHeroCategories ? <HomeCategories /> : null}
-
-        <LatestProducts
-          initialProducts={featuredList}
-          initialSectionTitle={featuredProducts.sectionTitleEn || featuredProducts.sectionTitle}
-          initialSectionDescription={
-            featuredProducts.sectionDescriptionEn || featuredProducts.sectionDescription
-          }
-          initialSectionTitleAr={featuredProducts.sectionTitleAr || ''}
-          initialSectionDescriptionAr={featuredProducts.sectionDescriptionAr || ''}
-          initialLayout={appearance?.homeMenuCategories}
-        />
-        {featuredSectionsCount === 0 && <BannerSlider config={shopShowcaseConfig} />}
-        {showSecondaryBannerAt('above_top_deals') && <BannerSlider2 config={shopShowcaseConfig} />}
-
-        <Section3
-          homeSections={homeSections}
-          sectionsLoading={false}
-          initialProducts={topDealsProducts}
-          initialTitle={findTopDealsSection(homeSections)?.title || ''}
-        />
-
-        {showSecondaryBannerAt('below_top_deals') && <BannerSlider2 config={shopShowcaseConfig} />}
-
-        {featuredSectionsCount > 0 ? (
-          <Section4 sections={featuredSections} loading={false} />
+        {showSecondaryBannerAt('below_small_banners') ? (
+          <LazyMount rootMargin="100px 0px" minHeight={120}>
+            <BannerSlider2 config={shopShowcaseConfig} />
+          </LazyMount>
+        ) : null}
+        {showHeroCategories ? (
+          <LazyMount rootMargin="80px 0px" minHeight={72}>
+            <HomeCategories />
+          </LazyMount>
         ) : null}
 
-        <CategoryInterestSection />
-        <RecentSearchProducts />
-        <RecommendedProducts />
+        <LazyMount rootMargin="60px 0px" minHeight={240}>
+          <LatestProducts
+            initialProducts={featuredList}
+            initialSectionTitle={featuredProducts.sectionTitleEn || featuredProducts.sectionTitle}
+            initialSectionDescription={
+              featuredProducts.sectionDescriptionEn || featuredProducts.sectionDescription
+            }
+            initialSectionTitleAr={featuredProducts.sectionTitleAr || ''}
+            initialSectionDescriptionAr={featuredProducts.sectionDescriptionAr || ''}
+            initialLayout={appearance?.homeMenuCategories}
+          />
+        </LazyMount>
+        {featuredSectionsCount === 0 ? (
+          <LazyMount rootMargin="100px 0px" minHeight={140}>
+            <BannerSlider config={shopShowcaseConfig} />
+          </LazyMount>
+        ) : null}
+        {showSecondaryBannerAt('above_top_deals') ? (
+          <LazyMount rootMargin="100px 0px" minHeight={120}>
+            <BannerSlider2 config={shopShowcaseConfig} />
+          </LazyMount>
+        ) : null}
+
+        <LazyMount rootMargin="100px 0px" minHeight={220}>
+          <Section3
+            homeSections={homeSections}
+            sectionsLoading={false}
+            initialProducts={topDealsProducts}
+            initialTitle={findTopDealsSection(homeSections)?.title || ''}
+          />
+        </LazyMount>
+
+        {showSecondaryBannerAt('below_top_deals') ? (
+          <LazyMount rootMargin="100px 0px" minHeight={120}>
+            <BannerSlider2 config={shopShowcaseConfig} />
+          </LazyMount>
+        ) : null}
+
+        {featuredSectionsCount > 0 ? (
+          <LazyMount rootMargin="100px 0px" minHeight={320}>
+            <Section4 sections={featuredSections} loading={false} />
+          </LazyMount>
+        ) : null}
+
+        <LazyMount rootMargin="80px 0px" minHeight={280}>
+          <CategoryInterestSection />
+        </LazyMount>
+        <LazyMount rootMargin="80px 0px" minHeight={200}>
+          <RecentSearchProducts />
+        </LazyMount>
+        <LazyMount rootMargin="80px 0px" minHeight={280}>
+          <RecommendedProducts />
+        </LazyMount>
       </div>
     </div>
   );

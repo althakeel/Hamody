@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/useAuth'
+import { isAdminEmail } from '@/lib/adminEmails'
 import toast from 'react-hot-toast'
 import { PlusIcon, EditIcon, TrashIcon, TicketIcon, XIcon, PercentIcon, DollarSignIcon, PackageIcon, UserIcon, ClockIcon, ToggleLeftIcon, ToggleRightIcon, SearchIcon } from 'lucide-react'
 
@@ -58,7 +59,8 @@ function payloadNumber(value, emptyValue) {
 
 
 export default function StoreCouponsPage() {
-    const { getToken } = useAuth();
+    const { getToken, user } = useAuth();
+    const isSuperAdmin = isAdminEmail(user?.email);
     const [coupons, setCoupons] = useState([])
     const [loading, setLoading] = useState(true)
     const [showModal, setShowModal] = useState(false)
@@ -718,7 +720,7 @@ export default function StoreCouponsPage() {
                         </div>
 
                         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[calc(90vh-120px)] overflow-y-auto">
-                            {/* Coupon Code */}
+                            {/* Coupon Code — only Super Admin can rename an existing code */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Coupon Code *
@@ -728,10 +730,17 @@ export default function StoreCouponsPage() {
                                     value={formData.code}
                                     onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value.toUpperCase().trim() }))}
                                     required
-                                    disabled={!!editingCoupon}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 uppercase"
+                                    disabled={Boolean(editingCoupon) && !isSuperAdmin}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 uppercase disabled:bg-gray-100 disabled:text-gray-500"
                                     placeholder="SUMMER2024"
                                 />
+                                {editingCoupon ? (
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        {isSuperAdmin
+                                            ? 'Super admin can change the code. Customers must use the new code after Update.'
+                                            : 'Only the super admin can change an existing coupon code.'}
+                                    </p>
+                                ) : null}
                             </div>
 
                             {/* Description */}

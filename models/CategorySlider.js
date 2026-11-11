@@ -1,5 +1,19 @@
 import mongoose from 'mongoose';
 
+const CategorySliderBannerSchema = new mongoose.Schema(
+  {
+    image: { type: String, trim: true, default: '' },
+    tabletImage: { type: String, trim: true, default: '' },
+    mobileImage: { type: String, trim: true, default: '' },
+    imageAr: { type: String, trim: true, default: '' },
+    tabletImageAr: { type: String, trim: true, default: '' },
+    mobileImageAr: { type: String, trim: true, default: '' },
+    link: { type: String, trim: true, default: '' },
+    alt: { type: String, trim: true, default: '' },
+  },
+  { _id: false },
+);
+
 const CategorySliderSchema = new mongoose.Schema(
   {
     storeId: {
@@ -7,10 +21,17 @@ const CategorySliderSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    sectionType: {
+      type: String,
+      enum: ['slider', 'banner'],
+      default: 'slider',
+      index: true,
+    },
     title: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
+      default: '',
     },
     subtitle: {
       type: String,
@@ -34,6 +55,10 @@ const CategorySliderSchema = new mongoose.Schema(
       type: [String],
       required: true,
       default: [],
+    },
+    banner: {
+      type: CategorySliderBannerSchema,
+      default: () => ({}),
     },
     sideImage: {
       type: String,
@@ -106,6 +131,20 @@ const CategorySliderSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    sideImageLinkEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    sideImageLinkTarget: {
+      type: String,
+      default: 'category',
+      enum: ['category', 'brand', 'landing', 'page', 'custom'],
+    },
+    sideImageLinkValue: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     slug: {
       type: String,
       default: '',
@@ -156,6 +195,10 @@ if (mongoose.models.CategorySlider && !mongoose.models.CategorySlider.schema.pat
 }
 
 if (mongoose.models.CategorySlider && !mongoose.models.CategorySlider.schema.paths.viewAllEnabled) {
+  delete mongoose.models.CategorySlider;
+}
+
+if (mongoose.models.CategorySlider && !mongoose.models.CategorySlider.schema.paths.sideImageLinkEnabled) {
   delete mongoose.models.CategorySlider;
 }
 

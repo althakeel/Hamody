@@ -179,13 +179,14 @@ export default function ShowcaseLargeBannerSlider({
   ].filter(Boolean).join(' ');
 
   const isFullBleed = bannerVariant === 'full';
-  const desktopWidth = isFullBleed ? 2560 : bannerVariant === 'secondary' ? 1100 : 1400;
-  const displayQuality = isFullBleed ? 90 : 72;
+  // Cap widths/quality so hero LCP does not download multi‑MB originals on every visit.
+  const desktopWidth = isFullBleed ? 1920 : bannerVariant === 'secondary' ? 1100 : 1400;
+  const displayQuality = isFullBleed ? 75 : 72;
   const deviceWidths = {
-    mobile: isFullBleed ? 1280 : 800,
-    tablet: isFullBleed ? 1920 : 1100,
+    mobile: isFullBleed ? 960 : 800,
+    tablet: isFullBleed ? 1400 : 1100,
     desktop: desktopWidth,
-    wide: isFullBleed ? 3840 : 2560,
+    wide: isFullBleed ? 1920 : 1600,
   };
   const fullBannerStyle = bannerVariant === 'full'
     ? { height: 'auto', maxHeight: 'none', width: '100%', maxWidth: 'none', borderRadius: 0 }

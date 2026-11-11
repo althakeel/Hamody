@@ -334,6 +334,22 @@ export default function HomePopupCustomizePage() {
               </div>
               </div>
 
+            {form.layout === 'image-only' ? (
+              <div className="rounded-xl border-2 border-amber-300 bg-amber-50 p-4">
+                <Field label="Click link (opens when the image is clicked)">
+                  <input
+                    value={form.buttonLink}
+                    onChange={(event) => setField('buttonLink', event.target.value)}
+                    placeholder="/shop or https://store1920.com/offers"
+                    className={inputClass}
+                  />
+                  <span className="text-xs text-amber-800">
+                    Paste the page URL here, then Save popup. Example: /shop
+                  </span>
+                </Field>
+              </div>
+            ) : null}
+
             {form.layout === 'split' ? (
               <div>
                 <p className="text-sm font-semibold text-slate-700">Image side</p>
