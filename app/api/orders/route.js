@@ -27,7 +27,6 @@ import {
 } from '@/lib/deferredOrderFlow';
 import { allocateShortOrderNumber } from '@/lib/orderNumber';
 import { ensurePersistedShortOrderNumber, ensurePersistedShortOrderNumbers } from '@/lib/orderDisplayServer';
-import { fetchNormalizedDelhiveryTracking } from '@/lib/delhivery';
 import { createTamaraSession } from '@/lib/tamara';
 import {
     VAULTSPAY_CALLBACK_PATH,
@@ -72,7 +71,6 @@ import { evaluateCheckoutFraud } from '@/lib/paymentFraud';
 import { logPaymentEvent } from '@/lib/paymentTransactionLog';
 import { reserveOrderStockAtomically } from '@/lib/orderStockReservation';
 import { resolveOrderInventoryUnits } from '@/lib/orderStockReservationPlan';
-import { getVerifiedRazorpayOrder } from '@/lib/razorpayVerifiedOrderContext';
 import { getTrustedManualStoreOrder } from '@/lib/manualStoreOrderContext';
 import {
   matchVariantByOptions,
@@ -86,14 +84,6 @@ import {
     normalizeCustomerPickupRule,
 } from '@/lib/customerPickup';
 import { parseWithSchema } from '@/lib/apiValidate';
-
-const PaymentMethod = {
-    COD: 'COD',
-    STRIPE: 'STRIPE',
-    CARD: 'CARD',
-    RAZORPAY: 'RAZORPAY',
-    WALLET: 'WALLET'
-};
 
 async function getReferralRewardCoins(storeId) {
     if (!storeId) return 25;
@@ -143,9 +133,6 @@ export async function POST(request) {
             guestInfo,
             coinsToRedeem,
             paymentStatus,
-            razorpayPaymentId,
-            razorpayOrderId,
-            razorpaySignature,
             trackingContext,
             attribution,
             recoveryToken: recoveryTokenInput,
@@ -165,32 +152,6 @@ export async function POST(request) {
             return NextResponse.json({
                 error: 'Manual store orders must be created from an authenticated store workflow',
                 code: 'MANUAL_STORE_ORDER_FORBIDDEN',
-            }, { status: 403 });
-        }
-
-        const verifiedRazorpayOrder = getVerifiedRazorpayOrder();
-        const suppliedRazorpayPaymentId = String(razorpayPaymentId || '');
-        const suppliedRazorpayOrderId = String(razorpayOrderId || '');
-        const suppliedRazorpaySignature = String(razorpaySignature || '');
-        const hasRazorpayPaymentDetails = Boolean(
-            suppliedRazorpayPaymentId
-            || suppliedRazorpayOrderId
-            || suppliedRazorpaySignature
-        );
-        const isVerifiedRazorpayOrder = Boolean(
-            hasRazorpayPaymentDetails
-            && suppliedRazorpayPaymentId === verifiedRazorpayOrder?.paymentId
-            && suppliedRazorpayOrderId === verifiedRazorpayOrder?.orderId
-            && suppliedRazorpaySignature === verifiedRazorpayOrder?.signature
-        );
-
-        // Razorpay payment details are accepted only inside the server-verified
-        // flow. A public caller cannot turn CARD into a paid order by replaying
-        // provider ids or a previously issued checkout signature.
-        if (hasRazorpayPaymentDetails && !isVerifiedRazorpayOrder) {
-            return NextResponse.json({
-                error: 'Razorpay payment must be verified before order creation',
-                code: 'RAZORPAY_VERIFICATION_REQUIRED',
             }, { status: 403 });
         }
 
@@ -814,9 +775,8 @@ export async function POST(request) {
             };
 
             const normalizedPaymentMethod = String(paymentMethod || '').toUpperCase();
-            const paidOnlineMethods = new Set(['CARD', 'RAZORPAY', 'UPI', 'NETBANKING', 'ONLINE', 'PREPAID', 'WALLET']);
-            const prepaidCapturedAtCreate = normalizedPaymentMethod === 'CARD'
-                && isVerifiedRazorpayOrder;
+            const paidOnlineMethods = new Set(['ONLINE', 'PREPAID', 'WALLET']);
+            const prepaidCapturedAtCreate = false;
             const deferPaymentAtCreate = isDeferredPaymentMethod(paymentMethod)
                 && !prepaidCapturedAtCreate;
 
@@ -851,10 +811,6 @@ export async function POST(request) {
                     orderData.paymentStatus = paymentStatus || 'PAID';
                 }
             }
-
-            if (razorpayPaymentId) orderData.razorpayPaymentId = razorpayPaymentId;
-            if (razorpayOrderId) orderData.razorpayOrderId = razorpayOrderId;
-            if (razorpaySignature) orderData.razorpaySignature = razorpaySignature;
 
             if (trackingContext && typeof trackingContext === 'object') {
                 const hasTracking = trackingContext.anonymousId
@@ -1773,25 +1729,6 @@ export async function GET(request) {
         
         const limit = parseInt(searchParams.get('limit') || '20', 10);
         const offset = parseInt(searchParams.get('offset') || '0', 10);
-        
-        const paidOnlineMethods = [
-            PaymentMethod.STRIPE,
-            PaymentMethod.CARD,
-            PaymentMethod.RAZORPAY,
-            PaymentMethod.WALLET,
-            'PREPAID',
-            'ONLINE',
-            'UPI',
-            'NETBANKING',
-            'CARD',
-            'card',
-            'razorpay',
-            'wallet',
-            'prepaid',
-            'online',
-            'upi',
-            'netbanking',
-        ];
 
         const orders = await Order.find({ userId })
         .populate({

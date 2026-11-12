@@ -4,7 +4,6 @@ import connectDB from '@/lib/mongodb';
 import Order from '@/models/Order';
 import Product from '@/models/Product';
 import Address from '@/models/Address';
-import { fetchNormalizedDelhiveryTracking } from '@/lib/delhivery';
 import AbandonedCart from '@/models/AbandonedCart';
 import { attachConversionToOrders } from '@/lib/storeOrderInsights';
 import { batchPopulateOrderUsers } from '@/lib/storeOrderUsers';
@@ -223,7 +222,6 @@ export async function GET(request){
         await connectDB();
 
         const { searchParams } = new URL(request.url);
-        const includeDelhivery = searchParams.get('withDelhivery') === 'true';
         const includeWaslah = searchParams.get('withWaslah') !== 'false';
         
         // Firebase Auth: Extract token from Authorization header
@@ -368,39 +366,6 @@ export async function GET(request){
             Promise.all(bundleRepairUpdates).catch(() => {});
         }
 
-        if (includeDelhivery) {
-            const shouldFetchDelhivery = (order) => {
-                const trackingId = order.trackingId || order.awb || order.airwayBillNo;
-                const courier = (order.courier || '').toLowerCase();
-                const isTerminal = ['DELIVERED', 'RTO', 'RETURN', 'RETURNED'].includes(order.status);
-                return Boolean(trackingId) && (courier.includes('delhivery') || !order.trackingUrl) && !isTerminal;
-            };
-
-            const MAX_DELHIVERY_ENRICH = 20;
-            let delhiveryEnriched = 0;
-
-            enrichedOrders = await Promise.all(enrichedOrders.map(async (order) => {
-                if (!shouldFetchDelhivery(order) || delhiveryEnriched >= MAX_DELHIVERY_ENRICH) return order;
-                delhiveryEnriched += 1;
-                const trackingId = order.trackingId || order.awb || order.airwayBillNo;
-                try {
-                    const normalized = await fetchNormalizedDelhiveryTracking(trackingId);
-                    if (normalized) {
-                        return {
-                            ...order,
-                            courier: normalized.courier || order.courier,
-                            trackingId: normalized.trackingId || order.trackingId,
-                            trackingUrl: normalized.trackingUrl || order.trackingUrl,
-                            delhivery: normalized.delhivery
-                        };
-                    }
-                } catch (dlErr) {
-                    debugLog('Delhivery enrichment failed for order', order._id, dlErr?.message || dlErr);
-                }
-                return order;
-            }));
-        }
-
         if (includeWaslah) {
             try {
                 const { syncWaslahStatusForOrders } = await import('@/lib/waslahOrderStatusSync');
@@ -415,7 +380,7 @@ export async function GET(request){
             }
         }
 
-        // Hydrate catalog name/images AFTER Waslah/Delhivery sync. Those paths can
+        // Hydrate catalog name/images AFTER Waslah sync. Those paths can
         // re-read lean orders and wipe populated orderItems.productId.
         enrichedOrders = await hydrateOrderItemProducts(enrichedOrders);
 

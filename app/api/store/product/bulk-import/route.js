@@ -15,6 +15,13 @@ import {
   isVariableImportProductRow,
   parseImportRowType,
 } from '@/lib/productImportTypes';
+import {
+  attachColorVariant,
+  findStoreProductBySku,
+  normalizeProductTitle,
+  normalizeSku,
+  productSkus,
+} from '@/lib/productSkuIdentity';
 
 const KNOWN_BADGES = [
   'Price Lower Than Usual',
@@ -818,15 +825,24 @@ export async function POST(request) {
           ? await Product.findOne({ slug: baseSlug, storeId }).lean()
           : null;
         let matchedVariantIndex = -1;
-        let existingBySku = sku ? await Product.findOne({ sku, storeId }).lean() : null;
-        if (!existingBySku && sku) {
-          existingBySku = await Product.findOne({ storeId, 'variants.sku': sku }).lean();
-          if (existingBySku) {
-            matchedVariantIndex = (Array.isArray(existingBySku.variants) ? existingBySku.variants : [])
-              .findIndex((variant) => String(variant?.sku || '').trim() === sku);
+        const skuMatch = sku ? await findStoreProductBySku(storeId, sku) : null;
+        let existingBySku = skuMatch?.product || null;
+        if (existingBySku && skuMatch.variantIndex >= 0) {
+          matchedVariantIndex = skuMatch.variantIndex;
+        }
+        let existingProduct = existingBySku || existingByStoreId || existingByLegacySourceId || existingBySlug;
+        let absorbInto = null;
+        if (!existingProduct) {
+          const baseProduct = await Product.findOne({ slug: baseSlug, storeId }).lean()
+            || await Product.findOne({ slug: baseSlug }).lean();
+          if (baseProduct && normalizeProductTitle(baseProduct.name) === normalizeProductTitle(name)) {
+            if (!sku || productSkus(baseProduct).includes(normalizeSku(sku))) {
+              existingProduct = baseProduct;
+            } else {
+              absorbInto = baseProduct;
+            }
           }
         }
-        const existingProduct = existingBySku || existingByStoreId || existingByLegacySourceId || existingBySlug;
         const salePriceRaw = getFirstPresentValue(row['Sale price'], row.price, row.Price, row['Sale Price']);
         const regularPriceRaw = getFirstPresentValue(row['Regular price'], row.mrp, row.MRP, row['Regular Price']);
         const salePriceProvided = String(salePriceRaw ?? '').trim() !== '';
@@ -858,12 +874,16 @@ export async function POST(request) {
           continue;
         }
 
-        const existingSlugAnywhere = await Product.findOne({ slug: baseSlug }).lean();
+        const existingSlugAnywhere = absorbInto
+          ? absorbInto
+          : await Product.findOne({ slug: baseSlug }).lean();
         const slug = existingProduct
           ? existingProduct.slug || baseSlug
-          : existingSlugAnywhere
-            ? await ensureUniqueSlug(baseSlug)
-            : baseSlug;
+          : absorbInto
+            ? absorbInto.slug || baseSlug
+            : existingSlugAnywhere
+              ? await ensureUniqueSlug(baseSlug)
+              : baseSlug;
 
         const descriptionRaw = getFirstPresentValue(
           row.Description,
@@ -985,9 +1005,25 @@ export async function POST(request) {
           categoryIds = await ensureFallbackCategoryId();
         }
 
-        if (!categoryIds.length && !existingProduct) {
+        if (!categoryIds.length && !existingProduct && !absorbInto) {
           failed += 1;
           failures.push({ row: rowNumber, reason: 'Unable to create fallback category' });
+          continue;
+        }
+
+        if (absorbInto) {
+          await attachColorVariant(absorbInto, {
+            sku,
+            price,
+            AED: regularPrice,
+            stockQuantity,
+            inStock: stockQuantity > 0,
+            images: mirroredImageResult.finalUrls,
+            categories: categoryIds,
+            category: categoryIds[0],
+            published: true,
+          });
+          updated += 1;
           continue;
         }
 
@@ -1138,15 +1174,21 @@ export async function POST(request) {
           if (!String(brand || '').trim() && existingProduct.brand) {
             updatePayload.brand = existingProduct.brand;
           }
-          if (
-            existingProduct.categories?.length
-            && (
-              (!Array.isArray(categoryIds) || categoryIds.length === 0)
-              || (fromTemplate && !String(row.Categories || row.categories || '').trim())
-            )
-          ) {
-            updatePayload.categories = existingProduct.categories;
-            updatePayload.category = existingProduct.category || existingProduct.categories[0];
+          const mergedCategoryIds = [...new Set(
+            [
+              ...(existingProduct.categories || []),
+              existingProduct.category,
+              ...(Array.isArray(categoryIds) ? categoryIds : []),
+            ]
+              .filter(Boolean)
+              .map(String),
+          )];
+          if (mergedCategoryIds.length) {
+            updatePayload.categories = mergedCategoryIds;
+            const currentPrimary = String(existingProduct.category || '');
+            updatePayload.category = mergedCategoryIds.includes(currentPrimary)
+              ? currentPrimary
+              : mergedCategoryIds[0];
           }
           const explicitType = String(row.Type || row.type || '').trim();
           if (!variants.length && existingProduct.hasVariants && existingProduct.variants?.length) {

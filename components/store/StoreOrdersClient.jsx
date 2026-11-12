@@ -9,7 +9,7 @@ import PageSkeleton from "@/components/PageSkeleton";
 import { readPageCache, writePageCache, clearPageCache } from "@/lib/storePageCache";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { Package, Truck, X, Download, Printer, RefreshCw, MapPin, Trash2, CalendarClock, AlertTriangle, Search, Plus, ArrowUp, ArrowDown, ArrowUpDown, History, Pencil, Filter, Phone, Undo2, CheckCircle2, FileText, Link2, Copy } from "lucide-react";
+import { Package, Truck, X, Download, Printer, RefreshCw, Trash2, CalendarClock, AlertTriangle, Search, Plus, ArrowUp, ArrowDown, ArrowUpDown, History, Pencil, Filter, Phone, Undo2, CheckCircle2, FileText, Link2, Copy } from "lucide-react";
 import StoreCreateOrderModal from '@/components/store/StoreCreateOrderModal';
 import StoreNotifyRequestsCard from '@/components/store/StoreNotifyRequestsCard';
 import PaymentFailedCallCustomerModal from '@/components/store/PaymentFailedCallCustomerModal';
@@ -120,7 +120,6 @@ function buildDateRangeSummary(fromDate, toDate, fromTime = DEFAULT_ORDER_FILTER
     return '';
 }
 import { downloadInvoice, printInvoice } from "@/lib/generateInvoice";
-import { schedulePickup } from '@/lib/delhivery';
 import { STORE_ORDER_NOTIFICATION_EVENT, STORE_ORDER_TOAST_ID, dispatchStoreOrdersImportEnd, dispatchStoreOrdersImportStart } from '@/lib/storeOrderNotifications';
 import {
     formatConversionDiscount,
@@ -802,7 +801,6 @@ export default function StoreOrders() {
     const [serverStats, setServerStats] = useState(null);
     const [sortBy, setSortBy] = useState('date');
     const [sortDirection, setSortDirection] = useState('desc');
-    const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
     const [paymentFailedCallOrder, setPaymentFailedCallOrder] = useState(null);
     const [savingPaymentFailedFollowUp, setSavingPaymentFailedFollowUp] = useState(false);
     const [recheckingPaymentOrderId, setRecheckingPaymentOrderId] = useState(null);
@@ -810,7 +808,6 @@ export default function StoreOrders() {
     const [creatingPaymentLinkMethod, setCreatingPaymentLinkMethod] = useState('');
     const [paymentLinkAmount, setPaymentLinkAmount] = useState('');
     const [vaultsPayLink, setVaultsPayLink] = useState(null);
-    const [schedulingPickup, setSchedulingPickup] = useState(false);
     const [sendingToC3xpress, setSendingToC3xpress] = useState(false);
     const [showCommunicationHistory, setShowCommunicationHistory] = useState(false);
     const [communicationHistory, setCommunicationHistory] = useState([]);
@@ -840,7 +837,6 @@ export default function StoreOrders() {
     const centerConfirmResolverRef = useRef(null);
     const [centerNotice, setCenterNotice] = useState(null);
     const [centerProgress, setCenterProgress] = useState(null);
-    const [refreshInterval, setRefreshInterval] = useState(30); // seconds
     const [liveOrderAlert, setLiveOrderAlert] = useState('');
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [returnActionType, setReturnActionType] = useState(null);
@@ -848,25 +844,7 @@ export default function StoreOrders() {
     const [submittingReturnAction, setSubmittingReturnAction] = useState(false);
     const [rejectReason, setRejectReason] = useState('');
     const [rejectingReturnIndex, setRejectingReturnIndex] = useState(null);
-    const [ltlPickupData, setLtlPickupData] = useState({
-        client_warehouse: '',
-        pickup_date: '',
-        start_time: '',
-        expected_package_count: 1
-    });
-    const [ltlLabelSize, setLtlLabelSize] = useState('std');
-    const [ltlLoading, setLtlLoading] = useState(false);
-    const [awbManifestData, setAwbManifestData] = useState({
-        pickup_location_name: '',
-        payment_mode: 'cod',
-        cod_amount: 0,
-        weight: 1000,
-        dimensions: [{ box_count: 1, length_cm: 10, width_cm: 10, height_cm: 10 }],
-        dropoff_location: {}
-    });
-    const [generatingAwb, setGeneratingAwb] = useState(false);
     const [savingLineStatusIndex, setSavingLineStatusIndex] = useState(null);
-    const refreshIntervalRef = useRef(null);
     const waslahStatusRefreshInFlightRef = useRef(new Set());
     const selectedOrderIdRef = useRef('');
     const router = useRouter();
@@ -877,85 +855,6 @@ export default function StoreOrders() {
     selectedOrderIdRef.current = String(selectedOrder?._id || '');
 
     const { user, getToken, loading: authLoading } = useAuth();
-
-    const callCourierProxy = async (action, params, data) => {
-        setLtlLoading(true);
-        try {
-            const token = await getToken(true);
-            if (!token) {
-                toast.error('Authentication failed. Please sign in again.');
-                return;
-            }
-            const response = await axios.post('/api/store/courior/proxy', {
-                action,
-                params,
-                data
-            }, {
-                headers: { Authorization: `Bearer ${token}` },
-                timeout: 15000
-            });
-
-            toast.success('Courier action completed');
-            return response.data?.data;
-        } catch (error) {
-            console.error('[Courier action] error:', error);
-            toast.error(error?.response?.data?.error || 'Courier action failed');
-            return null;
-        } finally {
-            setLtlLoading(false);
-        }
-    };
-
-    // Map Delhivery live status (current_status + latest event) to internal order status
-    const mapDelhiveryStatusToOrderStatus = (delhivery, currentStatus) => {
-        if (!delhivery) return null;
-
-        const texts = [];
-        if (delhivery.current_status) {
-            texts.push(delhivery.current_status.toLowerCase());
-        }
-
-        if (Array.isArray(delhivery.events) && delhivery.events.length > 0) {
-            const latestEvent = delhivery.events[delhivery.events.length - 1];
-            if (latestEvent?.status) {
-                texts.push(latestEvent.status.toLowerCase());
-            }
-        }
-
-        if (texts.length === 0) return null;
-        const combined = texts.join(' | ');
-
-        if (combined.includes('delivered')) return 'DELIVERED';
-        if (combined.includes('out for delivery')) return 'OUT_FOR_DELIVERY';
-        if (combined.includes('picked up') || combined.includes('picked-up')) return 'PICKED_UP';
-        if (combined.includes('pickup requested')) return 'PICKUP_REQUESTED';
-        if (combined.includes('waiting for pickup')) return 'WAITING_FOR_PICKUP';
-        if (combined.includes('warehouse') || combined.includes('hub')) return 'WAREHOUSE_RECEIVED';
-
-        // Treat generic "pending" as order is being processed
-        if (combined.includes('pending')) {
-            if (currentStatus === 'ORDER_PLACED') return 'PROCESSING';
-            return currentStatus;
-        }
-
-        if (
-            combined.includes('in transit') ||
-            combined.includes('dispatched') ||
-            combined.includes('shipped') ||
-            combined.includes('forwarded')
-        ) {
-            if (
-                currentStatus === 'ORDER_PLACED' ||
-                currentStatus === 'PROCESSING' ||
-                currentStatus === 'WAITING_FOR_PICKUP' ||
-                currentStatus === 'PICKUP_REQUESTED'
-            ) {
-                return 'SHIPPED';
-            }
-        }
-
-        return null;
-    };
 
     const mapWaslahToOrderStatus = (waslah, currentStatus, order = null) => {
         if (!waslah) return null;
@@ -1608,16 +1507,6 @@ export default function StoreOrders() {
             return;
         }
 
-        // If courier is not set, assume Delhivery (for AWB-based tracking)
-        if (!courierName) {
-            courierName = 'Delhivery';
-        }
-
-        // For Delhivery, if no tracking URL entered, auto-generate using AWB
-        if (!trackingUrl && courierName.toLowerCase() === 'delhivery') {
-            trackingUrl = `https://www.delhivery.com/track-v2/package/${encodeURIComponent(awb)}`;
-        }
-
         // Auto-move status forward when tracking is added
         // If the order is still ORDER_PLACED or PROCESSING, treat it as SHIPPED
         let nextStatus = selectedOrder.status;
@@ -1640,7 +1529,7 @@ export default function StoreOrders() {
             // Refresh orders list
             await fetchOrders();
 
-            // Update selectedOrder locally so UI + Delhivery auto-refresh work immediately
+            // Update selectedOrder locally so the saved tracking shows immediately
             setSelectedOrder(prev => prev ? {
                 ...prev,
                 status: nextStatus,
@@ -1649,14 +1538,6 @@ export default function StoreOrders() {
                 trackingUrl
             } : prev);
 
-            // Trigger an immediate Delhivery refresh (if Delhivery courier)
-            if (courierName.toLowerCase() === 'delhivery') {
-                try {
-                    await refreshTrackingData();
-                } catch {
-                    // ignore refresh errors here; UI will still have AWB saved
-                }
-            }
         } catch (error) {
             console.error('Failed to update tracking:', error);
             toast.error(error?.response?.data?.error || 'Failed to update tracking details');
@@ -1684,16 +1565,14 @@ export default function StoreOrders() {
             
             clearTimeout(timeoutId);
 
-            if (!data.order || (!data.order.delhivery && !data.order.waslah)) {
+            if (!data.order || !data.order.waslah) {
                 toast.error('No live courier status found yet. Try again later.');
                 return;
             }
 
             const currentStatus = data.order.status || order.status;
             const orderForMap = { ...order, ...data.order };
-            const mappedStatus = data.order.waslah
-                ? mapWaslahToOrderStatus(data.order.waslah, currentStatus, orderForMap)
-                : mapDelhiveryStatusToOrderStatus(data.order.delhivery, currentStatus);
+            const mappedStatus = mapWaslahToOrderStatus(data.order.waslah, currentStatus, orderForMap);
 
             if (!mappedStatus || mappedStatus === currentStatus) {
                 toast.error('Status is already up to date with tracking.');
@@ -1715,7 +1594,7 @@ export default function StoreOrders() {
         } catch (error) {
             if (error.name === 'AbortError') {
                 console.error('Auto status sync timeout after 10 seconds');
-                toast.error('Request timeout. Delhivery API took too long. Please try again.');
+                toast.error('Request timeout. Courier tracking took too long. Please try again.');
             } else {
                 console.error('Auto status sync failed:', error);
                 toast.error(error?.response?.data?.error || 'Failed to auto-sync status from tracking');
@@ -1805,16 +1684,6 @@ export default function StoreOrders() {
         setWaslahLinkHelpOpen(isWaslahUnlinkedDuplicate(order));
         setWaslahSuccessNotice(null);
         setWaslahStatusRefreshedAt(null);
-        // Pre-fill AWB manifest data from order
-        const isCod = order.payment_method === 'cod' || order.paymentMethod === 'cod';
-        setAwbManifestData({
-            pickup_location_name: '',
-            payment_mode: isCod ? 'cod' : 'prepaid',
-            cod_amount: isCod ? order.total : 0,
-            weight: Math.max(1000, Math.ceil(order.total / 10)), // Estimate: 1kg min or 100g per AED1
-            dimensions: [{ box_count: 1, length_cm: 30, width_cm: 20, height_cm: 15 }],
-            dropoff_location: order.shippingAddress || {}
-        });
         setIsModalOpen(true);
     };
 
@@ -1862,61 +1731,6 @@ export default function StoreOrders() {
             cancelled = true;
         };
     }, [orders, searchParams, getToken]);
-
-    // Check Razorpay payment settlement status
-    const checkRazorpaySettlement = async (order) => {
-        if (!order.razorpayPaymentId) {
-            toast.error('This order does not have a Razorpay payment');
-            return;
-        }
-        
-        try {
-            const token = await getToken();
-            const { data } = await axios.get(`/api/store/orders/check-razorpay-settlement?orderId=${order._id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            if (data.success) {
-                // Update order locally if it was updated
-                if (data.updated) {
-                    setSelectedOrder(prev => prev && prev._id === order._id ? {
-                        ...prev,
-                        isPaid: true,
-                        paymentStatus: 'CAPTURED'
-                    } : prev);
-                    setOrders(prev => prev.map(o => 
-                        o._id === order._id ? {
-                            ...o,
-                            isPaid: true,
-                            paymentStatus: 'CAPTURED'
-                        } : o
-                    ));
-                }
-                
-                const settlement = data.razorpayStatus;
-                let message = `💳 Razorpay Payment Status\n`;
-                message += `Amount: AED${settlement.amount}\n`;
-                message += `Status: ${settlement.payment_captured ? '✓ Captured' : '✗ Not captured'}\n`;
-                message += `Fee: AED${settlement.fee || 0}\n`;
-                message += `Settlement: ${settlement.settlement_status}\n`;
-                
-                if (settlement.transfer_details) {
-                    message += `✓ Transferred to Bank\n`;
-                    message += `Transfer ID: ${settlement.transfer_details.transfer_id}\n`;
-                    message += `Amount: AED${settlement.transfer_details.amount_transferred}`;
-                } else {
-                    message += `Pending transfer to bank account`;
-                }
-                
-                toast.success(message);
-            } else {
-                toast.error(data.error);
-            }
-        } catch (error) {
-            console.error('Razorpay check error:', error);
-            toast.error(error?.response?.data?.error || 'Failed to check payment settlement');
-        }
-    };
 
     const openLinkedStoreOrder = async (query) => {
         const lookup = String(query || '').trim();
@@ -1975,7 +1789,6 @@ export default function StoreOrders() {
             const range = getDateRange();
             const { data } = await axios.get('/api/store/orders', {
                 params: {
-                    withDelhivery: autoRefreshEnabled ? 'true' : 'false',
                     withWaslah: 'true',
                     page: currentPage,
                     limit: ordersPerPage,
@@ -2002,16 +1815,12 @@ export default function StoreOrders() {
 
             let syncedOrders = excludeReturnPickupCloneOrders(data.orders || []);
 
-            // One-time client-side sync: if Delhivery says "out for delivery" / "delivered" etc.
-            // but order.status is still ORDER_PLACED/PROCESSING/CANCELLED, bump status to match
-            // and persist the change back to the backend so customer views stay in sync.
+            // If Waslah tracking is ahead of the stored order status, persist the mapped status.
             const updatesToPersist = [];
             syncedOrders = syncedOrders.map(order => {
-                const waslahMapped = order?.waslah
+                const mapped = order?.waslah
                     ? mapWaslahToOrderStatus(order.waslah, order.status, order)
                     : null;
-                const delhiveryMapped = mapDelhiveryStatusToOrderStatus(order.delhivery, order.status);
-                const mapped = waslahMapped || delhiveryMapped;
                 if (mapped && mapped !== order.status) {
                     updatesToPersist.push({ orderId: order._id, status: mapped });
                     return { ...order, status: mapped };
@@ -2562,20 +2371,6 @@ export default function StoreOrders() {
         }
     }, [currentPage, totalPages]);
 
-    // Auto-refresh tracking data
-    useEffect(() => {
-        if (autoRefreshEnabled && selectedOrder?.trackingId) {
-            refreshIntervalRef.current = setInterval(() => {
-                refreshTrackingData();
-            }, refreshInterval * 1000);
-        }
-        return () => {
-            if (refreshIntervalRef.current) {
-                clearInterval(refreshIntervalRef.current);
-            }
-        };
-    }, [autoRefreshEnabled, selectedOrder, refreshInterval]);
-
     useEffect(() => {
         const cutover = DEFAULT_ORDER_FILTER_TIME;
         const bounds = getOrdersByProductBusinessDayBounds(cutover);
@@ -2603,59 +2398,6 @@ export default function StoreOrders() {
             setToTime(cutover);
         }
     }, [datePreset]);
-
-    const refreshTrackingData = async () => {
-        if (!selectedOrder || !selectedOrder.trackingId) return;
-        try {
-            const token = await getToken();
-            const { data } = await axios.get(`/api/track-order?awb=${selectedOrder.trackingId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (data.order) {
-                const mappedStatus = data.order.waslah
-                    ? mapWaslahToOrderStatus(data.order.waslah, selectedOrder.status || data.order.status)
-                    : mapDelhiveryStatusToOrderStatus(
-                        data.order.delhivery,
-                        selectedOrder.status || data.order.status
-                    );
-
-                if (mappedStatus && mappedStatus !== (selectedOrder.status || data.order.status)) {
-                    try {
-                        // Persist new status silently (no toast spam during auto-refresh)
-                        await axios.post('/api/store/orders/update-status', {
-                            orderId: selectedOrder._id,
-                            status: mappedStatus,
-                            silent: true,
-                        }, {
-                            headers: { Authorization: `Bearer ${token}` }
-                        });
-
-                        data.order.status = mappedStatus;
-                    } catch (statusError) {
-                        console.error('Failed to sync status from Delhivery:', statusError);
-                    }
-                }
-
-                // Update the selected order with fresh tracking data
-                setSelectedOrder(prev => ({
-                    ...prev,
-                    ...data.order,
-                    delhivery: data.order.delhivery || prev.delhivery,
-                    waslah: preserveWaslahLabelDownloadState(prev.waslah, data.order.waslah || prev.waslah),
-                }));
-                // Also update in orders list
-                setOrders(prev => prev.map(o => o._id === selectedOrder._id
-                    ? {
-                        ...o,
-                        ...data.order,
-                        waslah: preserveWaslahLabelDownloadState(o.waslah, data.order.waslah || o.waslah),
-                    }
-                    : o));
-            }
-        } catch (error) {
-            console.error('Failed to refresh tracking:', error);
-        }
-    };
 
     const getExportFilteredOrders = () => {
         let baseOrders = filteredOrders;
@@ -3506,44 +3248,6 @@ export default function StoreOrders() {
             toast.error(error?.response?.data?.error || 'Failed to update selected orders');
         } finally {
             setBulkUpdatingStatus(false);
-        }
-    };
-
-    const schedulePickupWithDelhivery = async () => {
-        if (!selectedOrder) return;
-        
-        if (!selectedOrder.trackingId) {
-            toast.error('Please add tracking ID first');
-            return;
-        }
-
-        setSchedulingPickup(true);
-        try {
-            const token = await getToken();
-            
-            // Call backend to schedule pickup
-            const { data } = await axios.post('/api/store/schedule-pickup', {
-                orderId: selectedOrder._id,
-                trackingId: selectedOrder.trackingId,
-                courierName: selectedOrder.courier || 'Delhivery',
-                shippingAddress: selectedOrder.shippingAddress,
-                shipmentWeight: 1, // kg - can be configurable
-                packageCount: selectedOrder.orderItems?.length || 1
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            if (data.success) {
-                toast.success(`✅ Pickup scheduled! ID: ${data.pickupId}`);
-                fetchOrders();
-            } else {
-                toast.error(data.error || 'Failed to schedule pickup');
-            }
-        } catch (error) {
-            console.error('Pickup scheduling error:', error);
-            toast.error(error?.response?.data?.error || 'Failed to schedule pickup with Delhivery');
-        } finally {
-            setSchedulingPickup(false);
         }
     };
 
@@ -6700,74 +6404,6 @@ export default function StoreOrders() {
                                             </div>
                                         </div>
 
-                                        {/* Delhivery Live Status */}
-                                        {selectedOrder.delhivery && (
-                                            <div className="border-t border-slate-200 mt-4 pt-4">
-                                                <p className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
-                                                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                                    📍 Live Delhivery Tracking
-                                                </p>
-                                                <div className="space-y-3">
-                                                    {/* Current Location - Most Important */}
-                                                    {selectedOrder.delhivery.current_status_location && (
-                                                        <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-4 rounded-lg text-white shadow-lg border-l-4 border-green-700">
-                                                            <p className="text-xs font-semibold opacity-90">📍 Current Location</p>
-                                                            <p className="font-bold text-lg mt-1">{selectedOrder.delhivery.current_status_location}</p>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Current Status */}
-                                                    {selectedOrder.delhivery.current_status && (
-                                                        <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
-                                                            <p className="text-xs text-slate-600 font-semibold">Status</p>
-                                                            <p className="font-bold text-blue-700 mt-1 text-lg">{selectedOrder.delhivery.current_status}</p>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Expected Delivery */}
-                                                    {selectedOrder.delhivery.expected_delivery_date && (
-                                                        <div className="bg-purple-50 border border-purple-200 p-3 rounded-lg">
-                                                            <p className="text-xs text-slate-600 font-semibold">Expected Delivery</p>
-                                                            <p className="font-bold text-purple-700 mt-1">{new Date(selectedOrder.delhivery.expected_delivery_date).toLocaleDateString()} {new Date(selectedOrder.delhivery.expected_delivery_date).toLocaleTimeString()}</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Recent Events Timeline */}
-                                                {selectedOrder.delhivery.events && selectedOrder.delhivery.events.length > 0 && (
-                                                    <div className="border-t border-slate-200 mt-4 pt-4">
-                                                        <p className="text-xs font-semibold text-slate-600 mb-3 flex items-center gap-2">
-                                                            <span>📦</span> Tracking History
-                                                        </p>
-                                                        <div className="space-y-2 max-h-96 overflow-y-auto">
-                                                            {selectedOrder.delhivery.events.map((event, idx) => (
-                                                                <div key={idx} className="border-l-3 border-blue-400 pl-3 py-2 bg-slate-50 rounded-r p-2">
-                                                                    <div className="flex justify-between items-start gap-2">
-                                                                        <div className="flex-1">
-                                                                            {event.location && (
-                                                                                <div className="font-semibold text-slate-900 text-sm">📍 {event.location}</div>
-                                                                            )}
-                                                                            {event.status && (
-                                                                                <div className="font-medium text-blue-700 text-sm mt-0.5">{event.status}</div>
-                                                                            )}
-                                                                            {event.remarks && (
-                                                                                <div className="text-slate-600 text-xs mt-1 italic">{event.remarks}</div>
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="text-xs text-slate-500 whitespace-nowrap">
-                                                                            {formatStoreOrderDateTime(event.time)}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : null}
-
                                 <details className="rounded-lg border border-slate-200 bg-white/80 p-3">
                                     <summary className="cursor-pointer text-sm font-semibold text-slate-800">
                                         Manual tracking (other couriers)
@@ -6789,7 +6425,7 @@ export default function StoreOrders() {
                                                 type="text"
                                                 value={trackingData.courier}
                                                 onChange={e => setTrackingData({...trackingData, courier: e.target.value})}
-                                                placeholder="e.g. Delhivery, DHL"
+                                                placeholder="e.g. EMX, C3Xpress"
                                                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                                             />
                                         </div>
@@ -6850,42 +6486,6 @@ export default function StoreOrders() {
                                     </p>
                                 ) : null}
 
-                                {/* Delhivery Pickup & Auto-Refresh Controls */}
-                                {selectedOrder?.courier?.toLowerCase() === 'delhivery' && (
-                                    <div className="mt-4 space-y-2">
-                                        <button
-                                            onClick={schedulePickupWithDelhivery}
-                                            disabled={schedulingPickup || !selectedOrder?.trackingId}
-                                            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2"
-                                        >
-                                            {schedulingPickup ? (
-                                                <>
-                                                    <span className="animate-spin">⚙️</span>
-                                                    Scheduling Pickup...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <MapPin size={18} />
-                                                    Schedule Delhivery Pickup
-                                                </>
-                                            )}
-                                        </button>
-                                        
-                                        <button
-                                            onClick={() => setAutoRefreshEnabled(!autoRefreshEnabled)}
-                                            className={`w-full font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 ${
-                                                autoRefreshEnabled
-                                                    ? 'bg-green-600 hover:bg-green-700 text-white'
-                                                    : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
-                                            }`}
-                                        >
-                                            <RefreshCw size={18} />
-                                            {autoRefreshEnabled ? `Auto-Refresh ON (Every ${refreshInterval}s)` : 'Auto-Refresh OFF'}
-                                        </button>
-                                    </div>
-                                )}
-
-                                
                             </div>
 
                             {isDeliveredStoreOrder(selectedOrder) ? (
@@ -7454,47 +7054,6 @@ export default function StoreOrders() {
                                             ) : null}
                                         </div>
                                     ) : null}
-                                    
-                                    {/* Delhivery Payment Collection Info */}
-                                    {selectedOrder.delhivery?.payment && (
-                                        <>
-                                            {selectedOrder.delhivery.payment.is_cod_recovered && (
-                                                <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                                                    <p className="text-sm text-green-700 font-medium">✓ Payment Collected by Delhivery</p>
-                                                    {selectedOrder.delhivery.payment.cod_amount > 0 && (
-                                                        <p className="text-sm text-green-600 mt-1">
-                                                            Amount: AED{selectedOrder.delhivery.payment.cod_amount}
-                                                        </p>
-                                                    )}
-                                                    {selectedOrder.delhivery.payment.payment_collected_at && (
-                                                        <p className="text-xs text-green-500 mt-1">
-                                                            Collected: {new Date(selectedOrder.delhivery.payment.payment_collected_at).toLocaleDateString()}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-                                    
-                                    {/* Razorpay Payment Settlement Info */}
-                                    {selectedOrder.razorpayPaymentId && (
-                                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                                            <p className="text-sm text-blue-700 font-medium">💳 Card Payment (Razorpay)</p>
-                                            <p className="text-xs text-blue-600 mt-1">Payment ID: {selectedOrder.razorpayPaymentId.slice(-8)}</p>
-                                            {selectedOrder.razorpaySettlement?.is_transferred && (
-                                                <p className="text-xs text-green-600 mt-1">✓ Transferred to Bank Account</p>
-                                            )}
-                                            {!selectedOrder.razorpaySettlement?.is_transferred && (
-                                                <p className="text-xs text-amber-600 mt-1">⏳ Pending transfer to bank</p>
-                                            )}
-                                            <button
-                                                onClick={() => checkRazorpaySettlement(selectedOrder)}
-                                                className="mt-2 w-full px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded hover:bg-blue-700 transition"
-                                            >
-                                                Check Settlement Status
-                                            </button>
-                                        </div>
-                                    )}
                                     
                                     {getOrderDiscountLines(selectedOrder, currency).length > 0 && (
                                         <div className="rounded-lg border border-green-200 bg-green-50 p-3">

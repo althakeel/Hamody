@@ -322,7 +322,7 @@ export default function CategoryInterestSection() {
       slug: normalizeToken(cat.slug),
     });
 
-    const records = categoryRecords.filter((cat) => cat && isDisplayableCategoryName(cat.name));
+    const records = categoryRecords.filter((cat) => cat && isDisplayableCategoryName(cat.name) && (cat.productCount == null || Number(cat.productCount) > 0));
     if (manualCategoryIds.length) {
       const byId = new Map(records.map((cat) => [String(cat._id || ''), cat]));
       return manualCategoryIds

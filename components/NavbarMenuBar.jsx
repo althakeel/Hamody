@@ -26,7 +26,7 @@ function menuHref(href = '#') {
 }
 
 const MENU_CACHE_KEY = 'nav:menu:v1';
-const CATEGORIES_CACHE_KEY = 'nav:categories:v2';
+const CATEGORIES_CACHE_KEY = 'nav:categories:v3';
 const MENU_ENABLED_CACHE_KEY = 'nav:menu:enabled:v1';
 const ACTIONS_VISIBILITY_CACHE_KEY = 'nav:actions:visibility:v1';
 const MENU_STYLE_CACHE_KEY = 'nav:menu:style:v1';

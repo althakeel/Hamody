@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { usePathname } from "next/navigation"
 
-import { ChevronDown, HomeIcon, LayoutListIcon, SquarePenIcon, SquarePlusIcon, StarIcon, FolderIcon, TicketIcon, TruckIcon, RefreshCw, Users as UsersIcon, MessageSquare, Sparkles, BellIcon, MailIcon, Image as ImageIcon, ShoppingCart, Wallet, BarChart3, Target, Gift, Palette, CircleDashed, PackagePlus, Package, Activity, Layers, LineChart, Warehouse, MousePointerClick, ShieldAlert, Zap, Trash2, Smartphone, FileText, CalendarClock, MessageCircle, AlertTriangle, Download, Tag as TagIcon, Tags, ArrowUp, Search, Factory, CircleDollarSign, Pin, PanelLeftClose, PanelLeftOpen, Percent, PanelTop, PanelBottom, Loader, Clapperboard, LayoutGrid, Megaphone } from "lucide-react"
+import { ChevronDown, HomeIcon, LayoutListIcon, SquarePenIcon, SquarePlusIcon, StarIcon, FolderIcon, TicketIcon, TruckIcon, RefreshCw, Users as UsersIcon, MessageSquare, Sparkles, BellIcon, MailIcon, Image as ImageIcon, ShoppingCart, Wallet, BarChart3, Target, Gift, Palette, CircleDashed, PackagePlus, Package, Activity, Layers, LineChart, Warehouse, MousePointerClick, ShieldAlert, Zap, Trash2, Smartphone, FileText, CalendarClock, MessageCircle, AlertTriangle, Download, Tag as TagIcon, Tags, ArrowUp, Search, Factory, CircleDollarSign, Pin, PanelLeftClose, PanelLeftOpen, Percent, PanelTop, PanelBottom, Loader, Clapperboard, LayoutGrid, Megaphone, ArrowRightLeft } from "lucide-react"
 
 import StoreNavLink from "@/components/store/StoreNavLink"
 
@@ -57,6 +57,8 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
         { name: 'Dashboard', href: '/store', icon: HomeIcon },
 
         { name: 'Categories', href: '/store/categories', icon: FolderIcon },
+
+        { name: 'URL redirects', href: '/store/redirects', icon: ArrowRightLeft },
 
         { name: 'Brands', href: '/store/brands', icon: TagIcon },
 
@@ -152,8 +154,6 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
         { name: 'Orders by Product', href: '/store/orders-by-product', icon: Package },
 
         { name: 'Trash', href: '/store/trash', icon: Trash2 },
-
-        { name: 'Balance', href: '/store/balance', icon: Wallet },
 
         { name: 'Sales Report', href: '/store/sales-report', icon: BarChart3 },
 
@@ -346,8 +346,6 @@ const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permis
                 '/store/payment-security',
 
                 '/store/return-requests',
-
-                '/store/balance',
 
                 '/store/sales-report',
 

@@ -62,7 +62,7 @@ export async function POST(request) {
 
     await connectDB();
 
-    const allCategories = await Category.find({}).select('_id parentId name').lean();
+    const allCategories = await Category.find({}).select('_id parentId name slug url').lean();
     const categoryById = new Map(allCategories.map((category) => [String(category._id), category]));
     const childrenByParent = new Map();
     for (const category of allCategories) {
@@ -89,6 +89,7 @@ export async function POST(request) {
     );
 
     const deleted = [];
+    const deletedCategories = [];
     const notFound = [];
     const failed = [];
 
@@ -111,6 +112,7 @@ export async function POST(request) {
       }
 
       await Category.findByIdAndDelete(categoryId);
+      deletedCategories.push(category);
       categoryById.delete(categoryId);
       childrenByParent.forEach((childList, parentId) => {
         childrenByParent.set(
@@ -130,6 +132,12 @@ export async function POST(request) {
 
     if (deleted.length) {
       invalidateCategoryCaches();
+      try {
+        const { redirectRetiredCategories } = await import('@/lib/urlRedirects');
+        await redirectRetiredCategories(deletedCategories, idsToDelete, allCategories);
+      } catch (error) {
+        console.error('[url-redirects] category bulk delete', error);
+      }
     }
 
     return NextResponse.json({

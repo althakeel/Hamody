@@ -136,6 +136,15 @@ export async function PUT(req, { params }) {
 
     invalidateCategoryCaches();
 
+    if (slug !== existingCategory.slug) {
+      try {
+        const { redirectRetiredCategory } = await import('@/lib/urlRedirects');
+        await redirectRetiredCategory(existingCategory);
+      } catch (error) {
+        console.error('[url-redirects] category slug', error);
+      }
+    }
+
     const parent = category.parentId ? await Category.findById(category.parentId).lean() : null;
     const children = await Category.find({ parentId: category._id }).lean();
 
@@ -174,6 +183,12 @@ export async function DELETE(req, { params }) {
 
     await Category.findByIdAndDelete(category._id);
     invalidateCategoryCaches();
+    try {
+      const { redirectRetiredCategory } = await import('@/lib/urlRedirects');
+      await redirectRetiredCategory(category);
+    } catch (error) {
+      console.error('[url-redirects] category delete', error);
+    }
 
     return NextResponse.json({ message: 'Category deleted successfully' }, { status: 200 });
   } catch (error) {

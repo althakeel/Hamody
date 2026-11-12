@@ -18,8 +18,7 @@ const asOrderShape = (normalized, awb = '') => {
     trackingUrl: normalized.trackingUrl,
     c3x: normalized.c3x,
     waslah: normalized.waslah,
-    delhivery: normalized.delhivery,
-    status: normalized.waslah?.appStatus || normalized.c3x?.appStatus || normalized.delhivery?.current_status || 'PROCESSING',
+    status: normalized.waslah?.appStatus || normalized.c3x?.appStatus || 'PROCESSING',
     orderItems: [],
     total: 0
   };

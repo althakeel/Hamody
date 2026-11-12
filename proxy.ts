@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { resolveLegacyCategoryRedirect } from '@/lib/categoryRedirects';
 import { resolveLegacyProductRedirect } from '@/lib/productRedirects';
+import { resolveRuntimeUrlRedirect } from '@/lib/urlRedirects';
 import { isStagingStoreHost, normalizeRequestHost } from '@/lib/stagingHost';
 import {
   applyCorsHeaders,
@@ -127,6 +128,25 @@ export async function proxy(request: NextRequest) {
   const requestId = request.headers.get('x-request-id') || createRequestId();
   const ip = getClientIp(request);
   const isApiRoute = pathname.startsWith('/api/');
+
+  if (!isApiRoute && (method === 'GET' || method === 'HEAD')) {
+    const runtimeRedirect = await resolveRuntimeUrlRedirect(pathname);
+    if (runtimeRedirect?.statusCode === 410) {
+      const gone = new NextResponse('This page has been removed.', {
+        status: 410,
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'X-Robots-Tag': 'noindex, nofollow',
+        },
+      });
+      return applyStagingRobotsTag(request, gone);
+    }
+    if (runtimeRedirect?.toPath) {
+      const destination = new URL(runtimeRedirect.toPath, request.url);
+      if (request.nextUrl.search) destination.search = request.nextUrl.search;
+      return NextResponse.redirect(destination, 301);
+    }
+  }
 
   if (
     pathname.startsWith('/_next')

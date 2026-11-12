@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({ params }) {
   const { slug = '' } = await params;
   const brand = await findPublicBrandPage(slug);
-  if (!brand) return { title: 'Brand Not Found | Store1920' };
+  if (!brand) notFound();
   const title = brand.metaTitle || brand.name || 'Brand';
   const description = brand.metaDescription || brand.description || '';
   const canonical = buildAbsoluteUrl(brandPagePath(brand.slug || slug));

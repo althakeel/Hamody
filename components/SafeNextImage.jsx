@@ -41,6 +41,7 @@ export function shouldBypassNextImageOptimizer(src) {
 
   const value = String(src || '').trim();
   if (!value) return false;
+  if (value.startsWith('/api/img')) return true;
   if (value.startsWith('/') || value.startsWith('data:') || value.startsWith('blob:')) {
     return false;
   }

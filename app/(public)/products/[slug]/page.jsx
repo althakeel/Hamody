@@ -1,5 +1,5 @@
 import { cookies, headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect, unstable_rethrow } from "next/navigation";
 import { getProductPageData } from "@/lib/productPageData";
 import { resolveStorefrontLanguage } from "@/lib/storefrontLanguage";
 import { resolveProductPage } from "@/lib/productPageRoute";
@@ -21,7 +21,7 @@ async function getStorefrontLanguage() {
 export async function generateMetadata({ params }) {
   const resolvedParams = await params;
   const slug = String(resolvedParams?.slug || "").trim();
-  if (!slug) return { title: "Product" };
+  if (!slug) notFound();
 
   if (resolveProductSlugRedirect(slug)) {
     return { title: "Redirecting…" };
@@ -32,9 +32,7 @@ export async function generateMetadata({ params }) {
     const data = await getProductPageData(slug, language);
     const product = data?.product;
 
-    if (!product) {
-      return { title: "Product not found" };
-    }
+    if (!product) notFound();
 
     const keywords = Array.isArray(product.seoKeywords) && product.seoKeywords.length > 0
       ? product.seoKeywords
@@ -64,7 +62,8 @@ export async function generateMetadata({ params }) {
         ? { card: "summary_large_image", title, description, images: [shareImage] }
         : undefined,
     };
-  } catch {
+  } catch (error) {
+    unstable_rethrow(error);
     return { title: "Product" };
   }
 }

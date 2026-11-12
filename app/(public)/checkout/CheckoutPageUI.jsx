@@ -162,8 +162,6 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   const { cartItems } = useSelector((state) => state.cart);
   const products = useSelector((state) => state.product.list);
   
-  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
-
   const [form, setForm] = useState({
     addressId: "",
     payment: "cod",
@@ -692,13 +690,6 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
       controller.abort();
     };
   }, [user, getToken]);
-
-  // Check if Razorpay is already loaded (in case script loaded before state update)
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.Razorpay) {
-      setRazorpayLoaded(true);
-    }
-  }, []);
 
   // Auto-select first address
   useEffect(() => {
@@ -1534,121 +1525,6 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
       }
     } else {
       setForm(f => ({ ...f, [name]: value }));
-    }
-  };
-
-  // Razorpay Payment Handler
-  const handleRazorpayPayment = async (paymentPayload) => {
-    const trackedPayload = withOrderTrackingFields(paymentPayload);
-    // Check if Razorpay is available (script might have loaded but state not updated)
-    if (typeof window !== 'undefined' && window.Razorpay && !razorpayLoaded) {
-      setRazorpayLoaded(true);
-    }
-
-    if (!razorpayLoaded && !window.Razorpay) {
-      setFormError("Payment system is still loading. Please wait a moment and try again.");
-      return false;
-    }
-
-    if (!window.Razorpay) {
-      setFormError("Payment system failed to load. Please refresh the page and try again.");
-      setPlacingOrder(false);
-      return false;
-    }
-
-    try {
-      // Step 1: Create Razorpay order on backend
-      const orderRes = await fetch("/api/razorpay/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: Math.round(totalAfterWallet), // Ensure it's a whole number
-          currency: "AED",
-          receipt: `order_${Date.now()}`,
-        }),
-      });
-
-      if (!orderRes.ok) {
-        const errorData = await orderRes.json();
-        setFormError(errorData.error || "Failed to create payment order");
-        setPlacingOrder(false);
-        return false;
-      }
-
-      const orderData = await orderRes.json();
-      if (!orderData.success || !orderData.orderId) {
-        setFormError("Failed to initialize payment");
-        setPlacingOrder(false);
-        return false;
-      }
-
-      // Step 2: Open Razorpay checkout with the order ID
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        order_id: orderData.orderId, // Use the order ID from backend
-        amount: Math.round(totalAfterWallet * 100), // Amount in paise
-        currency: "AED",
-        name: "store1920",
-        description: "Order Payment",
-        image: STORE1920_LOGO_PATH,
-        handler: async function (response) {
-          try {
-            // Verify payment on backend AND create order
-            const verifyRes = await fetch("/api/razorpay/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature,
-                paymentPayload: trackedPayload,
-              }),
-            });
-
-            const responseData = await verifyRes.json();
-
-            // Check for orderId from verify response (handles both _id and orderId fields)
-            const orderId = responseData.orderId || responseData._id || responseData.id;
-
-            if (verifyRes.ok && responseData.success && orderId) {
-              // Payment successful - clear cart and redirect to success page
-              dispatch(clearCart());
-              router.push(`/order-success?orderId=${orderId}`);
-            } else {
-              // Payment or order creation failed - redirect to failed page
-              setPlacingOrder(false);
-              router.push(`/order-failed?reason=${encodeURIComponent(responseData.message || 'Payment verification failed')}`);
-            }
-          } catch (error) {
-            // Network or parsing error - redirect to failed page
-            setPlacingOrder(false);
-            router.push(`/order-failed?reason=${encodeURIComponent('Payment verification error. Please contact support.')}`);
-          }
-        },
-        prefill: {
-          name: trackedPayload.guestInfo?.name || form.name || user?.displayName || "",
-          email: trackedPayload.guestInfo?.email || form.email || user?.email || "",
-          contact: trackedPayload.guestInfo?.phone || form.phone || "",
-        },
-        theme: {
-          color: "#F97316", // Orange color
-        },
-        modal: {
-          ondismiss: function() {
-            setPlacingOrder(false);
-            router.push(`/order-failed?reason=${encodeURIComponent('Payment cancelled by user')}`);
-          }
-        }
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-      return true;
-    } catch (error) {
-      console.error("Payment initiation error:", error);
-      setFormError("Failed to initiate payment. Please try again.");
-      setPlacingOrder(false);
-      return false;
     }
   };
 
@@ -2650,18 +2526,6 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
           onAutoDismiss={completePrepaidUpsell}
           onPayNow={handlePayNowForExistingOrder}
           loading={payingNow}
-        />
-        <Script 
-          src="https://checkout.razorpay.com/v1/checkout.js" 
-          strategy="afterInteractive"
-          onLoad={() => {
-            console.log('Razorpay script loaded successfully');
-            setRazorpayLoaded(true);
-          }}
-          onError={(e) => {
-            console.error('Failed to load Razorpay script:', e);
-            setFormError('Payment system failed to load. Please check your internet connection and refresh.');
-          }}
         />
       </>
     );
@@ -4648,12 +4512,6 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
           </div>
         </div>
       ) : null}
-      {/* Razorpay Script */}
-      <Script
-        src="https://checkout.razorpay.com/v1/checkout.js"
-        onLoad={() => setRazorpayLoaded(true)}
-        onError={() => setFormError("Failed to load payment system")}
-      />
       <Script src="https://checkout.tabby.ai/tabby-card.js" onLoad={() => setTabbyCardLoaded(true)} />
     </>
   );

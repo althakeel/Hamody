@@ -19,6 +19,7 @@ function flattenCategoryNames(categories = []) {
   const names = [];
   const walk = (items) => {
     (items || []).forEach((category) => {
+      if (category?.productCount != null && Number(category.productCount) <= 0) return;
       const name = String(category?.name || '').trim();
       if (name) names.push(name);
       if (Array.isArray(category?.children) && category.children.length) walk(category.children);

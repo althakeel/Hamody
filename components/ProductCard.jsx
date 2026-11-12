@@ -36,6 +36,7 @@ import CurrencySymbol, { StruckPrice } from '@/components/CurrencySymbol'
 import NewProductTagBadge from '@/components/NewProductTagBadge'
 import TimeDeliveryBadge from '@/components/TimeDeliveryBadge'
 import { extractProductKarat } from '@/lib/productKarat'
+import { cardImageSrc } from '@/lib/cardImage'
 
 const parseAmount = (value) => {
   const num = Number(String(value ?? '').replace(/[^0-9.]/g, ''))
@@ -184,12 +185,18 @@ const ProductCard = ({
   const fallbackName = product.name || product.title || t('common.untitledProduct')
   const productName = getLocalizedProductName(product, language, fallbackName)
 
-  const primaryImage = getProductThumbnailUrl(product)
-  const secondaryImage = getImageUrlAt(product?.images, 1)
-  const cardPreview = resolveCardVideoPreview(product)
-  const hasSecondary = cardPreview.type === 'image' &&
-    secondaryImage !== PLACEHOLDER &&
-    secondaryImage !== primaryImage &&
+  const primaryRaw = getProductThumbnailUrl(product)
+  const secondaryRaw = getImageUrlAt(product?.images, 1)
+  const primaryImage = cardImageSrc(primaryRaw)
+  const secondaryImage = cardImageSrc(secondaryRaw)
+  const cardPreviewRaw = resolveCardVideoPreview(product)
+  const cardPreview = {
+    ...cardPreviewRaw,
+    imageSrc: cardImageSrc(cardPreviewRaw.imageSrc),
+  }
+  const hasSecondary = cardPreviewRaw.type === 'image' &&
+    secondaryRaw !== PLACEHOLDER &&
+    secondaryRaw !== primaryRaw &&
     normalizeProductImages(product.images).length > 1
 
   useEffect(() => {
@@ -381,9 +388,13 @@ const ProductCard = ({
               priority={priorityImages}
               loading={priorityImages ? undefined : 'lazy'}
               onError={(e) => {
-                if (e.currentTarget.src !== PLACEHOLDER) {
-                  e.currentTarget.src = PLACEHOLDER
+                const img = e.currentTarget
+                if (img.dataset.fallback === '1') {
+                  img.src = PLACEHOLDER
+                  return
                 }
+                img.dataset.fallback = '1'
+                img.src = cardPreviewRaw.imageSrc || PLACEHOLDER
               }}
             />
             <video
@@ -419,24 +430,32 @@ const ProductCard = ({
               priority={priorityImages}
               loading={priorityImages ? undefined : 'lazy'}
               onError={(e) => {
-                if (e.currentTarget.src !== PLACEHOLDER) {
-                  e.currentTarget.src = PLACEHOLDER
+                const img = e.currentTarget
+                if (img.dataset.fallback === '1') {
+                  img.src = PLACEHOLDER
+                  return
                 }
+                img.dataset.fallback = '1'
+                img.src = primaryRaw
               }}
             />
-            {hasSecondary ? (
+            {hasSecondary && hovered ? (
               <Image
                 src={secondaryImage}
-                alt={productName}
+                alt=""
                 fill
-                className={`absolute inset-0 object-cover object-center scale-110 transition-opacity duration-500 ${hovered ? 'opacity-100' : 'opacity-0'}`}
+                className="absolute inset-0 object-cover object-center scale-110"
                 sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, 14vw"
                 quality={55}
                 loading="lazy"
                 onError={(e) => {
-                  if (e.currentTarget.src !== PLACEHOLDER) {
-                    e.currentTarget.src = PLACEHOLDER
+                  const img = e.currentTarget
+                  if (img.dataset.fallback === '1') {
+                    img.src = PLACEHOLDER
+                    return
                   }
+                  img.dataset.fallback = '1'
+                  img.src = secondaryRaw
                 }}
               />
             ) : null}

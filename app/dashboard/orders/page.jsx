@@ -274,7 +274,6 @@ export default function DashboardOrdersPage() {
         })
         let list = Array.isArray(data?.orders) ? data.orders : (Array.isArray(data) ? data : [])
         
-        // Fetch latest Delhivery tracking status for orders with trackingId
         list = await Promise.all(list.map(async (order) => {
           let updatedOrder = { ...order };
           
@@ -286,7 +285,8 @@ export default function DashboardOrdersPage() {
               if (trackingResponse.data.success && trackingResponse.data.order) {
                 updatedOrder = {
                   ...updatedOrder,
-                  delhivery: trackingResponse.data.order.delhivery,
+                  waslah: trackingResponse.data.order.waslah || updatedOrder.waslah,
+                  c3x: trackingResponse.data.order.c3x || updatedOrder.c3x,
                   status: trackingResponse.data.order.status || updatedOrder.status,
                   trackingUrl: trackingResponse.data.order.trackingUrl || updatedOrder.trackingUrl
                 };
@@ -359,7 +359,8 @@ export default function DashboardOrdersPage() {
               if ((order._id || order.id) === expandedOrder) {
                 let updatedOrder = {
                   ...order,
-                  delhivery: response.data.order.delhivery,
+                  waslah: response.data.order.waslah || order.waslah,
+                  c3x: response.data.order.c3x || order.c3x,
                   status: response.data.order.status || order.status,
                   trackingUrl: response.data.order.trackingUrl || order.trackingUrl
                 };
@@ -1027,17 +1028,6 @@ export default function DashboardOrdersPage() {
                                   </div>
                                 )}
                                 
-                                {/* Delhivery Payment Collection Status */}
-                                {order.delhivery?.payment?.is_cod_recovered && (
-                                  <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                                    <p className="text-xs text-green-700 font-medium">✓ Payment Confirmed by Delhivery</p>
-                                    {order.delhivery.payment.cod_amount > 0 && (
-                                      <p className="text-xs text-green-600 mt-1">
-                                        Collected: AED{order.delhivery.payment.cod_amount}
-                                      </p>
-                                    )}
-                                  </div>
-                                )}
                               </div>
                             </div>
                           </div>
@@ -1150,7 +1140,7 @@ export default function DashboardOrdersPage() {
                         </div>
 
                         {/* Live Delivery Tracking */}
-                        {(getPublicTrackingDisplayId(order) || order.trackingId || order.trackingUrl || order.courier || order.delhivery || order.waslah) && (
+                        {(getPublicTrackingDisplayId(order) || order.trackingId || order.trackingUrl || order.courier || order.waslah) && (
                           <div className="bg-gradient-to-br from-slate-50 to-blue-50 border-2 border-blue-200 rounded-xl p-6 space-y-5">
                             {/* Header */}
 <div className="flex items-center gap-3 pb-4 border-b-2 border-blue-200">
@@ -1164,46 +1154,19 @@ export default function DashboardOrdersPage() {
                             </div>
 
                             {/* Current Location - Prominent Green Box */}
-                            {order.delhivery?.current_status_location && (
-                              <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl p-5 shadow-lg">
-                                <div className="flex items-start gap-3">
-                                  <svg className="w-6 h-6 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                                  </svg>
-                                  <div className="flex-1">
-                                    <p className="text-sm font-semibold opacity-90 mb-1">📍 Current Location</p>
-                                    <p className="text-lg font-bold">{order.delhivery.current_status_location}</p>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
+                            
 
                             {/* Status Section */}
                             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
                               <p className="text-xs font-semibold text-slate-500 mb-2">Status</p>
                               <p className="text-2xl font-bold text-blue-600">
-                                {order.delhivery?.current_status || order.status || 'Processing'}
+                                {order.status || 'Processing'}
                               </p>
-                              {order.delhivery?.current_status && order.delhivery.current_status_remarks && (
-                                <p className="text-sm text-slate-600 mt-2 italic">{order.delhivery.current_status_remarks}</p>
-                              )}
+                              
                             </div>
 
                             {/* Expected Delivery Section */}
-                            {order.delhivery?.expected_delivery_date && (
-                              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-                                <p className="text-xs font-semibold text-slate-500 mb-2">Expected Delivery</p>
-                                <p className="text-xl font-bold text-purple-600">
-                                  {new Date(order.delhivery.expected_delivery_date).toLocaleString('en-IN', {
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    year: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  })}
-                                </p>
-                              </div>
-                            )}
+                            
 
                             {/* Tracking Details */}
                             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
@@ -1237,70 +1200,9 @@ export default function DashboardOrdersPage() {
                             </div>
 
                             {/* Tracking History Timeline */}
-                            {order.delhivery?.events && order.delhivery.events.length > 0 && (
-                              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-                                <div className="flex items-center gap-2 mb-4">
-                                  <svg className="w-5 h-5 text-orange-600" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
-                                  </svg>
-                                  <p className="text-sm font-bold text-slate-800">Tracking History</p>
-                                </div>
-                                <div className="relative">
-                                  <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-gradient-to-b from-blue-400 to-slate-200"></div>
-                                  <div className="space-y-4 max-h-80 overflow-y-auto pr-2">
-                                    {order.delhivery.events.map((event, idx) => (
-                                      <div key={idx} className="relative pl-8 group">
-                                        <div className={`absolute left-0 top-1.5 w-5 h-5 rounded-full flex items-center justify-center ${
-                                          idx === 0 ? 'bg-blue-600 ring-4 ring-blue-100' : 'bg-white border-2 border-blue-400'
-                                        }`}>
-                                          {idx === 0 && (
-                                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-                                            </svg>
-                                          )}
-                                        </div>
-                                        <div className={`bg-slate-50 rounded-lg p-3 border transition-all ${
-                                          idx === 0 ? 'border-blue-300 shadow-md' : 'border-slate-200 hover:border-blue-200 hover:shadow-sm'
-                                        }`}>
-                                          <div className="flex items-start justify-between gap-3 mb-1">
-                                            <p className={`font-semibold text-sm ${idx === 0 ? 'text-blue-700' : 'text-slate-800'}`}>
-                                              📍 {event.status || 'Update'}
-                                            </p>
-                                            <span className="text-xs text-slate-500 whitespace-nowrap">
-                                              {new Date(event.time).toLocaleString('en-IN', {
-                                                day: '2-digit',
-                                                month: '2-digit',
-                                                year: 'numeric',
-                                                hour: '2-digit',
-                                                minute: '2-digit'
-                                              })}
-                                            </span>
-                                          </div>
-                                          {event.location && (
-                                            <p className="text-sm text-slate-600 mt-1">
-                                              <span className="font-medium">Location:</span> {event.location}
-                                            </p>
-                                          )}
-                                          {event.remarks && (
-                                            <p className="text-xs text-slate-500 mt-1.5 italic bg-white px-2 py-1 rounded">
-                                              💬 {event.remarks}
-                                            </p>
-                                          )}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
+                            
 
-                            {!order.delhivery?.events && !order.delhivery?.current_status_location && (
-                              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-                                <p className="text-sm text-yellow-800">
-                                  ⏳ Tracking information will be available once your order is shipped by the courier
-                                </p>
-                              </div>
-                            )}
+                            
                           </div>
                         )}
 

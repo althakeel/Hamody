@@ -15,7 +15,7 @@ function formatTrackingEventTime(value) {
 
 export default function TrackingTimeline({
   events,
-  type = 'delhivery',
+  type = 'courier',
   emptyLabel = 'No tracking events yet',
   updateLabel = 'Update',
   receivedByLabel = 'Received by',

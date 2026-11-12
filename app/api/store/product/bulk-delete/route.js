@@ -33,10 +33,22 @@ export async function POST(request) {
 
     await connectDB()
 
+    const products = await Product.find({
+      _id: { $in: productIds },
+      storeId: String(storeId),
+    }).select('slug').lean()
+
     const result = await Product.deleteMany({
       _id: { $in: productIds },
       storeId: String(storeId),
     })
+
+    try {
+      const { recordProductsGone } = await import('@/lib/urlRedirects')
+      await recordProductsGone(products.map((product) => product.slug), 'Product deleted')
+    } catch (redirectError) {
+      console.error('[url-redirects] product bulk delete', redirectError)
+    }
 
     const { queueInventorySheetSync } = await import('@/lib/googleSheetsInventory')
     queueInventorySheetSync(storeId)

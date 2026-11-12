@@ -4,8 +4,10 @@ import {
   resolveCategoryByPathSegments,
   getCategoryProducts,
   getCategoryHeaderStats,
+  getPublishedCategoryProductCounts,
   CATEGORY_PRODUCTS_PAGE_SIZE,
 } from '@/lib/categoryPageData';
+import { categoryProductCount } from '@/lib/categoryProductStats';
 import {
   buildBreadcrumbListJsonLd,
   buildCategoryCollectionJsonLd,
@@ -22,12 +24,18 @@ export const revalidate = 300;
 export async function generateMetadata({ params }) {
   const { slug = [] } = await params;
   const resolved = await resolveCategoryByPathSegments(slug);
-  if (!resolved) {
-    return { title: 'Category Not Found | Store1920' };
-  }
+  if (!resolved) notFound();
 
   const { category, chain } = resolved;
-  return buildCategoryPageMetadata(category, chain);
+  const metadata = buildCategoryPageMetadata(category, chain);
+  const counts = await getPublishedCategoryProductCounts();
+  if (categoryProductCount(counts, category._id) === 0) {
+    return {
+      ...metadata,
+      robots: { index: false, follow: true },
+    };
+  }
+  return metadata;
 }
 
 export default async function CategoryPage({ params }) {
@@ -43,14 +51,18 @@ export default async function CategoryPage({ params }) {
     redirect(buildCategoryUrl(chain));
   }
 
-  const [{ products, total }, headerStats] = await Promise.all([
+  const [{ products, total }, headerStats, counts] = await Promise.all([
     getCategoryProducts(category._id, {
       page: 1,
       limit: CATEGORY_PRODUCTS_PAGE_SIZE,
       allCategories: all,
     }),
     getCategoryHeaderStats(category._id, { allCategories: all }),
+    getPublishedCategoryProductCounts(),
   ]);
+  const visibleChildren = (children || []).filter(
+    (child) => categoryProductCount(counts, child._id) > 0,
+  );
   const breadcrumbJsonLd = buildBreadcrumbListJsonLd(chain);
   const collectionJsonLd = buildCategoryCollectionJsonLd(category, chain);
 
@@ -68,7 +80,7 @@ export default async function CategoryPage({ params }) {
       <CategoryPageView
         category={category}
         chain={chain}
-        children={children}
+        children={visibleChildren}
         products={products}
         total={total}
         headerStats={headerStats}

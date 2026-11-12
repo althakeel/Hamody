@@ -3,7 +3,7 @@
 import GuestOrderLinker from "@/components/GuestOrderLinker";
 import SilentDomErrorBoundary from "@/components/SilentDomErrorBoundary";
 import dynamic from "next/dynamic";
-import { useEffect, Suspense, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { isProductDetailPath } from "@/lib/productUrl";
 
@@ -101,11 +101,7 @@ function PublicLayoutContent({ children }) {
 }
 
 function PublicLayoutAuthed({ children }) {
-    return (
-        <Suspense fallback={<div className="flex flex-col"><main className="flex-1 pb-[5.25rem] lg:pb-0" /></div>}>
-            <PublicLayoutContent>{children}</PublicLayoutContent>
-        </Suspense>
-    );
+    return <PublicLayoutContent>{children}</PublicLayoutContent>;
 }
 
 export default function PublicLayout(props) {

@@ -46,6 +46,17 @@ export async function POST(request) {
 
     await Product.findByIdAndUpdate(productId, { published: nextPublished });
     invalidateStorefrontProductCaches();
+    try {
+      if (nextPublished) {
+        const { clearProductGone } = await import('@/lib/urlRedirects');
+        await clearProductGone(product.slug);
+      } else {
+        const { recordProductGone } = await import('@/lib/urlRedirects');
+        await recordProductGone(product.slug, 'Product discontinued');
+      }
+    } catch (redirectError) {
+      console.error('[url-redirects] product publish', redirectError);
+    }
 
     const slug = String(product.slug || '').trim();
     if (slug) {

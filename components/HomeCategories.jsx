@@ -13,6 +13,12 @@ import { normalizeMediaUrl } from '@/lib/mediaUrls';
 import { useHorizontalCarouselDrag } from '@/lib/useHorizontalCarouselDrag';
 import { normalizeStorefrontCategoryHref, toPublicCategoryPath } from '@/lib/categorySlug';
 
+function stockedHomeMenuItems(items = []) {
+  return (Array.isArray(items) ? items : []).filter(
+    (item) => item?.productCount == null || Number(item.productCount) > 0,
+  );
+}
+
 export default function HomeCategories() {
   const { language } = useStorefrontI18n();
   const {
@@ -26,7 +32,7 @@ export default function HomeCategories() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const CACHE_KEY = 'homeMenuCategoriesCache_v2'; // Changed cache key to bust old cache
+  const CACHE_KEY = 'homeMenuCategoriesCache_v3';
 
   // Fetch categories from API
   useEffect(() => {
@@ -46,7 +52,7 @@ export default function HomeCategories() {
           try {
             cachedData = JSON.parse(cached);
             if (Array.isArray(cachedData?.items) && cachedData.items.length > 0) {
-              setCategories(cachedData.items);
+              setCategories(stockedHomeMenuItems(cachedData.items));
               setError(null);
             }
           } catch (e) {
@@ -61,13 +67,14 @@ export default function HomeCategories() {
           const data = await response.json();
           
           if (data.items && Array.isArray(data.items) && data.items.length > 0) {
-            setCategories(data.items);
+            const stockedItems = stockedHomeMenuItems(data.items);
+            setCategories(stockedItems);
             
             // Try to save to localStorage, but handle quota exceeded gracefully
             try {
               const cacheData = { 
-                items: data.items, 
-                count: data.count || data.items.length, 
+                items: stockedItems, 
+                count: stockedItems.length, 
                 updatedAt: Date.now() 
               };
               localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
@@ -77,8 +84,8 @@ export default function HomeCategories() {
                 try {
                   localStorage.removeItem(CACHE_KEY);
                   const cacheData = { 
-                    items: data.items, 
-                    count: data.count || data.items.length, 
+                    items: stockedItems, 
+                    count: stockedItems.length, 
                     updatedAt: Date.now() 
                   };
                   localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
@@ -114,8 +121,7 @@ export default function HomeCategories() {
           try {
             const cachedData = JSON.parse(cached);
             if (Array.isArray(cachedData?.items) && cachedData.items.length > 0) {
-              console.log('Using cached data due to error:', cachedData.items);
-              setCategories(cachedData.items);
+              setCategories(stockedHomeMenuItems(cachedData.items));
               setError(null);
               setLoading(false);
               return;

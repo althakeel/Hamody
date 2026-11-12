@@ -48,7 +48,6 @@ export default function OrdersClient() {
             const { data } = await axios.get('/api/orders', { headers: { Authorization: `Bearer ${token}` } });
             let list = Array.isArray(data?.orders) ? data.orders : (Array.isArray(data) ? data : []);
             
-            // Fetch latest Delhivery tracking status for orders with trackingId
             list = await Promise.all(list.map(async (order) => {
                 let updatedOrder = { ...order };
                 
@@ -60,7 +59,8 @@ export default function OrdersClient() {
                         if (trackingResponse.data.success && trackingResponse.data.order) {
                             updatedOrder = {
                                 ...updatedOrder,
-                                delhivery: trackingResponse.data.order.delhivery,
+                                waslah: trackingResponse.data.order.waslah || updatedOrder.waslah,
+                                c3x: trackingResponse.data.order.c3x || updatedOrder.c3x,
                                 status: trackingResponse.data.order.status || updatedOrder.status,
                                 trackingUrl: trackingResponse.data.order.trackingUrl || updatedOrder.trackingUrl
                             };
@@ -78,7 +78,6 @@ export default function OrdersClient() {
                     updatedOrder.isPaid = true;
                 }
                 
-                // Also check if Delhivery reported payment collected
                 if (updatedOrder.delhivery?.payment?.is_cod_recovered && paymentMethod === 'cod') {
                     updatedOrder.isPaid = true;
                 }

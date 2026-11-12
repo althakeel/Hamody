@@ -5,7 +5,7 @@ import { reconcileStoreOrderPayments } from '@/lib/orderPaymentReconciliation';
 
 export const dynamic = 'force-dynamic';
 
-/** Re-check last 24h online payments against Stripe/Tabby/Tamara/Razorpay. */
+/** Re-check last 24h online payments against Stripe/Tabby/Tamara. */
 export async function POST(request) {
   try {
     const auth = await verifyStoreSeller(request);

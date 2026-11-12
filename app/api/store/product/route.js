@@ -250,6 +250,14 @@ export async function POST(request) {
         if (existing) {
             return NextResponse.json({ error: "Slug already exists. Please use a different slug." }, { status: 400 });
         }
+        const skuText = String(sku || '').trim();
+        if (skuText) {
+            const { findStoreProductBySku } = await import('@/lib/productSkuIdentity');
+            const skuOwner = await findStoreProductBySku(storeId, skuText);
+            if (skuOwner?.product) {
+                return NextResponse.json({ error: "A product with this SKU already exists. Update that product instead of creating a new one." }, { status: 400 });
+            }
+        }
 
         // Validate core fields
         if (!name || !description || images.length < 1) {
@@ -1026,6 +1034,11 @@ export async function PUT(request) {
         // (typed in the product form). Never wipe an existing SKU with blank "".
         const nextSku = sku !== null ? String(sku).trim() : '';
         if (nextSku) {
+            const { findStoreProductBySku } = await import('@/lib/productSkuIdentity');
+            const skuOwner = await findStoreProductBySku(storeId, nextSku);
+            if (skuOwner?.product && String(skuOwner.product._id) !== String(productId)) {
+                return NextResponse.json({ error: "A product with this SKU already exists. Update that product instead of creating a new one." }, { status: 400 });
+            }
             updateData.sku = nextSku;
         }
 
@@ -1036,6 +1049,7 @@ export async function PUT(request) {
         if (soldCount !== undefined) {
             updateData.soldCount = soldCount;
         }
+        const previousSlug = String(product.slug || '');
         if (slug && slug !== product.slug) {
             const existing = await Product.findOne({ slug })
               .select('_id name slug')
@@ -1063,6 +1077,14 @@ export async function PUT(request) {
         console.log('VERIFY PUT from DB - categories length:', verifyUpdatedProduct.categories?.length);
 
         invalidateStorefrontProductCaches();
+        if (updateData.slug && updateData.slug !== previousSlug) {
+            try {
+                const { recordProductReplacement } = await import('@/lib/urlRedirects');
+                await recordProductReplacement(previousSlug, updateData.slug);
+            } catch (redirectError) {
+                console.error('[url-redirects] product slug', redirectError);
+            }
+        }
         const { scheduleProductVisualIndex } = await import('@/lib/productVisualIndex');
         const { default: ProductVisualIndex } = await import('@/models/ProductVisualIndex');
         scheduleProductVisualIndex(product, ProductVisualIndex);
@@ -1106,7 +1128,14 @@ export async function DELETE(request) {
         const product = await Product.findById(productId).lean();
         if (!product || product.storeId !== storeId) return NextResponse.json({ error: "Not authorized" }, { status: 401 });
 
+        const removedSlug = product.slug;
         await Product.findByIdAndDelete(productId);
+        try {
+            const { recordProductGone } = await import('@/lib/urlRedirects');
+            await recordProductGone(removedSlug, 'Product deleted');
+        } catch (redirectError) {
+            console.error('[url-redirects] product delete', redirectError);
+        }
         await Store.findByIdAndUpdate(storeId, {
             $pull: { featuredProductIds: productId },
         });

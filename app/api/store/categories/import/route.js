@@ -459,6 +459,15 @@ export async function POST(request) {
           ? await Category.findByIdAndUpdate(existingCategory._id, payload, { new: true })
           : await Category.create(payload);
 
+        if (existingCategory && String(existingCategory.slug || '') !== String(finalSlug)) {
+          try {
+            const { redirectRetiredCategory } = await import('@/lib/urlRedirects');
+            await redirectRetiredCategory(existingCategory);
+          } catch (redirectError) {
+            console.error('[url-redirects] category import slug', redirectError);
+          }
+        }
+
         const normalizedCategory = savedCategory.toObject();
         registerCategory(normalizedCategory);
 
@@ -524,6 +533,15 @@ export async function POST(request) {
           const savedCategory = existingCategory
             ? await Category.findByIdAndUpdate(existingCategory._id, payload, { new: true })
             : await Category.create(payload);
+
+          if (existingCategory && String(existingCategory.slug || '') !== String(finalSlug)) {
+            try {
+              const { redirectRetiredCategory } = await import('@/lib/urlRedirects');
+              await redirectRetiredCategory(existingCategory);
+            } catch (redirectError) {
+              console.error('[url-redirects] category import slug', redirectError);
+            }
+          }
 
           const normalizedCategory = savedCategory.toObject();
           registerCategory(normalizedCategory);

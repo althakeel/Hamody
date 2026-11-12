@@ -303,9 +303,6 @@ function mergePublicLiveTracking(current, incoming) {
     c3x: incoming.c3x
       ? { ...(current.c3x || {}), ...incoming.c3x }
       : current.c3x,
-    delhivery: incoming.delhivery
-      ? { ...(current.delhivery || {}), ...incoming.delhivery }
-      : current.delhivery,
   };
 }
 

@@ -192,6 +192,25 @@ export async function PATCH(request) {
       }))
     }
 
+    if (typeof updateData.published === 'boolean') {
+      try {
+        const publishedRows = await Product.find({
+          _id: { $in: productIds },
+          storeId: String(storeId),
+        }).select('slug').lean()
+        const slugs = publishedRows.map((product) => product.slug)
+        if (updateData.published) {
+          const { clearProductGone } = await import('@/lib/urlRedirects')
+          await Promise.all(slugs.map((slug) => clearProductGone(slug)))
+        } else {
+          const { recordProductsGone } = await import('@/lib/urlRedirects')
+          await recordProductsGone(slugs, 'Product discontinued')
+        }
+      } catch (redirectError) {
+        console.error('[url-redirects] product bulk publish', redirectError)
+      }
+    }
+
     invalidateStorefrontProductCaches()
     queueInventorySheetSync(storeId)
 

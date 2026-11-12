@@ -4,8 +4,10 @@ import Category from '@/models/Category';
 import { resolveStorefrontLanguage } from '@/lib/storefrontLanguage';
 import { getCachedData, setCachedData } from '@/lib/cache';
 import { sanitizeCategoryFields, sanitizeCategoryTree } from '@/lib/displayText';
+import { getPublishedCategoryProductCounts } from '@/lib/categoryPageData';
+import { categoryProductCount } from '@/lib/categoryProductStats';
 
-const CACHE_KEY = 'public:categories:tree:v7';
+const CACHE_KEY = 'public:categories:tree:v8';
 
 // GET - Fetch all categories (public endpoint)
 export async function GET(req) {
@@ -23,6 +25,7 @@ export async function GET(req) {
         }
 
         await connectDB();
+        const productCounts = await getPublishedCategoryProductCounts();
 
         const allCategories = await Category.find({ isActive: { $ne: false } })
             .select('name nameAr slug image parentId description descriptionAr legacySourceId level url sortOrder metaTitle metaDescription')
@@ -72,10 +75,14 @@ export async function GET(req) {
             const children = (childrenByParent.get(String(category._id)) || [])
                 .sort((first, second) => (first.sortOrder || 0) - (second.sortOrder || 0)
                     || String(first.name || '').localeCompare(String(second.name || '')))
-                .map((child) => localizeCategoryNode(child));
+                .map((child) => localizeCategoryNode({
+                    ...child,
+                    productCount: categoryProductCount(productCounts, child._id),
+                }));
 
             return localizeCategoryNode({
                 ...category,
+                productCount: categoryProductCount(productCounts, category._id),
                 parentId: resolveCategoryParentId(category.parentId) || null,
                 children,
             });

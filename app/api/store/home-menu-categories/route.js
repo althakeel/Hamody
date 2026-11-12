@@ -4,9 +4,10 @@ import { NextResponse } from 'next/server';
 import { getAuth } from '@/lib/firebase-admin';
 import { getCachedData, setCachedData } from '@/lib/cache';
 import { resolveStorefrontOwnerId } from '@/lib/storefrontSettingsOwner';
+import { getPublishedCategoryProductCounts } from '@/lib/categoryPageData';
 
 export const maxDuration = 60;
-const CACHE_KEY = 'public:home-menu-categories:v2';
+const CACHE_KEY = 'public:home-menu-categories:v3';
 const CACHE_TTL = 180;
 
 function parseAuthHeader(req) {
@@ -38,9 +39,16 @@ export async function GET(req) {
     const settings = (Array.isArray(owned?.items) && owned.items.length)
       ? owned
       : await HomeMenuCategorySettings.findOne({ 'items.0': { $exists: true } }).sort({ updatedAt: -1 }).lean();
+    const productCounts = await getPublishedCategoryProductCounts().catch(() => ({}));
     const payload = {
       count: settings?.count || 6,
-      items: settings?.items || [],
+      items: (settings?.items || []).map((item) => {
+        const categoryId = String(item?.categoryId || '').trim();
+        const productCount = categoryId && productCounts[categoryId] != null
+          ? Number(productCounts[categoryId])
+          : null;
+        return { ...item, productCount };
+      }),
     };
 
     setCachedData(CACHE_KEY, payload, CACHE_TTL);

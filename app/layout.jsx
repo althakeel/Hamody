@@ -14,6 +14,7 @@ import { META_PIXEL_ID, getMetaPixelNoscriptSrc } from "@/lib/metaPixelConfig";
 import OrganizationJsonLd from "@/components/OrganizationJsonLd";
 import { SITE_URL } from "@/lib/sitemapData";
 import { getRequestHostFromHeaders, isStagingStoreHost } from "@/lib/stagingHost";
+import { STRIP_EXTENSION_HYDRATION_SCRIPT } from "@/lib/stripExtensionHydrationAttrs";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -112,6 +113,10 @@ export default async function RootLayout({ children }) {
       suppressHydrationWarning
     >
       <head>
+        <script
+          id="store1920-strip-ext-attrs"
+          dangerouslySetInnerHTML={{ __html: STRIP_EXTENSION_HYDRATION_SCRIPT }}
+        />
         {/* S3 media preconnect */}
         {s3Origin && (
           <>
