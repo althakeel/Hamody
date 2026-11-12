@@ -50,6 +50,7 @@ import { ensureGa4CategoryCache } from '@/lib/ga4CategoryLookup';
 import { runTrackedOnce } from '@/lib/trackingDedupe';
 import { GTM_EVENTS, gtmDedupeKey } from '@/lib/gtmEvents';
 import { getCartEntryProductId, getCartEntryQuantity, isFreeGiftEntry } from "@/lib/freeGiftUtils";
+import { computeCouponDiscount } from "@/lib/couponDiscount";
 import { getCartProductIdsNeedingVariants, mergeFetchedProducts } from '@/lib/cartProductFetch';
 import { resolveCartLinePricing, resolveMatrixCartMaxPacks, isBulkBundleProduct, isMatrixStyleProduct, findBulkBundleVariant, getBulkBundleTiers } from "@/lib/bulkBundleCart";
 import { decrementCartItem, incrementCartItem } from "@/lib/bundleCartActions";
@@ -814,9 +815,8 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
 
   const subtotal = cartArray.reduce((sum, item) => sum + (item._lineTotal ?? ((item._cartPrice ?? item.price ?? 0) * item.quantity)), 0);
   
-  // Calculate coupon discount
-  const couponDiscountRaw = Number(appliedCoupon?.discountAmount || 0);
-  const couponDiscount = Number.isFinite(couponDiscountRaw) ? Number(couponDiscountRaw.toFixed(2)) : 0;
+  // Percent of the visible subtotal. maxDiscount is only a ceiling.
+  const couponDiscount = computeCouponDiscount(appliedCoupon, subtotal);
   const isFreeShippingCouponApplied = Boolean(appliedCoupon?.freeShipping);
   const effectiveShipping = isFreeShippingCouponApplied ? 0 : shipping;
   const shippingDiscount = isFreeShippingCouponApplied ? shipping : 0;

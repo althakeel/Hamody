@@ -24,6 +24,7 @@ import { hasGa4PurchaseTracked } from '@/lib/gtmPurchase';
 import { hasTrackedPersistently, markTrackedPersistently, hasTrackedOnce, markTrackedOnce } from '@/lib/trackingDedupe';
 import { getMetaPurchaseDedupeKey } from '@/lib/metaPurchase';
 import { getDisplayOrderNumber } from '@/lib/orderDisplay';
+import { computeCouponDiscount } from '@/lib/couponDiscount';
 import { resolveOrderLineLineTotal, resolveOrderLinePackQuantity, resolveOrderLineQuantity } from '@/lib/gtmEcommerceHelpers';
 import { clearPendingCheckoutOrder } from '@/lib/pendingCheckoutOrder';
 import {
@@ -365,7 +366,9 @@ function OrderSuccessContent() {
   const shippingTotal = typeof order?.shippingFee === 'number' ? order.shippingFee : 0;
   const codFee = typeof order?.codFee === 'number' ? order.codFee : 0;
   const shipping = Math.max(0, shippingTotal - codFee);
-  const discount = order?.coupon?.discount ? (order.coupon.discountType === 'percentage' ? (order.coupon.discount / 100 * subtotal) : Math.min(order.coupon.discount, subtotal)) : 0;
+  const discount = order?.isCouponUsed || order?.coupon?.code
+    ? computeCouponDiscount(order.coupon, subtotal)
+    : 0;
   const walletDiscount = Number(order?.walletDiscount || 0);
   const total = typeof order?.total === 'number' ? order.total : (subtotal + shippingTotal - discount - walletDiscount);
   const orderDate = order?.createdAt ? new Date(order.createdAt).toLocaleDateString() : new Date().toLocaleDateString();

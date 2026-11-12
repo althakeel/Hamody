@@ -41,6 +41,7 @@ import { createTabbySession, buildTabbyBuyerHistory, buildTabbyOrderHistoryEntri
 import { formatPaymentProviderOrderReference } from '@/lib/orderPaymentReference';
 import { normalizeEmail } from '@/lib/orderIdentity';
 import { getCouponAccessErrorAsync } from '@/lib/couponAccess';
+import { computeCouponDiscount } from '@/lib/couponDiscount';
 import { applyAppProductDiscount, isAppCheckoutRequest } from '@/lib/appProductDiscount';
 import { readAppClientSource } from '@/lib/appClientSource';
 import { linkGuestOrdersToUser, resolveContactForGuestLinking } from '@/lib/linkGuestOrders';
@@ -674,12 +675,7 @@ export async function POST(request) {
         for (const [storeId, sellerItems] of ordersByStore.entries()) {
             let storeTotal = sellerItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
             if (normalizedCouponCode && coupon) {
-                const normalizedDiscountValue = Number(coupon.discountValue ?? coupon.discount ?? 0);
-                if (coupon.discountType === 'percentage') {
-                    storeTotal -= (storeTotal * normalizedDiscountValue) / 100;
-                } else {
-                    storeTotal -= Math.min(normalizedDiscountValue, storeTotal);
-                }
+                storeTotal -= computeCouponDiscount(coupon, storeTotal);
             }
             if (!isPlusMember && !projectedShippingAdded && !freeShippingCoupon) {
                 storeTotal += shippingFee;
@@ -753,13 +749,10 @@ export async function POST(request) {
             
             let total = sellerItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
             const freeShippingCoupon = Boolean(coupon?.freeShipping);
+            let couponDiscountAmount = 0;
             if (normalizedCouponCode && coupon) {
-                const normalizedDiscountValue = Number(coupon.discountValue ?? coupon.discount ?? 0);
-                if (coupon.discountType === 'percentage') {
-                    total -= (total * normalizedDiscountValue) / 100;
-                } else {
-                    total -= Math.min(normalizedDiscountValue, total);
-                }
+                couponDiscountAmount = computeCouponDiscount(coupon, total);
+                total -= couponDiscountAmount;
             }
             if (!isPlusMember && !isShippingFeeAdded && !freeShippingCoupon) {
                 total += shippingFee;
@@ -791,7 +784,9 @@ export async function POST(request) {
                 paymentStatus: paymentStatus || 'PENDING',
                 fulfillmentStockReservationRequired: true,
                 isCouponUsed: !!coupon,
-                coupon: coupon || {},
+                coupon: coupon
+                    ? { ...coupon, discountAmount: couponDiscountAmount }
+                    : {},
                 coinsRedeemed,
                 walletDiscount,
                 waslah: {

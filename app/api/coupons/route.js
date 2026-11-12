@@ -5,6 +5,7 @@ import Order from "@/models/Order";
 import SpinLog from "@/models/SpinLog";
 import { getAuth } from "@/lib/firebase-admin";
 import { getCouponAccessErrorAsync, isCouponVisibleToUser, resolveCouponWinnerUserId } from "@/lib/couponAccess";
+import { computeCouponDiscount } from "@/lib/couponDiscount";
 
 // GET - Fetch active coupons for display
 export async function GET(request) {
@@ -185,18 +186,7 @@ export async function POST(request) {
       }
     }
 
-    // Calculate discount
-    let discountAmount = 0;
-    if (coupon.discountType === "percentage") {
-      discountAmount = (orderTotal * (coupon.discountValue || coupon.discount || 0)) / 100;
-      if (coupon.maxDiscount) {
-        discountAmount = Math.min(discountAmount, coupon.maxDiscount);
-      }
-    } else if (coupon.discountType === "fixed") {
-      discountAmount = coupon.discountValue || coupon.discount || 0;
-    }
-
-    discountAmount = Number(discountAmount.toFixed(2));
+    const discountAmount = computeCouponDiscount(coupon, orderTotal);
 
     return NextResponse.json({
       success: true,
@@ -207,6 +197,7 @@ export async function POST(request) {
         description: coupon.description,
         discountType: coupon.discountType,
         discountValue: coupon.discountValue || coupon.discount,
+        maxDiscount: coupon.maxDiscount ?? null,
         discountAmount,
         freeShipping: Boolean(coupon.freeShipping),
       },
