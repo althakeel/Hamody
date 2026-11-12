@@ -98,7 +98,7 @@ export async function GET(request) {
         deletedAt: null,
         $or: or,
       })
-        .select('_id shortOrderNumber guestName guestEmail status shippingAddress.name shippingAddress.email createdAt')
+        .select('_id shortOrderNumber guestName guestEmail status total isPaid paymentStatus shippingAddress.name shippingAddress.email createdAt')
         .sort({ createdAt: -1 })
         .limit(12)
         .lean();
@@ -111,6 +111,8 @@ export async function GET(request) {
           createdAt: order.createdAt,
           name: order.guestName || order.shippingAddress?.name || '',
           email: order.guestEmail || order.shippingAddress?.email || '',
+          total: Number(order.total || 0),
+          isPaid: order.isPaid === true || String(order.paymentStatus || '').toUpperCase() === 'PAID',
         })),
       });
     }

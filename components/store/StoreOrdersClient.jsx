@@ -779,8 +779,19 @@ export default function StoreOrders() {
     const [showOrderFilters, setShowOrderFilters] = useState(false);
     const [paymentReconcileStatus, setPaymentReconcileStatus] = useState(null);
     const paymentReconcileRunningRef = useRef(false);
+    const paymentLinkSearchTimer = useRef(null);
     const PAYMENT_RECONCILE_INTERVAL_MS = 30 * 1000;
     const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);
+    const [showPaymentLinkModal, setShowPaymentLinkModal] = useState(false);
+    const [paymentLinkQuery, setPaymentLinkQuery] = useState('');
+    const [paymentLinkMatches, setPaymentLinkMatches] = useState([]);
+    const [paymentLinkSearchBusy, setPaymentLinkSearchBusy] = useState(false);
+    const [paymentLinkTarget, setPaymentLinkTarget] = useState(null);
+    const [paymentLinkGateway, setPaymentLinkGateway] = useState('card');
+    const [shareLinkAmount, setShareLinkAmount] = useState('');
+    const [shareLinkEmail, setShareLinkEmail] = useState('');
+    const [shareLinkPhone, setShareLinkPhone] = useState('');
+    const [shareLinkResult, setShareLinkResult] = useState(null);
     const suppressLiveAlertsRef = useRef(false);
     const [selectedOrderIds, setSelectedOrderIds] = useState([]);
     const [deletingBulkOrders, setDeletingBulkOrders] = useState(false);
@@ -797,6 +808,7 @@ export default function StoreOrders() {
     const [recheckingPaymentOrderId, setRecheckingPaymentOrderId] = useState(null);
     const [creatingVaultsPayLinkId, setCreatingVaultsPayLinkId] = useState(null);
     const [creatingPaymentLinkMethod, setCreatingPaymentLinkMethod] = useState('');
+    const [paymentLinkAmount, setPaymentLinkAmount] = useState('');
     const [vaultsPayLink, setVaultsPayLink] = useState(null);
     const [schedulingPickup, setSchedulingPickup] = useState(false);
     const [sendingToC3xpress, setSendingToC3xpress] = useState(false);
@@ -2139,10 +2151,20 @@ export default function StoreOrders() {
         }
     };
 
-    const createOrderPaymentLink = async (method) => {
-        const order = selectedOrder;
+    useEffect(() => {
+        const total = Number(selectedOrder?.total);
+        setPaymentLinkAmount(Number.isFinite(total) && total > 0 ? total.toFixed(2) : '');
+    }, [selectedOrder?._id]);
+
+    const createOrderPaymentLink = async (method, options = {}) => {
+        const order = options.order || selectedOrder;
         const orderId = String(order?._id || '').trim();
-        if (!orderId || creatingPaymentLinkMethod) return;
+        if (!orderId || creatingPaymentLinkMethod) return null;
+        const amount = Number(options.amount != null ? options.amount : paymentLinkAmount);
+        if (!Number.isFinite(amount) || amount < 1 || amount > 100000) {
+            toast.error('Enter an amount from 1 to 100,000 AED');
+            return;
+        }
         setCreatingPaymentLinkMethod(method);
         try {
             let token = await getToken(false);
@@ -2153,13 +2175,14 @@ export default function StoreOrders() {
             }
             const { data } = await axios.post(
                 `/api/store/orders/${orderId}/payment-link`,
-                { method },
+                { method, amount: Number(amount.toFixed(2)) },
                 { headers: { Authorization: `Bearer ${token}` } },
             );
             if (!data?.url) throw new Error('No payment link was returned');
             const paymentLink = {
                 provider: data.provider,
                 url: data.url,
+                amount: data.amount,
                 expiresAt: data.expiresAt || null,
                 createdAt: new Date().toISOString(),
             };
@@ -2174,11 +2197,130 @@ export default function StoreOrders() {
             } catch {
                 toast.success('Payment link ready. It is saved in History.');
             }
+            return data;
+        } catch (error) {
+            toast.error(error?.response?.data?.error || error?.message || 'Could not create a payment link');
+            return null;
+        } finally {
+            setCreatingPaymentLinkMethod('');
+        }
+    };
+
+    const openPaymentLinkModal = () => {
+        setPaymentLinkQuery('');
+        setPaymentLinkMatches([]);
+        setPaymentLinkTarget(null);
+        setShareLinkAmount('');
+        setShareLinkEmail('');
+        setShareLinkPhone('');
+        setPaymentLinkGateway('card');
+        setShareLinkResult(null);
+        setShowPaymentLinkModal(true);
+    };
+
+    const generateSharePaymentLink = async () => {
+        if (creatingPaymentLinkMethod) return;
+        if (paymentLinkTarget) {
+            const data = await createOrderPaymentLink(paymentLinkGateway, {
+                order: paymentLinkTarget,
+                amount: shareLinkAmount,
+            });
+            if (data?.url) {
+                setShareLinkResult({
+                    url: data.url,
+                    amount: data.amount,
+                    provider: data.provider,
+                    shortOrderNumber: data.shortOrderNumber || paymentLinkTarget.shortOrderNumber,
+                });
+            }
+            return;
+        }
+
+        const amount = Number(shareLinkAmount);
+        if (!Number.isFinite(amount) || amount < 1 || amount > 100000) {
+            toast.error('Enter an amount from 1 to 100,000 AED');
+            return;
+        }
+        const needsCustomer = paymentLinkGateway === 'tabby' || paymentLinkGateway === 'tamara';
+        if (needsCustomer && (!shareLinkEmail.includes('@') || shareLinkPhone.replace(/\D/g, '').length < 8)) {
+            toast.error('Tabby and Tamara need the customer email and UAE mobile number.');
+            return;
+        }
+
+        setCreatingPaymentLinkMethod(paymentLinkGateway);
+        try {
+            let token = await getToken(false);
+            if (!token) token = await getToken(true);
+            if (!token) {
+                toast.error('Authentication failed. Please sign in again.');
+                return;
+            }
+            const { data } = await axios.post(
+                '/api/store/payment-links',
+                {
+                    method: paymentLinkGateway,
+                    amount: Number(amount.toFixed(2)),
+                    email: shareLinkEmail.trim(),
+                    phone: shareLinkPhone.trim(),
+                },
+                { headers: { Authorization: `Bearer ${token}` } },
+            );
+            if (!data?.url) throw new Error('No payment link was returned');
+            setShareLinkResult({
+                url: data.url,
+                amount: data.amount,
+                provider: data.provider,
+                shortOrderNumber: data.shortOrderNumber,
+                createdOrder: true,
+            });
+            try {
+                await navigator.clipboard.writeText(data.url);
+                toast.success(data.shortOrderNumber
+                    ? `Order #${data.shortOrderNumber} created. Payment link copied.`
+                    : 'Payment link copied.');
+            } catch {
+                toast.success(data.shortOrderNumber
+                    ? `Order #${data.shortOrderNumber} created. Payment link is ready.`
+                    : 'Payment link ready.');
+            }
+            fetchOrders();
         } catch (error) {
             toast.error(error?.response?.data?.error || error?.message || 'Could not create a payment link');
         } finally {
             setCreatingPaymentLinkMethod('');
         }
+    };
+
+    const searchPaymentLinkOrders = (query) => {
+        const raw = String(query || '');
+        const q = raw.trim();
+        setPaymentLinkQuery(raw);
+        if (paymentLinkSearchTimer.current) clearTimeout(paymentLinkSearchTimer.current);
+        if (q.length < 2) {
+            setPaymentLinkMatches([]);
+            setPaymentLinkSearchBusy(false);
+            return;
+        }
+        setPaymentLinkSearchBusy(true);
+        paymentLinkSearchTimer.current = setTimeout(async () => {
+            try {
+                let token = await getToken(false);
+                if (!token) token = await getToken(true);
+                if (!token) {
+                    setPaymentLinkMatches([]);
+                    return;
+                }
+                const { data } = await axios.get('/api/store/orders/lookup', {
+                    params: { q, list: '1' },
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                setPaymentLinkMatches(Array.isArray(data?.orders) ? data.orders : []);
+            } catch {
+                setPaymentLinkMatches([]);
+            } finally {
+                setPaymentLinkSearchBusy(false);
+            }
+        }, 300);
     };
 
     const recheckFailedOrderPayment = async (order) => {
@@ -4347,14 +4489,24 @@ export default function StoreOrders() {
         <>
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <h1 className="text-2xl text-slate-500">Store <span className="text-slate-800 font-medium">Orders</span></h1>
-                <button
-                    type="button"
-                    onClick={() => setShowCreateOrderModal(true)}
-                    className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
-                >
-                    <Plus size={16} />
-                    Create order
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={openPaymentLinkModal}
+                        className="inline-flex items-center gap-2 rounded-lg border border-violet-300 bg-white px-4 py-2.5 text-sm font-semibold text-violet-800 shadow-sm transition hover:bg-violet-50"
+                    >
+                        <Link2 size={16} />
+                        Payment link
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setShowCreateOrderModal(true)}
+                        className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+                    >
+                        <Plus size={16} />
+                        Create order
+                    </button>
+                </div>
             </div>
 
             <StoreNotifyRequestsCard />
@@ -7236,8 +7388,21 @@ export default function StoreOrders() {
                                         <div className="md:col-span-3 rounded-lg border border-slate-200 bg-white p-3">
                                             <p className="text-sm font-semibold text-slate-900">Collect payment</p>
                                             <p className="mt-1 text-xs text-slate-500">
-                                                Create a Visa / Mastercard, Apple Pay, Tabby, or Tamara link. When the customer pays, a cash on delivery order is marked paid. The link and the payment are saved in History.
+                                                Type any amount, then create a card or Tabby link and share it with the customer. When they pay, the order is marked paid. The link is also saved in History.
                                             </p>
+                                            <label className="mt-3 block text-xs font-semibold text-slate-700">
+                                                Amount to collect (AED)
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    max="100000"
+                                                    step="0.01"
+                                                    inputMode="decimal"
+                                                    value={paymentLinkAmount}
+                                                    onChange={(event) => setPaymentLinkAmount(event.target.value)}
+                                                    className="mt-1 w-full max-w-[220px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                                                />
+                                            </label>
                                             <div className="mt-3 flex flex-wrap gap-2">
                                                 {[
                                                     ['card', 'Visa / Mastercard link'],
@@ -7258,9 +7423,34 @@ export default function StoreOrders() {
                                                 ))}
                                             </div>
                                             {selectedOrder.paymentLink?.url ? (
-                                                <p className="mt-3 break-all font-mono text-[11px] text-slate-600">
-                                                    {selectedOrder.paymentLink.url}
-                                                </p>
+                                                <div className="mt-3">
+                                                    {Number(selectedOrder.paymentLink.amount) > 0 ? (
+                                                        <p className="text-xs font-semibold text-slate-700">
+                                                            Link for AED {Number(selectedOrder.paymentLink.amount).toFixed(2)}
+                                                            {selectedOrder.paymentLink.provider ? ` · ${selectedOrder.paymentLink.provider}` : ''}
+                                                        </p>
+                                                    ) : null}
+                                                    <div className="mt-1 flex items-start gap-2">
+                                                        <p className="min-w-0 flex-1 break-all font-mono text-[11px] text-slate-600">
+                                                            {selectedOrder.paymentLink.url}
+                                                        </p>
+                                                        <button
+                                                            type="button"
+                                                            onClick={async () => {
+                                                                try {
+                                                                    await navigator.clipboard.writeText(selectedOrder.paymentLink.url);
+                                                                    toast.success('Payment link copied');
+                                                                } catch {
+                                                                    toast.error('Could not copy the link');
+                                                                }
+                                                            }}
+                                                            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
+                                                        >
+                                                            <Copy size={12} />
+                                                            Copy
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             ) : null}
                                         </div>
                                     ) : null}
@@ -7719,6 +7909,179 @@ export default function StoreOrders() {
                     </div>
                 </div>
             )}
+
+            {showPaymentLinkModal ? (
+                <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4" onClick={() => setShowPaymentLinkModal(false)}>
+                    <div
+                        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl"
+                        dir="ltr"
+                        lang="en"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-900">Payment link</h2>
+                                <p className="mt-1 text-sm text-slate-500">Type the amount and choose a gateway. Leave the order blank to start a new order. The order number is assigned automatically.</p>
+                            </div>
+                            <button type="button" onClick={() => setShowPaymentLinkModal(false)} className="rounded-md p-1 text-slate-400 hover:bg-slate-100" aria-label="Close">
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <label className="mt-4 block text-xs font-semibold text-slate-700">
+                            Existing order (optional)
+                            <input
+                                type="search"
+                                value={paymentLinkQuery}
+                                onChange={(event) => searchPaymentLinkOrders(event.target.value)}
+                                placeholder="Leave blank for a new order"
+                                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                            />
+                        </label>
+                        {paymentLinkSearchBusy ? <p className="mt-2 text-xs text-slate-500">Searching…</p> : null}
+                        {paymentLinkMatches.length > 0 ? (
+                            <div className="mt-2 max-h-36 space-y-1 overflow-y-auto">
+                                {paymentLinkMatches.map((order) => (
+                                    <button
+                                        key={order._id}
+                                        type="button"
+                                        disabled={order.isPaid}
+                                        onClick={() => {
+                                            setPaymentLinkTarget(order);
+                                            setShareLinkAmount(Number(order.total) > 0 ? Number(order.total).toFixed(2) : '');
+                                            setShareLinkResult(null);
+                                            setPaymentLinkMatches([]);
+                                            setPaymentLinkQuery('');
+                                        }}
+                                        className="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2 text-left text-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        <span className="min-w-0">
+                                            <span className="font-semibold text-slate-900">#{order.shortOrderNumber || order._id}</span>
+                                            <span className="ml-2 text-slate-500">{order.name || order.email || 'Customer'}</span>
+                                        </span>
+                                        <span className="shrink-0 text-xs font-semibold text-slate-600">
+                                            {order.isPaid ? 'Paid' : `${currency}${Number(order.total || 0).toFixed(2)}`}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        ) : null}
+                        {paymentLinkTarget ? (
+                            <p className="mt-2 flex items-center justify-between gap-2 text-sm font-semibold text-slate-800">
+                                <span>
+                                    Selected: #{paymentLinkTarget.shortOrderNumber || paymentLinkTarget._id}
+                                    {paymentLinkTarget.guestName || paymentLinkTarget.name ? ` · ${paymentLinkTarget.guestName || paymentLinkTarget.name}` : ''}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => setPaymentLinkTarget(null)}
+                                    className="text-xs font-semibold text-slate-500 hover:text-slate-800"
+                                >
+                                    Use a new order
+                                </button>
+                            </p>
+                        ) : (
+                            <p className="mt-2 text-xs text-slate-500">No order selected. A new order will be created when you generate the link.</p>
+                        )}
+
+                        {!paymentLinkTarget && (paymentLinkGateway === 'tabby' || paymentLinkGateway === 'tamara') ? (
+                            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                <label className="block text-xs font-semibold text-slate-700">
+                                    Customer email
+                                    <input
+                                        type="email"
+                                        value={shareLinkEmail}
+                                        onChange={(event) => setShareLinkEmail(event.target.value)}
+                                        placeholder="name@email.com"
+                                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                                    />
+                                </label>
+                                <label className="block text-xs font-semibold text-slate-700">
+                                    Mobile number
+                                    <input
+                                        type="tel"
+                                        value={shareLinkPhone}
+                                        onChange={(event) => setShareLinkPhone(event.target.value)}
+                                        placeholder="05xxxxxxxx"
+                                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                                    />
+                                </label>
+                            </div>
+                        ) : null}
+
+                        <label className="mt-4 block text-xs font-semibold text-slate-700">
+                            Amount (AED)
+                            <input
+                                type="number"
+                                min="1"
+                                max="100000"
+                                step="0.01"
+                                inputMode="decimal"
+                                value={shareLinkAmount}
+                                onChange={(event) => setShareLinkAmount(event.target.value)}
+                                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                            />
+                        </label>
+
+                        <p className="mt-4 text-xs font-semibold text-slate-700">Payment gateway</p>
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                            {[
+                                ['card', 'Visa / Mastercard'],
+                                ['tabby', 'Tabby'],
+                                ['applepay', 'Apple Pay'],
+                                ['tamara', 'Tamara'],
+                            ].map(([method, label]) => (
+                                <button
+                                    key={method}
+                                    type="button"
+                                    onClick={() => setPaymentLinkGateway(method)}
+                                    className={`rounded-lg border px-3 py-2 text-sm font-semibold ${paymentLinkGateway === method ? 'border-violet-500 bg-violet-50 text-violet-900' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button
+                            type="button"
+                            disabled={Boolean(creatingPaymentLinkMethod)}
+                            onClick={generateSharePaymentLink}
+                            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            <Link2 size={16} />
+                            {creatingPaymentLinkMethod ? 'Creating link…' : 'Generate link'}
+                        </button>
+
+                        {shareLinkResult?.url ? (
+                            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                {Number(shareLinkResult.amount) > 0 ? (
+                                    <p className="text-xs font-semibold text-slate-700">
+                                        {shareLinkResult.shortOrderNumber ? `Order #${shareLinkResult.shortOrderNumber} · ` : ''}
+                                        AED {Number(shareLinkResult.amount).toFixed(2)}
+                                        {shareLinkResult.provider ? ` · ${shareLinkResult.provider}` : ''}
+                                    </p>
+                                ) : null}
+                                <p className="mt-1 break-all font-mono text-[11px] text-slate-600">{shareLinkResult.url}</p>
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        try {
+                                            await navigator.clipboard.writeText(shareLinkResult.url);
+                                            toast.success('Payment link copied');
+                                        } catch {
+                                            toast.error('Could not copy the link');
+                                        }
+                                    }}
+                                    className="mt-2 inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                >
+                                    <Copy size={12} />
+                                    Copy link
+                                </button>
+                            </div>
+                        ) : null}
+                    </div>
+                </div>
+            ) : null}
 
             <StoreCreateOrderModal
                 open={showCreateOrderModal}

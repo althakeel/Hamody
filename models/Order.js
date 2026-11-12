@@ -239,6 +239,7 @@ const OrderSchema = new mongoose.Schema({
   paymentLink: {
     provider: { type: String, default: '' },
     url: { type: String, default: '' },
+    amount: { type: Number, default: null },
     expiresAt: { type: Date, default: null },
     createdAt: { type: Date, default: null },
   },
@@ -391,6 +392,10 @@ OrderSchema.index({ storeId: 1, 'warehouseReturn.collected': 1, 'warehouseReturn
 OrderSchema.index({ 'waslah.autoShipStatus': 1, 'waslah.autoShipNextRetryAt': 1 });
 
 const Order = mongoose.models.Order || mongoose.model("Order", OrderSchema);
+const paymentLinkSchema = Order.schema.path('paymentLink')?.schema;
+if (paymentLinkSchema && !paymentLinkSchema.path('amount')) {
+  paymentLinkSchema.add({ amount: { type: Number, default: null } });
+}
 if (!Order.schema.path('linkedReplacementOrders')) {
   Order.schema.add({
     linkedReplacementOrders: {
