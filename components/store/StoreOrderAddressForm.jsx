@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 import { indiaStatesAndDistricts } from '@/assets/indiaStatesAndDistricts';
+import { UAE_PHONE_CODE_OPTIONS } from '@/assets/countryCodes';
 import SearchableSelect from '@/components/SearchableSelect';
 import PhoneNumberField from '@/components/PhoneNumberField';
 import {
@@ -92,7 +93,7 @@ export default function StoreOrderAddressForm({
           phoneCode={form.phoneCode}
           onPhoneChange={(value) => updateField('phone', value)}
           onPhoneCodeChange={(e) => updateField('phoneCode', e.target.value)}
-          countryOptions={countryCodes.map((entry) => ({ code: entry.code }))}
+          countryOptions={UAE_PHONE_CODE_OPTIONS}
           inputClassName={`flex-1 ${fieldClass} ${errorClass('guest-phone')}`}
           selectClassName="rounded-lg border border-slate-200 bg-white px-2 py-2.5 text-sm"
         />

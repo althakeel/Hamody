@@ -89,6 +89,7 @@ export async function PUT(request, { params }) {
             paymentReferenceId,
             tabbyPaymentId,
             tamaraOrderId,
+            replacementOfOrderId,
         } = body;
 
         // Verify the order belongs to this store
@@ -237,6 +238,33 @@ export async function PUT(request, { params }) {
             }).filter((item) => item.name && item.quantity > 0);
         }
 
+        let nextReplacementSource = null;
+        if (Object.prototype.hasOwnProperty.call(body, 'replacementOfOrderId')) {
+            const replacementId = String(replacementOfOrderId || '').trim();
+            if (!replacementId) {
+                updateData.fulfillmentKind = 'SALE';
+                updateData.sourceOrderId = null;
+                updateData.sourceOrderNumber = '';
+            } else {
+                if (!/^[a-f0-9]{24}$/i.test(replacementId) || replacementId === String(orderId)) {
+                    return NextResponse.json({ error: 'Choose a different existing order for this replacement' }, { status: 400 });
+                }
+                nextReplacementSource = await Order.findOne({
+                    _id: replacementId,
+                    storeId,
+                    deletedAt: null,
+                }).select('_id shortOrderNumber').lean();
+                if (!nextReplacementSource) {
+                    return NextResponse.json({ error: 'The original order was not found' }, { status: 400 });
+                }
+                updateData.fulfillmentKind = 'REPLACEMENT';
+                updateData.sourceOrderId = nextReplacementSource._id;
+                updateData.sourceOrderNumber = nextReplacementSource.shortOrderNumber != null
+                    ? String(nextReplacementSource.shortOrderNumber)
+                    : '';
+            }
+        }
+
         const referenceId = String(paymentReferenceId || tabbyPaymentId || tamaraOrderId || '').trim();
         if (referenceId) {
             updateData.paymentReferenceId = referenceId;
@@ -258,6 +286,7 @@ export async function PUT(request, { params }) {
             notes !== undefined,
             Array.isArray(orderItems),
             Boolean(referenceId),
+            Object.prototype.hasOwnProperty.call(body, 'replacementOfOrderId'),
         ].some(Boolean);
 
         const previousStatus = String(existingOrder.status || '').toUpperCase();
@@ -288,6 +317,33 @@ export async function PUT(request, { params }) {
             select: ORDER_LINE_PRODUCT_SELECT,
         })
         .lean();
+
+        if (Object.prototype.hasOwnProperty.call(body, 'replacementOfOrderId')) {
+            const previousSourceId = existingOrder.sourceOrderId ? String(existingOrder.sourceOrderId) : '';
+            const nextSourceId = nextReplacementSource ? String(nextReplacementSource._id) : '';
+            if (previousSourceId && previousSourceId !== nextSourceId) {
+                await Order.updateOne(
+                    { _id: previousSourceId, storeId },
+                    { $pull: { linkedReplacementOrders: { orderId: existingOrder._id } } },
+                );
+            }
+            if (nextReplacementSource && previousSourceId !== nextSourceId) {
+                await Order.updateOne(
+                    { _id: nextReplacementSource._id, storeId },
+                    {
+                        $push: {
+                            linkedReplacementOrders: {
+                                orderId: existingOrder._id,
+                                shortOrderNumber: existingOrder.shortOrderNumber != null
+                                    ? String(existingOrder.shortOrderNumber)
+                                    : '',
+                                createdAt: new Date(),
+                            },
+                        },
+                    },
+                );
+            }
+        }
 
         if (updatedOrder?.waslah?.autoShipEnrolled === true && !updatedOrder.trackingId) {
             await requestWaslahAutoShipment(updatedOrder, {

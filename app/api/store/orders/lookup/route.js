@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import authSeller from '@/middlewares/authSeller';
 import connectDB from '@/lib/mongodb';
+import Order from '@/models/Order';
 import { getAuth } from '@/lib/firebase-admin';
 import { findOrderByTrackingIdentifier } from '@/lib/orderTrackingLookup';
 import { batchPopulateOrderUsers } from '@/lib/storeOrderUsers';
@@ -66,6 +67,52 @@ export async function GET(request) {
     const q = String(searchParams.get('q') || '').trim();
     if (!q) {
       return NextResponse.json({ error: 'Missing lookup query (q)' }, { status: 400 });
+    }
+
+    if (searchParams.get('list') === '1') {
+      const text = q.slice(0, 80).replace(/^#/, '');
+      const digits = text.replace(/\D/g, '');
+      const numericQuery = digits && digits === text;
+      const or = [];
+
+      if (numericQuery) {
+        const value = Number(digits);
+        or.push({ shortOrderNumber: value });
+        for (let width = digits.length + 1; width <= 8; width += 1) {
+          const factor = 10 ** (width - digits.length);
+          const start = value * factor;
+          or.push({ shortOrderNumber: { $gte: start, $lt: start + factor } });
+        }
+      } else {
+        const pattern = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        or.push(
+          { guestName: { $regex: pattern, $options: 'i' } },
+          { guestEmail: { $regex: pattern, $options: 'i' } },
+          { 'shippingAddress.name': { $regex: pattern, $options: 'i' } },
+          { 'shippingAddress.email': { $regex: pattern, $options: 'i' } },
+        );
+      }
+
+      const orders = await Order.find({
+        storeId,
+        deletedAt: null,
+        $or: or,
+      })
+        .select('_id shortOrderNumber guestName guestEmail status shippingAddress.name shippingAddress.email createdAt')
+        .sort({ createdAt: -1 })
+        .limit(12)
+        .lean();
+
+      return NextResponse.json({
+        orders: orders.map((order) => ({
+          _id: order._id,
+          shortOrderNumber: order.shortOrderNumber,
+          status: order.status,
+          createdAt: order.createdAt,
+          name: order.guestName || order.shippingAddress?.name || '',
+          email: order.guestEmail || order.shippingAddress?.email || '',
+        })),
+      });
     }
 
     const order = await findOrderByTrackingIdentifier(q);

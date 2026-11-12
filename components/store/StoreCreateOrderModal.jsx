@@ -66,6 +66,11 @@ export default function StoreCreateOrderModal({ open, onClose, getToken, onCreat
   const [addingProductId, setAddingProductId] = useState('');
   const [invalidFieldIds, setInvalidFieldIds] = useState(new Set());
   const [validationMessage, setValidationMessage] = useState('');
+  const [isReplacement, setIsReplacement] = useState(false);
+  const [replacementQuery, setReplacementQuery] = useState('');
+  const [replacementSearching, setReplacementSearching] = useState(false);
+  const [replacementOrder, setReplacementOrder] = useState(null);
+  const [replacementResults, setReplacementResults] = useState([]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -82,6 +87,10 @@ export default function StoreCreateOrderModal({ open, onClose, getToken, onCreat
     setShippingFee(0);
     setInvalidFieldIds(new Set());
     setValidationMessage('');
+    setIsReplacement(false);
+    setReplacementQuery('');
+    setReplacementOrder(null);
+    setReplacementResults([]);
 
     let cancelled = false;
     fetchShippingSettings()
@@ -321,6 +330,47 @@ export default function StoreCreateOrderModal({ open, onClose, getToken, onCreat
     });
   };
 
+  const lookupReplacementOrder = async (queryValue) => {
+    const query = String(typeof queryValue === 'string' ? queryValue : replacementQuery).trim();
+    if (query.length < 2) {
+      setReplacementResults([]);
+      return;
+    }
+
+    setReplacementSearching(true);
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.error('Authentication failed. Please sign in again.');
+        return;
+      }
+      const { data } = await axios.get('/api/store/orders/lookup', {
+        params: { q: query, list: '1' },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const orders = Array.isArray(data?.orders) ? data.orders : [];
+      setReplacementResults(orders);
+      if (!orders.length) {
+        toast.error('No orders match that name, email, or order number');
+      }
+    } catch (error) {
+      setReplacementResults([]);
+      toast.error(error?.response?.data?.error || 'Could not search orders');
+    } finally {
+      setReplacementSearching(false);
+    }
+  };
+
+  const selectReplacementOrder = (order) => {
+    setReplacementOrder(order);
+    setReplacementResults([]);
+    setInvalidFieldIds((current) => {
+      const next = new Set(current);
+      next.delete('store-order-replacement');
+      return next;
+    });
+  };
+
   const validateForm = () => {
     const resolvedPhone = resolveGuestPhone(form);
     const issues = collectCheckoutValidationIssues({
@@ -337,6 +387,9 @@ export default function StoreCreateOrderModal({ open, onClose, getToken, onCreat
 
     if (!validLineItems.length) {
       issues.push({ id: 'store-order-items', label: 'At least one product' });
+    }
+    if (isReplacement && !replacementOrder?._id) {
+      issues.push({ id: 'store-order-replacement', label: 'The existing order this replaces' });
     }
 
     if (issues.length) {
@@ -396,6 +449,7 @@ export default function StoreCreateOrderModal({ open, onClose, getToken, onCreat
             ? { type: discountType, value: Number(discountValue) }
             : undefined,
           notes: notes.trim() || undefined,
+          replacementOfOrderId: isReplacement ? replacementOrder?._id : undefined,
         },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -436,6 +490,110 @@ export default function StoreCreateOrderModal({ open, onClose, getToken, onCreat
 
         <div className="flex-1 overflow-y-auto px-5 py-5">
           <div className="space-y-8">
+            <section>
+              <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600"
+                  checked={isReplacement}
+                  onChange={(event) => {
+                    const checked = event.target.checked;
+                    setIsReplacement(checked);
+                    if (!checked) {
+                      setReplacementOrder(null);
+                      setReplacementQuery('');
+                    }
+                  }}
+                />
+                <span>
+                  <span className="block text-sm font-semibold text-slate-900">This is a replacement of an existing order</span>
+                  <span className="mt-0.5 block text-xs text-slate-500">Link the new order to the original order. It will show on both order details.</span>
+                </span>
+              </label>
+
+              {isReplacement ? (
+                <div className={`mt-3 rounded-xl border px-4 py-3 ${invalidFieldIds.has('store-order-replacement') ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}>
+                  <p className="mb-2 text-xs font-medium text-slate-600">Name, email, or order number</p>
+                  <div className="flex gap-2">
+                    <input
+                      value={replacementQuery}
+                      onChange={(event) => {
+                        setReplacementQuery(event.target.value);
+                        setReplacementResults([]);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          lookupReplacementOrder();
+                        }
+                      }}
+                      placeholder="Customer name, email, or order number"
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={lookupReplacementOrder}
+                      disabled={replacementSearching}
+                      className="shrink-0 rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+                    >
+                      {replacementSearching ? 'Finding…' : 'Find'}
+                    </button>
+                  </div>
+                  {replacementOrder ? (
+                    <div className="mt-3 flex items-start justify-between gap-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2">
+                      <div>
+                        <p className="text-sm font-semibold text-sky-950">
+                          Replacement of order #{replacementOrder.shortOrderNumber || replacementOrder._id}
+                        </p>
+                        <p className="text-xs text-sky-800">
+                          {replacementOrder.name || replacementOrder.guestName || replacementOrder.shippingAddress?.name || 'Customer'}
+                          {(replacementOrder.email || replacementOrder.guestEmail || replacementOrder.shippingAddress?.email)
+                            ? ` · ${replacementOrder.email || replacementOrder.guestEmail || replacementOrder.shippingAddress?.email}`
+                            : ''}
+                          {replacementOrder.status ? ` · ${replacementOrder.status}` : ''}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReplacementOrder(null);
+                          setReplacementResults([]);
+                        }}
+                        className="text-xs font-medium text-sky-800 underline"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-xs text-slate-500">Search by customer name, email, or order number, then choose the original order.</p>
+                  )}
+                  {replacementResults.length > 0 ? (
+                    <div className="mt-3 max-h-52 overflow-y-auto rounded-lg border border-slate-200 divide-y divide-slate-100">
+                      {replacementResults.map((order) => (
+                        <button
+                          key={order._id}
+                          type="button"
+                          onClick={() => selectReplacementOrder(order)}
+                          className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left hover:bg-slate-50"
+                        >
+                          <span className="min-w-0">
+                            <span className="block text-sm font-semibold text-slate-900">
+                              #{order.shortOrderNumber || order._id}
+                              {order.name ? ` · ${order.name}` : ''}
+                            </span>
+                            <span className="block truncate text-xs text-slate-500">
+                              {order.email || 'No email'}
+                              {order.status ? ` · ${order.status}` : ''}
+                            </span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </section>
+
             <section>
               <div className="mb-3 flex items-center gap-2">
                 <ShoppingBag size={16} className="text-slate-500" />

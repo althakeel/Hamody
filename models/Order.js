@@ -194,6 +194,14 @@ const OrderSchema = new mongoose.Schema({
   sourceReturnIndex: { type: Number, default: null },
   sourceReturnRequestId: { type: mongoose.Schema.Types.ObjectId, ref: 'ReturnRequest', default: null, index: true },
   sourceReturnNumber: { type: String, default: null },
+  linkedReplacementOrders: {
+    type: [{
+      orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+      shortOrderNumber: { type: String, default: '' },
+      createdAt: { type: Date, default: Date.now },
+    }],
+    default: [],
+  },
   orderItems: [OrderItemSchema],
   items: Array,
   cancelReason: String,
@@ -382,4 +390,18 @@ OrderSchema.index({ storeId: 1, 'warehousePacking.packed': 1, 'warehousePacking.
 OrderSchema.index({ storeId: 1, 'warehouseReturn.collected': 1, 'warehouseReturn.collectedAt': -1 });
 OrderSchema.index({ 'waslah.autoShipStatus': 1, 'waslah.autoShipNextRetryAt': 1 });
 
-export default mongoose.models.Order || mongoose.model("Order", OrderSchema);
+const Order = mongoose.models.Order || mongoose.model("Order", OrderSchema);
+if (!Order.schema.path('linkedReplacementOrders')) {
+  Order.schema.add({
+    linkedReplacementOrders: {
+      type: [{
+        orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+        shortOrderNumber: { type: String, default: '' },
+        createdAt: { type: Date, default: Date.now },
+      }],
+      default: [],
+    },
+  });
+}
+
+export default Order;

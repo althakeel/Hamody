@@ -172,7 +172,7 @@ import {
 import { isWaslahLabelReadyOrder, isWaslahLabelNotPrinted, isWaslahLabelPrinted, getLabelDownloadCount, preserveWaslahLabelDownloadState, mergeOrdersPreservingLabelDownloads } from '@/lib/waslahReceipts';
 import { downloadTodayOrdersProductPdf } from '@/lib/storeTodayOrdersPdf';
 import { downloadPickupManifestExcel, canExportPickupExcel, orderHasPickupRequested, isPackedPickupOrPickedUpOrder, isSentToEmxInRange, isSentToEmxOrder, refreshPickupOrdersForExcel } from '@/lib/storePickupExcel';
-import { getOrderFulfillmentBadge, getOriginalReturnRequestTag, isReturnFollowUpOrder, excludeReturnPickupCloneOrders } from '@/lib/storeReturnLabels';
+import { getOrderFulfillmentBadge, getOriginalReturnRequestTag, isReturnFollowUpOrder, isReplacementFollowUpOrder, excludeReturnPickupCloneOrders } from '@/lib/storeReturnLabels';
 import { CUSTOMER_PICKUP_ADDRESS, isCustomerPickupOrder } from '@/lib/customerPickup';
 import TrackingTimeline from '@/components/TrackingTimeline';
 
@@ -1903,6 +1903,27 @@ export default function StoreOrders() {
         } catch (error) {
             console.error('Razorpay check error:', error);
             toast.error(error?.response?.data?.error || 'Failed to check payment settlement');
+        }
+    };
+
+    const openLinkedStoreOrder = async (query) => {
+        const lookup = String(query || '').trim();
+        if (!lookup) return;
+        try {
+            const token = await getToken(true);
+            const { data } = await axios.get('/api/store/orders/lookup', {
+                params: { q: lookup },
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!data?.order) {
+                toast.error('Order not found');
+                return;
+            }
+            setSelectedOrder(data.order);
+            setIsModalOpen(true);
+            setShowOrderEditPanel(false);
+        } catch (error) {
+            toast.error(error?.response?.data?.error || 'Could not open that order');
         }
     };
 
@@ -5816,7 +5837,7 @@ export default function StoreOrders() {
                                         const badge = fulfillmentBadge || originalTag;
                                         if (!badge) return null;
                                         return (
-                                            <p className="mt-2 inline-flex items-center rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white ring-1 ring-white/40">
+                                            <p className="mt-2 inline-flex w-max items-center whitespace-nowrap rounded bg-white px-2 py-1 text-[11px] font-semibold text-sky-950">
                                                 {badge.label}
                                             </p>
                                         );
@@ -6866,6 +6887,39 @@ export default function StoreOrders() {
                                     </div>
                                 </div>
                             )}
+
+                            {isReplacementFollowUpOrder(selectedOrder) && (selectedOrder.sourceOrderNumber || selectedOrder.sourceOrderId) ? (
+                                <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
+                                    <p className="text-sm font-semibold text-sky-950">
+                                        This order is a replacement of order #{String(selectedOrder.sourceOrderNumber || '').replace(/^#/, '') || selectedOrder.sourceOrderId}
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => openLinkedStoreOrder(selectedOrder.sourceOrderNumber || selectedOrder.sourceOrderId)}
+                                        className="mt-2 text-sm font-semibold text-sky-800 underline"
+                                    >
+                                        Open original order
+                                    </button>
+                                </div>
+                            ) : null}
+
+                            {Array.isArray(selectedOrder.linkedReplacementOrders) && selectedOrder.linkedReplacementOrders.length > 0 ? (
+                                <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
+                                    <p className="text-sm font-semibold text-sky-950">Replacement orders for this order</p>
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                        {selectedOrder.linkedReplacementOrders.map((link) => (
+                                            <button
+                                                key={String(link.orderId || link.shortOrderNumber)}
+                                                type="button"
+                                                onClick={() => openLinkedStoreOrder(link.shortOrderNumber || link.orderId)}
+                                                className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-sky-800 ring-1 ring-sky-200"
+                                            >
+                                                Replacement #{link.shortOrderNumber || link.orderId}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : null}
 
                             {/* Customer Details */}
                             <div className="bg-slate-50 rounded-xl p-5">

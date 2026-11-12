@@ -47,6 +47,11 @@ export default function StoreEditOrderPanel({
   const [searchingProducts, setSearchingProducts] = useState(false);
   const [addingProductId, setAddingProductId] = useState('');
   const [saving, setSaving] = useState(false);
+  const [isReplacement, setIsReplacement] = useState(false);
+  const [replacementQuery, setReplacementQuery] = useState('');
+  const [replacementSearching, setReplacementSearching] = useState(false);
+  const [replacementResults, setReplacementResults] = useState([]);
+  const [replacementOrder, setReplacementOrder] = useState(null);
 
   useEffect(() => {
     setForm(orderToEditForm(order));
@@ -54,6 +59,18 @@ export default function StoreEditOrderPanel({
     setUseManualTotal(orderHasManualTotal(order));
     setProductSearch('');
     setProductResults([]);
+    const sourceId = order?.sourceOrderId ? String(order.sourceOrderId?._id || order.sourceOrderId) : '';
+    const linked = Boolean(sourceId) || String(order?.fulfillmentKind || '').toUpperCase() === 'REPLACEMENT';
+    setIsReplacement(linked);
+    setReplacementQuery('');
+    setReplacementResults([]);
+    setReplacementOrder(linked ? {
+      _id: sourceId,
+      shortOrderNumber: order?.sourceOrderNumber || '',
+      name: '',
+      email: '',
+      status: '',
+    } : null);
   }, [order?._id]);
 
   // Load full product variants/bundles for existing lines so the selector appears.
@@ -224,11 +241,23 @@ export default function StoreEditOrderPanel({
       return;
     }
 
+    if (isReplacement && !replacementOrder?._id) {
+      toast.error('Choose the existing order this replaces');
+      return;
+    }
+    if (isReplacement && String(replacementOrder._id) === String(order._id)) {
+      toast.error('An order cannot replace itself');
+      return;
+    }
+
     setSaving(true);
     try {
       const token = await getToken();
       const payload = buildOrderDetailsUpdatePayload({
-        form,
+        form: {
+          ...form,
+          replacementOfOrderId: isReplacement ? replacementOrder._id : '',
+        },
         lineItems: validItems,
         useManualTotal,
       });
@@ -247,6 +276,33 @@ export default function StoreEditOrderPanel({
     }
   };
 
+  const lookupReplacementOrder = async () => {
+    const query = replacementQuery.trim();
+    if (query.length < 2) {
+      toast.error('Type a name, email, or order number');
+      return;
+    }
+    setReplacementSearching(true);
+    try {
+      const token = await getToken();
+      const { data } = await axios.get('/api/store/orders/lookup', {
+        params: { q: query, list: '1' },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const orders = (Array.isArray(data?.orders) ? data.orders : [])
+        .filter((row) => String(row._id) !== String(order._id));
+      setReplacementResults(orders);
+      if (!orders.length) {
+        toast.error('No orders match that name, email, or order number');
+      }
+    } catch (error) {
+      setReplacementResults([]);
+      toast.error(error?.response?.data?.error || 'Could not search orders');
+    } finally {
+      setReplacementSearching(false);
+    }
+  };
+
   return (
     <div className="rounded-xl border border-blue-200 bg-blue-50/40 p-5 space-y-5">
       <div className="flex items-center gap-2">
@@ -257,6 +313,89 @@ export default function StoreEditOrderPanel({
           <h3 className="text-lg font-semibold text-slate-900">Edit order</h3>
           <p className="text-xs text-slate-500">Update address, items, payment, and totals for this placed order.</p>
         </div>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <label className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600"
+            checked={isReplacement}
+            onChange={(event) => {
+              const checked = event.target.checked;
+              setIsReplacement(checked);
+              if (!checked) {
+                setReplacementOrder(null);
+                setReplacementResults([]);
+                setReplacementQuery('');
+              }
+            }}
+          />
+          <span>
+            <span className="block text-sm font-semibold text-slate-900">This is a replacement of an existing order</span>
+            <span className="mt-0.5 block text-xs text-slate-500">Search by name, email, or order number and choose the original order.</span>
+          </span>
+        </label>
+        {isReplacement ? (
+          <div className="mt-3">
+            <div className="flex gap-2">
+              <input
+                value={replacementQuery}
+                onChange={(event) => {
+                  setReplacementQuery(event.target.value);
+                  setReplacementResults([]);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    lookupReplacementOrder();
+                  }
+                }}
+                placeholder="Customer name, email, or order number"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => lookupReplacementOrder()}
+                disabled={replacementSearching}
+                className="shrink-0 rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
+              >
+                {replacementSearching ? 'Finding…' : 'Find'}
+              </button>
+            </div>
+            {replacementOrder?._id ? (
+              <p className="mt-2 text-sm font-medium text-sky-900">
+                Replacement of order #{replacementOrder.shortOrderNumber || replacementOrder._id}
+                {replacementOrder.name ? ` · ${replacementOrder.name}` : ''}
+                {replacementOrder.email ? ` · ${replacementOrder.email}` : ''}
+              </p>
+            ) : null}
+            {replacementResults.length > 0 ? (
+              <div className="mt-3 max-h-52 overflow-y-auto rounded-lg border border-slate-200 divide-y divide-slate-100">
+                {replacementResults.map((row) => (
+                  <button
+                    key={row._id}
+                    type="button"
+                    onClick={() => {
+                      setReplacementOrder(row);
+                      setReplacementResults([]);
+                    }}
+                    className="flex w-full flex-col px-3 py-2 text-left hover:bg-slate-50"
+                  >
+                    <span className="text-sm font-semibold text-slate-900">
+                      #{row.shortOrderNumber || row._id}
+                      {row.name ? ` · ${row.name}` : ''}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {row.email || 'No email'}
+                      {row.status ? ` · ${row.status}` : ''}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       <StoreOrderAddressForm

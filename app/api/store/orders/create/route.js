@@ -74,6 +74,7 @@ export async function POST(request) {
       notes: notesRaw,
       paymentReferenceId,
       discount,
+      replacementOfOrderId: replacementOfOrderIdRaw,
     } = parsed.data;
     const notes = notesRaw ? sanitizePlainText(notesRaw, { maxLength: 2000 }) : undefined;
 
@@ -97,6 +98,22 @@ export async function POST(request) {
     }
 
     await connectDB();
+
+    const replacementOfOrderId = String(replacementOfOrderIdRaw || '').trim();
+    let replacementSource = null;
+    if (replacementOfOrderId) {
+      if (!/^[a-f0-9]{24}$/i.test(replacementOfOrderId)) {
+        return NextResponse.json({ error: 'Choose a valid existing order for this replacement' }, { status: 400 });
+      }
+      replacementSource = await Order.findOne({
+        _id: replacementOfOrderId,
+        storeId,
+        deletedAt: null,
+      }).select('_id shortOrderNumber').lean();
+      if (!replacementSource) {
+        return NextResponse.json({ error: 'The original order was not found' }, { status: 400 });
+      }
+    }
 
     const productIds = [...new Set(items.map((item) => String(item.id || item.productId || '').trim()).filter(Boolean))];
     if (!productIds.length) {
@@ -169,7 +186,11 @@ export async function POST(request) {
         savedOrder = await Order.findOne({ _id: orderId, storeId }).lean();
       }
       const referenceId = String(paymentReferenceId || '').trim();
+      const replacementNumber = replacementSource?.shortOrderNumber != null
+        ? String(replacementSource.shortOrderNumber)
+        : '';
       const noteLines = [
+        replacementSource ? `Replacement of order #${replacementNumber || replacementSource._id}` : '',
         notes ? String(notes).trim() : '',
         referenceId ? `${paymentMethod} reference: ${referenceId}` : '',
         `Created manually by ${sellerName} from store dashboard`,
@@ -219,6 +240,14 @@ export async function POST(request) {
             manualStoreOrder: true,
             storeCreatedByUid: sellerUid,
             storeCreatedByName: sellerName,
+            ...(replacementSource
+              ? {
+                  fulfillmentKind: 'REPLACEMENT',
+                  sourceOrderId: replacementSource._id,
+                  sourceOrderNumber: replacementNumber,
+                  'attribution.utmMedium': 'replacement_order',
+                }
+              : {}),
             ...(autoShipReadyAt ? { 'waslah.autoShipReadyAt': autoShipReadyAt } : {}),
             ...(referenceId ? { paymentReferenceId: referenceId } : {}),
             ...buildPaymentReferenceUpdate(paymentMethod, referenceId),
@@ -237,6 +266,21 @@ export async function POST(request) {
         },
         { new: true },
       ).lean();
+
+      if (savedOrder && replacementSource) {
+        await Order.updateOne(
+          { _id: replacementSource._id, storeId },
+          {
+            $push: {
+              linkedReplacementOrders: {
+                orderId: savedOrder._id,
+                shortOrderNumber: savedOrder.shortOrderNumber != null ? String(savedOrder.shortOrderNumber) : '',
+                createdAt: new Date(),
+              },
+            },
+          },
+        );
+      }
 
       if (savedOrder) {
         if (
