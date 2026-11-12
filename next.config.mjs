@@ -333,16 +333,6 @@ const nextConfig = {
                 ],
             },
             {
-                // Edge/CDN can serve a warm homepage shell while Next revalidates.
-                source: '/',
-                headers: [
-                    {
-                        key: 'Cache-Control',
-                        value: 'public, s-maxage=120, stale-while-revalidate=600',
-                    },
-                ],
-            },
-            {
                 source: '/store/:path*',
                 headers: [
                     {
@@ -373,7 +363,7 @@ const nextConfig = {
                 headers: [
                     {
                         key: 'Cache-Control',
-                        value: 'public, s-maxage=60, stale-while-revalidate=300',
+                        value: 'public, s-maxage=300, stale-while-revalidate=900',
                     },
                 ],
             },

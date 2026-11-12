@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { HOME_SECTION_STACK_CLASS } from '@/lib/storefrontCarousel';
 import { hasShowcaseBannerImage } from '@/lib/showcaseBannerImages';
@@ -64,6 +64,11 @@ export default function HomePageClient({ initialData }) {
 
   const shopShowcaseConfig = shopShowcase?.config || null;
   const featuredList = Array.isArray(featuredProducts?.products) ? featuredProducts.products : [];
+  // Product grids stay out of the first HTML document. They mount after paint.
+  const [catalogReady, setCatalogReady] = useState(false);
+  useEffect(() => {
+    setCatalogReady(true);
+  }, []);
 
   const showHeroCategories = useMemo(
     () =>
@@ -119,6 +124,7 @@ export default function HomePageClient({ initialData }) {
           </LazyMount>
         ) : null}
 
+        {catalogReady ? (
         <LazyMount rootMargin="60px 0px" minHeight={240}>
           <LatestProducts
             initialProducts={featuredList}
@@ -131,6 +137,9 @@ export default function HomePageClient({ initialData }) {
             initialLayout={appearance?.homeMenuCategories}
           />
         </LazyMount>
+        ) : (
+          <div className="min-h-[220px]" aria-hidden />
+        )}
         {featuredSectionsCount === 0 ? (
           <LazyMount rootMargin="100px 0px" minHeight={140}>
             <BannerSlider config={shopShowcaseConfig} />
@@ -142,6 +151,7 @@ export default function HomePageClient({ initialData }) {
           </LazyMount>
         ) : null}
 
+        {catalogReady ? (
         <LazyMount rootMargin="100px 0px" minHeight={220}>
           <Section3
             homeSections={homeSections}
@@ -150,6 +160,9 @@ export default function HomePageClient({ initialData }) {
             initialTitle={findTopDealsSection(homeSections)?.title || ''}
           />
         </LazyMount>
+        ) : (
+          <div className="min-h-[220px]" aria-hidden />
+        )}
 
         {showSecondaryBannerAt('below_top_deals') ? (
           <LazyMount rootMargin="100px 0px" minHeight={120}>
@@ -157,21 +170,27 @@ export default function HomePageClient({ initialData }) {
           </LazyMount>
         ) : null}
 
-        {featuredSectionsCount > 0 ? (
+        {catalogReady && featuredSectionsCount > 0 ? (
           <LazyMount rootMargin="100px 0px" minHeight={320}>
             <Section4 sections={featuredSections} loading={false} />
           </LazyMount>
+        ) : featuredSectionsCount > 0 ? (
+          <div className="min-h-[320px]" aria-hidden />
         ) : null}
 
-        <LazyMount rootMargin="80px 0px" minHeight={280}>
-          <CategoryInterestSection />
-        </LazyMount>
-        <LazyMount rootMargin="80px 0px" minHeight={200}>
-          <RecentSearchProducts />
-        </LazyMount>
-        <LazyMount rootMargin="80px 0px" minHeight={280}>
-          <RecommendedProducts />
-        </LazyMount>
+        {catalogReady ? (
+          <>
+            <LazyMount rootMargin="80px 0px" minHeight={280}>
+              <CategoryInterestSection />
+            </LazyMount>
+            <LazyMount rootMargin="80px 0px" minHeight={200}>
+              <RecentSearchProducts />
+            </LazyMount>
+            <LazyMount rootMargin="80px 0px" minHeight={280}>
+              <RecommendedProducts />
+            </LazyMount>
+          </>
+        ) : null}
       </div>
     </div>
   );
