@@ -104,7 +104,7 @@ export default function CategoryPageView({
                 <Link
                   key={child._id}
                   href={href}
-                  className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 hover:border-orange-300 hover:shadow-sm transition-all text-center"
+                  className="rounded-lg border border-[#E9D6B5] bg-white px-4 py-3 text-sm font-medium text-[#123D33] hover:border-[#9C6E20] hover:shadow-sm transition-all text-center"
                 >
                   {localizeCategoryRecord(child, language)}
                 </Link>
@@ -139,7 +139,7 @@ export default function CategoryPageView({
             key={label}
             className={`flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 ${isArabic ? 'flex-row-reverse text-right' : ''}`}
           >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#E9D6B5] text-[#1F5C4A]">
               <Icon size={16} strokeWidth={1.9} />
             </span>
             <span className="font-medium leading-snug">{label}</span>

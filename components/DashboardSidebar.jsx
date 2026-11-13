@@ -39,10 +39,10 @@ export default function DashboardSidebar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`block px-3 py-2 rounded-lg hover:bg-gray-100 font-medium ${
+                  className={`block px-3 py-2 rounded-lg font-medium ${
                     isActive(item.href)
-                      ? 'bg-gray-100 text-gray-900'
-                      : 'text-gray-700'
+                      ? 'bg-[#E9D6B5] text-[#123D33]'
+                      : 'text-gray-700 hover:bg-[#FAF8F3]'
                   }`}
                 >
                   {item.label}
@@ -61,10 +61,10 @@ export default function DashboardSidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`px-3 py-2 rounded-lg hover:bg-gray-100 font-medium ${
+              className={`px-3 py-2 rounded-lg font-medium ${
                 isActive(item.href)
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'text-gray-700'
+                  ? 'bg-[#E9D6B5] text-[#123D33]'
+                  : 'text-gray-700 hover:bg-[#FAF8F3]'
               }`}
             >
               {item.label}

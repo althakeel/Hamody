@@ -129,7 +129,7 @@ export default function SettingsPage() {
                   className="sr-only peer"
                 />
                 <div className={`w-11 h-6 rounded-full transition ${
-                  settings.emailNotifications ? 'bg-blue-600' : 'bg-gray-300'
+                  settings.emailNotifications ? 'bg-[#1F5C4A]' : 'bg-gray-300'
                 }`} />
                 <span className={`absolute left-1 w-4 h-4 bg-white rounded-full transition ${
                   settings.emailNotifications ? 'translate-x-5' : ''
@@ -150,7 +150,7 @@ export default function SettingsPage() {
                   className="sr-only peer"
                 />
                 <div className={`w-11 h-6 rounded-full transition ${
-                  settings.smsNotifications ? 'bg-blue-600' : 'bg-gray-300'
+                  settings.smsNotifications ? 'bg-[#1F5C4A]' : 'bg-gray-300'
                 }`} />
                 <span className={`absolute left-1 w-4 h-4 bg-white rounded-full transition ${
                   settings.smsNotifications ? 'translate-x-5' : ''
@@ -171,7 +171,7 @@ export default function SettingsPage() {
                   className="sr-only peer"
                 />
                 <div className={`w-11 h-6 rounded-full transition ${
-                  settings.orderUpdates ? 'bg-blue-600' : 'bg-gray-300'
+                  settings.orderUpdates ? 'bg-[#1F5C4A]' : 'bg-gray-300'
                 }`} />
                 <span className={`absolute left-1 w-4 h-4 bg-white rounded-full transition ${
                   settings.orderUpdates ? 'translate-x-5' : ''
@@ -192,7 +192,7 @@ export default function SettingsPage() {
                   className="sr-only peer"
                 />
                 <div className={`w-11 h-6 rounded-full transition ${
-                  settings.promotionalEmails ? 'bg-blue-600' : 'bg-gray-300'
+                  settings.promotionalEmails ? 'bg-[#1F5C4A]' : 'bg-gray-300'
                 }`} />
                 <span className={`absolute left-1 w-4 h-4 bg-white rounded-full transition ${
                   settings.promotionalEmails ? 'translate-x-5' : ''
@@ -213,7 +213,7 @@ export default function SettingsPage() {
                   className="sr-only peer"
                 />
                 <div className={`w-11 h-6 rounded-full transition ${
-                  settings.newsletter ? 'bg-blue-600' : 'bg-gray-300'
+                  settings.newsletter ? 'bg-[#1F5C4A]' : 'bg-gray-300'
                 }`} />
                 <span className={`absolute left-1 w-4 h-4 bg-white rounded-full transition ${
                   settings.newsletter ? 'translate-x-5' : ''
@@ -235,7 +235,7 @@ export default function SettingsPage() {
               <select
                 value={settings.language}
                 onChange={(e) => handleSelectChange('language', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#1F5C4A]"
               >
                 <option value="en">English</option>
                 <option value="hi">Hindi</option>
@@ -251,7 +251,7 @@ export default function SettingsPage() {
               <select
                 value={settings.currency}
                 onChange={(e) => handleSelectChange('currency', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#1F5C4A]"
               >
                 <option value="AED">UAE Dirhams (AED)</option>
                 <option value="USD">US Dollars ($)</option>
@@ -267,13 +267,13 @@ export default function SettingsPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50"
+            className="flex-1 bg-[#1F5C4A] text-white px-6 py-3 rounded-lg hover:bg-[#123D33] transition font-medium disabled:opacity-50"
           >
             {saving ? 'Saving...' : 'Save Settings'}
           </button>
           <button
             onClick={() => router.back()}
-            className="flex-1 bg-gray-300 text-gray-800 px-6 py-3 rounded-lg hover:bg-gray-400 transition font-medium"
+            className="flex-1 bg-[#FAF8F3] text-[#123D33] px-6 py-3 rounded-lg hover:bg-[#E9D6B5] transition font-medium"
           >
             Cancel
           </button>

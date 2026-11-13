@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Bell, BellOff } from 'lucide-react';
 import StoreHelpAgent from './StoreHelpAgent';
 import StoreDashboardSearch from './StoreDashboardSearch';
-import Logo from '@/assets/logo/Store1920.png';
+import Logo from '@/assets/logo/Hamody.png';
 import SellerSignOutArt from '@/assets/seller-sign-out-door.webp';
 import { useAuth } from '@/lib/useAuth';
 import { signOut } from 'firebase/auth';
@@ -152,7 +152,7 @@ const StoreNavbar = ({
                 ) : (
                   <Image
                     src={Logo}
-                    alt="Store1920 Logo"
+                    alt="Hamody logo"
                     width={140}
                     height={36}
                     className="max-h-9 max-w-[140px] object-contain"

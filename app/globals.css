@@ -536,23 +536,26 @@ html:has([data-store-language-scope]) #store1920-root {
     }
 
     .shop-showcase-banner-row--full {
+        display: block;
         width: 100%;
         max-width: none;
         border-radius: 0;
-        height: auto;
-        max-height: none;
-        aspect-ratio: 768 / 280;
+        height: 200px;
+        max-height: 200px;
+        aspect-ratio: auto;
     }
 
     @media (min-width: 768px) {
         .shop-showcase-banner-row--full {
-            aspect-ratio: 1024 / 240;
+            height: 240px;
+            max-height: 240px;
         }
     }
 
     @media (min-width: 1024px) {
         .shop-showcase-banner-row--full {
-            aspect-ratio: 1920 / 400;
+            height: 300px;
+            max-height: 300px;
         }
     }
 

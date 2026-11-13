@@ -78,7 +78,7 @@ export default function MobileProductActions({
           >
             <ShoppingCart className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
             {showQuantityBadge ? (
-              <span className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#E52721] px-1 text-[10px] font-bold leading-none text-white shadow-sm">
+              <span className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#C9963B] px-1 text-[10px] font-bold leading-none text-white shadow-sm">
                 {formatQuantity(quantity)}
               </span>
             ) : null}
@@ -91,7 +91,7 @@ export default function MobileProductActions({
               productId={notifyProductId}
               sku={notifySku}
               defaultEmail={notifyEmail}
-              buttonClassName="flex h-12 w-full items-center justify-center rounded-lg bg-[#E52D27] text-base font-bold text-white active:bg-[#CC261F]"
+              buttonClassName="flex h-12 w-full items-center justify-center rounded-lg bg-[#1F5C4A] text-base font-bold text-white active:bg-[#123D33]"
             />
           ) : (
             <button
@@ -102,7 +102,7 @@ export default function MobileProductActions({
               } ${
                 isOrdering
                   ? 'cursor-not-allowed bg-gray-400 opacity-70'
-                  : 'bg-[#E52D27] active:bg-[#CC261F]'
+                  : 'bg-[#1F5C4A] active:bg-[#123D33]'
               }`}
             >
               {isOrdering ? (

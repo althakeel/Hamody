@@ -5,7 +5,7 @@ import { getAuthErrorMessage, signInWithEmail } from '@/lib/firebaseAuthActions'
 import { startStoreGoogleSignIn, verifyStoreSellerAccess } from '@/lib/storeGoogleSignIn'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
-import Logo from '@/assets/logo/Store1920.png'
+import Logo from '@/assets/logo/Hamody.png'
 import { useAuth } from '@/lib/useAuth'
 
 export default function StoreLogin() {

@@ -623,15 +623,15 @@ export default function DashboardOrdersPage() {
                     }}
                     className={`px-4 py-2.5 rounded-lg font-medium text-sm whitespace-nowrap transition flex items-center gap-2 flex-shrink-0 ${
                       selectedStatus === status.value
-                        ? 'bg-blue-600 text-white shadow-md'
-                        : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+                        ? 'bg-[#1F5C4A] text-white shadow-md'
+                        : 'bg-white text-[#123D33] hover:bg-[#FAF8F3] border border-[#E9D6B5]'
                     }`}
                   >
                     <span>{status.icon}</span>
                     <span>{status.label}</span>
                     {status.value !== 'ALL' && (
                       <span className={`text-xs font-bold rounded-full px-2 py-0.5 ${
-                        selectedStatus === status.value ? 'bg-blue-800' : 'bg-slate-200'
+                        selectedStatus === status.value ? 'bg-[#123D33]' : 'bg-[#E9D6B5] text-[#123D33]'
                       }`}>
                         {orders.filter(o => o.status === status.value).length}
                       </span>
@@ -644,21 +644,21 @@ export default function DashboardOrdersPage() {
           {loadingOrders ? (
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-10 flex items-center justify-center min-h-[220px]">
               <div className="flex flex-col items-center gap-3 text-slate-500">
-                <div className="w-8 h-8 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-[#E9D6B5] border-t-[#1F5C4A] rounded-full animate-spin" />
                 <p className="text-sm">Loading orders...</p>
               </div>
             </div>
           ) : orders.length === 0 ? (
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
               <p className="text-slate-600">No orders found.</p>
-              <Link href="/shop" className="inline-block mt-3 px-4 py-2 bg-slate-800 text-white rounded-lg">Shop Now</Link>
+              <Link href="/shop" className="inline-block mt-3 px-4 py-2 bg-[#1F5C4A] text-white rounded-lg hover:bg-[#123D33]">Shop Now</Link>
             </div>
           ) : filteredOrders.length === 0 ? (
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 text-center">
               <p className="text-slate-600">No orders with status: <strong>{orderStatuses.find(s => s.value === selectedStatus)?.label}</strong></p>
               <button
                 onClick={() => setSelectedStatus('ALL')}
-                className="inline-block mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="inline-block mt-3 px-4 py-2 bg-[#1F5C4A] text-white rounded-lg hover:bg-[#123D33]"
               >
                 View All Orders
               </button>
@@ -762,7 +762,7 @@ export default function DashboardOrdersPage() {
                               href={order.trackingUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="px-4 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition flex items-center gap-2"
+                              className="px-4 py-2 text-sm bg-[#1F5C4A] text-white hover:bg-[#123D33] rounded-lg transition flex items-center gap-2"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -775,7 +775,7 @@ export default function DashboardOrdersPage() {
                               e.stopPropagation()
                               setExpandedOrder(isExpanded ? null : orderId)
                             }}
-                            className="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                            className="px-4 py-2 text-sm text-[#1F5C4A] hover:bg-[#FAF8F3] rounded-lg transition"
                           >
                             {isExpanded ? 'Hide Details' : 'View Details'}
                           </button>
@@ -802,7 +802,7 @@ export default function DashboardOrdersPage() {
                                     )}
                                   </div>
                                   {item.quantity > 1 && (
-                                    <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
+                                    <span className="absolute -top-2 -right-2 bg-[#1F5C4A] text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
                                       {item.quantity}
                                     </span>
                                   )}
@@ -880,7 +880,7 @@ export default function DashboardOrdersPage() {
                                       <div className="flex gap-2 mt-3">
                                         <a
                                           href="/dashboard/tickets"
-                                          className="flex-1 px-3 py-2 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition text-xs font-medium flex items-center justify-center gap-1.5"
+                                          className="flex-1 px-3 py-2 bg-[#1F5C4A] text-white text-center rounded-lg hover:bg-[#123D33] transition text-xs font-medium flex items-center justify-center gap-1.5"
                                         >
                                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -930,7 +930,7 @@ export default function DashboardOrdersPage() {
                                 setSelectedOrderForReview(order)
                                 setShowDeliveryReviewModal(true)
                               }}
-                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+                              className="px-4 py-2 bg-[#1F5C4A] text-white rounded-lg hover:bg-[#123D33] transition flex items-center gap-2"
                             >
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -966,7 +966,7 @@ export default function DashboardOrdersPage() {
                         )}
                         
                         {/* Payment & Summary - Moved to top */}
-                        <div className="bg-gradient-to-r from-slate-50 to-blue-50 border border-slate-200 rounded-lg p-5">
+                        <div className="bg-gradient-to-r from-slate-50 to-[#FAF8F3] border border-slate-200 rounded-lg p-5">
                           <h3 className="text-sm font-semibold text-slate-800 mb-4">Payment Summary</h3>
                           <div className="space-y-3">
                             <div className="flex justify-between text-sm">
@@ -1041,7 +1041,7 @@ export default function DashboardOrdersPage() {
                                 e.stopPropagation()
                                 downloadInvoice(order)
                               }}
-                              className="px-4 py-2 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 text-sm font-medium"
+                              className="px-4 py-2 rounded-lg border border-[#E9D6B5] bg-[#FAF8F3] text-[#1F5C4A] hover:bg-[#E9D6B5] text-sm font-medium"
                             >
                               Download Invoice
                             </button>
@@ -1141,10 +1141,10 @@ export default function DashboardOrdersPage() {
 
                         {/* Live Delivery Tracking */}
                         {(getPublicTrackingDisplayId(order) || order.trackingId || order.trackingUrl || order.courier || order.waslah) && (
-                          <div className="bg-gradient-to-br from-slate-50 to-blue-50 border-2 border-blue-200 rounded-xl p-6 space-y-5">
+                          <div className="bg-gradient-to-br from-slate-50 to-[#FAF8F3] border-2 border-[#E9D6B5] rounded-xl p-6 space-y-5">
                             {/* Header */}
-<div className="flex items-center gap-3 pb-4 border-b-2 border-blue-200">
-                                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+<div className="flex items-center gap-3 pb-4 border-b-2 border-[#E9D6B5]">
+                                <div className="w-10 h-10 bg-[#1F5C4A] rounded-full flex items-center justify-center">
                                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -1159,7 +1159,7 @@ export default function DashboardOrdersPage() {
                             {/* Status Section */}
                             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
                               <p className="text-xs font-semibold text-slate-500 mb-2">Status</p>
-                              <p className="text-2xl font-bold text-blue-600">
+                              <p className="text-2xl font-bold text-[#1F5C4A]">
                                 {order.status || 'Processing'}
                               </p>
                               
@@ -1191,7 +1191,7 @@ export default function DashboardOrdersPage() {
                                     href={order.trackingUrl} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="w-full inline-block text-center px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition"
+                                    className="w-full inline-block text-center px-4 py-2.5 bg-[#1F5C4A] text-white text-sm font-semibold rounded-lg hover:bg-[#123D33] transition"
                                   >
                                     ⚡ Track Your Order
                                   </a>
@@ -1280,7 +1280,7 @@ export default function DashboardOrdersPage() {
                     <select
                       value={returnReason}
                       onChange={(e) => setReturnReason(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#1F5C4A] focus:border-[#1F5C4A]"
                     >
                       <option value="">Select a reason</option>
                       <option value="Defective Product">Defective Product</option>
@@ -1301,14 +1301,14 @@ export default function DashboardOrdersPage() {
                       onChange={(e) => setReturnDescription(e.target.value)}
                       placeholder="Please provide more details about your request..."
                       rows="4"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#1F5C4A] focus:border-[#1F5C4A]"
                     />
                   </div>
 
                   {/* File Upload */}
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">Upload Images/Videos (Optional)</label>
-                    <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 hover:border-blue-400 transition">
+                    <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 hover:border-[#9C6E20] transition">
                       <input
                         type="file"
                         multiple
@@ -1337,8 +1337,8 @@ export default function DashboardOrdersPage() {
                           file:mr-4 file:py-2 file:px-4
                           file:rounded-lg file:border-0
                           file:text-sm file:font-semibold
-                          file:bg-blue-50 file:text-blue-700
-                          hover:file:bg-blue-100 file:cursor-pointer"
+                          file:bg-[#FAF8F3] file:text-[#1F5C4A]
+                          hover:file:bg-[#E9D6B5] file:cursor-pointer"
                       />
                       <p className="text-xs text-slate-500 mt-2">Images (max 10MB) or Videos (max 5MB)</p>
                       {uploadError && <p className="text-xs text-red-600 mt-1">{uploadError}</p>}
@@ -1389,7 +1389,7 @@ export default function DashboardOrdersPage() {
                     <button
                       onClick={handleReturnRequest}
                       disabled={submittingReturn}
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 px-4 py-2 bg-[#1F5C4A] text-white rounded-lg hover:bg-[#123D33] transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {submittingReturn ? 'Submitting...' : 'Submit Request'}
                     </button>

@@ -1766,11 +1766,11 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
               '--banner-arrow-hover-bg': arrow.bannerArrowStyle === 'plain' ? 'transparent' : arrow.bannerArrowHoverBgColor,
             }
             return (
-              <div className="relative mt-4 h-32 overflow-hidden rounded-xl border border-slate-200 bg-slate-200">
+              <div className="relative mt-4 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
                 {previewImage ? (
-                  <img src={previewImage} alt="" className="h-full w-full object-cover" />
+                  <img src={previewImage} alt="" className="block h-auto w-full object-contain" />
                 ) : (
-                  <div className="h-full w-full bg-gradient-to-r from-amber-500 via-orange-400 to-sky-700" />
+                  <div className="h-32 w-full bg-gradient-to-r from-amber-500 via-orange-400 to-sky-700" />
                 )}
                 {['left', 'right'].map((side) => {
                   const Icon = side === 'left' ? ChevronLeft : ChevronRight

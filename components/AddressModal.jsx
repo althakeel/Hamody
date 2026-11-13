@@ -597,7 +597,7 @@ const AddressModal = ({ open, setShowAddressModal, onAddressAdded, initialAddres
                                     type="button"
                                     onClick={handleConfirmSelection}
                                     disabled={!pendingAddressId}
-                                    className="w-full rounded-xl bg-slate-900 py-3.5 text-sm font-bold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:bg-slate-300"
+                                    className="w-full rounded-xl bg-[#1F5C4A] py-3.5 text-sm font-bold text-white transition hover:bg-[#123D33] disabled:cursor-not-allowed disabled:bg-slate-300"
                                 >
                                     Deliver to this address
                                 </button>

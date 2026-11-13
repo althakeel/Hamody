@@ -128,9 +128,9 @@ function ShowcaseDeviceImages({
   keepOriginal = false,
 }) {
   const images = [
-    { key: 'mobile', src: sources.mobile, className: 'block md:hidden', width: widths.mobile, naturalWidth: 768, naturalHeight: 280 },
-    { key: 'tablet', src: sources.tablet, className: 'hidden md:block lg:hidden', width: widths.tablet, naturalWidth: 1024, naturalHeight: 240 },
-    { key: 'desktop', src: sources.desktop, className: sources.wide ? 'hidden lg:block min-[1401px]:hidden' : 'hidden lg:block', width: widths.desktop, naturalWidth: 1920, naturalHeight: 400 },
+    { key: 'mobile', src: sources.mobile, className: 'hidden max-md:block', width: widths.mobile, naturalWidth: 768, naturalHeight: 280 },
+    { key: 'tablet', src: sources.tablet, className: 'hidden md:max-lg:block', width: widths.tablet, naturalWidth: 1024, naturalHeight: 240 },
+    { key: 'desktop', src: sources.desktop, className: sources.wide ? 'hidden lg:max-[1400px]:block' : 'hidden lg:block', width: widths.desktop, naturalWidth: 1920, naturalHeight: 400 },
     { key: 'wide', src: sources.wide, className: 'hidden min-[1401px]:block', width: widths.wide || 2560, naturalWidth: 1920, naturalHeight: 400 },
   ];
 
@@ -142,8 +142,8 @@ function ShowcaseDeviceImages({
         key={image.key}
         src={displaySrc}
         alt={alt}
-        width={natural ? image.naturalWidth : undefined}
-        height={natural ? image.naturalHeight : undefined}
+        width={natural ? undefined : image.naturalWidth}
+        height={natural ? undefined : image.naturalHeight}
         loading={loading}
         fetchPriority={fetchPriority}
         decoding="async"
@@ -189,7 +189,7 @@ export default function ShowcaseLargeBannerSlider({
     wide: isFullBleed ? 1920 : 1600,
   };
   const fullBannerStyle = bannerVariant === 'full'
-    ? { height: 'auto', maxHeight: 'none', width: '100%', maxWidth: 'none', borderRadius: 0 }
+    ? { width: '100%', maxWidth: 'none', borderRadius: 0 }
     : bannerVariant === 'lower' && bannerHeight
       ? { height: '100%', maxHeight: '100%', width: '100%', maxWidth: '100%', borderRadius: 0 }
       : {};
@@ -295,7 +295,7 @@ export default function ShowcaseLargeBannerSlider({
       onClick={linkProps?.href ? handleLinkClick : undefined}
       onDragStart={(event) => event.preventDefault()}
     >
-      <div className={`${bannerVariant === 'full' ? 'relative h-auto w-full' : bannerVariant === 'lower' ? 'relative h-full w-full' : 'absolute inset-0'} overflow-hidden touch-pan-y`} dir="ltr" {...viewportHandlers}>
+      <div className={`${bannerVariant === 'full' ? 'absolute inset-0 h-full w-full' : bannerVariant === 'lower' ? 'relative h-full w-full' : 'absolute inset-0'} overflow-hidden touch-pan-y`} dir="ltr" {...viewportHandlers}>
         <div
           ref={trackRef}
           className="flex h-full min-h-full will-change-transform select-none"
@@ -318,7 +318,7 @@ export default function ShowcaseLargeBannerSlider({
                 onError={handleImageError}
                 fillHeight={bannerVariant === 'lower'}
                 fit="cover"
-                natural={bannerVariant === 'full'}
+                natural={false}
                 displayQuality={displayQuality}
                 keepOriginal={isFullBleed}
               />

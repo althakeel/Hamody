@@ -194,8 +194,8 @@ export default function CategoryChipScroller({
               onClick={() => handleChipClick(item.key)}
               className={`shrink-0 whitespace-nowrap rounded-full border px-4 py-2.5 text-sm font-semibold leading-none transition-all duration-200 ${
                 isActive
-                  ? 'border-gray-200 bg-gray-50 text-slate-900 shadow-sm ring-1 ring-gray-100'
-                  : 'border-gray-200 bg-white text-slate-700 shadow-sm hover:border-gray-300 hover:bg-gray-50'
+                  ? 'border-[#1F5C4A] bg-[#1F5C4A] text-white shadow-sm'
+                  : 'border-[#E9D6B5] bg-white text-[#123D33] shadow-sm hover:border-[#9C6E20] hover:bg-[#FAF8F3]'
               }`}
             >
               {item.label}

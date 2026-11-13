@@ -28,7 +28,7 @@ const AdminSidebar = () => {
     return (
         <div className="inline-flex h-full flex-col gap-5 border-r border-slate-200 sm:min-w-60">
             <div className="flex flex-col gap-3 justify-center items-center pt-8 max-sm:hidden">
-                <Image className="w-14 h-auto rounded-full" src={require("../../assets/logo/Store1920.png")} alt="Admin Logo" width={80} height={80} />
+                <Image className="h-auto w-36 object-contain" src={require("../../assets/logo/Hamody.png")} alt="Hamody logo" width={144} height={55} />
                 <p className="text-slate-700">Admin</p>
             </div>
 

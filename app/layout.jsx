@@ -1,4 +1,5 @@
 import "./globals.css";
+import "../styles/hamody-storefront.css";
 import React from "react";
 import { cookies, headers } from "next/headers";
 import { Montserrat, Poppins, Shadows_Into_Light } from "next/font/google";

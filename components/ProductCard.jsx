@@ -33,7 +33,6 @@ import { GTM_EVENTS } from '@/lib/gtmEvents'
 import { STORE_CURRENCY } from '@/lib/storeCurrency'
 import { getProductPath } from '@/lib/productUrl'
 import CurrencySymbol, { StruckPrice } from '@/components/CurrencySymbol'
-import NewProductTagBadge from '@/components/NewProductTagBadge'
 import TimeDeliveryBadge from '@/components/TimeDeliveryBadge'
 import { extractProductKarat } from '@/lib/productKarat'
 import { cardImageSrc } from '@/lib/cardImage'
@@ -263,7 +262,7 @@ const ProductCard = ({
   const renderCartControl = () => {
     if (isOutOfStock) {
       return (
-        <div className="absolute bottom-3 end-3 z-20 rounded-full bg-gray-200 px-3 py-1 text-[10px] font-semibold text-gray-600">
+        <div className="rounded-full bg-gray-200 px-2 py-1 text-center text-[10px] font-semibold leading-tight text-gray-600">
           {t('common.outOfStock')}
         </div>
       )
@@ -271,67 +270,56 @@ const ProductCard = ({
 
     if (isCartHydrated && itemQuantity > 0) {
       return (
-        <>
-          <div
-            className="absolute bottom-3 end-3 z-20 hidden md:inline-flex h-8 min-w-[32px] items-center justify-center rounded-md px-2 text-xs font-semibold text-white shadow-md transition-all duration-150 ease-out group-hover:opacity-0 group-hover:scale-95"
-            style={{ backgroundColor: '#2563eb' }}
+        <div
+          className="inline-flex items-center justify-center gap-0.5 rounded-[10px] px-0.5 py-0.5 shadow-sm"
+          style={{ backgroundColor: '#C9963B' }}
+        >
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              const unitPrice = Number(priceNum > 0 ? priceNum : product.price || 0)
+              pushGtmEcommerceEvent(GTM_EVENTS.REMOVE_FROM_CART, {
+                currency: STORE_CURRENCY,
+                value: unitPrice,
+                items: [productToGa4Item(product, { price: unitPrice, quantity: 1 })],
+              })
+              dispatch(removeFromCart({ productId: product._id }))
+              dispatch(uploadCart({ getToken }))
+            }}
+            className="inline-flex h-7 w-6 items-center justify-center rounded-sm text-white/95 transition hover:bg-white/15"
+            title={itemQuantity === 1 ? 'Delete' : 'Decrease'}
           >
-            <span className="inline-flex items-center gap-1">
-              <ShoppingCart size={12} />
-              <span>{itemQuantity}</span>
-            </span>
-          </div>
-          <div
-            className="absolute bottom-3 end-3 z-20 inline-flex items-center justify-center gap-2 rounded-md px-2 py-1.5 shadow-md transition-all duration-150 ease-out md:opacity-0 md:scale-95 md:group-hover:opacity-100 md:group-hover:scale-100"
-            style={{ backgroundColor: '#2563eb' }}
+            {itemQuantity === 1 ? <Trash2 size={13} /> : <Minus size={13} />}
+          </button>
+          <span className="min-w-[14px] text-center text-xs font-semibold text-white">{itemQuantity}</span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              const unitPrice = Number(priceNum > 0 ? priceNum : product.price || 0)
+              trackProductAddToCart({
+                product,
+                productId: product._id,
+                name: product.name || product.title || 'Product',
+                price: unitPrice,
+                quantity: 1,
+                currency: STORE_CURRENCY,
+              })
+              dispatch(addToCart({
+                productId: product._id,
+                price: priceNum > 0 ? priceNum : undefined,
+              }))
+              dispatch(uploadCart({ getToken }))
+            }}
+            className="inline-flex h-7 w-6 items-center justify-center rounded-sm text-white/95 transition hover:bg-white/15"
+            title="Add more"
           >
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                const unitPrice = Number(priceNum > 0 ? priceNum : product.price || 0)
-                pushGtmEcommerceEvent(GTM_EVENTS.REMOVE_FROM_CART, {
-                  currency: STORE_CURRENCY,
-                  value: unitPrice,
-                  items: [productToGa4Item(product, { price: unitPrice, quantity: 1 })],
-                })
-                dispatch(removeFromCart({ productId: product._id }))
-                dispatch(uploadCart({ getToken }))
-              }}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-white/95 hover:bg-white/15 transition"
-              title={itemQuantity === 1 ? 'Delete' : 'Decrease'}
-            >
-              {itemQuantity === 1 ? <Trash2 size={14} /> : <Minus size={14} />}
-            </button>
-            <span className="min-w-[18px] text-center text-xs font-semibold text-white">{itemQuantity}</span>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                const unitPrice = Number(priceNum > 0 ? priceNum : product.price || 0)
-                trackProductAddToCart({
-                  product,
-                  productId: product._id,
-                  name: product.name || product.title || 'Product',
-                  price: unitPrice,
-                  quantity: 1,
-                  currency: STORE_CURRENCY,
-                })
-                dispatch(addToCart({
-                  productId: product._id,
-                  price: priceNum > 0 ? priceNum : undefined,
-                }))
-                dispatch(uploadCart({ getToken }))
-              }}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-white/95 hover:bg-white/15 transition"
-              title="Add more"
-            >
-              <Plus size={14} />
-            </button>
-          </div>
-        </>
+            <Plus size={13} />
+          </button>
+        </div>
       )
     }
 
@@ -339,12 +327,10 @@ const ProductCard = ({
       <button
         type="button"
         onClick={handleAddToCart}
-        className="absolute bottom-3 end-3 z-20 inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-[10px] border border-[#d1d5db] bg-white/95 shadow-md transition-all duration-300 active:scale-95"
-        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f3f4f6' }}
-        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.95)' }}
+        className="inline-flex h-8 w-8 shrink-0 items-center justify-center border-0 bg-transparent p-0 shadow-none outline-none ring-0 transition-opacity duration-200 hover:opacity-70 focus:outline-none focus-visible:outline-none active:scale-95"
         aria-label={t('common.addToCart')}
       >
-        <Plus size={16} className="text-slate-600" strokeWidth={2.4} />
+        <Plus size={18} className="text-[#1F5C4A]" strokeWidth={2.4} />
       </button>
     )
   }
@@ -462,74 +448,77 @@ const ProductCard = ({
           </>
         )}
 
-        <NewProductTagBadge product={product} size="card" />
-        {renderCartControl()}
       </div>
 
       <div className={`flex shrink-0 flex-col ${compactAll ? 'p-1.5' : compactLg ? 'p-2 sm:p-2.5 lg:p-1.5' : 'p-2 sm:p-2.5'}`}>
-        <h3 className={`overflow-hidden text-start font-semibold leading-tight text-slate-900 ${compactAll ? 'mb-1 text-[10px]' : compactLg ? 'mb-1 min-h-[2.5em] text-xs sm:text-sm lg:min-h-0 lg:text-[10px]' : 'mb-1 min-h-[2.5em] text-xs sm:text-sm'}`}>
-          <bdi
-            dir={getContentDirection(productName)}
-            className={`break-words ${compactAll ? 'line-clamp-1' : compactLg ? 'line-clamp-2 lg:line-clamp-1' : 'line-clamp-2'}`}
-          >
-            {productName}
-          </bdi>
-        </h3>
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <h3 className={`overflow-hidden text-start font-semibold leading-tight text-slate-900 ${compactAll ? 'mb-1 text-[10px]' : compactLg ? 'mb-1 min-h-[2.5em] text-xs sm:text-sm lg:min-h-0 lg:text-[10px]' : 'mb-1 min-h-[2.5em] text-xs sm:text-sm'}`}>
+              <bdi
+                dir={getContentDirection(productName)}
+                className={`break-words ${compactAll ? 'line-clamp-1' : compactLg ? 'line-clamp-2 lg:line-clamp-1' : 'line-clamp-2'}`}
+              >
+                {productName}
+              </bdi>
+            </h3>
 
-        {karat ? (
-          <p className={`mb-1 text-start font-medium leading-none text-amber-800 ${compactAll ? 'text-[10px]' : compactLg ? 'text-[11px] lg:text-[10px]' : 'text-[11px] sm:text-xs'}`}>
-            {t('product.karatOnCard', { karat })}
-          </p>
-        ) : null}
+            {karat ? (
+              <p className={`mb-1 text-start font-medium leading-none text-amber-800 ${compactAll ? 'text-[10px]' : compactLg ? 'text-[11px] lg:text-[10px]' : 'text-[11px] sm:text-xs'}`}>
+                {t('product.karatOnCard', { karat })}
+              </p>
+            ) : null}
 
-        <div className={compactAll || compactLg ? '' : 'mt-auto'}>
-          {livePrice > 0 ? (
-            <div className={`flex min-w-0 flex-nowrap items-baseline justify-start gap-x-1.5 overflow-hidden ${compactAll || compactLg ? '' : 'mb-1'}`}>
-              <span dir="ltr" className="inline-flex min-w-0 flex-nowrap items-baseline gap-x-1.5 overflow-hidden">
-                <span className={`inline-flex shrink-0 items-baseline gap-0.5 font-semibold leading-none text-slate-950 ${compactAll ? 'text-xs' : compactLg ? 'text-sm sm:text-base lg:text-xs' : 'text-sm sm:text-base'}`}>
-                  <CurrencySymbol currency={market.currency} />
-                  <span>{formatNumber(convertedPrice, language, { maximumFractionDigits: 0 })}</span>
-                </span>
-                {comparePrice > 0 ? (
-                  <StruckPrice className="shrink-0 gap-0.5 text-[10px] leading-none text-slate-400 sm:text-xs">
+            {livePrice > 0 ? (
+              <div className="flex min-w-0 flex-nowrap items-baseline justify-start gap-x-1.5 overflow-hidden">
+                <span dir="ltr" className="inline-flex min-w-0 flex-nowrap items-baseline gap-x-1.5 overflow-hidden">
+                  <span className={`inline-flex shrink-0 items-baseline gap-0.5 font-semibold leading-none text-slate-950 ${compactAll ? 'text-xs' : compactLg ? 'text-sm sm:text-base lg:text-xs' : 'text-sm sm:text-base'}`}>
                     <CurrencySymbol currency={market.currency} />
-                    <span>{formatNumber(convertedAED, language, { maximumFractionDigits: 0 })}</span>
-                  </StruckPrice>
-                ) : null}
-              </span>
-              {discount > 0 ? (
-                <span className="shrink-0 whitespace-nowrap text-[10px] font-semibold leading-none text-emerald-700 sm:text-xs">
-                  {t('common.offPercent', {
-                    discount: formatNumber(discount, language, { maximumFractionDigits: 0 }),
-                  })}
-                </span>
-              ) : null}
-            </div>
-          ) : null}
-
-          <div className="mt-2 mb-1 flex min-w-0 max-w-full justify-start">
-            <TimeDeliveryBadge productId={product?._id} arabic={language === 'ar'} className="max-w-full" />
-          </div>
-
-          {!compactAll ? (
-            <div className={`flex min-h-[14px] min-w-0 justify-start ${compactLg ? 'lg:hidden' : ''}`}>
-              {reviewCount > 0 ? (
-                <span dir="ltr" className="inline-flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <FaStar
-                      key={i}
-                      size={9}
-                      className={i < ratingValue ? 'text-yellow-400' : 'text-gray-300'}
-                    />
-                  ))}
-                  <span className="min-w-0 truncate text-[9px] text-gray-500 sm:text-xs">
-                    ({reviewCount})
+                    <span>{formatNumber(convertedPrice, language, { maximumFractionDigits: 0 })}</span>
                   </span>
+                  {comparePrice > 0 ? (
+                    <StruckPrice className="shrink-0 gap-0.5 text-[10px] leading-none text-slate-400 sm:text-xs">
+                      <CurrencySymbol currency={market.currency} />
+                      <span>{formatNumber(convertedAED, language, { maximumFractionDigits: 0 })}</span>
+                    </StruckPrice>
+                  ) : null}
                 </span>
-              ) : null}
-            </div>
-          ) : null}
+                {discount > 0 ? (
+                  <span className="shrink-0 whitespace-nowrap text-[10px] font-semibold leading-none text-[#9C6E20] sm:text-xs">
+                    {t('common.offPercent', {
+                      discount: formatNumber(discount, language, { maximumFractionDigits: 0 }),
+                    })}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+          <div className="shrink-0 self-center">
+            {renderCartControl()}
+          </div>
         </div>
+
+        <div className="mt-2 mb-1 flex min-w-0 max-w-full justify-start">
+          <TimeDeliveryBadge productId={product?._id} arabic={language === 'ar'} className="max-w-full" />
+        </div>
+
+        {!compactAll ? (
+          <div className={`flex min-h-[14px] min-w-0 justify-start ${compactLg ? 'lg:hidden' : ''}`}>
+            {reviewCount > 0 ? (
+              <span dir="ltr" className="inline-flex items-center gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <FaStar
+                    key={i}
+                    size={9}
+                    className={i < ratingValue ? 'text-yellow-400' : 'text-gray-300'}
+                  />
+                ))}
+                <span className="min-w-0 truncate text-[9px] text-gray-500 sm:text-xs">
+                  ({reviewCount})
+                </span>
+              </span>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </Link>
   )

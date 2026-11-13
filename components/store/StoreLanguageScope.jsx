@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
 import { installDomReconcileGuard } from '@/lib/domReconcileError';
 
 /**
@@ -11,7 +11,7 @@ import { installDomReconcileGuard } from '@/lib/domReconcileError';
  * React and throws removeChild/insertBefore.
  */
 export default function StoreLanguageScope({ children }) {
-  useEffect(() => {
+  useLayoutEffect(() => {
     installDomReconcileGuard();
     const root = document.documentElement;
     root.setAttribute('lang', 'en');

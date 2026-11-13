@@ -16,6 +16,7 @@ import toast from "react-hot-toast";
 import WalletIcon from '@/assets/icons/wallet.png';
 import { isStorefrontWalletEnabled } from '@/lib/storefrontWallet';
 import NavbarMenuBar from './NavbarMenuBar';
+import OutdoorCampingMenu from './OutdoorCampingMenu';
 import StorefrontLanguageMarketSwitch from './StorefrontLanguageMarketSwitch';
 
 const SignInModal = dynamic(() => import('./SignInModal'), { ssr: false });
@@ -66,7 +67,7 @@ import { STORE1920_LOGO_PATH } from '@/lib/brandLogo';
 const NAVBAR_SELECTED_ADDRESS_KEY = 'navbarSelectedAddressId';
 const NAVBAR_APPEARANCE_CACHE_KEY = 'navbarAppearanceCache';
 
-const STOREFRONT_BRAND_NAME = 'store1920';
+const STOREFRONT_BRAND_NAME = 'Hamody';
 /** Empty colors until API/cache. Logo falls back to the Store1920 mark. */
 const EMPTY_NAVBAR_APPEARANCE = {
   logoUrl: '',
@@ -393,17 +394,15 @@ const Navbar = () => {
   const isHomePage = pathname === '/';
 
   const resolvedNavbarBg = String(navbarAppearance.backgroundColor || '').trim();
-  const mobileNavbarUsesBrandColor = isHomePage && Boolean(resolvedNavbarBg);
-  const mobileNavbarBackgroundColor = mobileNavbarUsesBrandColor
-    ? resolvedNavbarBg
-    : '#ffffff';
+  const desktopNavbarBackgroundColor = resolvedNavbarBg || '#1F5C4A';
+  const mobileNavbarBackgroundColor = resolvedNavbarBg || '#1F5C4A';
+  const navbarTextColor = getContrastColor(desktopNavbarBackgroundColor);
+  const mobileNavbarUsesBrandColor = getContrastColor(mobileNavbarBackgroundColor) === '#ffffff';
   const mobileNavbarControlClass = mobileNavbarUsesBrandColor
     ? 'text-white/95 hover:bg-white/15'
     : 'text-gray-900 hover:bg-gray-100';
-  const desktopNavbarBackgroundColor = resolvedNavbarBg || '#f8fafc';
-  const navbarTextColor = getContrastColor(desktopNavbarBackgroundColor);
   const navbarLogoSrc = resolveNavbarLogoSrc(navbarAppearance.logoUrl);
-  const searchAccentColor = resolvedNavbarBg || '#0f172a';
+  const searchAccentColor = '#9C6E20';
   const categoriesAppearance = getNavbarCategoriesButtonAppearance(navbarAppearance, 'desktop');
   const desktopSearchAppearance = getNavbarSearchAppearance(navbarAppearance, 'desktop');
   const mobileSearchAppearance = getNavbarSearchAppearance(navbarAppearance, 'mobile');
@@ -417,9 +416,10 @@ const Navbar = () => {
     className = '',
     style = {},
     priority = false,
+    panel = false,
   }) => {
     if (navbarLogoSrc) {
-      return (
+      const image = (
         <Image
           src={navbarLogoSrc}
           alt={`${STOREFRONT_BRAND_NAME} logo`}
@@ -429,6 +429,12 @@ const Navbar = () => {
           style={style}
           priority={priority}
         />
+      );
+      if (!panel) return image;
+      return (
+        <span className="inline-flex items-center rounded-xl bg-[#FAF8F3] px-1.5 py-1">
+          {image}
+        </span>
       );
     }
 
@@ -1542,7 +1548,7 @@ const Navbar = () => {
         <span className={`relative inline-flex shrink-0 items-center justify-center ${iconOnly ? '' : ''}`}>
           <Icon size={iconSize} strokeWidth={1.5} aria-hidden="true" />
           {badgeCount > 0 ? (
-            <span className="absolute -right-1 -top-1 inline-flex min-h-[16px] min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
+            <span className="absolute -right-1 -top-1 inline-flex min-h-[16px] min-w-[16px] items-center justify-center rounded-full bg-[#C9963B] px-1 text-[10px] font-bold leading-none text-white">
               {badgeCount > 99 ? '99+' : badgeCount}
             </span>
           ) : null}
@@ -1697,105 +1703,16 @@ const Navbar = () => {
     </>
   );
 
-  const desktopCategoriesDropdown = categoriesDropdownOpen && mainCategories.length > 0 ? (
-    <div className="pointer-events-none absolute left-1/2 top-full z-[120] hidden -translate-x-1/2 lg:block">
-      <div
-        ref={categoriesDropdownPanelRef}
-        className="pointer-events-auto relative mx-auto w-[min(1040px,calc(100vw-2rem))] pt-6 -mt-6"
-        onMouseEnter={openCategoriesDropdown}
-        onMouseLeave={closeCategoriesDropdown}
-      >
-        <div className="mt-0.5 overflow-hidden rounded-b-[28px] border border-slate-200 bg-white shadow-[0_20px_44px_rgba(15,23,42,0.16)]">
-        <div className="grid min-h-0 max-h-[420px] grid-cols-[minmax(0,220px)_minmax(0,1fr)]">
-          <div className="category-dropdown-scroll min-h-0 max-h-[420px] w-full max-w-[220px] shrink-0 overflow-y-auto overflow-x-hidden border-r border-slate-200 bg-white py-2">
-            {mainCategories.map((category) => {
-              const isActive = getCategoryId(activeCategory) === getCategoryId(category);
-              return (
-                <button
-                  key={getCategoryId(category) || category?.slug || category?.name}
-                  type="button"
-                  onMouseEnter={() => setHoveredCategory(category)}
-                  className={`flex w-full items-center justify-between gap-2 px-4 py-2.5 text-start text-[14px] transition ${
-                    isActive ? 'bg-slate-50 font-semibold text-slate-900' : 'text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  <bdi dir={getContentDirection(getLocalizedCategoryDisplayName(category))} className="min-w-0 flex-1 truncate">
-                    {getLocalizedCategoryDisplayName(category)}
-                  </bdi>
-                  <span className="shrink-0 text-slate-400">›</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex max-h-[420px] min-h-0 min-w-0 flex-col bg-white">
-            <div className="shrink-0 border-b border-slate-100 px-6 pb-4 pt-6">
-              <div className="flex items-center justify-between gap-4">
-                <p className="text-[22px] font-semibold leading-tight text-slate-900">
-                  <bdi dir={getContentDirection(getLocalizedCategoryDisplayName(activeCategory) || t('navbar.categories'))}>
-                    {getLocalizedCategoryDisplayName(activeCategory) || t('navbar.categories')}
-                  </bdi>
-                </p>
-                <Link
-                  href={getCategoryHref(activeCategory)}
-                  className="text-xs font-semibold uppercase tracking-wide text-rose-600 hover:text-rose-700"
-                >
-                  {t('navbar.viewAll')}
-                </Link>
-              </div>
-            </div>
-
-            <div className="category-dropdown-scroll min-h-0 flex-1 overflow-y-auto px-6 py-5">
-              {activeSubcategories.length > 0 ? (
-                <div className="grid grid-cols-2 gap-x-10 gap-y-6 sm:grid-cols-3">
-                  {activeSubcategories.map((subcategory) => {
-                    const childCategories = getDirectChildCategories(categories, subcategory);
-                    return (
-                      <div key={getCategoryId(subcategory) || subcategory?.slug || subcategory?.name}>
-                        <Link
-                          href={getCategoryHref(subcategory)}
-                          className="block text-sm font-semibold text-slate-900 transition hover:text-rose-600"
-                        >
-                          <bdi dir={getContentDirection(getLocalizedCategoryDisplayName(subcategory))}>
-                            {getLocalizedCategoryDisplayName(subcategory)}
-                          </bdi>
-                        </Link>
-                        {childCategories.length > 0 ? (
-                          <ul className="mt-2 space-y-1">
-                            {childCategories.map((child) => (
-                              <li key={getCategoryId(child) || child?.slug || child?.name}>
-                                <Link
-                                  href={getCategoryHref(child)}
-                                  className="block text-sm text-slate-600 transition hover:text-rose-600"
-                                >
-                                  <bdi dir={getContentDirection(getLocalizedCategoryDisplayName(child))}>
-                                    {getLocalizedCategoryDisplayName(child)}
-                                  </bdi>
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-600">
-                  <span>No child categories yet. Open this category to browse products.</span>
-                  <Link
-                    href={getCategoryHref(activeCategory)}
-                    className="inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
-                  >
-                    Shop now
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-        </div>
-      </div>
+  const desktopCategoriesDropdown = categoriesDropdownOpen ? (
+    <div
+      ref={categoriesDropdownPanelRef}
+      className="absolute start-0 top-full z-[120] pt-2"
+      onMouseEnter={openCategoriesDropdown}
+    >
+      <OutdoorCampingMenu
+        isArabic={storefrontLanguage === 'ar'}
+        onNavigate={closeCategoriesDropdownNow}
+      />
     </div>
   ) : null;
 
@@ -1822,9 +1739,10 @@ const Navbar = () => {
             {renderNavbarLogoImage({
               width: navbarAppearance.logoWidth,
               height: navbarAppearance.logoHeight,
-              className: 'h-auto w-auto max-w-[88px] object-contain flex-shrink-0 xl:max-w-[180px]',
-              style: { maxHeight: '50px' },
+              className: 'h-auto w-auto max-w-[112px] object-contain flex-shrink-0 xl:max-w-[140px]',
+              style: { maxHeight: '34px' },
               priority: true,
+              panel: true,
             })}
           </Link>
         </div>
@@ -1844,6 +1762,12 @@ const Navbar = () => {
         >
           <button
             type="button"
+            aria-expanded={categoriesDropdownOpen}
+            aria-haspopup="true"
+            onClick={() => {
+              if (categoriesDropdownOpen) closeCategoriesDropdownNow()
+              else openCategoriesDropdown()
+            }}
             className={`inline-flex items-center gap-1.5 bg-transparent font-medium leading-none transition hover:opacity-90 ${categoriesAppearance.animationClass || ''}`}
             data-font={categoriesAppearance.fontId || 'inherit'}
             style={{
@@ -1866,6 +1790,7 @@ const Navbar = () => {
               aria-hidden="true"
             />
           </button>
+          {desktopCategoriesDropdown}
         </div>
       );
     }
@@ -1901,8 +1826,8 @@ const Navbar = () => {
                 </button>
                 <button
                   type="submit"
-                  className="ml-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition hover:bg-black/5"
-                  style={{ color: desktopSearchAppearance.textColor || searchAccentColor }}
+                  className="ml-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white transition hover:opacity-90"
+                  style={{ backgroundColor: searchAccentColor }}
                   aria-label="Search"
                 >
                   <Search size={15} />
@@ -2101,7 +2026,7 @@ const Navbar = () => {
         className="lg:hidden sticky top-0 z-50 border-b shadow-[0_1px_3px_rgba(15,23,42,0.06)]"
         style={{
           backgroundColor: mobileNavbarBackgroundColor,
-          borderColor: 'rgba(15, 23, 42, 0.12)',
+          borderColor: '#123D33',
         }}
       >
         <div
@@ -2126,9 +2051,10 @@ const Navbar = () => {
               {renderNavbarLogoImage({
                 width: navbarAppearance.logoWidth,
                 height: navbarAppearance.logoHeight,
-                className: 'h-7 w-auto max-w-[40px] object-contain sm:max-w-[48px]',
-                style: { maxHeight: '32px' },
+                className: 'h-6 w-auto max-w-[78px] object-contain sm:max-w-[92px]',
+                style: { maxHeight: '24px' },
                 priority: true,
+                panel: true,
               })}
             </Link>
           </div>
@@ -2220,10 +2146,10 @@ const Navbar = () => {
         onMouseLeave={categoriesDropdownOpen ? closeCategoriesDropdown : undefined}
       >
       <nav
-        className="overflow-visible border-b text-white shadow-[0_12px_28px_rgba(15,23,42,0.08)]"
+        className="overflow-visible border-b text-white shadow-[0_12px_28px_rgba(18,61,51,0.18)]"
         style={{
           backgroundColor: desktopNavbarBackgroundColor,
-          borderColor: 'rgba(15, 23, 42, 0.18)',
+          borderColor: '#123D33',
           color: navbarTextColor,
         }}
       >
@@ -2306,8 +2232,6 @@ const Navbar = () => {
       </nav>
 
       <NavbarMenuBar />
-
-      {desktopCategoriesDropdown}
       </div>
 
 
@@ -2329,12 +2253,12 @@ const Navbar = () => {
             >
               <div className="shrink-0 border-b border-slate-200 bg-white px-4 pb-3 pt-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <button type="button" onClick={handleLogoNavigation} className="flex min-w-0 max-w-[140px] items-center overflow-hidden outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0">
+                  <button type="button" onClick={handleLogoNavigation} className="flex min-w-0 max-w-[104px] items-center overflow-hidden outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0">
                     {renderNavbarLogoImage({
                       width: navbarAppearance.logoWidth || 120,
                       height: navbarAppearance.logoHeight || 40,
-                      className: 'h-8 w-auto max-w-[130px] object-contain',
-                      style: { maxHeight: '32px', maxWidth: '130px' },
+                      className: 'h-6 w-auto max-w-[96px] object-contain',
+                      style: { maxHeight: '24px', maxWidth: '96px' },
                     })}
                   </button>
                   <button
@@ -2353,7 +2277,7 @@ const Navbar = () => {
                 {firebaseUser === undefined ? null : !firebaseUser ? (
                   <button
                     type="button"
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1F5C4A] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#123D33]"
                     onClick={() => {
                       setSignInOpen(true);
                       setMobileMenuOpen(false);
@@ -2367,7 +2291,7 @@ const Navbar = () => {
                     {firebaseUser.photoURL ? (
                       <Image src={firebaseUser.photoURL} alt="User" width={40} height={40} className="h-10 w-10 rounded-full object-cover" />
                     ) : (
-                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-sm font-bold text-white">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1F5C4A] text-sm font-bold text-white">
                         {firebaseUser.displayName?.[0]?.toUpperCase() || firebaseUser.email?.[0]?.toUpperCase() || 'U'}
                       </span>
                     )}
@@ -2504,15 +2428,15 @@ const Navbar = () => {
                   </p>
                   <div className="divide-y divide-slate-100">
                     <Link href="/top-selling" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50">
-                      <Flame size={17} className="text-orange-500" />
+                      <Flame size={17} className="text-[#9C6E20]" />
                       <span>{t('navbar.topSellingItems')}</span>
                     </Link>
                     <Link href="/new" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50">
-                      <Sparkles size={17} className="text-violet-500" />
+                      <Sparkles size={17} className="text-[#9C6E20]" />
                       <span>{t('navbar.newArrivals')}</span>
                     </Link>
                     <Link href="/5-star-rated" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50">
-                      <StarIcon size={17} className="text-amber-500" fill="currentColor" />
+                      <StarIcon size={17} className="text-[#C9963B]" fill="currentColor" />
                       <span>{t('navbar.fiveStarRated')}</span>
                     </Link>
                     {navActionsVisibility.wishlist ? (
@@ -2522,11 +2446,11 @@ const Navbar = () => {
                       className="flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50"
                     >
                       <span className="flex items-center gap-3">
-                        <Heart size={17} className="text-rose-500" />
+                        <Heart size={17} className="text-[#9C6E20]" />
                         <span>{t('navbar.wishlist')}</span>
                       </span>
                       {wishlistCount > 0 ? (
-                        <span className="rounded-full bg-rose-500 px-2 py-0.5 text-[11px] font-bold text-white">{wishlistCount}</span>
+                        <span className="rounded-full bg-[#9C6E20] px-2 py-0.5 text-[11px] font-bold text-white">{wishlistCount}</span>
                       ) : null}
                     </Link>
                     ) : null}
@@ -2537,17 +2461,17 @@ const Navbar = () => {
                       className="flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50"
                     >
                       <span className="flex items-center gap-3">
-                        <ShoppingCart size={17} className="text-blue-600" />
+                        <ShoppingCart size={17} className="text-[#C9963B]" />
                         <span>{t('navbar.cart')}</span>
                       </span>
                       {isClient && cartCount > 0 ? (
-                        <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[11px] font-bold text-white">{cartCount}</span>
+                        <span className="rounded-full bg-[#C9963B] px-2 py-0.5 text-[11px] font-bold text-white">{cartCount}</span>
                       ) : null}
                     </Link>
                     ) : null}
                     {isSeller && navActionsVisibility.store ? (
                       <Link href="/store" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50">
-                        <span className="rounded-full bg-orange-500 px-2 py-0.5 text-[10px] font-bold uppercase text-white">Seller</span>
+                        <span className="rounded-full bg-[#9C6E20] px-2 py-0.5 text-[10px] font-bold uppercase text-white">Seller</span>
                         <span>{t('navbar.dashboard')}</span>
                       </Link>
                     ) : null}
@@ -2640,7 +2564,7 @@ const Navbar = () => {
                     </button>
                     <button
                       type="button"
-                      className="w-full rounded-xl bg-gradient-to-r from-rose-500 to-orange-400 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200/50 hover:brightness-105 transition disabled:opacity-70"
+                      className="w-full rounded-xl bg-[#123D33] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#123D33]/30 hover:brightness-110 transition disabled:opacity-70"
                       disabled={signingOut}
                       onClick={handleSignOut}
                     >

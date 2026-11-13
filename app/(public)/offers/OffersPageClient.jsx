@@ -206,7 +206,7 @@ export default function OffersPageClient({ initialData = null }) {
   );
 
   return (
-    <div className="flex min-h-[calc(100dvh-11rem)] flex-1 flex-col bg-gray-50">
+    <div className="flex min-h-[calc(100dvh-11rem)] flex-1 flex-col bg-white">
       <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col px-4 py-6 sm:px-6 sm:py-8">
         <div className="mb-6 shrink-0 sm:mb-8">
           <button
@@ -220,7 +220,7 @@ export default function OffersPageClient({ initialData = null }) {
 
           <div>
             {eyebrow ? (
-              <span className="text-xs font-bold uppercase tracking-wider text-red-600">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#9C6E20]">
                 <bdi dir={getContentDirection(eyebrow)}>{eyebrow}</bdi>
               </span>
             ) : null}
@@ -264,7 +264,7 @@ export default function OffersPageClient({ initialData = null }) {
                           label: filteredProducts.length === 1 ? t('common.product') : t('common.products'),
                         })}
                       </p>
-                      <span className="text-sm font-semibold text-red-600">Massive Savings</span>
+                      <span className="text-sm font-semibold text-[#9C6E20]">Massive Savings</span>
                     </div>
 
                     <div className="grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -289,7 +289,7 @@ export default function OffersPageClient({ initialData = null }) {
                     <button
                       type="button"
                       onClick={() => setActiveFilters(DEFAULT_FILTERS)}
-                      className="rounded-lg bg-red-500 px-6 py-2 text-white transition hover:bg-red-600"
+                      className="rounded-lg bg-[#1F5C4A] px-6 py-2 text-white transition hover:bg-[#123D33]"
                     >
                       {t('category.clearFilters')}
                     </button>
@@ -330,7 +330,7 @@ export default function OffersPageClient({ initialData = null }) {
                     <button
                       type="button"
                       onClick={() => setShowMobileFilters(false)}
-                      className="w-full rounded-lg bg-orange-500 py-3 text-sm font-semibold text-white hover:bg-orange-600"
+                      className="w-full rounded-lg bg-[#1F5C4A] py-3 text-sm font-semibold text-white hover:bg-[#123D33]"
                     >
                       {t('category.showProducts', { count: filteredProducts.length })}
                     </button>
@@ -346,7 +346,7 @@ export default function OffersPageClient({ initialData = null }) {
             <button
               type="button"
               onClick={() => router.push('/shop')}
-              className="rounded-lg bg-red-500 px-6 py-2 text-white transition hover:bg-red-600"
+              className="rounded-lg bg-[#1F5C4A] px-6 py-2 text-white transition hover:bg-[#123D33]"
             >
               Browse All Products
             </button>

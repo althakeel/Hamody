@@ -26,7 +26,7 @@ export function CartSummaryActions({
     <button
       type="button"
       className={`w-full rounded-xl py-3 text-sm font-bold text-white transition ${
-        checkoutDisabled ? 'cursor-not-allowed bg-slate-400' : 'bg-red-600 hover:bg-red-700'
+        checkoutDisabled ? 'cursor-not-allowed bg-slate-400' : 'bg-[#1F5C4A] hover:bg-[#123D33]'
       }`}
       onClick={() => {
         if (checkoutDisabled) return;

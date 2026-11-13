@@ -412,19 +412,19 @@ function ProductQuantitySelector({
   const { anchorRef, showStockNotice, noticeNode } = useStockLimitPopup(stockLimitMessage);
 
   return (
-    <div className={`relative mt-5 ${className}`.trim()} dir={isArabic ? 'rtl' : 'ltr'}>
-      <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <div className={`relative mt-3 ${className}`.trim()} dir={isArabic ? 'rtl' : 'ltr'}>
+      <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
         {quantityLabel}
       </label>
-      <div ref={anchorRef} className="flex h-12 items-stretch overflow-hidden rounded-lg border border-slate-300 bg-white">
+      <div ref={anchorRef} className="flex h-9 items-stretch overflow-hidden rounded-lg border border-slate-300 bg-white">
         <button
           type="button"
           onClick={() => canDecrease && onChange(currentQty - 1)}
           disabled={!canDecrease}
           aria-label={isArabic ? 'إنقاص الكمية' : 'Decrease quantity'}
-          className="flex w-12 shrink-0 items-center justify-center border-r border-slate-200 text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
+          className="flex w-9 shrink-0 items-center justify-center border-r border-slate-200 text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
         >
-          <MinusIcon size={18} aria-hidden="true" />
+          <MinusIcon size={15} aria-hidden="true" />
         </button>
         <EditableQuantityInput
           quantity={currentQty}
@@ -444,11 +444,11 @@ function ProductQuantitySelector({
           }}
           aria-disabled={!canIncrease}
           aria-label={isArabic ? 'زيادة الكمية' : 'Increase quantity'}
-          className={`flex w-12 shrink-0 items-center justify-center border-l border-slate-200 transition hover:bg-slate-50 ${
+          className={`flex w-9 shrink-0 items-center justify-center border-l border-slate-200 transition hover:bg-slate-50 ${
             canIncrease ? 'text-slate-700' : 'cursor-not-allowed text-slate-300'
           }`}
         >
-          <PlusIcon size={18} aria-hidden="true" />
+          <PlusIcon size={15} aria-hidden="true" />
         </button>
       </div>
       {noticeNode}
@@ -1697,7 +1697,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                         {tagLabel ? (
                           <span
                             className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-white ${
-                              tag === 'BEST_VALUE' ? 'bg-emerald-600' : 'bg-orange-600'
+                              tag === 'BEST_VALUE' ? 'bg-[#1F5C4A]' : 'bg-[#9C6E20]'
                             }`}
                           >
                             {tagLabel}
@@ -1845,7 +1845,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
         <div className="mb-1.5 flex items-center justify-end">
           <span
             className="inline-flex items-baseline gap-1.5 text-[13px] font-extrabold leading-none tracking-tight"
-            style={{ color: '#E52721' }}
+            style={{ color: '#9C6E20' }}
           >
             <span className="tabular-nums">{formatCount(displaySoldCount)}</span>
             <span className="uppercase tracking-[0.12em]">
@@ -1856,7 +1856,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
 
         <div className="relative h-2 w-full overflow-hidden rounded-full bg-[#eceef2]">
           <div
-            className="product-sold-progress-fill absolute inset-y-0 start-0 rounded-full bg-[#E52721]"
+            className="product-sold-progress-fill absolute inset-y-0 start-0 rounded-full bg-[#9C6E20]"
             style={{ width: `${soldProgressPercent}%` }}
             role="progressbar"
             aria-valuenow={soldProgressPercent}
@@ -3247,13 +3247,13 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
       </div>
 
       <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 pt-0 max-lg:pb-6 lg:py-6 overflow-x-visible">
-        <div className="product-page-grid gap-0 lg:gap-8 items-start">
+        <div className="product-page-grid grid grid-cols-1 items-start gap-0 lg:grid-cols-2 lg:gap-x-[10px]">
 
           {/* LEFT: Media gallery */}
-          <div className="w-full min-w-0 space-y-3 lg:space-y-4 lg:min-w-0 lg:sticky lg:top-24 lg:self-start relative z-20">
-            <div className="hidden lg:flex flex-col gap-2.5">
+          <div className="relative z-20 w-full min-w-0 space-y-3 lg:sticky lg:top-24 lg:space-y-4">
+            <div className="hidden w-full min-w-0 lg:flex lg:flex-col lg:gap-2.5">
               <div className="min-w-0">
-                <div className={`relative bg-white rounded overflow-visible w-full ${aspectRatioClass}`}>
+                <div className={`relative w-full max-w-none overflow-hidden bg-white lg:rounded-none ${aspectRatioClass}`}>
                 <NewProductTagBadge product={product} size="page" />
                 {product.attributes?.condition === 'used' && (
                   <div className="absolute top-4 left-16 z-10">
@@ -3303,7 +3303,8 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                       type="image"
                       src={mainImage || PLACEHOLDER_IMAGE}
                       alt={safeProductName}
-                      sizes="(max-width: 1024px) 100vw, 640px"
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                      imageClassName="object-cover object-center pointer-events-none"
                       priority
                     />
                   )}
@@ -3332,7 +3333,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                         goToNextDesktopImage();
                       }}
                       onMouseEnter={() => setShowZoom(false)}
-                      className="absolute right-2 top-1/2 z-30 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white/95 text-gray-700 shadow-sm transition hover:bg-white hover:text-gray-900"
+                      className="absolute right-3 top-1/2 z-30 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white/95 text-gray-700 shadow-sm transition hover:bg-white hover:text-gray-900"
                       aria-label="Next image"
                     >
                       <ChevronRight size={16} />
@@ -3687,6 +3688,8 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
 
           </div>
 
+          {/* RIGHT: details and buy box */}
+          <div className="flex min-w-0 flex-col gap-6">
           {/* MIDDLE: Product details — desktop only */}
           <div className="relative z-0 hidden min-w-0 lg:block">
             <div className="hidden lg:block bg-white space-y-4" dir={isArabic ? 'rtl' : 'ltr'}>
@@ -3716,28 +3719,6 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                     <span className="font-medium text-gray-800" dir="ltr">{displaySku}</span>
                   </p>
                 ) : null}
-                <div className="mt-3 flex flex-wrap items-end gap-3">
-                  <div className="text-slate-900">
-                    {renderSplitPrice(convertedEffPrice, {
-                      currencyClass: 'text-[13px] font-medium text-slate-900',
-                      mainClass: 'text-[30px] font-semibold text-slate-900',
-                      decimalClass: 'text-[13px] font-semibold text-slate-900',
-                      wrapperClass: 'inline-flex items-start leading-none'
-                    })}
-                  </div>
-                  {discountPercent > 0 && (
-                    <StruckPrice className="text-sm text-gray-500 whitespace-nowrap">
-                      <AedText>{formatMoney(convertedEffAED, true)}</AedText>
-                    </StruckPrice>
-                  )}
-                  {discountPercent > 0 && (
-                    <span className="text-sm text-green-600 font-semibold whitespace-nowrap">
-                      {t('common.offPercent', {
-                        discount: formatCount(discountPercent, { maximumFractionDigits: 0 }),
-                      })}
-                    </span>
-                  )}
-                </div>
               </div>
 
               {reviewCount > 0 ? (
@@ -3966,8 +3947,8 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                 <span className={`${isSpecialOffer ? 'text-green-600' : 'text-gray-900'}`}>
                   {renderSplitPrice(buyBoxSalePrice, {
                     currencyClass: `text-[15px] font-medium ${isSpecialOffer ? 'text-green-600' : 'text-gray-900'}`,
-                    mainClass: `text-[52px] font-semibold leading-none ${isSpecialOffer ? 'text-green-600' : 'text-gray-900'}`,
-                    decimalClass: `text-[18px] font-semibold leading-none ${isSpecialOffer ? 'text-green-600' : 'text-gray-900'}`,
+                    mainClass: `text-[36px] font-semibold leading-none ${isSpecialOffer ? 'text-green-600' : 'text-gray-900'}`,
+                    decimalClass: `text-[14px] font-semibold leading-none ${isSpecialOffer ? 'text-green-600' : 'text-gray-900'}`,
                     wrapperClass: 'inline-flex items-start leading-none tracking-[-0.01em]'
                   })}
                 </span>
@@ -4014,7 +3995,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
             ) : null}
 
             {/* Action Buttons */}
-            <div className="mt-5" dir={isArabic ? 'rtl' : 'ltr'}>
+            <div className="mt-3" dir={isArabic ? 'rtl' : 'ltr'}>
               {!showCartMatchedUi ? (
                 !isSelectionInStock ? (
                   <ProductNotifyMeForm
@@ -4027,10 +4008,10 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                   <button
                     onClick={handleAddToCart}
                     disabled={!isSelectionInStock}
-                    className={`h-11 w-full rounded-lg px-4 text-sm font-semibold transition-[background-color,box-shadow,transform] duration-200 active:scale-[0.99] ${
+                    className={`h-9 w-full rounded-lg px-3 text-[13px] font-semibold transition-[background-color,box-shadow,transform] duration-200 active:scale-[0.99] ${
                       !isSelectionInStock
                         ? 'cursor-not-allowed bg-slate-200 text-slate-500 shadow-none'
-                        : 'bg-[#E5E5E5] text-slate-900 shadow-sm hover:bg-[#D9D9D9] hover:shadow-[0_6px_16px_rgba(15,23,42,0.12)]'
+                        : 'bg-[#E9D6B5] text-[#123D33] shadow-sm hover:bg-[#DCC9A4] hover:shadow-[0_6px_16px_rgba(18,61,51,0.12)]'
                     }`}
                   >
                     {!isSelectionInStock
@@ -4042,11 +4023,11 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                     onClick={handleOrderNow}
                     disabled={!isSelectionInStock}
                     className={isMansoryNoonProduct(product)
-                      ? 'flex h-[52px] w-full flex-col items-center justify-center rounded-xl bg-[#E52D27] px-4 text-white shadow-[0_8px_18px_rgba(229,45,39,0.28)] transition hover:bg-[#CC261F] active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none'
-                      : `h-11 w-full rounded-lg px-4 text-sm font-semibold transition-[background-color,box-shadow,transform] duration-200 active:scale-[0.99] ${
+                      ? 'flex h-[52px] w-full flex-col items-center justify-center rounded-xl bg-[#1F5C4A] px-4 text-white shadow-[0_8px_18px_rgba(31,92,74,0.28)] transition hover:bg-[#123D33] active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none'
+                      : `h-9 w-full rounded-lg px-3 text-[13px] font-semibold transition-[background-color,box-shadow,transform] duration-200 active:scale-[0.99] ${
                         !isSelectionInStock
                           ? 'cursor-not-allowed bg-slate-200 text-slate-500 shadow-none'
-                          : 'bg-[#E52D27] text-white shadow-sm hover:bg-[#CC261F] hover:shadow-[0_6px_16px_rgba(229,45,39,0.28)]'
+                          : 'bg-[#1F5C4A] text-white shadow-sm hover:bg-[#123D33] hover:shadow-[0_6px_16px_rgba(31,92,74,0.28)]'
                       }`}
                   >
                     <span className={isMansoryNoonProduct(product) ? 'text-[15px] font-bold leading-none' : ''}>
@@ -4187,7 +4168,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                     <button
                       type="button"
                       onClick={() => router.push('/checkout')}
-                      className="h-10 rounded-lg bg-[#E52D27] px-4 text-sm font-semibold text-white transition hover:bg-[#CC261F]"
+                      className="h-10 rounded-lg bg-[#1F5C4A] px-4 text-sm font-semibold text-white transition hover:bg-[#123D33]"
                     >
                       {t('cart.checkout')}
                     </button>
@@ -4211,7 +4192,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={t('product.orderOnJomla')}
-                    className="flex h-11 items-center justify-center rounded-xl bg-[#E52D27] px-3 text-white shadow-sm transition hover:bg-[#B31217] active:scale-[0.99]"
+                    className="partner-brand flex h-11 items-center justify-center rounded-xl bg-[#E52D27] px-3 text-white shadow-sm transition hover:bg-[#B31217] active:scale-[0.99]"
                   >
                     <img src="/logo/jomla.png" alt="" className="h-7 w-auto max-w-full object-contain" />
                   </a>
@@ -4233,7 +4214,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                 type="button"
                 onClick={handleWishlist}
                 disabled={wishlistLoading}
-                className={`mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-lg border text-sm font-medium transition ${
+                className={`mt-2.5 flex h-9 w-full items-center justify-center gap-2 rounded-lg border text-[13px] font-medium transition ${
                   isInWishlist
                     ? 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
                     : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
@@ -4260,6 +4241,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
               />
             </div>
           ) : null}
+          </div>
           </div>
         </div>
       </div>
@@ -4521,16 +4503,23 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
         .product-page-grid {
           display: grid;
           grid-template-columns: minmax(0, 1fr);
+          column-gap: 0;
+          row-gap: 0;
         }
         @media (min-width: 1024px) {
           .product-page-grid {
-            grid-template-columns: minmax(360px, 460px) minmax(340px, 1fr) minmax(280px, 300px);
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
             align-items: start;
+            column-gap: 10px !important;
+            row-gap: 0 !important;
+            gap: 0 10px !important;
           }
-        }
-        @media (min-width: 1280px) {
-          .product-page-grid {
-            grid-template-columns: minmax(400px, 500px) minmax(360px, 1fr) minmax(300px, 320px);
+          .product-page-grid > * {
+            width: 100%;
+            min-width: 0;
+            margin: 0;
+            padding-left: 0;
+            padding-right: 0;
           }
         }
       `}</style>

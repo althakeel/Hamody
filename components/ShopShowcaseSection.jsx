@@ -835,7 +835,7 @@ export default function ShopShowcaseSection({
           ) : null}
           {lowerFullWidthBanner ? (
             <div
-              className="mx-auto w-full max-w-[1400px] overflow-hidden px-4 sm:px-6"
+              className="mx-auto w-full overflow-hidden"
               style={{
                 width: '100%',
                 maxWidth: 1400,

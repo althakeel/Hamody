@@ -98,7 +98,7 @@ export default function TicketDetailPage() {
       <div className="max-w-4xl mx-auto px-4 py-10">
         <h1 className="text-2xl font-semibold text-slate-800 mb-3">Support Ticket</h1>
         <p className="text-slate-600 mb-6">Please sign in to view this ticket.</p>
-        <Link href="/" className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg">Go to Home</Link>
+        <Link href="/" className="inline-block px-4 py-2 bg-[#1F5C4A] text-white rounded-lg">Go to Home</Link>
       </div>
     )
   }
@@ -107,7 +107,7 @@ export default function TicketDetailPage() {
     return (
       <div className="max-w-4xl mx-auto px-4 py-10 text-center">
         <p className="text-slate-600">Ticket not found</p>
-        <Link href="/dashboard/tickets" className="inline-block mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg">
+        <Link href="/dashboard/tickets" className="inline-block mt-4 px-4 py-2 bg-[#1F5C4A] text-white rounded-lg">
           Back to Tickets
         </Link>
       </div>
@@ -116,9 +116,9 @@ export default function TicketDetailPage() {
 
   const getStatusBadge = (status) => {
     const colors = {
-      open: 'bg-blue-100 text-blue-800',
-      'in-progress': 'bg-orange-100 text-orange-800',
-      resolved: 'bg-green-100 text-green-800',
+      open: 'bg-[#E7F0EC] text-[#1F5C4A]',
+      'in-progress': 'bg-[#E9D6B5] text-[#9C6E20]',
+      resolved: 'bg-[#E7F0EC] text-[#1F5C4A]',
       closed: 'bg-gray-100 text-gray-800'
     }
     return (
@@ -130,9 +130,9 @@ export default function TicketDetailPage() {
 
   const getPriorityBadge = (priority) => {
     const colors = {
-      low: 'bg-green-100 text-green-800',
-      normal: 'bg-blue-100 text-blue-800',
-      high: 'bg-orange-100 text-orange-800',
+      low: 'bg-[#E7F0EC] text-[#1F5C4A]',
+      normal: 'bg-[#FAF8F3] text-[#123D33]',
+      high: 'bg-[#E9D6B5] text-[#9C6E20]',
       urgent: 'bg-red-100 text-red-800'
     }
     return (
@@ -149,7 +149,7 @@ export default function TicketDetailPage() {
         <div className="mb-6">
           <Link
             href="/dashboard/tickets"
-            className="inline-flex items-center gap-2 text-blue-600 hover:underline mb-4"
+            className="inline-flex items-center gap-2 text-[#1F5C4A] hover:underline mb-4"
           >
             <ArrowLeft size={16} />
             Back to Tickets
@@ -159,7 +159,7 @@ export default function TicketDetailPage() {
             <div>
               <h1 className="text-2xl font-semibold text-slate-800 mb-2">{ticket.subject}</h1>
               <div className="flex items-center gap-4 text-sm text-slate-600">
-                <span className="font-medium text-blue-600">{ticket.category}</span>
+                <span className="font-medium text-[#1F5C4A]">{ticket.category}</span>
                 <span>Created: {new Date(ticket.createdAt).toLocaleDateString()}</span>
               </div>
             </div>
@@ -182,7 +182,7 @@ export default function TicketDetailPage() {
         {/* Original Message */}
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 mb-6">
           <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">
+            <div className="w-10 h-10 rounded-full bg-[#1F5C4A] text-white flex items-center justify-center font-semibold">
               {ticket.userName?.[0]?.toUpperCase() || 'U'}
             </div>
             <div className="flex-1">
@@ -209,14 +209,14 @@ export default function TicketDetailPage() {
                 key={index}
                 className={`border rounded-xl shadow-sm p-6 ${
                   reply.sender === 'admin' 
-                    ? 'bg-blue-50 border-blue-200' 
+                    ? 'bg-[#FAF8F3] border-[#E9D6B5]' 
                     : 'bg-white border-slate-200'
                 }`}
               >
                 <div className="flex items-start gap-4">
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-white ${
-                      reply.sender === 'admin' ? 'bg-orange-600' : 'bg-blue-600'
+                      reply.sender === 'admin' ? 'bg-[#9C6E20]' : 'bg-[#1F5C4A]'
                     }`}
                   >
                     {reply.sender === 'admin' ? 'A' : (reply.senderName?.[0]?.toUpperCase() || 'U')}
@@ -227,7 +227,7 @@ export default function TicketDetailPage() {
                         {reply.sender === 'admin' ? 'Support Team' : (reply.senderName || 'You')}
                       </span>
                       {reply.sender === 'admin' && (
-                        <span className="px-2 py-0.5 text-xs font-semibold bg-orange-100 text-orange-800 rounded-full">
+                        <span className="px-2 py-0.5 text-xs font-semibold bg-[#E9D6B5] text-[#9C6E20] rounded-full">
                           ADMIN
                         </span>
                       )}
@@ -253,14 +253,14 @@ export default function TicketDetailPage() {
                 onChange={(e) => setReplyMessage(e.target.value)}
                 placeholder="Type your message here..."
                 rows={5}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E9D6B5] resize-none"
                 required
               />
               <div className="flex justify-end">
                 <button
                   type="submit"
                   disabled={submitting || !replyMessage.trim()}
-                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="flex items-center gap-2 px-6 py-3 bg-[#1F5C4A] text-white rounded-lg hover:bg-[#123D33] disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
                   <Send size={16} />
                   {submitting ? 'Sending...' : 'Send Reply'}

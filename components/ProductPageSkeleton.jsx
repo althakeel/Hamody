@@ -16,7 +16,7 @@ export default function ProductPageSkeleton() {
       </div>
 
       <div className="mx-auto w-full max-w-[1400px] px-4 pt-0 pb-6 sm:px-6 lg:py-6">
-        <div className="grid grid-cols-1 items-start gap-0 lg:grid-cols-[minmax(360px,460px)_minmax(340px,1fr)_minmax(280px,300px)] lg:gap-8 xl:grid-cols-[minmax(400px,500px)_minmax(360px,1fr)_minmax(300px,320px)]">
+        <div className="grid grid-cols-1 items-start gap-0 lg:grid-cols-2 lg:gap-x-[10px]">
           <div className="min-w-0 space-y-3 lg:sticky lg:top-24 lg:self-start lg:space-y-4">
             <div className="hidden items-start gap-2.5 lg:flex">
               <div className="flex w-[48px] shrink-0 flex-col gap-1 xl:w-[52px]">
@@ -33,7 +33,8 @@ export default function ProductPageSkeleton() {
             </div>
           </div>
 
-          <div className="mt-4 min-w-0 space-y-4 lg:mt-0">
+          <div className="mt-4 flex min-w-0 flex-col gap-6 lg:mt-0">
+          <div className="min-w-0 space-y-4">
             <div className="h-4 w-28 rounded bg-slate-100" />
             <div className="space-y-2">
               <div className="h-7 w-full rounded bg-slate-200 sm:h-8" />
@@ -66,14 +67,15 @@ export default function ProductPageSkeleton() {
             </div>
           </div>
 
-          <div className="mt-4 hidden lg:mt-0 lg:block">
-            <div className="space-y-3 rounded-xl border border-slate-200 p-4">
+          <div className="hidden lg:block">
+            <div className="w-full space-y-3 rounded-xl border border-slate-200 p-4">
               <div className="h-8 w-32 rounded bg-slate-200" />
               <div className="h-10 w-full rounded bg-slate-100" />
               <div className="h-11 w-full rounded-lg bg-slate-200" />
               <div className="h-11 w-full rounded-lg bg-slate-200" />
               <div className="h-10 w-full rounded bg-slate-100" />
             </div>
+          </div>
           </div>
         </div>
 

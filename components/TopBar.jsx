@@ -120,7 +120,7 @@ export default function TopBar({ initialLanguage = 'en' }) {
   return (
     <div
       data-storefront-topbar
-      className="relative z-[1000] flex w-full items-center border-b border-[#e7e7e7] bg-white"
+      className="relative z-[1000] flex w-full items-center border-b border-[#E9D6B5] bg-white"
       style={{ minHeight: barMetrics.minHeight, fontSize: barMetrics.fontSize }}
     >
       <div className="mx-auto flex w-full max-w-[1400px] items-center justify-center px-3 sm:px-5">

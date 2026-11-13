@@ -34,8 +34,8 @@ function resolveFooterLogoFromAppearance(data = {}) {
     return {
         logoUrl,
         usingBrandMark,
-        logoWidth: usingBrandMark ? 72 : (Number(widthSource) > 0 ? Number(widthSource) : 160),
-        logoHeight: usingBrandMark ? 72 : (Number(heightSource) > 0 ? Number(heightSource) : 40),
+        logoWidth: usingBrandMark ? 132 : (Number(widthSource) > 0 ? Number(widthSource) : 132),
+        logoHeight: usingBrandMark ? 34 : (Number(heightSource) > 0 ? Number(heightSource) : 34),
     };
 }
 
@@ -47,8 +47,8 @@ const Footer = () => {
     const [footerLogo, setFooterLogo] = useState({
         logoUrl: '',
         usingBrandMark: true,
-        logoWidth: 72,
-        logoHeight: 72,
+        logoWidth: 132,
+        logoHeight: 34,
     });
     const [footerLogoLoading, setFooterLogoLoading] = useState(true);
     const [footerContent, setFooterContent] = useState(DEFAULT_FOOTER);
@@ -233,7 +233,7 @@ const Footer = () => {
                     <button
                         type="button"
                         onClick={() => setAppComingSoonOpen(false)}
-                        className="mt-4 h-10 w-full rounded-lg bg-slate-900 text-sm font-semibold text-white transition hover:bg-slate-800"
+                        className="mt-4 h-10 w-full rounded-lg bg-[#1F5C4A] text-sm font-semibold text-white transition hover:bg-[#123D33]"
                     >
                         OK
                     </button>
@@ -244,7 +244,7 @@ const Footer = () => {
     };
 
     return (
-        <footer id="storefront-footer" className="bg-black text-slate-200 border-t border-slate-800 pt-0 pb-[5.25rem] lg:pb-12 lg:pt-12" dir={isArabic ? 'rtl' : 'ltr'}>
+        <footer id="storefront-footer" className="bg-[#123D33] text-[#FAF8F3] border-t border-[#1F5C4A] pt-0 pb-[5.25rem] lg:pb-12 lg:pt-12" dir={isArabic ? 'rtl' : 'ltr'}>
             <div className={HOME_SECTION_INNER_CLASS}>
                 <div className="space-y-8 py-6 lg:grid lg:grid-cols-6 lg:gap-6 lg:space-y-0 lg:py-2">
                     <div className="min-w-0 lg:col-span-2">
@@ -258,24 +258,22 @@ const Footer = () => {
                                 aria-hidden="true"
                             />
                         ) : (
-                            <Link href="/" className="mb-4 inline-block">
+                            <Link href="/" className="mb-4 inline-flex rounded-xl bg-[#FAF8F3] px-2 py-1.5">
                                 <Image
                                     src={footerLogo.logoUrl || STORE1920_LOGO_PATH}
-                                    alt="Store1920 Logo"
-                                    width={footerLogo.logoWidth || 72}
-                                    height={footerLogo.logoHeight || 72}
-                                    className={footerLogo.usingBrandMark
-                                        ? 'h-[64px] w-[64px] rounded-2xl object-contain sm:h-[72px] sm:w-[72px]'
-                                        : 'h-auto max-h-12 w-auto object-contain'}
+                                    alt="Hamody logo"
+                                    width={footerLogo.logoWidth || 132}
+                                    height={footerLogo.logoHeight || 34}
+                                    className="h-7 w-auto max-w-[132px] object-contain"
                                     loading="lazy"
                                 />
                             </Link>
                         )}
-                        <p className="mb-3 max-w-sm text-sm leading-relaxed text-slate-400">
+                        <p className="mb-3 max-w-sm text-sm leading-relaxed text-[#E9D6B5]">
                             {footerDescription}
                         </p>
                         {operatedByLine ? (
-                            <p className="mb-5 max-w-sm text-xs text-slate-500 sm:mb-6">
+                            <p className="mb-5 max-w-sm text-xs text-[#E9D6B5] sm:mb-6">
                                 {operatedByLine}
                             </p>
                         ) : null}
@@ -283,7 +281,7 @@ const Footer = () => {
                             {phoneHref ? (
                             <div className="flex items-center gap-2 text-sm">
                                 <PhoneIcon />
-                                <a href={phoneHref} className="text-slate-400 transition hover:text-white">
+                                <a href={phoneHref} className="text-[#E9D6B5] transition hover:text-white">
                                     {phoneDisplay}
                                 </a>
                             </div>
@@ -291,21 +289,21 @@ const Footer = () => {
                             {footerContent.email ? (
                             <div className="flex items-center gap-2 text-sm">
                                 <MailIcon />
-                                <a href={`mailto:${footerContent.email}`} className="break-all text-slate-400 transition hover:text-white">
+                                <a href={`mailto:${footerContent.email}`} className="break-all text-[#E9D6B5] transition hover:text-white">
                                     {footerContent.email}
                                 </a>
                             </div>
                             ) : null}
                             <div className="flex items-start gap-2 text-sm">
                                 <MapPinIcon />
-                                <span className="min-w-0 leading-relaxed text-slate-400">
-                                    <span className="block text-[11px] uppercase tracking-wide text-slate-500">
+                                <span className="min-w-0 leading-relaxed text-[#E9D6B5]">
+                                    <span className="block text-[11px] uppercase tracking-wide text-[#E9D6B5]">
                                         {pickFooterText(footerContent.registeredOfficeLabel, footerContent.registeredOfficeLabelAr)}
                                     </span>
                                     {registeredOfficeLines.map((line) => (
                                         <span key={`office-${line}`} className="block">{line}</span>
                                     ))}
-                                    <span className="mt-2 block text-[11px] uppercase tracking-wide text-slate-500">
+                                    <span className="mt-2 block text-[11px] uppercase tracking-wide text-[#E9D6B5]">
                                         {pickFooterText(footerContent.fulfilmentLabel, footerContent.fulfilmentLabelAr)}
                                     </span>
                                     {fulfilmentAddressLines.map((line) => (
@@ -369,7 +367,7 @@ const Footer = () => {
                                         <li key={link.path} className="min-w-0">
                                             <Link
                                                 href={link.path}
-                                                className="inline-block text-sm leading-snug text-slate-400 transition hover:text-white"
+                                                className="inline-block text-sm leading-snug text-[#E9D6B5] transition hover:text-white"
                                                 onClick={(event) => {
                                                     if (!link.requiresAuth || isSignedIn) return;
                                                     event.preventDefault();
@@ -388,7 +386,7 @@ const Footer = () => {
                     </div>
                 </div>
 
-                <div className="mt-8 flex w-full flex-col border-t border-slate-800 py-6 sm:mt-4 sm:py-8">
+                <div className="mt-8 flex w-full flex-col border-t border-[#1F5C4A] py-6 sm:mt-4 sm:py-8">
                     <div className="mb-6 flex flex-col items-center gap-4 lg:hidden">
                         <div className="flex flex-wrap items-center justify-center gap-2" aria-label={t('footer.paymentMethods')}>
                             {visiblePaymentMethods.map((method) => (
@@ -443,13 +441,13 @@ const Footer = () => {
                                     rel="noopener noreferrer"
                                     aria-label={item.label}
                                     title={item.label}
-                                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-800 bg-white/5 transition hover:border-slate-700 hover:bg-white/10"
+                                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#1F5C4A] bg-white/5 transition hover:border-[#E9D6B5] hover:bg-white/10"
                                 >
                                     <item.icon />
                                 </Link>
                             ))}
                         </div>
-                        <p className="px-2 text-center text-xs leading-relaxed text-slate-500 sm:text-sm">
+                        <p className="px-2 text-center text-xs leading-relaxed text-[#E9D6B5] sm:text-sm">
                             {copyrightLine}
                         </p>
                     </div>

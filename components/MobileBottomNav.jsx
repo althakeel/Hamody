@@ -16,7 +16,7 @@ import {
   splitOffersNavLabel,
 } from '@/lib/offersPageSettings'
 
-const DEFAULT_BRAND_COLOR = ''
+const DEFAULT_BRAND_COLOR = '#1F5C4A'
 const INACTIVE_NAV_COLOR = '#94a3b8'
 const NAVBAR_APPEARANCE_CACHE_KEY = 'navbarAppearanceCache'
 const OFFERS_HREF = '/offers'
@@ -96,7 +96,7 @@ function RegularNavItem({ item, pathname, brandColor, hydrated }) {
           {hydrated && item.badge > 0 && (
             <span
               className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-0.5 text-[9px] font-bold leading-none text-white"
-              style={{ backgroundColor: activeColor }}
+              style={{ backgroundColor: '#C9963B' }}
             >
               {item.badge > 99 ? '99+' : item.badge}
             </span>
@@ -341,7 +341,7 @@ export default function MobileBottomNav() {
     <nav
       aria-label="Mobile navigation"
       dir={isArabic ? 'rtl' : 'ltr'}
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200/80 bg-white lg:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#E9D6B5] bg-white lg:hidden"
       style={{
         paddingBottom: 'max(0.35rem, env(safe-area-inset-bottom))',
         boxShadow: '0 -8px 24px rgba(15, 23, 42, 0.06)',
