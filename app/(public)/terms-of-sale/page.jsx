@@ -3,9 +3,9 @@
 import PolicyPageLayout from '@/components/PolicyPageLayout';
 import { useStorefrontI18n } from "@/lib/useStorefrontI18n";
 import PolicyContactBlock from '@/components/PolicyContactBlock';
-import { STORE1920_LEGAL_NAME } from '@/lib/businessIdentity';
+import { HAMODY_LEGAL_NAME } from '@/lib/businessIdentity';
 
-const TRADING_AS = `${STORE1920_LEGAL_NAME}, trading as Store1920`;
+const TRADING_AS = `${HAMODY_LEGAL_NAME}, trading as hamody.com`;
 
 export default function TermsOfSalePage() {
   const { isArabic } = useStorefrontI18n();
@@ -16,7 +16,7 @@ export default function TermsOfSalePage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">شروط البيع</h1>
           <p className="text-sm text-gray-500 mb-4">آخر تحديث: 8 سبتمبر 2026</p>
           <p className="text-gray-600 mb-8">
-            توضح شروط البيع هذه البنود والأحكام المنظمة لعمليات بيع المنتجات عبر Store1920.com من قبل {TRADING_AS}. بإتمامك أي عملية شراء، فإنك توافق على الالتزام بهذه الشروط. لا يستبعد أي بند هنا ولا يقيّد أي حق لا يجوز استبعاده قانونًا بموجب قوانين دولة الإمارات، بما في ذلك حقوق الجودة والضمان الإلزامية.
+            توضح شروط البيع هذه البنود والأحكام المنظمة لعمليات بيع المنتجات عبر hamody.com من قبل {TRADING_AS}. بإتمامك أي عملية شراء، فإنك توافق على الالتزام بهذه الشروط. لا يستبعد أي بند هنا ولا يقيّد أي حق لا يجوز استبعاده قانونًا بموجب قوانين دولة الإمارات، بما في ذلك حقوق الجودة والضمان الإلزامية.
           </p>
 
           <div className="space-y-6 border border-gray-200 rounded-xl p-6">
@@ -42,7 +42,7 @@ export default function TermsOfSalePage() {
             <section>
               <h2 className="font-semibold text-gray-900 mb-2">3. الأسعار والضرائب</h2>
               <p className="text-gray-700">
-                جميع الأسعار المعروضة على Store1920.com بالدرهم الإماراتي وتشمل ضريبة القيمة المضافة. السعر المعتمد هو السعر الظاهر عند تأكيد الطلب. تظهر رسوم الشحن قبل إتمام الدفع.
+                جميع الأسعار المعروضة على hamody.com بالدرهم الإماراتي وتشمل ضريبة القيمة المضافة. السعر المعتمد هو السعر الظاهر عند تأكيد الطلب. تظهر رسوم الشحن قبل إتمام الدفع.
               </p>
             </section>
 
@@ -85,7 +85,7 @@ export default function TermsOfSalePage() {
                 <li>تغيير الرأي: خلال 7 أيام من التسليم للمنتجات غير المستخدمة المؤهلة</li>
                 <li>المنتج الخطأ أو التالف أو المعيب أو غير المطابق للوصف: لا يقيّده أجل تغيير الرأي البالغ 7 أيام، ولا تقلّل القواعد التجارية من الحقوق الإلزامية في دولة الإمارات</li>
                 <li>يبدأ الاسترداد المعتمد خلال 5 إلى 7 أيام عمل بعد الموافقة، ويُعاد إلى وسيلة الدفع الأصلية. لا يُعاد المبلغ إلى بريد إلكتروني</li>
-                <li>تتحمل Store1920 تكلفة شحن الإرجاع للمنتج الخطأ أو التالف أو المعيب أو غير المطابق للوصف</li>
+                <li>تتحمل hamody.com تكلفة شحن الإرجاع للمنتج الخطأ أو التالف أو المعيب أو غير المطابق للوصف</li>
                 <li>لتغيير الرأي، يدفع العميل تكلفة شحن الإرجاع المعلنة عند ترتيب الإرجاع</li>
               </ul>
             </section>
@@ -93,11 +93,11 @@ export default function TermsOfSalePage() {
             <section>
               <h2 className="font-semibold text-gray-900 mb-2">8. الضمان ودعم ما بعد البيع</h2>
               <p className="text-gray-700 mb-3">
-                تواصل مع Store1920 أولاً لدعم الضمان. نساعدك في فتح ومتابعة مطالبات ضمان الشركة المصنعة، ونبقى مسؤولين عن التزامات الجودة والحقوق النظامية بصفتنا البائع.
+                تواصل مع hamody.com أولاً لدعم الضمان. نساعدك في فتح ومتابعة مطالبات ضمان الشركة المصنعة، ونبقى مسؤولين عن التزامات الجودة والحقوق النظامية بصفتنا البائع.
               </p>
               <ul className="list-disc mr-6 text-gray-700">
                 <li>كثير من المنتجات يشمل ضمان الشركة المصنعة، ونرشدك خلال ذلك الإجراء</li>
-                <li>راسل support@Store1920.com مع رقم الطلب وتفاصيل المشكلة لبدء المطالبة</li>
+                <li>راسل support@hamody.com مع رقم الطلب وتفاصيل المشكلة لبدء المطالبة</li>
                 <li>لا نقدّم ضمانًا ممتدًا إلا إذا ذُكر صراحة في صفحة المنتج</li>
               </ul>
             </section>
@@ -108,7 +108,7 @@ export default function TermsOfSalePage() {
                 <li>أبلغنا فور اكتشاف المشكلة مع رقم الطلب وصور أو فيديو</li>
                 <li>تتبع هذه الحالات سياسة الإرجاع ولا يقطعها أجل تغيير الرأي البالغ 7 أيام</li>
                 <li>نستبدل نفس المنتج عند توفر المخزون، وإلا نعيد المبلغ</li>
-                <li>تتحمل Store1920 تكلفة شحن الإرجاع في هذه الحالات</li>
+                <li>تتحمل hamody.com تكلفة شحن الإرجاع في هذه الحالات</li>
                 <li>لا يقلل أي بند هنا من حقوق الجودة أو حقوق المستهلك الإلزامية بموجب قوانين دولة الإمارات</li>
               </ul>
             </section>
@@ -144,7 +144,7 @@ export default function TermsOfSalePage() {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Terms of Sale</h1>
         <p className="text-sm text-gray-500 mb-4">Last updated: 8 September 2026</p>
         <p className="text-gray-600 mb-8">
-          These Terms of Sale outline the terms and conditions governing the sale of products on Store1920.com by {TRADING_AS}.
+          These Terms of Sale outline the terms and conditions governing the sale of products on hamody.com by {TRADING_AS}.
           By making a purchase, you agree to be bound by these terms. Nothing here excludes or limits rights that cannot lawfully be excluded under UAE law, including mandatory quality and warranty rights.
         </p>
 
@@ -154,7 +154,7 @@ export default function TermsOfSalePage() {
           <section>
             <h2 className="font-semibold text-gray-900 mb-2">1. Offer & Acceptance</h2>
             <p className="text-gray-700 mb-3">
-              All product listings on Store1920.com constitute an offer to sell. When you add a product to your cart and proceed to checkout, you are making an offer to purchase. Your offer is accepted when we confirm your order via email or SMS, at which point a binding contract is formed between you and {TRADING_AS}.
+              All product listings on hamody.com constitute an offer to sell. When you add a product to your cart and proceed to checkout, you are making an offer to purchase. Your offer is accepted when we confirm your order via email or SMS, at which point a binding contract is formed between you and {TRADING_AS}.
             </p>
             <p className="text-gray-700">
               We reserve the right to reject any order or require additional verification before acceptance without providing reason or liability.
@@ -182,7 +182,7 @@ export default function TermsOfSalePage() {
           <section>
             <h2 className="font-semibold text-gray-900 mb-2">3. Pricing & Taxes</h2>
             <p className="text-gray-700 mb-3">
-              All prices displayed on Store1920.com are in UAE Dirhams (AED) and include VAT.
+              All prices displayed on hamody.com are in UAE Dirhams (AED) and include VAT.
             </p>
             <ul className="list-disc ml-6 mb-3 text-gray-700">
               <li>Prices are subject to change without notice, though the confirmed-order price applies once we accept your order</li>
@@ -275,7 +275,7 @@ export default function TermsOfSalePage() {
             <ul className="list-disc ml-6 mb-3 text-gray-700">
               <li>Approved refunds are initiated within 5–7 business days after approval</li>
               <li>Refunds are credited to the original payment method. We do not send refunds to a registered email address</li>
-              <li>Store1920 pays return shipping for wrong, damaged, defective, or not-as-described items</li>
+              <li>hamody.com pays return shipping for wrong, damaged, defective, or not-as-described items</li>
               <li>For change of mind, you pay the return-shipping cost disclosed when the return is arranged</li>
             </ul>
           </section>
@@ -284,11 +284,11 @@ export default function TermsOfSalePage() {
           <section>
             <h2 className="font-semibold text-gray-900 mb-2">9. Product Warranties & Guarantees</h2>
             <p className="text-gray-700 mb-3">
-              Contact Store1920 first for warranty support. We will help you raise and progress manufacturer warranty claims, and we remain responsible for our own quality and statutory obligations as the seller.
+              Contact hamody.com first for warranty support. We will help you raise and progress manufacturer warranty claims, and we remain responsible for our own quality and statutory obligations as the seller.
             </p>
             <ul className="list-disc ml-6 mb-3 text-gray-700">
               <li>Many products also include a manufacturer warranty; we will guide you through that process</li>
-              <li>Email support@Store1920.com with your order ID and issue details to start a claim</li>
+              <li>Email support@hamody.com with your order ID and issue details to start a claim</li>
               <li>We do not provide extended warranties unless explicitly mentioned on the product page</li>
               <li>Manufacturer warranty coverage generally excludes damage due to misuse, accidents, or normal wear, subject to the brand’s terms and your rights under UAE law</li>
             </ul>
@@ -304,7 +304,7 @@ export default function TermsOfSalePage() {
               <li>Notify us as soon as you discover the issue, with your order ID and photos or video</li>
               <li>These cases follow the Return Policy and are not cut off by the 7-day change-of-mind window</li>
               <li>We replace the same SKU when that stock exists; otherwise we refund</li>
-              <li>Store1920 pays return shipping for these cases</li>
+              <li>hamody.com pays return shipping for these cases</li>
               <li>Nothing here reduces mandatory quality or consumer rights under UAE law</li>
             </ul>
           </section>
@@ -313,7 +313,7 @@ export default function TermsOfSalePage() {
           <section>
             <h2 className="font-semibold text-gray-900 mb-2">11. Buyer Obligations</h2>
             <p className="text-gray-700">
-              By purchasing from Store1920.com, you agree to:
+              By purchasing from hamody.com, you agree to:
             </p>
             <ul className="list-disc ml-6 mb-3 text-gray-700">
               <li>Provide accurate, current, and complete information during checkout</li>
@@ -332,7 +332,7 @@ export default function TermsOfSalePage() {
               To the maximum extent permitted by applicable law:
             </p>
             <ul className="list-disc ml-6 mb-3 text-gray-700">
-              <li>Store1920.com is not liable for indirect, incidental, special, or consequential damages</li>
+              <li>hamody.com is not liable for indirect, incidental, special, or consequential damages</li>
               <li>Our total liability shall not exceed the order amount paid by you</li>
               <li>We are not responsible for delays, losses, or damages during shipping by logistics partners, except where we are legally required to remain responsible</li>
               <li>Nothing in these Terms of Sale excludes or limits rights that cannot lawfully be excluded under UAE law, including mandatory quality and consumer rights</li>
@@ -343,7 +343,7 @@ export default function TermsOfSalePage() {
           <section>
             <h2 className="font-semibold text-gray-900 mb-2">13. Force Majeure</h2>
             <p className="text-gray-700">
-              Store1920.com is not liable for failures or delays in performance due to circumstances beyond our reasonable control, including but not limited to: natural disasters, wars, pandemics, government actions, strikes, or utility failures. During such events, we will make reasonable efforts to resume normal operations.
+              hamody.com is not liable for failures or delays in performance due to circumstances beyond our reasonable control, including but not limited to: natural disasters, wars, pandemics, government actions, strikes, or utility failures. During such events, we will make reasonable efforts to resume normal operations.
             </p>
           </section>
 
@@ -378,7 +378,7 @@ export default function TermsOfSalePage() {
           <section>
             <h2 className="font-semibold text-gray-900 mb-2">16. Amendment of Terms</h2>
             <p className="text-gray-700">
-              Store1920.com reserves the right to modify these Terms of Sale at any time. Changes will be effective immediately upon posting to the website. We recommend reviewing this page regularly. Your continued use of the website following changes constitutes acceptance of the revised terms.
+              hamody.com reserves the right to modify these Terms of Sale at any time. Changes will be effective immediately upon posting to the website. We recommend reviewing this page regularly. Your continued use of the website following changes constitutes acceptance of the revised terms.
             </p>
           </section>
 

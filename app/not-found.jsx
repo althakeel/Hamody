@@ -13,7 +13,6 @@ export const metadata = {
 
 const TOP_CATEGORIES = [
   { name: 'Electronics', href: '/category/electronics' },
-  { name: 'Home & Living', href: '/category/home-living' },
   { name: 'Beauty & Personal Care', href: '/category/beauty-personal-care' },
   { name: 'Fashion & Accessories', href: '/category/fashion-accessories' },
   { name: 'Pets & Pet Supplies', href: '/category/pets-pet-supplies' },

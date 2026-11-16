@@ -175,7 +175,7 @@ export async function POST(request) {
           name: 'TEST — Stock alert email is working',
           sku: 'TEST-SKU',
           stock: 0,
-          variant: 'This is a test message from Store1920 settings',
+          variant: 'This is a test message from HAMODY settings',
         }],
         threshold: isCustom ? settings.customThreshold : settings.threshold,
         intervalHours: isCustom ? settings.customIntervalHours : settings.intervalHours,

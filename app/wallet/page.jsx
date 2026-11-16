@@ -254,7 +254,7 @@ export default function WalletPage() {
           <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-[#8f3404] to-[#c45a12] shadow-lg">
             <Image src={WalletIcon} alt="" width={42} height={42} className="object-contain" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Your Store1920 Wallet</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Your Hamody Wallet</h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-600">
             Sign in to view your balance, track rewards, and redeem wallet at checkout.
           </p>
@@ -282,7 +282,7 @@ export default function WalletPage() {
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/90">
                 <Image src={WalletIcon} alt="" width={16} height={16} className="object-contain" />
-                Store1920 Wallet
+                Hamody Wallet
               </div>
               <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
                 Spend smarter with your rewards

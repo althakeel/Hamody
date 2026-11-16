@@ -4,7 +4,7 @@ import ContactMessage from '@/models/ContactMessage';
 import { checkRateLimit, getClientIp } from '@/lib/apiSecurity';
 import { resolvePublicStoreId } from '@/lib/emailMarketingLeads';
 import { sendMail } from '@/lib/email';
-import { STORE1920_SUPPORT_EMAIL } from '@/lib/storeContact';
+import { HAMODY_SUPPORT_EMAIL } from '@/lib/storeContact';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,7 +60,7 @@ export async function POST(request) {
 
     try {
       await sendMail({
-        to: STORE1920_SUPPORT_EMAIL,
+        to: HAMODY_SUPPORT_EMAIL,
         subject: `Contact form${topic ? ` (${topic})` : ''}: ${name}`,
         html: `
           <p><strong>Name:</strong> ${escapeHtml(name)}</p>

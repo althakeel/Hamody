@@ -23,7 +23,7 @@ const LAYOUTS = [
 ];
 
 const TEXT_FIELDS = [
-  ['heading', 'Heading', 'WELCOME TO STORE1920'],
+  ['heading', 'Heading', 'WELCOME TO HAMODY'],
   ['offerLead', 'Offer line start', 'Get'],
   ['offerHighlight', 'Offer highlight', '10% OFF'],
   ['offerTail', 'Offer line end', 'your first purchase'],
@@ -340,7 +340,7 @@ export default function HomePopupCustomizePage() {
                   <input
                     value={form.buttonLink}
                     onChange={(event) => setField('buttonLink', event.target.value)}
-                    placeholder="/shop or https://store1920.com/offers"
+                    placeholder="/shop or https://hamody.com/offers"
                     className={inputClass}
                   />
                   <span className="text-xs text-amber-800">

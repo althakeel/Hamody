@@ -9,7 +9,7 @@ LIMIT="200M"
 SNIPPET_PATH="/etc/nginx/conf.d/store1920-upload-limit.conf"
 
 cat > "$SNIPPET_PATH" <<EOF
-# Store1920 — allow large media uploads (fixes HTTP 413)
+# Hamody — allow large media uploads (fixes HTTP 413)
 client_max_body_size ${LIMIT};
 proxy_read_timeout 300s;
 proxy_send_timeout 300s;

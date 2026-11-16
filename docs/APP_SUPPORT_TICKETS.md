@@ -1,4 +1,4 @@
-# Store1920 app support tickets
+# HAMODY app support tickets
 
 Last updated: 27 October 2026  
 Audience: Android and Flutter  
@@ -46,7 +46,7 @@ One ticket opens `/dashboard/tickets/{ticketId}`.
 ## 2. List
 
 ```http
-GET https://www.store1920.com/api/tickets
+GET https://www.hamody.com/api/tickets
 ```
 
 ```json
@@ -91,7 +91,7 @@ Search matches `subject`, `description`, and `category`. It does not call the se
 The `+` button.
 
 ```http
-POST https://www.store1920.com/api/tickets
+POST https://www.hamody.com/api/tickets
 Content-Type: application/json
 ```
 
@@ -138,7 +138,7 @@ New tickets are saved as `status: "open"`.
 ## 4. One ticket
 
 ```http
-GET https://www.store1920.com/api/tickets/{ticketId}
+GET https://www.hamody.com/api/tickets/{ticketId}
 ```
 
 `404` `{ "error": "Ticket not found" }` when the id is wrong or the ticket belongs to another customer.
@@ -173,7 +173,7 @@ Draw `description` first, then `replies` in order.
 ## 5. Reply
 
 ```http
-POST https://www.store1920.com/api/tickets/{ticketId}
+POST https://www.hamody.com/api/tickets/{ticketId}
 Content-Type: application/json
 ```
 
@@ -192,7 +192,7 @@ There is no socket. When the customer opens the ticket, call `GET` again so a st
 ## 6. Close
 
 ```http
-PATCH https://www.store1920.com/api/tickets/{ticketId}
+PATCH https://www.hamody.com/api/tickets/{ticketId}
 Content-Type: application/json
 ```
 

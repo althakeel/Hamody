@@ -40,7 +40,7 @@ function formatFilterDateLabel(value = '') {
 
 const DEFAULT_ORDER_FILTER_TIME = DEFAULT_ORDERS_BY_PRODUCT_TIME;
 const BULK_STATUS_UNDO_MS = 30 * 60 * 1000;
-const BULK_STATUS_UNDO_STORAGE_KEY = 'store1920_bulk_status_excel_undo';
+const BULK_STATUS_UNDO_STORAGE_KEY = 'hamody_bulk_status_excel_undo';
 
 function readBulkStatusUndoFromStorage() {
     if (typeof window === 'undefined') return null;
@@ -529,7 +529,7 @@ function isWaslahShipmentProcessed(order) {
     return Boolean(getOrderAwb(order));
 }
 
-/** Waslah already has this shipment but Store1920 is not linked yet. */
+/** Waslah already has this shipment but HAMODY is not linked yet. */
 function isWaslahUnlinkedDuplicate(order) {
     if (order?.waslah?.cancelledAt && !order?.waslah?.orderId) return false;
     return Boolean(

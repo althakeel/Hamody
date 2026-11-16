@@ -1,6 +1,6 @@
 ---
 name: blogs
-description: Maintains Store1920 blogs — public /blogs pages, seller dashboard /store/blogs, TipTap rich description (h1/h2/p, fonts, S3 images with drag-reorder), and blog APIs. Use when editing blogs, /blogs, /store/blogs, Blog model, or blog rich-text editor.
+description: Maintains hamody blogs — public /blogs pages, seller dashboard /store/blogs, TipTap rich description (h1/h2/p, fonts, S3 images with drag-reorder), and blog APIs. Use when editing blogs, /blogs, /store/blogs, Blog model, or blog rich-text editor.
 ---
 
 # Blogs (`/blogs` + `/store/blogs`)

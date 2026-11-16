@@ -1,4 +1,4 @@
-# Store1920 product image scan
+# HAMODY product image scan
 
 Last updated: 21 October 2026  
 Audience: Android app  
@@ -22,7 +22,7 @@ Side padding **16**. The title does not shift when the flash state changes. Arab
 No login. Send `Accept-Language: en` or `ar`. Do not send `Authorization`.
 
 ```http
-POST https://www.store1920.com/api/search-by-image
+POST https://www.hamody.com/api/search-by-image
 Content-Type: multipart/form-data
 ```
 

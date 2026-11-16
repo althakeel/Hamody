@@ -1,9 +1,9 @@
-# Store1920 home page — Android
+# HAMODY home page — Android
 
 Last updated: 12 October 2026  
 Audience: Android app  
-Website: `https://www.store1920.com`  
-API root: `https://www.store1920.com/api`  
+Website: `https://www.hamody.com`  
+API root: `https://www.hamody.com/api`  
 Web source: `app/(public)/HomePageClient.jsx`
 
 This file is only the home scroll. The phone navbar is [ANDROID_MOBILE_NAVBAR.md](./ANDROID_MOBILE_NAVBAR.md). Banner 2 field detail is [ANDROID_BANNER_2.md](./ANDROID_BANNER_2.md). The product card is [FLUTTER_PRODUCT_CARDS.md](./FLUTTER_PRODUCT_CARDS.md).
@@ -21,7 +21,7 @@ Do not print the letters **AED** next to a price.
 Draw this symbol, then the number:
 
 ```
-https://www.store1920.com/currency/aed-dirham.png
+https://www.hamody.com/currency/aed-dirham.png
 ```
 
 | Piece | Rule |

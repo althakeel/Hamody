@@ -4,19 +4,19 @@ import PolicyPageLayout from '@/components/PolicyPageLayout';
 import PolicyContactBlock from '@/components/PolicyContactBlock';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 import {
-  STORE1920_LEGAL_NAME,
-  STORE1920_LEGAL_NAME_AR,
-  STORE1920_BUSINESS_HOURS_EN,
-  STORE1920_BUSINESS_HOURS_AR,
+  HAMODY_LEGAL_NAME,
+  HAMODY_LEGAL_NAME_AR,
+  HAMODY_BUSINESS_HOURS_EN,
+  HAMODY_BUSINESS_HOURS_AR,
 } from '@/lib/businessIdentity';
 
-const TRADING_AS = `${STORE1920_LEGAL_NAME}, trading as Store1920`;
+const TRADING_AS = `${HAMODY_LEGAL_NAME}, trading as hamody.com`;
 
 const PAGE_COPY = {
   en: {
     title: 'Shipping & Delivery Policy',
     intro:
-      `This is the single shipping and delivery policy for orders placed on Store1920.com by ${TRADING_AS}. It covers processing cut-offs, delivery estimates, fees, delivery attempts, and remote-area rules inside the United Arab Emirates.`,
+      `This is the single shipping and delivery policy for orders placed on hamody.com by ${TRADING_AS}. It covers processing cut-offs, delivery estimates, fees, delivery attempts, and remote-area rules inside the United Arab Emirates.`,
         lastUpdated: 'Last updated: 10 September 2026',
     sections: [
       {
@@ -28,7 +28,7 @@ const PAGE_COPY = {
       {
         title: '2. Processing cut-off and business days',
         paragraphs: [
-          `Our fulfilment hours are ${STORE1920_BUSINESS_HOURS_EN}. Business days are Sunday to Thursday, excluding UAE public holidays.`,
+          `Our fulfilment hours are ${HAMODY_BUSINESS_HOURS_EN}. Business days are Sunday to Thursday, excluding UAE public holidays.`,
           'The daily order cut-off is 6:00 PM UAE time on a business day. Orders confirmed before the cut-off enter processing that business day. Orders confirmed after 6:00 PM, or on Friday, Saturday, or a public holiday, enter processing on the next business day.',
         ],
       },
@@ -73,7 +73,7 @@ const PAGE_COPY = {
       {
         title: '8. Tracking',
         paragraphs: [
-          'When the order is dispatched, we share tracking by SMS or email. You can also track the order from My Orders on Store1920.com.',
+          'When the order is dispatched, we share tracking by SMS or email. You can also track the order from My Orders on hamody.com.',
         ],
       },
       {
@@ -100,7 +100,7 @@ const PAGE_COPY = {
   ar: {
     title: 'سياسة الشحن والتوصيل',
     intro:
-      `هذه هي سياسة الشحن والتوصيل الموحدة لطلبات Store1920.com من ${STORE1920_LEGAL_NAME_AR} (${STORE1920_LEGAL_NAME}). تشمل حد القطع للمعالجة، ومدد التوصيل، والرسوم، ومحاولات التسليم، وقواعد المناطق النائية داخل دولة الإمارات العربية المتحدة.`,
+      `هذه هي سياسة الشحن والتوصيل الموحدة لطلبات hamody.com من ${HAMODY_LEGAL_NAME_AR} (${HAMODY_LEGAL_NAME}). تشمل حد القطع للمعالجة، ومدد التوصيل، والرسوم، ومحاولات التسليم، وقواعد المناطق النائية داخل دولة الإمارات العربية المتحدة.`,
     lastUpdated: 'آخر تحديث: 10 سبتمبر 2026',
     sections: [
       {
@@ -112,7 +112,7 @@ const PAGE_COPY = {
       {
         title: '2. حد القطع للمعالجة وأيام العمل',
         paragraphs: [
-          `ساعات العمل لدينا: ${STORE1920_BUSINESS_HOURS_AR}. أيام العمل من الأحد إلى الخميس باستثناء العطل الرسمية في الدولة.`,
+          `ساعات العمل لدينا: ${HAMODY_BUSINESS_HOURS_AR}. أيام العمل من الأحد إلى الخميس باستثناء العطل الرسمية في الدولة.`,
           'حد القطع اليومي هو الساعة 6:00 م بتوقيت الإمارات في يوم عمل. الطلبات المؤكدة قبل هذا الوقت تدخل المعالجة في يوم العمل نفسه. الطلبات بعد 6:00 م أو يوم الجمعة أو السبت أو في عطلة رسمية تدخل المعالجة في يوم العمل التالي.',
         ],
       },
@@ -157,7 +157,7 @@ const PAGE_COPY = {
       {
         title: '8. التتبع',
         paragraphs: [
-          'عند شحن الطلب نشارك التتبع عبر الرسائل أو البريد الإلكتروني. ويمكنك التتبع من قسم طلباتي على Store1920.com.',
+          'عند شحن الطلب نشارك التتبع عبر الرسائل أو البريد الإلكتروني. ويمكنك التتبع من قسم طلباتي على hamody.com.',
         ],
       },
       {

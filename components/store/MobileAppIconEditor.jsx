@@ -27,7 +27,7 @@ function IconPreview({ url }) {
           </span>
         )}
       </div>
-      <p className="mt-2 text-center text-xs font-medium text-slate-700">Store1920</p>
+      <p className="mt-2 text-center text-xs font-medium text-slate-700">HAMODY</p>
     </div>
   );
 }

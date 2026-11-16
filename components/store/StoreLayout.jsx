@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { ArrowRightIcon, Lock, X } from "lucide-react"
-import { STORE1920_LOGO_PATH } from "@/lib/brandLogo"
+import { HAMODY_LOGO_PATH } from "@/lib/brandLogo"
 import SellerNavbar from "./StoreNavbar"
 import StoreSidebar from "./StoreSidebar"
 import StoreOrderNotificationProvider from "./StoreOrderNotificationProvider"
@@ -28,7 +28,7 @@ const SELLER_WELCOME_COOLDOWN_MS = 2 * 60 * 60 * 1000;
 const SELLER_WELCOME_IMAGE = '/seller-welcome-popup.jpg';
 
 function sellerWelcomeNextKey(uid) {
-    return `store1920.sellerWelcomeNextAt.${uid}`;
+    return `hamody.sellerWelcomeNextAt.${uid}`;
 }
 
 let sellerWelcomeUid = '';
@@ -46,7 +46,7 @@ function sellerWelcomeName(user, accountName = '') {
 
 function SellerWelcomeDialog({ user, accountName, storeName, onClose }) {
     const name = sellerWelcomeName(user, accountName);
-    const storeLabel = String(storeName || '').trim() || 'Store1920';
+    const storeLabel = String(storeName || '').trim() || 'HAMODY';
     const onCloseRef = useRef(onClose);
     onCloseRef.current = onClose;
 
@@ -77,13 +77,13 @@ function SellerWelcomeDialog({ user, accountName, storeName, onClose }) {
                     aria-labelledby="seller-welcome-title-compact"
                     className="pointer-events-auto flex w-full max-w-[750px] items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-[0_16px_40px_rgba(15,23,42,0.16)]"
                 >
-                    <img src={STORE1920_LOGO_PATH} alt="" className="h-11 w-11 shrink-0 rounded-xl object-contain" />
+                    <img src={HAMODY_LOGO_PATH} alt="" className="h-11 w-11 shrink-0 rounded-xl object-contain" />
                     <div className="min-w-0 flex-1">
                         <h2 id="seller-welcome-title-compact" className="truncate text-base font-semibold text-slate-950">
                             Hi, {name}
                         </h2>
                         <p className="mt-0.5 text-sm text-slate-600">
-                            Welcome to the Store1920 store. Signed in to {storeLabel}.
+                            Welcome to the HAMODY store. Signed in to {storeLabel}.
                         </p>
                     </div>
                     <button

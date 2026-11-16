@@ -1,8 +1,8 @@
-# Store1920 website performance
+# HAMODY website performance
 
 July, August, and September 2026
 
-Prepared 22 October 2026 from the Store1920 database. Months run on Asia/Dubai time (midnight to midnight). Money is AED. This covers the public website. Orders typed in by staff on the store dashboard are left out of conversion, revenue, and retention.
+Prepared 22 October 2026 from the HAMODY database. Months run on Asia/Dubai time (midnight to midnight). Money is AED. This covers the public website. Orders typed in by staff on the store dashboard are left out of conversion, revenue, and retention.
 
 ## How each number is counted
 

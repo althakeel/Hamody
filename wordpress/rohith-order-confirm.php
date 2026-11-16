@@ -1,7 +1,7 @@
 <?php
 /**
  * Rohith Order Confirm
- * Export / import WooCommerce orders for Store1920.
+ * Export / import WooCommerce orders for Hamody.
  *
  * HOW TO INSTALL IN functions.php
  * -------------------------------
@@ -73,7 +73,7 @@ if (!class_exists('Rohith_Order_Confirm')) {
             ?>
             <div class="wrap">
                 <h1><?php echo esc_html(self::NAME); ?></h1>
-                <p>Export WooCommerce orders with <strong>customer, products, total, payment, status, delivered</strong> for Store1920.</p>
+                <p>Export WooCommerce orders with <strong>customer, products, total, payment, status, delivered</strong> for Hamody.</p>
 
                 <div class="card" style="max-width:720px;padding:20px;margin:16px 0;">
                     <h2 style="margin-top:0;">Export orders</h2>
@@ -81,14 +81,14 @@ if (!class_exists('Rohith_Order_Confirm')) {
                     <?php if ($stats['trash'] > 0) : ?>
                         <p style="color:#646970;"><b>Trash (not exported):</b> <?php echo esc_html(number_format_i18n($stats['trash'])); ?></p>
                     <?php endif; ?>
-                    <p style="color:#646970;">WordPress “All” may show <?php echo esc_html(number_format_i18n($stats['wp_all'])); ?> including trash. Export uses every active status (not trash). Re-import on Store1920 replaces orders matched by <code>wc-{order id}</code>.</p>
+                    <p style="color:#646970;">WordPress “All” may show <?php echo esc_html(number_format_i18n($stats['wp_all'])); ?> including trash. Export uses every active status (not trash). Re-import on HAMODY replaces orders matched by <code>wc-{order id}</code>.</p>
                     <p style="color:#b32d2e;"><b>Important:</b> Your CSV should have <b><?php echo esc_html(number_format_i18n($stats['exportable'])); ?></b> data rows. Check the last row <code># EXPORT_META</code> — if <code>exported_rows</code> is lower than <code>expected_rows</code>, some orders could not be loaded from WooCommerce.</p>
                     <table class="widefat striped" style="margin-top:12px;">
                         <thead>
                             <tr>
                                 <th>WooCommerce status</th>
                                 <th style="text-align:right;">Count</th>
-                                <th>→ Store1920 status</th>
+                                <th>→ HAMODY status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -125,7 +125,7 @@ if (!class_exists('Rohith_Order_Confirm')) {
                     </form>
                 </div>
 
-                <h2>Then on Store1920</h2>
+                <h2>Then on HAMODY</h2>
                 <ol>
                     <li>Go to <code>/store/orders</code></li>
                     <li>Click <b>Import Orders CSV</b></li>

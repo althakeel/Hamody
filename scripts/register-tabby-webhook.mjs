@@ -1,5 +1,5 @@
 /**
- * Register the Store1920 Tabby webhook with Tabby's API.
+ * Register the HAMODY Tabby webhook with Tabby's API.
  *
  * Usage:
  *   node --env-file=.env scripts/register-tabby-webhook.mjs
@@ -8,7 +8,7 @@
 
 const TABBY_API_URL = (process.env.TABBY_API_URL || 'https://api.tabby.ai').replace(/\/+$/, '');
 const TABBY_SECRET_KEY = process.env.TABBY_SECRET_KEY;
-const TABBY_MERCHANT_CODE = process.env.TABBY_MERCHANT_CODE || 'Store1920';
+const TABBY_MERCHANT_CODE = process.env.TABBY_MERCHANT_CODE || 'HAMODY';
 const TABBY_WEBHOOK_SECRET = process.env.TABBY_WEBHOOK_SECRET || '';
 const listOnly = process.argv.includes('--list');
 
@@ -16,7 +16,7 @@ function resolveWebhookUrl() {
     const explicit = String(process.env.TABBY_WEBHOOK_URL || '').trim();
     if (explicit) return explicit.replace(/\/+$/, '');
 
-    const base = String(process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://www.store1920.com')
+    const base = String(process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://www.hamody.com')
         .trim()
         .replace(/\/+$/, '');
     return `${base}/api/tabby/webhook`;

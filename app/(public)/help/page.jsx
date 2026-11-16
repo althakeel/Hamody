@@ -3,9 +3,9 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
-  STORE1920_CUSTOMER_SUPPORT_PHONE,
-  STORE1920_CUSTOMER_SUPPORT_TEL,
-  STORE1920_SUPPORT_EMAIL,
+  HAMODY_CUSTOMER_SUPPORT_PHONE,
+  HAMODY_CUSTOMER_SUPPORT_TEL,
+  HAMODY_SUPPORT_EMAIL,
   formatCustomerSupportPhoneDisplay,
 } from '@/lib/storeContact'
 
@@ -29,7 +29,7 @@ const HELP_CONTENT = {
       answer: 'On the login page, click "Forgot Password?", enter your email, and we will send a reset link within minutes.',
     },
     {
-      question: 'Can I use Store1920 without an account?',
+      question: 'Can I use hamody.com without an account?',
       answer: 'You can browse products without an account, but you need one to place an order or track deliveries.',
     },
   ],
@@ -86,7 +86,7 @@ const HELP_CONTENT = {
   returns: [
     {
       question: 'What is your return policy?',
-      answer: 'You may request a return within 7 calendar days after delivery for an eligible item. Store1920 pays return shipping for wrong, damaged, defective or not-as-described items. Change-of-mind returns are unused items only and you pay the disclosed collection charge. See our Return Policy for full conditions.',
+      answer: 'You may request a return within 7 calendar days after delivery for an eligible item. hamody.com pays return shipping for wrong, damaged, defective or not-as-described items. Change-of-mind returns are unused items only and you pay the disclosed collection charge. See our Return Policy for full conditions.',
     },
     {
       question: 'How do I initiate a return?',
@@ -122,7 +122,7 @@ export default function HelpPage() {
   const [expandedItem, setExpandedItem] = useState(null)
   const [query, setQuery] = useState('')
 
-  const phoneDisplay = formatCustomerSupportPhoneDisplay(STORE1920_CUSTOMER_SUPPORT_PHONE)
+  const phoneDisplay = formatCustomerSupportPhoneDisplay(HAMODY_CUSTOMER_SUPPORT_PHONE)
   const currentCategory = HELP_CONTENT[activeCategory] || []
   const categoryTitle = HELP_CATEGORIES.find((c) => c.id === activeCategory)?.title || 'Help'
 
@@ -138,7 +138,7 @@ export default function HelpPage() {
     <div className="min-h-[70vh] bg-[#f7f5f2] text-slate-900">
       <header className="border-b border-slate-200/80 bg-[#1c1917] text-white">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-300/90">Store1920</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-300/90">hamody.com</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Help Center</h1>
           <p className="mt-3 max-w-2xl text-base text-stone-300">
             Answers for shopping, orders, payments, and returns — plus ways to reach our team.
@@ -233,7 +233,7 @@ export default function HelpPage() {
         </div>
 
         <section className="mt-14 rounded-2xl border border-stone-200 bg-white p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-stone-900">Contact Store1920 support</h2>
+          <h2 className="text-xl font-semibold text-stone-900">Contact hamody.com support</h2>
           <p className="mt-2 text-sm text-stone-600">Support hours: Sunday – Thursday, 9:00 AM – 6:00 PM (UAE time). Not 24/7. Guests can send a complaint or return request from Contact Us or Support without an account.</p>
 
           <div className="mt-8 grid gap-6 md:grid-cols-3">
@@ -241,10 +241,10 @@ export default function HelpPage() {
               <h3 className="font-semibold text-stone-900">Email</h3>
               <p className="mt-1 text-sm text-stone-600">Usually the next business day</p>
               <a
-                href={`mailto:${STORE1920_SUPPORT_EMAIL}`}
+                href={`mailto:${HAMODY_SUPPORT_EMAIL}`}
                 className="mt-3 inline-block text-sm font-semibold text-orange-700 hover:underline"
               >
-                {STORE1920_SUPPORT_EMAIL}
+                {HAMODY_SUPPORT_EMAIL}
               </a>
             </div>
 
@@ -260,12 +260,12 @@ export default function HelpPage() {
               <h3 className="font-semibold text-stone-900">Call us</h3>
               <p className="mt-1 text-sm text-stone-600">Toll-free UAE</p>
               <a
-                href={STORE1920_CUSTOMER_SUPPORT_TEL}
+                href={HAMODY_CUSTOMER_SUPPORT_TEL}
                 className="mt-3 inline-block text-sm font-semibold text-orange-700 hover:underline"
               >
                 {phoneDisplay}
               </a>
-              <p className="mt-1 text-xs text-stone-500">{STORE1920_CUSTOMER_SUPPORT_PHONE}</p>
+              <p className="mt-1 text-xs text-stone-500">{HAMODY_CUSTOMER_SUPPORT_PHONE}</p>
             </div>
           </div>
         </section>

@@ -1,4 +1,4 @@
-# Store1920 app bottom menu
+# HAMODY app bottom menu
 
 Last updated: 27 October 2026  
 Audience: Android and Flutter  
@@ -10,7 +10,7 @@ This is the bottom bar the seller designs for the **mobile app**. It is not show
 Do not build this bar from `GET /api/store/appearance/sections/public`. That response is the website phone bar (Home, Shop, center circle, Cart, Account). The center circle is [FLUTTER_MOBILE_BOTTOM_BUTTON.md](./FLUTTER_MOBILE_BOTTOM_BUTTON.md). The app header is [ANDROID_APP_NAVBAR.md](./ANDROID_APP_NAVBAR.md).
 
 ```http
-GET https://www.store1920.com/api/public/mobile-features
+GET https://www.hamody.com/api/public/mobile-features
 ```
 
 No login. Do not send `Authorization`. The response is cached for about 3 minutes. Cache the last good `mobileFeatures.appFooter` on the device, including the icon files. If a refresh fails, keep that cache. If this is the first launch and the request fails, draw the default bar in section 4.

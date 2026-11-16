@@ -1,8 +1,8 @@
-# Google sign-in for the Store1920 Android app
+# Google sign-in for the HAMODY Android app
 
 Last updated: 20 October 2026  
 Audience: Android  
-API root: `https://www.store1920.com/api`  
+API root: `https://www.hamody.com/api`  
 Full shopper auth: [APP_AUTH.md](./APP_AUTH.md)
 
 The website and the app use one Firebase project. Do not create a second Google Cloud project, and do not paste client IDs from Google Console into the app. Read them from the server.
@@ -56,7 +56,7 @@ Content-Type: application/json
 }
 ```
 
-No CAPTCHA. No password. There is no separate Store1920 Google token.
+No CAPTCHA. No password. There is no separate HAMODY Google token.
 
 Later API calls use:
 

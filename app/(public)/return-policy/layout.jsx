@@ -1,7 +1,7 @@
 export const metadata = {
-  title: 'Return, Refund & Cancellation Policy | Store1920',
+  title: 'Return, Refund & Cancellation Policy | hamody.com',
   description:
-    'Store1920 return, refund, replacement and cancellation policy for UAE orders, including the 7-day commercial return window.',
+    'hamody.com return, refund, replacement and cancellation policy for UAE orders, including the 7-day commercial return window.',
 };
 
 export default function ReturnPolicyLayout({ children }) {

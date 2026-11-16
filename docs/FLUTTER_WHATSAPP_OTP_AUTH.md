@@ -1,4 +1,4 @@
-# Store1920 WhatsApp OTP authentication — Flutter integration
+# HAMODY WhatsApp OTP authentication — Flutter integration
 
 Last updated: 11 September 2026  
 Audience: Flutter / mobile app developers  
@@ -10,10 +10,10 @@ This is the contract for **login and register with a WhatsApp OTP**. Every other
 
 ## 1. How it works
 
-1. App asks Store1920 to send a 4-digit code to a UAE WhatsApp number.
-2. Store1920 sends the code on WhatsApp (WABA template `store1920_otp`).
+1. App asks HAMODY to send a 4-digit code to a UAE WhatsApp number.
+2. HAMODY sends the code on WhatsApp (WABA template `store1920_otp`).
 3. User types the code in the app.
-4. Store1920 verifies the code and returns a **Firebase custom token**.
+4. HAMODY verifies the code and returns a **Firebase custom token**.
 5. Flutter signs in with Firebase: `signInWithCustomToken(customToken)`.
 6. After that, every protected API uses:
 
@@ -31,10 +31,10 @@ Login and register use the **same two endpoints**. If the phone is new, Firebase
 
 | Environment | Base URL |
 |---|---|
-| Production | `https://www.store1920.com` |
+| Production | `https://www.hamody.com` |
 | Staging (if used) | `https://store1920.store` |
 
-Use the same host the app already uses for other APIs. Prefer `www.store1920.com` in production.
+Use the same host the app already uses for other APIs. Prefer `www.hamody.com` in production.
 
 Content-Type: `application/json`
 
@@ -224,7 +224,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-const baseUrl = 'https://www.store1920.com';
+const baseUrl = 'https://www.hamody.com';
 
 Future<UserCredential> signInWithWhatsAppOtp({
   required String phone,
@@ -251,7 +251,7 @@ Future<UserCredential> signInWithWhatsAppOtp({
   final customToken = body['customToken'] as String;
   final credential = await FirebaseAuth.instance.signInWithCustomToken(customToken);
 
-  // ID token for Store1920 APIs
+  // ID token for HAMODY APIs
   final idToken = await credential.user!.getIdToken();
 
   await http.post(
@@ -336,7 +336,7 @@ Password reset over WhatsApp is a **different** route: `POST|PUT /api/auth/passw
 
 - Do not build a custom JWT instead of Firebase.
 - Do not store or reuse `customToken` after `signInWithCustomToken`.
-- Do not send the OTP to any other WhatsApp API — Store1920 sends it.
+- Do not send the OTP to any other WhatsApp API — HAMODY sends it.
 - Do not skip CAPTCHA on the first send.
 - Do not use a non-UAE number; the API will return `400`.
 - Do not treat a new tab / new app install as a new account if the same Firebase project + same phone is used. Same phone = same Firebase user.

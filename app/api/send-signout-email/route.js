@@ -86,7 +86,7 @@ export async function POST(req) {
             <div class="content">
               <p>Hi ${name || 'there'},</p>
               
-              <p>You have been successfully signed out from your <strong>Store1920</strong> account.</p>
+              <p>You have been successfully signed out from your <strong>Hamody</strong> account.</p>
               
               <div class="security-tip">
                 <strong>🔒 Security Tip:</strong> If you didn't sign out, please sign in immediately and change your password.
@@ -103,11 +103,11 @@ export async function POST(req) {
               <p>We hope to see you again soon!</p>
               
               <p>Best regards,<br>
-              <strong>The Store1920 Team</strong></p>
+              <strong>The Hamody Team</strong></p>
             </div>
             <div class="footer">
-              <p>This is an automated message from Store1920.com</p>
-              <p>Need help? Contact us at support@Store1920.com</p>
+              <p>This is an automated message from Hamody.com</p>
+              <p>Need help? Contact us at support@Hamody.com</p>
             </div>
           </body>
           </html>
@@ -115,7 +115,7 @@ export async function POST(req) {
 
     const result = await sendMail({
       to: email,
-      subject: 'You have been signed out - Store1920',
+      subject: 'You have been signed out - Hamody',
       html,
       fromType: 'transactional',
     });

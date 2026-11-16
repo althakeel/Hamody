@@ -1,9 +1,9 @@
-# Store1920 ERP Integration API
+# HAMODY ERP Integration API
 
 **Audience:** ERP dashboard developers  
 **Style:** Same layout as [Zoho Inventory API](https://www.zoho.com/inventory/api/v1/introduction/) — overview, attributes, request example, response example  
-**Base URL:** `https://www.store1920.com`  
-**API root:** `https://www.store1920.com/api/erp`  
+**Base URL:** `https://www.hamody.com`  
+**API root:** `https://www.hamody.com/api/erp`  
 **Last updated:** 9 November 2026  
 **Machine list:** [ERP_API_LIST.json](./ERP_API_LIST.json)
 
@@ -11,7 +11,7 @@
 
 ## Introduction
 
-The Store1920 ERP API lets the warehouse / ERP dashboard do the same stock and catalog jobs that staff need on screen:
+The HAMODY ERP API lets the warehouse / ERP dashboard do the same stock and catalog jobs that staff need on screen:
 
 - Load the product catalog  
 - Read **available** stock by warehouse location (for the “below 20” check)  
@@ -25,7 +25,7 @@ This API follows REST principles. Every resource is a URL under the API root.
 ### API root endpoint
 
 ```text
-https://www.store1920.com/api/erp
+https://www.hamody.com/api/erp
 ```
 
 ### Quick index
@@ -54,7 +54,7 @@ https://www.store1920.com/api/erp
 
 | Header | Type | Description | Example |
 |--------|------|-------------|---------|
-| `x-erp-key` | string | Server-to-server key. Must match Store1920 env `ERP_API_KEY`. Required on all ERP routes except staff login body exchange. | `5b3a…0975` |
+| `x-erp-key` | string | Server-to-server key. Must match HAMODY env `ERP_API_KEY`. Required on all ERP routes except staff login body exchange. | `5b3a…0975` |
 | `Authorization` | string | `Bearer` staff token from Staff session. Required for **Add accepted stock**. | `Bearer eyJhbG…` |
 | `Content-Type` | string | Use `application/json` on every `POST`. | `application/json` |
 | `Idempotency-Key` | string | Optional extra client key. `eventId` / `receiptNumber` still win. | `client-req-001` |
@@ -136,13 +136,13 @@ Success responses are JSON objects. Write endpoints also return:
 | `422` | `UNPROCESSABLE` | Business rule failed (e.g. negative available) |
 | `429` | `RATE_LIMITED` | Too many requests |
 | `500` | `SERVER_ERROR` | Unexpected server error |
-| `503` | `ERP_KEY_NOT_CONFIGURED` | `ERP_API_KEY` missing on Store1920 |
+| `503` | `ERP_KEY_NOT_CONFIGURED` | `ERP_API_KEY` missing on HAMODY |
 
 ---
 
-## Not a Store1920 API
+## Not a HAMODY API
 
-These stay inside the ERP. Do **not** call Store1920 for them.
+These stay inside the ERP. Do **not** call HAMODY for them.
 
 | Capability | Why it stays in ERP |
 |------------|---------------------|
@@ -171,7 +171,7 @@ Used to load the catalog that staff can monitor on the ERP dashboard.
 | `productName` | string | English product name | `Fitness Band 2 Straps Included Soft Silicone` |
 | `category` | string | Primary category name. Empty string if unset. | `Fitness Trackers` |
 | `active` | boolean | `true` = sellable / not archived | `true` |
-| `imageUrl` | string \| null | Absolute image URL when the website has one | `https://www.store1920.com/.../product.jpg` |
+| `imageUrl` | string \| null | Absolute image URL when the website has one | `https://www.hamody.com/.../product.jpg` |
 
 ### Query parameters
 
@@ -205,7 +205,7 @@ Response example
       "productName": "Fitness Band 2 Straps Included Soft Silicone",
       "category": "Fitness Trackers",
       "active": true,
-      "imageUrl": "https://www.store1920.com/.../product.jpg"
+      "imageUrl": "https://www.hamody.com/.../product.jpg"
     }
   ],
   "nextCursor": null
@@ -510,7 +510,7 @@ Replace pilot passwords. Each person needs an id, name, email, and role.
 
 | Attribute | Type | Description | Example |
 |-----------|------|-------------|---------|
-| `email` | string | Staff email | `verifier@store1920.com` |
+| `email` | string | Staff email | `verifier@hamody.com` |
 | `password` | string | Staff password | `••••••••` |
 
 ### Attributes (staff)
@@ -519,7 +519,7 @@ Replace pilot passwords. Each person needs an id, name, email, and role.
 |-----------|------|-------------|---------|
 | `id` | string | Stable staff id | `uid_abc123` |
 | `name` | string | Display name | `Sara Al Blooshi` |
-| `email` | string | Email | `verifier@store1920.com` |
+| `email` | string | Email | `verifier@hamody.com` |
 | `role` | string | One of the roles below | `Verifier` |
 
 ### Allowed roles
@@ -545,7 +545,7 @@ Content-Type: application/json
 
 ```json
 {
-  "email": "verifier@store1920.com",
+  "email": "verifier@hamody.com",
   "password": "••••••••"
 }
 ```
@@ -556,12 +556,12 @@ Response example
 {
   "code": 0,
   "message": "success",
-  "token": "<Firebase ID token or Store1920 session token>",
+  "token": "<Firebase ID token or HAMODY session token>",
   "expiresAt": "2026-11-09T12:00:00.000Z",
   "staff": {
     "id": "uid_abc123",
     "name": "Sara Al Blooshi",
-    "email": "verifier@store1920.com",
+    "email": "verifier@hamody.com",
     "role": "Verifier"
   }
 }
@@ -570,7 +570,7 @@ Response example
 **Notes**
 
 - Role checks for approvals and receiver≠verifier stay in the ERP.  
-- Store1920 only identifies the person for attributed writes.
+- HAMODY only identifies the person for attributed writes.
 
 ---
 
@@ -587,7 +587,7 @@ Response example
 ### Sale / return (no manual refresh)
 
 1. Customer buys or returns on website / app  
-2. Store1920 posts `POST /api/erp/stock/events` with a unique `eventId`  
+2. HAMODY posts `POST /api/erp/stock/events` with a unique `eventId`  
 3. ERP upserts local balance from `available`  
 4. If `available < 20`, show alert  
 

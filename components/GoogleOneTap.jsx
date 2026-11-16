@@ -22,6 +22,22 @@ function isStorefrontHome(pathname = '') {
   return pathname === '/';
 }
 
+function isGoogleOneTapOriginAllowed() {
+  if (typeof window === 'undefined') return false;
+  const allowed = new Set();
+  for (const value of [process.env.NEXT_PUBLIC_APP_URL, process.env.NEXT_PUBLIC_BASE_URL]) {
+    try {
+      const url = new URL(String(value || '').trim());
+      const host = url.hostname.replace(/^www\./i, '');
+      allowed.add(`${url.protocol}//${host}`);
+      allowed.add(`${url.protocol}//www.${host}`);
+    } catch {
+      // Ignore an unset or invalid public URL.
+    }
+  }
+  return allowed.has(window.location.origin);
+}
+
 function wasRecentlyDismissed() {
   if (typeof window === 'undefined') return true;
   try {
@@ -67,6 +83,8 @@ function silenceGsiFedCmNoiseLogs() {
       || text.includes('signal is aborted without reason')
       || text.includes('FedCM was disabled')
       || text.includes('NetworkError: Error retrieving a token')
+      || text.includes('The given origin is not allowed for the given client ID')
+      || text.includes('initialize() is called multiple times')
     );
 
     if (isGsiLogger && isFedCmNoise) {
@@ -121,7 +139,7 @@ export default function GoogleOneTap() {
     }
     if (wasRecentlyDismissed()) return undefined;
     if (oneTapPromptedThisTab) return undefined;
-    if (typeof window === 'undefined') return undefined;
+    if (!isGoogleOneTapOriginAllowed()) return undefined;
 
     silenceGsiFedCmNoiseLogs();
 

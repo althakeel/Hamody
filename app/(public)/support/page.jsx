@@ -6,12 +6,12 @@ import axios from 'axios'
 import { auth } from '@/lib/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import {
-  STORE1920_SUPPORT_EMAIL,
-  STORE1920_CUSTOMER_SUPPORT_PHONE,
-  STORE1920_CUSTOMER_SUPPORT_TEL,
+  HAMODY_SUPPORT_EMAIL,
+  HAMODY_CUSTOMER_SUPPORT_PHONE,
+  HAMODY_CUSTOMER_SUPPORT_TEL,
   formatCustomerSupportPhoneDisplay,
 } from '@/lib/storeContact'
-import { STORE1920_BUSINESS_HOURS_EN } from '@/lib/businessIdentity'
+import { HAMODY_BUSINESS_HOURS_EN } from '@/lib/businessIdentity'
 
 export default function SupportPage() {
   const [user, setUser] = useState(null)
@@ -112,25 +112,25 @@ export default function SupportPage() {
     { icon: '💬', title: 'FAQ & Help', desc: 'Browse our help center', link: '/help' },
   ]
 
+  const fieldClass = 'w-full px-4 py-2.5 rounded-lg border border-[#E9D6B5] bg-white text-[#123D33] placeholder:text-[#9C6E20]/45 focus:border-[#1F5C4A] focus:ring-2 focus:ring-[#1F5C4A]/25 outline-none transition'
+
   return (
-    <div className="bg-gradient-to-b from-slate-50 to-white">
-      {/* Header Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white py-12 px-4">
+    <div className="bg-white">
+      <div className="bg-[#1F5C4A] text-white py-12 px-4">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-4xl font-bold mb-2">How Can We Help?</h1>
-          <p className="text-blue-100 text-lg">Support hours: {STORE1920_BUSINESS_HOURS_EN}</p>
+          <p className="text-[#E9D6B5] text-lg">Support hours: {HAMODY_BUSINESS_HOURS_EN}</p>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-12">
-        {/* Quick Support Links */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           {supportOptions.map((option, idx) => (
             <Link key={idx} href={option.link} className="group">
-              <div className="bg-white rounded-xl p-5 border border-slate-200 hover:border-blue-300 hover:shadow-lg transition text-center">
-                <div className="text-3xl mb-3 group-hover:scale-110 transition">{option.icon}</div>
-                <h3 className="font-semibold text-slate-800 mb-1">{option.title}</h3>
-                <p className="text-slate-600 text-sm">{option.desc}</p>
+              <div className="bg-white rounded-xl p-5 border border-[#E9D6B5] hover:border-[#1F5C4A] hover:shadow-lg transition text-center">
+                <div className="text-3xl mb-3 text-[#1F5C4A] group-hover:scale-110 transition">{option.icon}</div>
+                <h3 className="font-semibold text-[#123D33] mb-1">{option.title}</h3>
+                <p className="text-[#9C6E20] text-sm">{option.desc}</p>
               </div>
             </Link>
           ))}
@@ -138,14 +138,14 @@ export default function SupportPage() {
 
         <div className="grid lg:grid-cols-2 gap-8 mb-12">
           {/* Contact Form */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-            <h2 className="text-2xl font-bold text-slate-800 mb-6">Submit a Ticket</h2>
+          <div className="bg-white rounded-2xl border border-[#E9D6B5] p-8 shadow-sm">
+            <h2 className="text-2xl font-bold text-[#123D33] mb-6">Submit a Ticket</h2>
             
             {!user && (
-              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">
+              <div className="mb-6 p-4 bg-[#FAF8F3] border border-[#E9D6B5] rounded-lg text-[#123D33]">
                 No account needed. Use this form for a complaint or return request. Include your order number if you have one.
                 {' '}Signed-in customers can also start a return from{' '}
-                <Link href="/orders" className="font-semibold underline">My Orders</Link>.
+                <Link href="/orders" className="font-semibold text-[#1F5C4A] underline">My Orders</Link>.
               </div>
             )}
 
@@ -155,7 +155,7 @@ export default function SupportPage() {
                 {user ? (
                   <>
                     {' '}
-                    <Link href="/dashboard/tickets" className="font-semibold underline">View your tickets</Link>
+                    <Link href="/dashboard/tickets" className="font-semibold text-[#1F5C4A] underline">View your tickets</Link>
                   </>
                 ) : null}
               </div>
@@ -170,7 +170,7 @@ export default function SupportPage() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Name *</label>
+                  <label className="block text-sm font-medium text-[#9C6E20] mb-2">Name *</label>
                   <input
                     type="text"
                     name="name"
@@ -178,11 +178,11 @@ export default function SupportPage() {
                     onChange={handleChange}
                     placeholder="Your name"
                     readOnly={!!user}
-                    className={`w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition ${user ? 'bg-slate-50 cursor-not-allowed' : ''}`}
+                    className={`${fieldClass} ${user ? 'bg-[#FAF8F3] cursor-not-allowed' : ''}`}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Email *</label>
+                  <label className="block text-sm font-medium text-[#9C6E20] mb-2">Email *</label>
                   <input
                     type="email"
                     name="email"
@@ -190,19 +190,19 @@ export default function SupportPage() {
                     onChange={handleChange}
                     placeholder="your@email.com"
                     readOnly={!!user}
-                    className={`w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition ${user ? 'bg-slate-50 cursor-not-allowed' : ''}`}
+                    className={`${fieldClass} ${user ? 'bg-[#FAF8F3] cursor-not-allowed' : ''}`}
                   />
                 </div>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Issue Type *</label>
+                  <label className="block text-sm font-medium text-[#9C6E20] mb-2">Issue Type *</label>
                   <select
                     name="issue"
                     value={formData.issue}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+                    className={fieldClass}
                   >
                     <option value="Return Request">Return Request</option>
                     <option value="Complaint">Complaint</option>
@@ -215,12 +215,12 @@ export default function SupportPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Priority *</label>
+                  <label className="block text-sm font-medium text-[#9C6E20] mb-2">Priority *</label>
                   <select
                     name="priority"
                     value={formData.priority}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+                    className={fieldClass}
                   >
                     <option value="low">Low</option>
                     <option value="normal">Normal</option>
@@ -231,45 +231,45 @@ export default function SupportPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Order Number (Optional)</label>
+                <label className="block text-sm font-medium text-[#9C6E20] mb-2">Order Number (Optional)</label>
                 <input
                   type="text"
                   name="orderNumber"
                   value={formData.orderNumber}
                   onChange={handleChange}
                   placeholder="If related to an order"
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+                  className={fieldClass}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Subject *</label>
+                <label className="block text-sm font-medium text-[#9C6E20] mb-2">Subject *</label>
                 <input
                   type="text"
                   name="subject"
                   value={formData.subject}
                   onChange={handleChange}
                   placeholder="Brief subject"
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+                  className={fieldClass}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Message *</label>
+                <label className="block text-sm font-medium text-[#9C6E20] mb-2">Message *</label>
                 <textarea
                   name="message"
                   value={formData.message}
                   onChange={handleChange}
                   placeholder="Describe your issue in detail..."
                   rows="5"
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition resize-none"
+                  className={`${fieldClass} resize-none`}
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition"
+                className="w-full bg-[#1F5C4A] hover:bg-[#123D33] disabled:bg-slate-400 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition"
               >
                 {loading ? 'Submitting...' : user ? 'Submit Support Ticket' : 'Submit complaint or return request'}
               </button>
@@ -278,43 +278,43 @@ export default function SupportPage() {
 
           {/* Contact Information */}
           <div className="space-y-6">
-            <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-              <h2 className="text-2xl font-bold text-slate-800 mb-6">Other Ways to Reach Us</h2>
+            <div className="bg-white rounded-2xl border border-[#E9D6B5] p-8 shadow-sm">
+              <h2 className="text-2xl font-bold text-[#123D33] mb-6">Other Ways to Reach Us</h2>
               
               <div className="space-y-6">
                 <div>
                   <div className="flex items-start gap-3 mb-2">
                     <span className="text-2xl">📧</span>
                     <div>
-                      <p className="font-medium text-slate-800">Email</p>
-                      <a href={`mailto:${STORE1920_SUPPORT_EMAIL}`} className="text-blue-600 hover:underline">{STORE1920_SUPPORT_EMAIL}</a>
-                      <p className="text-sm text-slate-600 mt-1">We reply during business hours, usually the next business day</p>
+                      <p className="font-medium text-[#123D33]">Email</p>
+                      <a href={`mailto:${HAMODY_SUPPORT_EMAIL}`} className="text-[#1F5C4A] hover:underline">{HAMODY_SUPPORT_EMAIL}</a>
+                      <p className="text-sm text-[#9C6E20] mt-1">We reply during business hours, usually the next business day</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="border-t border-slate-200 pt-6">
+                <div className="border-t border-[#E9D6B5] pt-6">
                   <div className="flex items-start gap-3">
                     <span className="text-2xl">💬</span>
                     <div>
-                      <p className="font-medium text-slate-800">Live Chat</p>
-                      <p className="text-slate-600 text-sm mt-1">Chat with our team in real-time during business hours</p>
+                      <p className="font-medium text-[#123D33]">Live Chat</p>
+                      <p className="text-[#9C6E20] text-sm mt-1">Chat with our team in real-time during business hours</p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 p-8">
-              <h3 className="text-lg font-bold text-slate-800 mb-3">Business hours</h3>
-              <p className="text-slate-700 text-sm mb-3">{STORE1920_BUSINESS_HOURS_EN}</p>
-              <p className="text-slate-700 text-sm mb-3">
+            <div className="bg-[#FAF8F3] rounded-2xl border border-[#E9D6B5] p-8">
+              <h3 className="text-lg font-bold text-[#123D33] mb-3">Business hours</h3>
+              <p className="text-[#123D33] text-sm mb-3">{HAMODY_BUSINESS_HOURS_EN}</p>
+              <p className="text-[#123D33] text-sm mb-3">
                 Phone:{' '}
-                <a href={STORE1920_CUSTOMER_SUPPORT_TEL} className="font-semibold text-blue-700 underline">
-                  {formatCustomerSupportPhoneDisplay(STORE1920_CUSTOMER_SUPPORT_PHONE)}
+                <a href={HAMODY_CUSTOMER_SUPPORT_TEL} className="font-semibold text-[#1F5C4A] underline">
+                  {formatCustomerSupportPhoneDisplay(HAMODY_CUSTOMER_SUPPORT_PHONE)}
                 </a>
               </p>
-              <p className="text-slate-600 text-sm">
+              <p className="text-[#9C6E20] text-sm">
                 We are not a 24/7 desk. Messages sent after hours are answered on the next business day.
               </p>
             </div>
@@ -322,9 +322,9 @@ export default function SupportPage() {
         </div>
 
         {/* FAQ Link */}
-        <div className="text-center py-8 border-t border-slate-200">
-          <p className="text-slate-600 mb-4">Still have questions?</p>
-          <Link href="/faq" className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium px-6 py-3 rounded-lg transition">
+        <div className="text-center py-8 border-t border-[#E9D6B5]">
+          <p className="text-[#9C6E20] mb-4">Still have questions?</p>
+          <Link href="/faq" className="inline-flex items-center gap-2 bg-[#1F5C4A] hover:bg-[#123D33] text-white font-medium px-6 py-3 rounded-lg transition">
             Browse our FAQ
           </Link>
         </div>

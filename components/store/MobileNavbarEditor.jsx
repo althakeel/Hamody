@@ -379,7 +379,7 @@ function NavbarPreview({ navbar, slider }) {
         </div>
       ))}
       <div className="relative z-10 flex flex-col">
-      <style>{'@keyframes store1920NavMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }'}</style>
+      <style>{'@keyframes hamodyNavMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }'}</style>
       {config.marqueeEnabled && loop.length ? (
         <div
           className="flex items-center overflow-hidden"
@@ -392,7 +392,7 @@ function NavbarPreview({ navbar, slider }) {
         >
           <div
             className="flex w-max items-center"
-            style={{ animation: `store1920NavMarquee ${config.marqueeSpeedSeconds}s linear infinite` }}
+            style={{ animation: `hamodyNavMarquee ${config.marqueeSpeedSeconds}s linear infinite` }}
           >
             {loop.map((item, index) => (
               <span

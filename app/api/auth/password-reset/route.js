@@ -112,14 +112,14 @@ export async function POST(request) {
     try {
       await sendMail({
         to: email,
-        subject: 'Your Store1920 password reset code',
+        subject: 'Your HAMODY password reset code',
         html: buildLoginOtpEmailHtml({
           code,
           minutes,
           name: userRecord.displayName || '',
           title: 'Reset your password',
           intro: 'Use this one-time code in the app to set a new password. Do not share it with anyone.',
-          preheader: `Your Store1920 reset code expires in ${minutes} minutes.`,
+          preheader: `Your HAMODY reset code expires in ${minutes} minutes.`,
         }),
         fromType: 'transactional',
       });
@@ -127,7 +127,7 @@ export async function POST(request) {
       console.error('[password-reset] email failed', mailErr);
       return NextResponse.json({
         ok: false,
-        error: 'We could not send the reset email right now. Please try again in a few minutes, or contact support@store1920.com.',
+        error: 'We could not send the reset email right now. Please try again in a few minutes, or contact support@hamody.com.',
       }, { status: 502 });
     }
 

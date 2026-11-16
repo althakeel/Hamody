@@ -1,4 +1,4 @@
-# Store1920 app splash screens
+# HAMODY app splash screens
 
 Last updated: 22 October 2026  
 Audience: Android and Flutter  
@@ -10,7 +10,7 @@ These screens play before the home screen. They are not shown on the website.
 The seller picks when they play. The default is install, then again only after the app has been closed for 3 hours.
 
 ```http
-GET https://www.store1920.com/api/public/mobile-features
+GET https://www.hamody.com/api/public/mobile-features
 ```
 
 No login. Do not send `Authorization`. The response is cached for about 3 minutes. Cache the last good `mobileFeatures.splashScreens` on the device, including the media files. If a refresh fails, keep that cache and play it. If this is the first launch and the request fails, open home.

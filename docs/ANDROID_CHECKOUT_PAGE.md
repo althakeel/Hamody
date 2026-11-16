@@ -1,9 +1,9 @@
-# Store1920 checkout — Android
+# HAMODY checkout — Android
 
 Last updated: 14 October 2026  
 Audience: Android app  
-Website: `https://www.store1920.com/checkout`  
-API root: `https://www.store1920.com/api`  
+Website: `https://www.hamody.com/checkout`  
+API root: `https://www.hamody.com/api`  
 Web source: `app/(public)/checkout/CheckoutPageUI.jsx`
 
 The app developer API is [APP_CHECKOUT.md](./APP_CHECKOUT.md). This file is the checkout screen: what to draw, how delivery and store pickup differ, and the field sizes.
@@ -564,7 +564,7 @@ On the success screen, a pickup order shows **Customer pickup chosen**, the full
 
 ## 13. Safe checkout block
 
-Under the summary, a lock and **Safe & secure checkout**, then four lines: SSL encrypted, secure transactions, data protected, easy returns. A green lock card says card data is handled by the payment provider. Support line: toll-free **800 786 1920** and `support@store1920.com`.
+Under the summary, a lock and **Safe & secure checkout**, then four lines: SSL encrypted, secure transactions, data protected, easy returns. A green lock card says card data is handled by the payment provider. Support line: toll-free **800 786 1920** and `support@hamody.com`.
 
 ---
 

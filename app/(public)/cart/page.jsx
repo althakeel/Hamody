@@ -320,7 +320,7 @@ function CartContent() {
         const timer = setTimeout(async () => {
             let guestContact = null;
             try {
-                guestContact = JSON.parse(localStorage.getItem('store1920_guest_contact') || 'null');
+                guestContact = JSON.parse(localStorage.getItem('Hamody_guest_contact') || 'null');
             } catch (_) {}
 
             const guestEmail = guestContact?.email?.trim() || null;

@@ -7,7 +7,7 @@ import { DEFAULT_NAVBAR_LANGUAGE, resolveNavbarLanguageTrigger } from '@/lib/sto
 import OffersNavLabel from '@/components/OffersNavLabel';
 import { filterParentCategories, getCategoryDisplayName, resolveStoreNavMenuItems } from '@/lib/categoryNavigation';
 import { DEFAULT_BNPL_TOP_BAR, resolveBnplPartners, resolveBnplTopBarMetrics } from '@/lib/bnplTopBar';
-import { STORE1920_LOGO_PATH } from '@/lib/brandLogo';
+import { HAMODY_LOGO_PATH } from '@/lib/brandLogo';
 import {
   DEFAULT_OFFERS_NAV_LABEL,
   DEFAULT_OFFERS_NAV_STYLE,
@@ -61,7 +61,7 @@ export default function NavbarPreview({
   logoGap = 16,
   mobileItemGap = 4,
   device = 'desktop',
-  userName = 'store1920',
+  userName = 'Hamody',
   showMenuBar = true,
   menuBarBackgroundColor = '#000000',
   showBottomBorder = false,
@@ -91,7 +91,7 @@ export default function NavbarPreview({
   const bnplPartners = useMemo(() => resolveBnplPartners(bnplTopBar, 'en'), [bnplTopBar]);
   const bnplPreview = bnplPartners[0] || null;
   const bnplMetrics = useMemo(() => resolveBnplTopBarMetrics(bnplTopBar), [bnplTopBar]);
-  const resolvedLogoUrl = String(logoUrl || '').trim() || STORE1920_LOGO_PATH;
+  const resolvedLogoUrl = String(logoUrl || '').trim() || HAMODY_LOGO_PATH;
   const logoW = Number(logoWidth) > 0 ? Number(logoWidth) : 120;
   const logoH = Number(logoHeight) > 0 ? Number(logoHeight) : 40;
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(device === 'mobile');
@@ -467,7 +467,7 @@ export default function NavbarPreview({
                   <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-2.5 py-2">
                     <img src={resolvedLogoUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
                     <div className="min-w-0">
-                      <p className="truncate text-xs font-semibold text-slate-900">Hi, {userName || 'store1920'}</p>
+                      <p className="truncate text-xs font-semibold text-slate-900">Hi, {userName || 'Hamody'}</p>
                       <p className="text-[10px] text-slate-500">Account</p>
                     </div>
                   </div>

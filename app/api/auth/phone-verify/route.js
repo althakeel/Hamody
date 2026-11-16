@@ -58,7 +58,7 @@ export async function POST(request) {
             body: new URLSearchParams({
               To: phone,
               From: twilioFrom,
-              Body: `Store1920 verification code: ${code}`,
+              Body: `HAMODY verification code: ${code}`,
             }),
           },
         );

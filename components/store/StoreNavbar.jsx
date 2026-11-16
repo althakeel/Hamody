@@ -123,7 +123,7 @@ const StoreNavbar = ({
     const handleLogout = async () => {
         try {
             try {
-                sessionStorage.removeItem('store1920.sellerWelcomeShown');
+                sessionStorage.removeItem('hamody.sellerWelcomeShown');
             } catch {
                 // Ignore storage failures.
             }

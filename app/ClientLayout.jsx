@@ -4,7 +4,6 @@ import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import ReduxProvider from "@/lib/ReduxProvider";
 import Navbar from "@/components/Navbar";
-import TopBar from "@/components/TopBar";
 import Footer from "@/components/Footer";
 import DynamicMetaTags from "@/components/DynamicMetaTags";
 import MetaPixel from "@/components/MetaPixel";
@@ -14,8 +13,9 @@ import GtmPageView from "@/components/GtmPageView";
 import { Toaster } from "react-hot-toast";
 import SilentDomErrorBoundary from "@/components/SilentDomErrorBoundary";
 import { installDomReconcileGuard } from "@/lib/domReconcileError";
+import { StorefrontLanguageProvider } from "@/lib/useStorefrontI18n";
 
-const CHUNK_RELOAD_KEY = 'store1920-chunk-reload';
+const CHUNK_RELOAD_KEY = 'Hamody-chunk-reload';
 
 function EmptyClientModule() {
   return null;
@@ -121,6 +121,7 @@ export default function ClientLayout({ children, initialStorefrontLanguage = 'en
   }, [pathname]);
 
   return (
+    <StorefrontLanguageProvider initialLanguage={initialStorefrontLanguage}>
     <ReduxProvider>
       <Suspense fallback={null}>
         <DeferredMarketingScripts />
@@ -173,7 +174,6 @@ export default function ClientLayout({ children, initialStorefrontLanguage = 'en
       >
         {!hideStorefrontChrome ? (
           <StorefrontChromeErrorBoundary>
-            <TopBar initialLanguage={initialStorefrontLanguage} />
             <Navbar />
           </StorefrontChromeErrorBoundary>
         ) : null}
@@ -187,5 +187,6 @@ export default function ClientLayout({ children, initialStorefrontLanguage = 'en
         ) : null}
       </SilentDomErrorBoundary>
     </ReduxProvider>
+    </StorefrontLanguageProvider>
   );
 }

@@ -1,6 +1,6 @@
 ---
 name: store
-description: Enforces English-only, LTR layout for the Store1920 seller dashboard under /store. Use when editing app/store pages, components/store, /api/store routes, or when the user mentions store dashboard language, RTL, Arabic, or seller admin UI.
+description: Enforces English-only, LTR layout for the Hamody seller dashboard under /store. Use when editing app/store pages, components/store, /api/store routes, or when the user mentions store dashboard language, RTL, Arabic, or seller admin UI.
 ---
 
 # Store Dashboard (`/store`)

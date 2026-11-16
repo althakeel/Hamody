@@ -9,7 +9,7 @@ import {
   isVariantOptionValueAvailable,
 } from '@/lib/productVariantOptions';
 
-const PLACEHOLDER_IMAGE = 'https://store1920-images.s3.ap-south-1.amazonaws.com/uploads/placeholder.png';
+const PLACEHOLDER_IMAGE = 'https://hamody-images.s3.ap-south-1.amazonaws.com/uploads/placeholder.png';
 
 function OptionImageCard({
   imageUrl,

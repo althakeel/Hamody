@@ -79,7 +79,7 @@ function UnsubscribeForm() {
 
   return (
     <div className="mx-auto w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-700">Store1920</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-700">hamody.com</p>
       <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
         Unsubscribe from emails
       </h1>
@@ -96,7 +96,7 @@ function UnsubscribeForm() {
             href="/"
             className="inline-flex w-full items-center justify-center rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white hover:bg-teal-800"
           >
-            Back to Store1920
+            Back to hamody.com
           </Link>
         </div>
       ) : (

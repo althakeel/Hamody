@@ -1,7 +1,7 @@
-# Store1920 — Login, credentials & Super Admin
+# HAMODY — Login, credentials & Super Admin
 
 **Audience:** Store owner, IT, team leads, developers  
-**Product:** Store1920 seller dashboard + platform admin  
+**Product:** HAMODY seller dashboard + platform admin  
 **Last updated:** 9 November 2026  
 
 This is the **full login and access document**: who signs in where, how credentials work, what the Super Admin is, team invites, PINs, and password reset.  
@@ -18,13 +18,13 @@ Shopper (customer) login is separate — see [APP_AUTH.md](./APP_AUTH.md) and [A
 | **Team member** | `/store/login` | Invited Firebase email (or username → email) | Only areas allowed in Team Access |
 | **Shopper / customer** | Website / app sign-in modal | Firebase | `/dashboard` — **not** the seller store |
 
-Passwords are **never stored in MongoDB**. Firebase Auth holds password hashes. Store1920 only checks the Firebase ID token and then looks up store membership / admin email.
+Passwords are **never stored in MongoDB**. Firebase Auth holds password hashes. HAMODY only checks the Firebase ID token and then looks up store membership / admin email.
 
 ---
 
 ## 2. Seller dashboard login (`/store/login`)
 
-**URL:** `https://www.store1920.com/store/login`  
+**URL:** `https://www.hamody.com/store/login`  
 **Page:** `app/store/login/page.jsx`
 
 ### 2.1 Ways to sign in
@@ -59,7 +59,7 @@ Content-Type: application/json
 ```
 
 - If the identifier already contains `@`, it is returned as the email.  
-- Otherwise Store1920 looks up `StoreUser.username` with status `approved` or `pending`.  
+- Otherwise HAMODY looks up `StoreUser.username` with status `approved` or `pending`.  
 - `404` = no store account for that username.
 
 ### 2.3 Seller check response
@@ -109,13 +109,13 @@ Super Admin is **not** a Mongo role checkbox on the store team list.
 It is an **email allow-list** in environment variables:
 
 ```env
-NEXT_PUBLIC_ADMIN_EMAIL=store1920.com@gmail.com
+NEXT_PUBLIC_ADMIN_EMAIL=hamody.com@gmail.com
 ```
 
 Optional alias (server-side):
 
 ```env
-ADMIN_EMAIL=store1920.com@gmail.com
+ADMIN_EMAIL=hamody.com@gmail.com
 ```
 
 Rules (`lib/adminEmails.js`):
@@ -124,12 +124,12 @@ Rules (`lib/adminEmails.js`):
 - Compared case-insensitively to the Firebase sign-in email.  
 - `isAdminEmail(email)` → `true` means **Super Admin**.
 
-**Current configured Super Admin email (from env):** `store1920.com@gmail.com`  
+**Current configured Super Admin email (from env):** `hamody.com@gmail.com`  
 
 To add another Super Admin, append a comma-separated email and redeploy / restart:
 
 ```env
-NEXT_PUBLIC_ADMIN_EMAIL=store1920.com@gmail.com,second.admin@example.com
+NEXT_PUBLIC_ADMIN_EMAIL=hamody.com@gmail.com,second.admin@example.com
 ```
 
 ### 3.2 What Super Admin gets
@@ -394,7 +394,7 @@ Copy this into your **private** password vault — leave blanks in git:
 
 | Account | Email / username | Password location | Notes |
 |---------|------------------|-------------------|-------|
-| Super Admin | `store1920.com@gmail.com` | Password manager | Also controls `/admin` |
+| Super Admin | `hamody.com@gmail.com` | Password manager | Also controls `/admin` |
 | Store owner | ________________ | Password manager | Owns Store.userId |
 | Support / demo hint | `support@Store1920.com` | Password manager | Shown on `/store/login` hint |
 | Team: ________ | ________________ | Password manager | Permissions: ________ |

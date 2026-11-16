@@ -34,7 +34,7 @@ export async function POST(request) {
     try {
       await sendMail({
         to: email,
-        subject: 'Verify your Store1920 email',
+        subject: 'Verify your HAMODY email',
         html: `<p>Your verification code is <strong>${code}</strong>.</p><p>Expires at ${expiresAt.toISOString()}.</p>`,
         fromType: 'transactional',
       });

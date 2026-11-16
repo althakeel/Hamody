@@ -2,9 +2,9 @@
 
 import PolicyPageLayout from '@/components/PolicyPageLayout';
 import { useStorefrontI18n } from "@/lib/useStorefrontI18n";
-import { STORE1920_LEGAL_NAME } from '@/lib/businessIdentity';
+import { HAMODY_LEGAL_NAME } from '@/lib/businessIdentity';
 
-const TRADING_AS = `${STORE1920_LEGAL_NAME}, trading as Store1920`;
+const TRADING_AS = `${HAMODY_LEGAL_NAME}, trading as hamody.com`;
 
 export default function TermsAndConditions() {
   const { isArabic } = useStorefrontI18n();
@@ -18,7 +18,7 @@ export default function TermsAndConditions() {
             والأحكام الواردة في هذه الصفحة.
           </p>
           <p className="mb-3">
-            Store1920 متجر تجزئة مباشر. المنتجات المعروضة على هذا الموقع تُباع من قبل {TRADING_AS}. لسنا سوقًا إلكترونيًا ولا نبيع نيابة عن بائعين من أطراف ثالثة.
+            hamody.com متجر تجزئة مباشر. المنتجات المعروضة على هذا الموقع تُباع من قبل {TRADING_AS}. لسنا سوقًا إلكترونيًا ولا نبيع نيابة عن بائعين من أطراف ثالثة.
           </p>
           <p className="mb-3">
             نحرص على دقة المعلومات المعروضة. إذا اكتشفنا خطأً قبل تأكيد الطلب، يجوز لنا تصحيحه. بعد تأكيد الطلب، يسري السعر والمنتجات المتفق عليها، مع حفظ حقوقك النظامية بموجب قوانين دولة الإمارات العربية المتحدة.
@@ -79,7 +79,7 @@ export default function TermsAndConditions() {
                 أنت مسؤول عن صحة بياناتك أثناء الطلب. أي معلومات غير دقيقة قد تؤدي إلى تأخير الطلب أو إلغائه.
               </p>
               <p className="mt-2">
-                يُقدَّم موقع Store1920 وصفحة الدفع عبر HTTPS (TLS). البيانات الشخصية التي ترسلها عبر الموقع — بما في ذلك الحساب والطلب والعنوان ونماذج الدعم — تُنقل عبر اتصالات مشفرة. مدفوعات البطاقات تُعالَج على صفحات مستضافة متوافقة مع PCI يديرها مزودو الدفع؛ ولا تجمع Store1920 أرقام البطاقات أو رمز CVV ولا تخزنها ولا تنقلها على خوادمنا. تحديثات الطلب عبر البريد أو الرسائل أو واتساب تسير عبر شبكات أولئك المزودين، ولا ندّعي أنها مشفرة من طرف إلى طرف. لا توجد وسيلة نقل أو تخزين إلكتروني آمنة بالكامل.
+                يُقدَّم موقع hamody.com وصفحة الدفع عبر HTTPS (TLS). البيانات الشخصية التي ترسلها عبر الموقع — بما في ذلك الحساب والطلب والعنوان ونماذج الدعم — تُنقل عبر اتصالات مشفرة. مدفوعات البطاقات تُعالَج على صفحات مستضافة متوافقة مع PCI يديرها مزودو الدفع؛ ولا تجمع hamody.com أرقام البطاقات أو رمز CVV ولا تخزنها ولا تنقلها على خوادمنا. تحديثات الطلب عبر البريد أو الرسائل أو واتساب تسير عبر شبكات أولئك المزودين، ولا ندّعي أنها مشفرة من طرف إلى طرف. لا توجد وسيلة نقل أو تخزين إلكتروني آمنة بالكامل.
               </p>
             </section>
 
@@ -110,7 +110,7 @@ export default function TermsAndConditions() {
               <h2 className="text-xl font-semibold mb-2">11. التواصل</h2>
               <p>
                 لأي استفسار بخصوص الشروط والأحكام، يرجى التواصل عبر البريد الإلكتروني:
-                <a href="mailto:support@Store1920.com" className="text-orange-600 underline mr-1">support@Store1920.com</a>
+                <a href="mailto:support@hamody.com" className="text-orange-600 underline mr-1">support@hamody.com</a>
               </p>
               <p className="text-xs text-gray-500 mt-4">
                 <strong>آخر تحديث:</strong> 11 سبتمبر 2026
@@ -138,7 +138,7 @@ export default function TermsAndConditions() {
           Terms of Service, including additional terms and policies referenced herein.
         </p>
         <p className="mb-3">
-          Store1920 is a direct retailer. Products listed on this website are sold by {TRADING_AS}. We are not a marketplace and we do not sell products on behalf of third-party sellers.
+          hamody.com is a direct retailer. Products listed on this website are sold by {TRADING_AS}. We are not a marketplace and we do not sell products on behalf of third-party sellers.
         </p>
         <p className="mb-3">
           These Terms of Service apply to all users of the site, including browsers, customers, and users who submit content.
@@ -170,13 +170,13 @@ export default function TermsAndConditions() {
             <h2 className="text-xl font-semibold mb-2">SECTION 2 – GENERAL CONDITIONS</h2>
             <ul className="list-disc ml-6 space-y-1">
               <li>We reserve the right to refuse service to anyone for any reason at any time.</li>
-              <li>The Store1920 website and checkout are served over HTTPS (TLS). Personal data you submit on the site — including account, order, address and support forms — is transmitted over encrypted connections.</li>
-              <li>Card payments are processed on hosted, PCI-compliant pages operated by our payment providers. Store1920 does not collect, store or transmit card numbers or CVV on our servers.</li>
+              <li>The hamody.com website and checkout are served over HTTPS (TLS). Personal data you submit on the site — including account, order, address and support forms — is transmitted over encrypted connections.</li>
+              <li>Card payments are processed on hosted, PCI-compliant pages operated by our payment providers. hamody.com does not collect, store or transmit card numbers or CVV on our servers.</li>
               <li>Order updates sent by email, SMS or WhatsApp travel over those providers’ networks. We do not claim those third-party channels are encrypted end-to-end. No method of electronic transmission or storage is completely secure.</li>
               <li>You agree not to reproduce, duplicate, copy, sell, resell, or exploit any part of the Service without written permission.</li>
               <li>Headings are for convenience only and do not limit these Terms.</li>
               <li>We may contact customers via WhatsApp or phone for order processing, delivery updates, confirmations, and cancellations.</li>
-              <li>Placing an order on Store1920.com means you agree to these Terms and Conditions.</li>
+              <li>Placing an order on hamody.com means you agree to these Terms and Conditions.</li>
             </ul>
           </section>
 
@@ -377,7 +377,7 @@ export default function TermsAndConditions() {
           <section>
             <h2 className="text-xl font-semibold mb-2">SECTION 20 – CONTACT INFORMATION</h2>
             <p>
-              Questions about the Terms of Service should be sent to <a href="mailto:support@Store1920.com" className="text-orange-600 underline">support@Store1920.com</a>.
+              Questions about the Terms of Service should be sent to <a href="mailto:support@hamody.com" className="text-orange-600 underline">support@hamody.com</a>.
             </p>
             <p className="text-xs text-gray-500 mt-4">
               <strong>Last Updated:</strong> 11 September 2026

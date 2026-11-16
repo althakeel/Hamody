@@ -87,7 +87,7 @@ async function translateWithOpenAI(prompt) {
     messages: [
       {
         role: 'system',
-        content: 'Translate Store1920 blog posts into UAE / GCC Arabic. Return raw JSON only with titleAr, excerptAr, contentHtmlAr. Preserve HTML tags and image URLs.',
+        content: 'Translate HAMODY blog posts into UAE / GCC Arabic. Return raw JSON only with titleAr, excerptAr, contentHtmlAr. Preserve HTML tags and image URLs.',
       },
       { role: 'user', content: prompt },
     ],

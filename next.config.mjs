@@ -17,8 +17,8 @@ const imageRemotePatterns = [
     { protocol: 'https', hostname: '**.flixcart.com', pathname: '/**' },
     { protocol: 'https', hostname: '**.nooncdn.com', pathname: '/**' },
     { protocol: 'http', hostname: '**.nooncdn.com', pathname: '/**' },
-    { protocol: 'https', hostname: 'www.store1920.com', pathname: '/**' },
-    { protocol: 'https', hostname: 'store1920.com', pathname: '/**' },
+    { protocol: 'https', hostname: 'www.hamody.com', pathname: '/**' },
+    { protocol: 'https', hostname: 'hamody.com', pathname: '/**' },
     { protocol: 'https', hostname: '**.media-amazon.com', pathname: '/**' },
     { protocol: 'https', hostname: '**.ssl-images-amazon.com', pathname: '/**' },
     { protocol: 'https', hostname: '**.images-amazon.com', pathname: '/**' },
@@ -57,6 +57,8 @@ try {
 } catch {}
 
 const nextConfig = {
+    // Phones on this Wi-Fi open the dev server by its LAN address.
+    allowedDevOrigins: ['10.255.254.113'],
     // EC2 home has its own package-lock.json; keep tracing inside this repo.
     outputFileTracingRoot: projectRoot,
     // Keep SEO metadata in the initial <head> for every user agent. Next's
@@ -258,18 +260,18 @@ const nextConfig = {
 
         // Apex host → www (HTML pages only). Leave /api on the requested host
         // so Stripe / Tabby / Tamara / Waslah webhooks keep working if they
-        // are still registered on https://store1920.com/api/...
+        // are still registered on https://hamody.com/api/...
         const apexToWwwRedirects = [
             {
                 source: '/',
-                has: [{ type: 'host', value: 'store1920.com' }],
-                destination: 'https://www.store1920.com/',
+                has: [{ type: 'host', value: 'hamody.com' }],
+                destination: 'https://www.hamody.com/',
                 permanent: true,
             },
             {
                 source: '/:path((?!api/).*)',
-                has: [{ type: 'host', value: 'store1920.com' }],
-                destination: 'https://www.store1920.com/:path',
+                has: [{ type: 'host', value: 'hamody.com' }],
+                destination: 'https://www.hamody.com/:path',
                 permanent: true,
             },
         ];

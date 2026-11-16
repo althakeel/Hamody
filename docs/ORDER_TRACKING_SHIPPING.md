@@ -1,8 +1,8 @@
-# Store1920 Order Tracking & Shipping (Couriers)
+# HAMODY Order Tracking & Shipping (Couriers)
 
 **Audience:** Ops, warehouse, backend, mobile / ERP partners  
-**Purpose:** List the courier companies Store1920 uses today, the APIs wired in the codebase, and the **new direct EMX API** being implemented  
-**Customer track page:** `https://store1920.com/track-order`  
+**Purpose:** List the courier companies HAMODY uses today, the APIs wired in the codebase, and the **new direct EMX API** being implemented  
+**Customer track page:** `https://hamody.com/track-order`  
 **Track API:** `GET /api/track-order`  
 **Last updated:** 10 November 2026  
 **Source for §4.0:** EMX Postman collection (`EMX API` — Shipments, Tracking, Masters, Rate Calculator)
@@ -13,7 +13,7 @@
 
 | # | Courier / platform | Code on orders | Role today |
 |---|--------------------|----------------|------------|
-| 1 | **EMX direct** (EP Services) | `EMX` (planned) | **New courier being implemented.** Direct EMX / `epservices.ae` API (create shipment, track, masters, rate). Not yet the live auto-ship path in Store1920 code. |
+| 1 | **EMX direct** (EP Services) | `EMX` (planned) | **New courier being implemented.** Direct EMX / `epservices.ae` API (create shipment, track, masters, rate). Not yet the live auto-ship path in HAMODY code. |
 | 2 | **EMX** (via **Waslah**) | `EMX` / `Waslah` | **Current primary** UAE last-mile. Auto-ship, warehouse labels, webhooks, and crons go through Waslah today. |
 | 3 | **Waslah** | Platform / aggregator | Seller API gateway (`gateway.waslah.ae`). Creates EMX shipments, pickups, labels, tracking history, cancel. |
 | 4 | **C3Xpress** | `C3Xpress` | Secondary UAE courier. Full create AWB / track / pickup / label PDF / rate. |
@@ -21,7 +21,7 @@
 
 ### New courier: EMX direct
 
-Store1920 is adding a **direct EMX** integration (Postman: **EMX API**) alongside the existing Waslah → EMX path:
+HAMODY is adding a **direct EMX** integration (Postman: **EMX API**) alongside the existing Waslah → EMX path:
 
 - Create domestic / international shipments on `epservices.ae`
 - Track by AWB on `api-stg.emx.ae` / production EMX tracking host
@@ -84,11 +84,11 @@ Lookup helpers: `lib/orderTrackingLookup.js`, warehouse: `/api/warehouse/trackin
 ### 4.0 EMX direct / EP Services — **new courier (being implemented)**
 
 Official EMX / Emirates Post Services HTTP APIs from the **EMX API** Postman collection.  
-Store1920 will call these directly (not only through Waslah).
+HAMODY will call these directly (not only through Waslah).
 
 | Item | Detail |
 |------|--------|
-| Status in Store1920 | **Implementing** — document + credentials first; live ship path still Waslah until client is wired |
+| Status in HAMODY | **Implementing** — document + credentials first; live ship path still Waslah until client is wired |
 | Product types | `Domestic`, `International` |
 | Delivery type | `DoorToDoor` (typical) |
 | Content type | `NonDocument` / document as required |
@@ -141,11 +141,11 @@ POST https://osbstg-new.epservices.ae/ebs/genericapi/ratecalculator/rest/Calcula
   "weight": { "value": 1000, "unit": "Grams" },
   "shipper": {
     "contact": {
-      "name": "Store1920",
+      "name": "HAMODY",
       "mobileNumber": "05XXXXXXXX",
       "phoneNumber": "04XXXXXXX",
-      "emailAddress": "orders@store1920.com",
-      "companyName": "Store1920"
+      "emailAddress": "orders@hamody.com",
+      "companyName": "HAMODY"
     },
     "address": {
       "line1": "Warehouse address",
@@ -226,7 +226,7 @@ GET https://api-stg.emx.ae/tracking/api/Tracking?awbNumber=1000027243272
 x-api-key: <EMX_TRACKING_API_KEY>
 ```
 
-AWB style in EMX samples: `1000…` (same door-to-door style Store1920 already stores on `waslah.emxTrackingNumber`).
+AWB style in EMX samples: `1000…` (same door-to-door style HAMODY already stores on `waslah.emxTrackingNumber`).
 
 #### Masters
 
@@ -271,7 +271,7 @@ Body shape from Postman:
 }
 ```
 
-#### Planned Store1920 env (direct EMX)
+#### Planned HAMODY env (direct EMX)
 
 ```text
 EMX_SHIPMENTS_BASE_URL=https://local-stg.epservices.ae
@@ -296,7 +296,7 @@ EMX_RATE_PASSWORD=…
 | Track | Waslah `POST /orders/history` | EMX `GET /tracking/api/Tracking` |
 | Pickup cart | Waslah `/cart` + checkout | Not in this Postman set (confirm with EMX) |
 | Auto-ship / crons today | Yes | Not yet |
-| Store1920 client | `lib/waslah.js` | **To implement** |
+| HAMODY client | `lib/waslah.js` | **To implement** |
 
 ---
 
@@ -326,7 +326,7 @@ EMX_RATE_PASSWORD=…
 
 Official create → pickup → label → track → cancel flow is documented at the top of `lib/waslah.js`.
 
-#### Store1920 routes (seller / system)
+#### HAMODY routes (seller / system)
 
 | Method | Route | Purpose |
 |--------|-------|---------|
@@ -387,7 +387,7 @@ WASLAH_WEBHOOK_SECRET=…
 | `PickupTracking` | Track pickup booking |
 | `RateFinder` | Rate quote |
 
-#### Store1920 routes
+#### HAMODY routes
 
 | Route | Purpose |
 |-------|---------|
@@ -429,7 +429,7 @@ C3X_PRODUCT_FALLBACKS=XPS,EXP,ECO
 | `GET /api/cust/pickup/{id}` | Pickup status |
 | `POST /api/cust/pickup/{id}/cancel` | Cancel pickup |
 
-Store1920 also exposes `/api/delhivery/*` wrappers and `/api/store/send-to-delhivery` (marks order only — **create shipment TODO**, not a live Delhivery booking).
+HAMODY also exposes `/api/delhivery/*` wrappers and `/api/store/send-to-delhivery` (marks order only — **create shipment TODO**, not a live Delhivery booking).
 
 #### LTL freight console (`lib/delhiveryLtl.js`)
 

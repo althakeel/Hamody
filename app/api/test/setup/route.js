@@ -16,11 +16,11 @@ export async function POST(request) {
     if (!store) {
       console.log('Creating default store...');
       store = await Store.create({
-        name: "Store1920 Store",
+        name: "HAMODY Store",
         userId: "default-admin",
-        username: "Store1920",
+        username: "HAMODY",
         description: "Your online marketplace",
-        email: "admin@Store1920.com",
+        email: "admin@hamody.com",
         isActive: true,
         status: "approved",
       });

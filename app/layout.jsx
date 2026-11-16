@@ -50,7 +50,7 @@ export async function generateMetadata() {
     alternates: {
       canonical: "./",
     },
-    title: "store1920 - Shop smarter",
+    title: "Hamody - Shop smarter",
     description:
       "Discover trending gadgets, fashion, home essentials & more at the best price. Fast delivery, secure checkout, and deals you don't want to miss.",
     verification: {
@@ -115,7 +115,7 @@ export default async function RootLayout({ children }) {
     >
       <head>
         <script
-          id="store1920-strip-ext-attrs"
+          id="hamody-strip-ext-attrs"
           dangerouslySetInnerHTML={{ __html: STRIP_EXTENSION_HYDRATION_SCRIPT }}
         />
         {/* S3 media preconnect */}
@@ -135,7 +135,7 @@ export default async function RootLayout({ children }) {
         <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
       </head>
       <body className={`${poppins.className} overflow-x-clip antialiased`} suppressHydrationWarning>
-        <div id="store1920-root" suppressHydrationWarning>
+        <div id="hamody-root" suppressHydrationWarning>
           <EarlyHeadScripts />
           <StorefrontLanguageInitScript />
           <ClientLayout initialStorefrontLanguage={storefrontLanguage}>{children}</ClientLayout>

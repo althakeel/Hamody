@@ -1,4 +1,4 @@
-# Store1920 app Banner 1 and the home navbar
+# HAMODY app Banner 1 and the home navbar
 
 Last updated: 27 October 2026  
 Audience: Android and Flutter  
@@ -17,7 +17,7 @@ Banner 2, Banner 3, and Banner 4 are separate objects. They do not paint the nav
 ## 1. API
 
 ```http
-GET https://www.store1920.com/api/public/mobile-features
+GET https://www.hamody.com/api/public/mobile-features
 ```
 
 No login. Do not send `Authorization`.

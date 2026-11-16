@@ -1,7 +1,7 @@
-# Store1920 API Documentation
+# HAMODY API Documentation
 
-**Base URL:** `https://store1920.com`  
-**API root:** `https://store1920.com/api/...`  
+**Base URL:** `https://hamody.com`  
+**API root:** `https://hamody.com/api/...`  
 **Last updated:** 2026-07-23
 
 This folder is the **full API documentation set** — from public storefront / mobile app through seller dashboard, platform admin, payments, webhooks, crons, warehouse, and integrations.
@@ -52,7 +52,7 @@ This folder is the **full API documentation set** — from public storefront / m
 | **0d** | [FLUTTER_HOME_HERO.md](./FLUTTER_HOME_HERO.md) | Flutter | Home hero banner: slides, arrows, dots, mobile image |
 | **0e** | [FLUTTER_CATEGORY_APIS.md](./FLUTTER_CATEGORY_APIS.md) | Flutter | Category tree, category page, home icons, category sliders |
 | **0f** | [FLUTTER_PRODUCT_CARDS.md](./FLUTTER_PRODUCT_CARDS.md) | Flutter | Product card APIs, fields, and the phone card layout |
-| **0c** | **[STORE1920_FULL_API.md](./STORE1920_FULL_API.md)** | **Mobile + all teams** | **Master guide: home APIs, full shopper catalog, auth, links to every surface** |
+| **0c** | **[HAMODY_FULL_API.md](./HAMODY_FULL_API.md)** | **Mobile + all teams** | **Master guide: home APIs, full shopper catalog, auth, links to every surface** |
 | 1 | [API_OVERVIEW.md](./API_OVERVIEW.md) | Everyone | Architecture, auth modes, systems map |
 | 2 | [MOBILE_APP_API.md](./MOBILE_APP_API.md) | Customer mobile / web shopper | Catalog, cart, checkout, COD/Stripe/Tabby/Tamara, wishlist, track (~90 routes) |
 | 2b | [MOBILE_HOME_PAGE_APIS.md](./MOBILE_HOME_PAGE_APIS.md) | Mobile home screen | Same APIs as website homepage + mobile banners |
@@ -66,7 +66,7 @@ This folder is the **full API documentation set** — from public storefront / m
 | 7 | [AUTH_SECURITY.md](./AUTH_SECURITY.md) | Auth / security | CAPTCHA, lockout, MFA, sessions |
 | 8 | [PAYMENT_SECURITY.md](./PAYMENT_SECURITY.md) | Payments | PCI / fraud / refunds |
 | 9 | [WHATSAPP_INTEGRATION_API.md](./WHATSAPP_INTEGRATION_API.md) | Messaging | WhatsApp abandoned cart & orders |
-| 10 | [STORE1920_API_AND_ZOHO_CRM.md](./STORE1920_API_AND_ZOHO_CRM.md) | CRM | Zoho sync |
+| 10 | [HAMODY_API_AND_ZOHO_CRM.md](./HAMODY_API_AND_ZOHO_CRM.md) | CRM | Zoho sync |
 | 11 | **[WAREHOUSE_BARCODE_SCANNER.md](./WAREHOUSE_BARCODE_SCANNER.md)** | **Warehouse Flutter / ops** | **Full barcode scanner doc: what is inside the EMX `1000…` label, normalize, APIs, pack, return** |
 | 11a | [warehouse-order-packing-api.md](./warehouse-order-packing-api.md) | Warehouse app | Packing |
 | 11b | [warehouse-app-emx-tracking-pickup.md](./warehouse-app-emx-tracking-pickup.md) | Warehouse app | EMX tracking, pickup, labels, details |

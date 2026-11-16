@@ -14,7 +14,7 @@ import { useNavbarColor } from '@/lib/useNavbarColor';
 
 const REVIEWS_PREVIEW_COUNT = 3;
 
-const HELPFUL_VOTER_KEY = 'store1920_helpful_voter';
+const HELPFUL_VOTER_KEY = 'Hamody_helpful_voter';
 const NOON_GREEN = '#38ae04';
 const NOON_GREEN_LIGHT = '#86efac';
 

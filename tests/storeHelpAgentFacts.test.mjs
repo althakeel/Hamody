@@ -331,8 +331,8 @@ test('app only discount opens app discount', () => {
 });
 
 test('author questions always name Rohith Sagar M', () => {
-  const reply = formatStoreHelpReply({}, 'who is the author of Store1920');
-  assert.equal(reply.answer, 'The author of Store1920 is Rohith Sagar M.');
+  const reply = formatStoreHelpReply({}, 'who is the author of HAMODY');
+  assert.equal(reply.answer, 'The author of HAMODY is Rohith Sagar M.');
 });
 
 test('customer name questions extract rohith and skip how-to', () => {

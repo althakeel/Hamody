@@ -1,6 +1,6 @@
 ---
 name: auth-security
-description: Store1920 customer auth security on Firebase — password policy, CAPTCHA, lockout, MFA OTP, email/phone verify, sessions, logout-all. Use when editing SignInModal, /api/auth/*, AuthSessionGuard, or /dashboard/security.
+description: Hamody customer auth security on Firebase — password policy, CAPTCHA, lockout, MFA OTP, email/phone verify, sessions, logout-all. Use when editing SignInModal, /api/auth/*, AuthSessionGuard, or /dashboard/security.
 ---
 
 # Auth security skill

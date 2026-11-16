@@ -1,14 +1,14 @@
-# Store1920 product page — Android
+# HAMODY product page — Android
 
 Last updated: 14 October 2026  
 Audience: Android app  
-Website: `https://www.store1920.com/product/{slug}`  
-API root: `https://www.store1920.com/api`  
+Website: `https://www.hamody.com/product/{slug}`  
+API root: `https://www.hamody.com/api`  
 Web source: `app/(public)/product/[slug]/page.jsx`, `components/ProductDetails.jsx`, `components/ProductNotifyMeForm.jsx`
 
 This file is every HTTP call the product page makes, including Notify Me. Name, sale price, regular price, app discount, images, product badges, time badge, bundle, variant, and add to cart are in [APP_PRODUCT.md](./APP_PRODUCT.md). The share button on the product photo is [APP_PRODUCT_SHARE.md](./APP_PRODUCT_SHARE.md). The phone navbar is [ANDROID_MOBILE_NAVBAR.md](./ANDROID_MOBILE_NAVBAR.md). The product card used for related and bundle rows is [FLUTTER_PRODUCT_CARDS.md](./FLUTTER_PRODUCT_CARDS.md).
 
-Send `Accept-Language: en` or `ar` on public catalog calls. Arabic changes product and category names. Prices stay numbers. Do not print the letters **AED**. Draw `https://www.store1920.com/currency/aed-dirham.png` next to the number, the same way as the home page.
+Send `Accept-Language: en` or `ar` on public catalog calls. Arabic changes product and category names. Prices stay numbers. Do not print the letters **AED**. Draw `https://www.hamody.com/currency/aed-dirham.png` next to the number, the same way as the home page.
 
 The website paints the first screen from the server. The app must call the routes below. Do not scrape the HTML page.
 

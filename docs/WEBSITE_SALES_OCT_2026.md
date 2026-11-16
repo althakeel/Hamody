@@ -1,8 +1,8 @@
-# Store1920 website sales
+# HAMODY website sales
 
 1–26 October 2026
 
-Prepared 26 October 2026 from the Store1920 database. Days run on Asia/Dubai time, midnight to midnight. Money is AED. This is the public website. Orders typed in by staff are not included.
+Prepared 26 October 2026 from the HAMODY database. Days run on Asia/Dubai time, midnight to midnight. Money is AED. This is the public website. Orders typed in by staff are not included.
 
 A sales order is a website order that was placed. Cancelled orders are left out. Failed card, Tabby, and Tamara attempts are left out. Checkouts still waiting for payment are left out. Cash on delivery is included when the customer places the order. Delivered, shipped, out for delivery, pickup, and return-to-origin orders are included at the amount on the order.
 

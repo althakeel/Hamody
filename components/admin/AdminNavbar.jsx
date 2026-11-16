@@ -56,7 +56,7 @@ const AdminNavbar = () => {
                         <button onClick={() => setShowConfirm(true)} className="px-4 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition">Sign Out</button>
                     </>
                 ) : (
-                    <p>Hi, Store1920</p>
+                    <p>Hi, Hamody</p>
                 )}
             </div>
 

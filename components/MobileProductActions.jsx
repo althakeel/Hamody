@@ -1,6 +1,5 @@
 'use client'
 
-import { ShoppingCart } from 'lucide-react'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
 import ProductNotifyMeForm from './ProductNotifyMeForm'
 
@@ -76,7 +75,15 @@ export default function MobileProductActions({
             className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-800 transition active:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             aria-label={t('common.addToCart')}
           >
-            <ShoppingCart className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
+            <img
+              src="/icons/add-to-cart.png"
+              alt=""
+              width={28}
+              height={28}
+              draggable={false}
+              aria-hidden="true"
+              className="h-7 w-7 select-none object-contain"
+            />
             {showQuantityBadge ? (
               <span className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#C9963B] px-1 text-[10px] font-bold leading-none text-white shadow-sm">
                 {formatQuantity(quantity)}

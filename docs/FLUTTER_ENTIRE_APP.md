@@ -1,9 +1,9 @@
-# Store1920 customer app — full Flutter specification
+# HAMODY customer app — full Flutter specification
 
 Last updated: 9 October 2026  
-Audience: Flutter developers building the Store1920 shopper app  
-Website: `https://www.store1920.com`  
-API root: `https://www.store1920.com/api`
+Audience: Flutter developers building the HAMODY shopper app  
+Website: `https://www.hamody.com`  
+API root: `https://www.hamody.com/api`
 
 This is the document to share for the **entire customer app**. It maps every shopper screen on the website to the screen and API the Flutter app should use. The app must match the **mobile website** (the phone layout under 768px wide): same screens, same product card, same products, prices, language, cart, checkout, and seller-controlled content. Desktop columns, hover effects, and sidebars are not the app.
 
@@ -33,7 +33,7 @@ Currency is **AED**. Store is in the UAE.
 
 | Item | Value |
 |---|---|
-| Production host | `https://www.store1920.com` |
+| Production host | `https://www.hamody.com` |
 | Auth | Firebase. Send `Authorization: Bearer <Firebase ID token>` |
 | Guest | No token. Send `isGuest` and guest contact when the endpoint asks for it |
 | Language | `Accept-Language: en` or `ar`. Arabic layout is RTL |
@@ -42,7 +42,7 @@ Currency is **AED**. Store is in the UAE.
 | Images | Use the URL the API returns. Do not rebuild S3 paths |
 | 401 | Refresh the Firebase ID token (`getIdToken(true)`) and retry once |
 
-There is no Store1920 password API. Sign-in is Firebase (email, Google, phone). WhatsApp OTP is a separate flow that returns a Firebase custom token: [FLUTTER_WHATSAPP_OTP_AUTH.md](./FLUTTER_WHATSAPP_OTP_AUTH.md).
+There is no HAMODY password API. Sign-in is Firebase (email, Google, phone). WhatsApp OTP is a separate flow that returns a Firebase custom token: [FLUTTER_WHATSAPP_OTP_AUTH.md](./FLUTTER_WHATSAPP_OTP_AUTH.md).
 
 Password policy, lockout, CAPTCHA, and sessions: [AUTH_SECURITY.md](./AUTH_SECURITY.md).
 
@@ -246,7 +246,7 @@ If the seller disables a block, that block disappears on the next refresh. No ex
 
 Field list, list APIs, and this layout are in [FLUTTER_PRODUCT_CARDS.md](./FLUTTER_PRODUCT_CARDS.md).
 
-Use this card on every product list: home, shop, category, brand, search, offers, wishlist, and recommendations. Open `https://www.store1920.com/shop` on a phone. That grid is the reference.
+Use this card on every product list: home, shop, category, brand, search, offers, wishlist, and recommendations. Open `https://www.hamody.com/shop` on a phone. That grid is the reference.
 
 The phone grid is **2 columns** with a **12px** gap.
 
@@ -256,7 +256,7 @@ The phone grid is **2 columns** with a **12px** gap.
 | Image | Square, image fills the box (`cover`, centered). White behind it | Same. Use the image URL from the API |
 | Second image | Swaps in on desktop hover only | Phone has no hover. Show the first image |
 | Name | **12px**, semibold, `#0f172a`, **2 lines**, then ellipsis. Left in English, right in Arabic | Arabic name when the language is Arabic. If that field is empty, use the English name |
-| Sale price | **14px**, semibold, `#020617`. Whole number, no decimals. Dirham symbol, then the number. Do not print the letters AED | Symbol file `https://www.store1920.com/currency/aed-dirham.png`. Tint it to the price color |
+| Sale price | **14px**, semibold, `#020617`. Whole number, no decimals. Dirham symbol, then the number. Do not print the letters AED | Symbol file `https://www.hamody.com/currency/aed-dirham.png`. Tint it to the price color |
 | Old price | Struck through, **10px**, `#94a3b8`. Show only when it is higher than the sale price | Field is `AED` (compare-at) |
 | Discount | **10px**, semibold, `#047857`. English `10% off`. Arabic `خصم 10٪` | `round((compare − sale) / compare × 100)` when compare is higher |
 | Stars | 5 stars, **9px**. Filled `#facc15`, empty `#d1d5db`. Then `(count)` in **9px** gray | Show only when the review count is greater than 0 |

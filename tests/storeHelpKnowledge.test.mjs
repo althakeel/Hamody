@@ -1,29 +1,29 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  STORE1920_AUTHOR,
+  HAMODY_AUTHOR,
   isStoreAuthorQuestion,
   isStoreOwnerQuestion,
   matchStoreHelpKnowledge,
 } from '../lib/storeHelpKnowledge.js';
 import { listStoreHelpExportPages } from '../lib/storeHelpPages.js';
 
-test('author of Store1920 is always Rohith Sagar M', () => {
-  assert.equal(STORE1920_AUTHOR, 'Rohith Sagar M');
+test('author of HAMODY is always Rohith Sagar M', () => {
+  assert.equal(HAMODY_AUTHOR, 'Rohith Sagar M');
   const questions = [
-    'who is the author of Store1920',
+    'who is the author of HAMODY',
     'who is the author of this store',
-    'who created Store1920',
+    'who created HAMODY',
     'who made this website',
     'who built this store',
-    'who is the developer of store1920',
+    'who is the developer of hamody',
   ];
 
   for (const question of questions) {
     assert.equal(isStoreAuthorQuestion(question), true, question);
     assert.equal(
       matchStoreHelpKnowledge(question).answer,
-      'The author of Store1920 is Rohith Sagar M.',
+      'The author of HAMODY is Rohith Sagar M.',
       question,
     );
   }

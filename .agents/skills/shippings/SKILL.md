@@ -1,6 +1,6 @@
 ---
 name: shippings
-description: Maintains Store1920 shipping settings at /store/shipping, payment method order-total limits (COD, Card, Tabby, Tamara), and checkout enforcement. Use when editing /store/shipping, max payment amounts, hiding Tabby/Tamara/Card at checkout, or /api/shipping.
+description: Maintains hamody shipping settings at /store/shipping, payment method order-total limits (COD, Card, Tabby, Tamara), and checkout enforcement. Use when editing /store/shipping, max payment amounts, hiding Tabby/Tamara/Card at checkout, or /api/shipping.
 ---
 
 # Shipping Settings (`/store/shipping`)

@@ -1,9 +1,9 @@
-# Store1920 app delivery address
+# HAMODY app delivery address
 
 Last updated: 28 October 2026  
 Audience: Android and Flutter  
-Website: `https://www.store1920.com/checkout`  
-API root: `https://www.store1920.com/api`
+Website: `https://www.hamody.com/checkout`  
+API root: `https://www.hamody.com/api`
 
 This is the address for a delivery order. Store pickup does not use this address. Pickup still needs the customer name, email, and phone. Checkout payment calls are in [APP_CHECKOUT.md](./APP_CHECKOUT.md).
 
@@ -71,7 +71,7 @@ UAE hint: **Enter 9 or 10 digits starting with 05 or 5**.
 ## 3. Guest delivery
 
 ```http
-POST https://www.store1920.com/api/orders
+POST https://www.hamody.com/api/orders
 Content-Type: application/json
 X-Store1920-Client: app
 X-Store1920-Platform: android

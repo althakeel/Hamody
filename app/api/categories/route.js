@@ -7,7 +7,8 @@ import { sanitizeCategoryFields, sanitizeCategoryTree } from '@/lib/displayText'
 import { getPublishedCategoryProductCounts } from '@/lib/categoryPageData';
 import { categoryProductCount } from '@/lib/categoryProductStats';
 
-const CACHE_KEY = 'public:categories:tree:v8';
+const CACHE_KEY = 'public:categories:tree:v9';
+const HIDDEN_STOREFRONT_SLUGS = new Set(['home-living']);
 
 // GET - Fetch all categories (public endpoint)
 export async function GET(req) {
@@ -71,7 +72,14 @@ export async function GET(req) {
 
         const localizeCategoryNode = (category) => sanitizeCategoryFields(category);
 
-        const categoriesWithChildren = allCategories.map((category) => {
+        const hiddenRootIds = new Set(
+            allCategories
+                .filter((category) => HIDDEN_STOREFRONT_SLUGS.has(String(category.slug || '').trim().toLowerCase()))
+                .map((category) => String(category._id)),
+        );
+        const visibleCategories = allCategories.filter((category) => !hiddenRootIds.has(String(category._id)));
+
+        const categoriesWithChildren = visibleCategories.map((category) => {
             const children = (childrenByParent.get(String(category._id)) || [])
                 .sort((first, second) => (first.sortOrder || 0) - (second.sortOrder || 0)
                     || String(first.name || '').localeCompare(String(second.name || '')))

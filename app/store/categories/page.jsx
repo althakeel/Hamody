@@ -2129,7 +2129,7 @@ export default function StoreCategoryMenu() {
                             value={formData.metaTitle}
                             maxLength={120}
                             onChange={(e) => setFormData((prev) => ({ ...prev, metaTitle: e.target.value }))}
-                            placeholder="e.g., Women's Fashion | Store1920"
+                            placeholder="e.g., Women's Fashion | HAMODY"
                             className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 sm:px-4 sm:py-2.5"
                           />
                         </div>

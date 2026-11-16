@@ -3,8 +3,8 @@
 import PolicyPageLayout from '@/components/PolicyPageLayout';
 import { useStorefrontI18n } from "@/lib/useStorefrontI18n";
 import PolicyContactBlock from '@/components/PolicyContactBlock';
-import { STORE1920_SUPPORT_EMAIL } from '@/lib/storeContact';
-import { STORE1920_LEGAL_NAME } from '@/lib/businessIdentity';
+import { HAMODY_SUPPORT_EMAIL } from '@/lib/storeContact';
+import { HAMODY_LEGAL_NAME } from '@/lib/businessIdentity';
 
 export default function PrivacyPolicyPage() {
   const { isArabic } = useStorefrontI18n();
@@ -15,7 +15,7 @@ export default function PrivacyPolicyPage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">سياسة الخصوصية</h1>
           <p className="text-xs text-gray-500 mb-4">آخر تحديث: 11 سبتمبر 2026</p>
           <p className="text-gray-600 mb-8">
-            توضح سياسة الخصوصية هذه كيف يقوم Store1920.com، المملوك ويُدار من قبل <strong>{STORE1920_LEGAL_NAME}</strong>، بجمع واستخدام وحفظ وحماية معلوماتك الشخصية عند استخدام الموقع والخدمات.
+            توضح سياسة الخصوصية هذه كيف يقوم hamody.com، المملوك ويُدار من قبل <strong>{HAMODY_LEGAL_NAME}</strong>، بجمع واستخدام وحفظ وحماية معلوماتك الشخصية عند استخدام الموقع والخدمات.
           </p>
 
           <div className="space-y-6 border border-gray-200 rounded-xl p-6">
@@ -59,21 +59,21 @@ export default function PrivacyPolicyPage() {
               <p className="text-gray-700">
                 يمكنك إدارة تفضيلات ملفات تعريف الارتباط من المتصفح واستخدام خيارات إلغاء الاشتراك المتاحة. حيثما تنطبق قوانين حماية البيانات
                 (بما في ذلك قانون حماية البيانات الشخصية في الإمارات ومبادئ GDPR/CCPA للزوار الدوليين عند الاقتضاء)، نعالج البيانات بشكل قانوني
-                ونحترم طلبات الوصول والتصحيح والحذف عبر {STORE1920_SUPPORT_EMAIL}.
+                ونحترم طلبات الوصول والتصحيح والحذف عبر {HAMODY_SUPPORT_EMAIL}.
               </p>
             </section>
 
             <section>
               <h2 className="font-semibold text-gray-900 mb-2">5. أمان البيانات</h2>
               <p className="text-gray-700">
-                نحمي البيانات الشخصية عبر HTTPS (TLS) للموقع وصفحة الدفع، وضوابط الوصول، والاستضافة الآمنة. تُدخل بيانات البطاقة فقط على صفحات دفع مستضافة متوافقة مع PCI؛ ولا نخزن أرقام البطاقات أو رمز CVV. رسائل البريد والرسائل النصية وواتساب تستخدم قنوات أولئك المزودين وقد لا تكون مشفرة من طرف إلى طرف من قِبل Store1920. لا توجد وسيلة نقل أو تخزين آمنة بالكامل.
+                نحمي البيانات الشخصية عبر HTTPS (TLS) للموقع وصفحة الدفع، وضوابط الوصول، والاستضافة الآمنة. تُدخل بيانات البطاقة فقط على صفحات دفع مستضافة متوافقة مع PCI؛ ولا نخزن أرقام البطاقات أو رمز CVV. رسائل البريد والرسائل النصية وواتساب تستخدم قنوات أولئك المزودين وقد لا تكون مشفرة من طرف إلى طرف من قِبل hamody.com. لا توجد وسيلة نقل أو تخزين آمنة بالكامل.
               </p>
             </section>
 
             <section>
               <h2 className="font-semibold text-gray-900 mb-2">6. حقوقك</h2>
               <p className="text-gray-700">
-                يمكنك طلب الوصول إلى بياناتك أو تصحيحها أو حذفها وفق الأنظمة المطبقة عبر التواصل معنا على support@Store1920.com.
+                يمكنك طلب الوصول إلى بياناتك أو تصحيحها أو حذفها وفق الأنظمة المطبقة عبر التواصل معنا على support@hamody.com.
               </p>
             </section>
 
@@ -97,8 +97,8 @@ export default function PrivacyPolicyPage() {
         </h1>
         <p className="text-xs text-gray-500 mb-4">Last updated: 11 September 2026</p>
         <p className="text-gray-600 mb-8">
-          This Privacy Policy explains how <strong>Store1920.com</strong>, owned
-          and operated by <strong>{STORE1920_LEGAL_NAME}</strong>, collects, uses, stores, and
+          This Privacy Policy explains how <strong>hamody.com</strong>, owned
+          and operated by <strong>{HAMODY_LEGAL_NAME}</strong>, collects, uses, stores, and
           protects your personal information when you use our website and
           services.
         </p>
@@ -178,7 +178,7 @@ export default function PrivacyPolicyPage() {
               privacy laws (including UAE Personal Data Protection Law and, where
               relevant, GDPR/CCPA principles for international visitors), we process
               personal data lawfully, keep it secure, and honor access, correction,
-              and deletion requests sent to {STORE1920_SUPPORT_EMAIL}.
+              and deletion requests sent to {HAMODY_SUPPORT_EMAIL}.
             </p>
           </section>
 
@@ -190,9 +190,9 @@ export default function PrivacyPolicyPage() {
             <p className="text-gray-700">
               We protect personal data with HTTPS (TLS) on the website and checkout,
               access controls, and secure hosting. Card details are entered only on
-              hosted PCI-compliant payment pages; Store1920 does not store card
+              hosted PCI-compliant payment pages; hamody.com does not store card
               numbers or CVV. Email, SMS and WhatsApp messages use those providers’
-              channels and may not be end-to-end encrypted by Store1920. No method
+              channels and may not be end-to-end encrypted by hamody.com. No method
               of transmission or storage is completely secure.
             </p>
           </section>
@@ -206,7 +206,7 @@ export default function PrivacyPolicyPage() {
               Subject to applicable laws, you may request access to, correction
               of, or deletion of your personal information. To make such a
               request, please contact us at{' '}
-              <strong>support@Store1920.com</strong>.
+              <strong>support@hamody.com</strong>.
             </p>
           </section>
 
@@ -264,7 +264,7 @@ export default function PrivacyPolicyPage() {
               11. Changes to This Policy
             </h2>
             <p className="text-gray-700">
-              Store1920 reserves the right to update this Privacy Policy at any time.
+              hamody.com reserves the right to update this Privacy Policy at any time.
               Any changes will be posted on this page along with an updated
               &ldquo;Last Updated&rdquo; date.
             </p>

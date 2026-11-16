@@ -3,7 +3,7 @@
 /* Seller dashboard only. The public storefront is unchanged. */
 html:has([data-store-language-scope]),
 html:has([data-store-language-scope]) body,
-html:has([data-store-language-scope]) #store1920-root {
+html:has([data-store-language-scope]) #Hamody-root {
   height: 100dvh;
   max-height: 100dvh;
   overflow: hidden;

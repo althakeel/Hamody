@@ -1,8 +1,8 @@
-# Store1920 Warehouse Barcode Scanner
+# HAMODY Warehouse Barcode Scanner
 
 **Audience:** Warehouse Flutter / Android app, ops, backend  
-**Purpose:** Detailed guide to the **warehouse barcode scanner** — what is printed on the label, what the scan string contains, how Store1920 normalizes it, which APIs open, and what happens after a scan  
-**Base URL:** `https://www.store1920.com`  
+**Purpose:** Detailed guide to the **warehouse barcode scanner** — what is printed on the label, what the scan string contains, how HAMODY normalizes it, which APIs open, and what happens after a scan  
+**Base URL:** `https://www.hamody.com`  
 **Related:** [ORDER_TRACKING_SHIPPING.md](./ORDER_TRACKING_SHIPPING.md) (couriers), [APP_SCANNER_AI.md](./APP_SCANNER_AI.md) (shopper photo search — **different** scanner)  
 **Last updated:** 10 November 2026
 
@@ -24,7 +24,7 @@ The warehouse app reads a **1D barcode / AWB string**. It does **not** call Gemi
 Typical flow on the warehouse phone:
 
 1. Open camera / hardware barcode gun → read the **EMX Door-to-Door** barcode on the shipping label.  
-2. App sends the raw string to Store1920.  
+2. App sends the raw string to Hamody.  
 3. Backend cleans the string, finds the matching `Order`.  
 4. App shows order details (customer, items, SKUs, packing / pickup / return state).  
 5. Staff either:
@@ -44,7 +44,7 @@ Printed on the **EMX carrier label** (the physical sticker staff scan).
 |----------|--------|
 | What it is | EMX airway bill / Door-to-Door tracking number |
 | Typical shape | Digits starting with **`1000`** |
-| Regex Store1920 uses | `^1000\d{9,12}$` |
+| Regex HAMODY uses | `^1000\d{9,12}$` |
 | Example | `1000045344337`, `1000027243272` |
 | Order field | `waslah.emxTrackingNumber` (also may mirror to `waslah.trackingNumber` / `trackingId`) |
 | Customer track URL | `https://www.emx.ae/all-services/track-a-package?trackingnumber={awb}` |
@@ -89,7 +89,7 @@ The same lookup engine also accepts these if the gun or staff enters them:
 
 ### 2.4 What the raw scanner string may contain (before cleanup)
 
-Hardware / camera scanners often wrap the AWB. Store1920 expects that and **normalizes** it.
+Hardware / camera scanners often wrap the AWB. HAMODY expects that and **normalizes** it.
 
 | Dirty input | Why it happens | Cleaned candidates |
 |-------------|----------------|--------------------|
@@ -364,7 +364,7 @@ Queue statuses used by tracking list default:
 ## 8. How the EMX barcode gets onto the order (before anyone scans)
 
 1. Seller / auto-ship creates shipment via **Waslah → EMX**.  
-2. Waslah returns tracking; Store1920 stores:
+2. Waslah returns tracking; HAMODY stores:
    - `waslah.emxTrackingNumber` = Door-to-Door `1000…`  
    - `waslah.waslahTrackingNumber` = platform `62…` when present  
 3. Label PDF printed (`print-receipt` / carrier-label).  
@@ -432,7 +432,7 @@ Prefer device key for dedicated warehouse phones; use Firebase seller login when
 The **EMX Door-to-Door barcode** on the carrier label — digits starting with **`1000`**.
 
 **What is inside that barcode?**  
-Only the **EMX AWB number** (numeric). It is not a JSON blob. Store1920 maps that number to the order via `waslah.emxTrackingNumber`. Extra GS1 prefixes / spaces / URLs are stripped before lookup.
+Only the **EMX AWB number** (numeric). It is not a JSON blob. HAMODY maps that number to the order via `waslah.emxTrackingNumber`. Extra GS1 prefixes / spaces / URLs are stripped before lookup.
 
 **Can they scan the Waslah `62…` number?**  
 Lookup may still find the order via `waslah.waslahTrackingNumber`, but warehouse ops and docs treat **`1000…` as the scanner barcode**. Do not print/process `62…` as the EMX Door-to-Door code.

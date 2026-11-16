@@ -1,9 +1,9 @@
-# Store1920 app developer API
+# HAMODY app developer API
 
 **Audience:** iOS, Android, and Flutter shopper apps  
-**Product:** Store1920 (UAE)  
-**Base URL:** `https://www.store1920.com`  
-**API root:** `https://www.store1920.com/api/...`  
+**Product:** HAMODY (UAE)  
+**Base URL:** `https://www.hamody.com`  
+**API root:** `https://www.hamody.com/api/...`  
 **Currency:** AED  
 **Auth:** Firebase Authentication (ID token)  
 **Last updated:** 26 October 2026
@@ -59,7 +59,7 @@ Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
 
 3. Refresh the ID token when you get `401` (call `getIdToken(true)`).
 
-There is **no** separate Store1920 login API. Auth is entirely Firebase; APIs only verify the token.
+There is **no** separate HAMODY login API. Auth is entirely Firebase; APIs only verify the token.
 
 ### 1.4 Cart entry shape
 
@@ -148,7 +148,7 @@ Status codes: `400` validation, `401` auth, `403` forbidden, `404` not found, `4
 
 ### 2.6 WhatsApp / SMS cart deep link
 
-URL form: `https://store1920.com/cart?restore=<token>`
+URL form: `https://hamody.com/cart?restore=<token>`
 
 Mobile app should:
 
@@ -796,7 +796,7 @@ Warehouse packing docs: [`docs/warehouse-order-packing-api.md`](./warehouse-orde
 
 ```http
 GET /api/wishlist HTTP/1.1
-Host: store1920.com
+Host: hamody.com
 Authorization: Bearer <firebase_id_token>
 Accept: application/json
 Accept-Language: en
@@ -804,7 +804,7 @@ Accept-Language: en
 
 ```http
 POST /api/orders HTTP/1.1
-Host: store1920.com
+Host: hamody.com
 Authorization: Bearer <firebase_id_token>
 Content-Type: application/json
 

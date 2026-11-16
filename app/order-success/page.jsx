@@ -34,8 +34,8 @@ import {
   isCustomerPickupOrder,
 } from '@/lib/customerPickup';
 import {
-  STORE1920_CUSTOMER_SUPPORT_PHONE,
-  STORE1920_CUSTOMER_SUPPORT_TEL,
+  HAMODY_CUSTOMER_SUPPORT_PHONE,
+  HAMODY_CUSTOMER_SUPPORT_TEL,
   formatCustomerSupportPhoneDisplay,
 } from '@/lib/storeContact';
 
@@ -538,8 +538,8 @@ function OrderSuccessContent() {
                           <p className="font-semibold leading-relaxed text-slate-900">{CUSTOMER_PICKUP_ADDRESS.line}</p>
                           <p className="text-slate-600">
                             For any location doubt, call toll-free{' '}
-                            <a href={STORE1920_CUSTOMER_SUPPORT_TEL} className="font-semibold text-amber-800 underline">
-                              {formatCustomerSupportPhoneDisplay(STORE1920_CUSTOMER_SUPPORT_PHONE)}
+                            <a href={HAMODY_CUSTOMER_SUPPORT_TEL} className="font-semibold text-amber-800 underline">
+                              {formatCustomerSupportPhoneDisplay(HAMODY_CUSTOMER_SUPPORT_PHONE)}
                             </a>
                           </p>
                           {order.shippingAddress.phone ? (
@@ -577,8 +577,8 @@ function OrderSuccessContent() {
                         <p className="mt-1 font-semibold text-slate-900">{CUSTOMER_PICKUP_ADDRESS.line}</p>
                         <p className="mt-2 text-sm text-slate-600">
                           For any location doubt, call toll-free{' '}
-                          <a href={STORE1920_CUSTOMER_SUPPORT_TEL} className="font-semibold text-amber-800 underline">
-                            {formatCustomerSupportPhoneDisplay(STORE1920_CUSTOMER_SUPPORT_PHONE)}
+                          <a href={HAMODY_CUSTOMER_SUPPORT_TEL} className="font-semibold text-amber-800 underline">
+                            {formatCustomerSupportPhoneDisplay(HAMODY_CUSTOMER_SUPPORT_PHONE)}
                           </a>
                         </p>
                       </div>

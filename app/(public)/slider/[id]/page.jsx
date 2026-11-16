@@ -7,11 +7,11 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({ params }) {
   const { id = '' } = await params;
   const data = await loadCategorySliderGrid(id);
-  if (!data || data.redirectTo) return { title: 'Store1920' };
-  const title = data.slider.title || 'Store1920';
+  if (!data || data.redirectTo) return { title: 'hamody.com' };
+  const title = data.slider.title || 'hamody.com';
   const description = data.slider.subtitle || title;
   return {
-    title: `${title} | Store1920`,
+    title: `${title} | hamody.com`,
     description,
   };
 }

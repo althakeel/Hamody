@@ -22,13 +22,13 @@ export async function generateMetadata() {
       language,
     });
     return {
-      title: `${data.title} | Store1920`,
+      title: `${data.title} | hamody.com`,
       description: data.subtitle || data.title,
     };
   } catch {
     return {
-      title: 'Special Offers | Store1920',
-      description: 'Shop current deals and discounted products at Store1920.',
+      title: 'Special Offers | hamody.com',
+      description: 'Shop current deals and discounted products at hamody.com.',
     };
   }
 }

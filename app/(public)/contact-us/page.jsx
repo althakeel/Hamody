@@ -3,28 +3,21 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
-  STORE1920_CUSTOMER_SUPPORT_PHONE,
-  STORE1920_CUSTOMER_SUPPORT_TEL,
-  STORE1920_SUPPORT_EMAIL,
+  HAMODY_CUSTOMER_SUPPORT_TEL,
+  HAMODY_SUPPORT_EMAIL,
   formatCustomerSupportPhoneDisplay,
 } from '@/lib/storeContact';
 import {
-  STORE1920_LEGAL_NAME,
-  STORE1920_TRADE_LICENSE_NO,
-  STORE1920_BUSINESS_HOURS_EN,
+  HAMODY_LEGAL_NAME,
+  HAMODY_TRADE_LICENSE_NO,
+  HAMODY_BUSINESS_HOURS_EN,
   getRegisteredOfficeSingleLine,
   getFulfilmentAddressSingleLine,
 } from '@/lib/businessIdentity';
 import Link from 'next/link';
 
-const NAVBAR_APPEARANCE_CACHE_KEY = 'navbarAppearanceCache';
-const DEFAULT_BG = '#8f3404';
-
-function hexToRgb(hex) {
-  const clean = hex.replace('#', '');
-  const bigint = parseInt(clean, 16);
-  return { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255 };
-}
+const fieldClass =
+  'w-full rounded-xl border border-[#E9D6B5] bg-[#FAF8F3] px-4 py-2.5 text-sm text-[#123D33] placeholder:text-[#9C6E20]/45 focus:border-[#1F5C4A] focus:outline-none focus:ring-2 focus:ring-[#1F5C4A]/25 transition';
 
 export default function ContactUs() {
   const searchParams = useSearchParams();
@@ -32,7 +25,6 @@ export default function ContactUs() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const [navBg, setNavBg] = useState(DEFAULT_BG);
 
   useEffect(() => {
     try {
@@ -68,18 +60,6 @@ export default function ContactUs() {
     }));
   }, [searchParams]);
 
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(NAVBAR_APPEARANCE_CACHE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.backgroundColor) setNavBg(parsed.backgroundColor);
-      }
-    } catch {}
-  }, []);
-
-  const { r, g, b } = hexToRgb(navBg);
-
   const handleChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
@@ -114,18 +94,15 @@ export default function ContactUs() {
   return (
     <div className="w-full">
       {/* Hero banner */}
-      <div
-        className="w-full py-16 px-4 flex flex-col items-center text-center"
-        style={{ background: `linear-gradient(135deg, rgba(${r},${g},${b},1) 0%, rgba(${r},${g},${b},0.78) 100%)` }}
-      >
-        <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center mb-4 shadow-lg">
-          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+      <div className="w-full bg-[#1F5C4A] py-16 px-4 flex flex-col items-center text-center">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E9D6B5] text-[#1F5C4A] shadow-lg">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
             <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
           </svg>
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight drop-shadow">Get in Touch</h1>
         <p className="mt-2 text-white/80 text-sm sm:text-base max-w-md">
-          Questions, complaints, and return requests — no account required. We reply during {STORE1920_BUSINESS_HOURS_EN}.
+          Questions, complaints, and return requests — no account required. We reply during {HAMODY_BUSINESS_HOURS_EN}.
         </p>
       </div>
 
@@ -143,8 +120,8 @@ export default function ContactUs() {
                   </svg>
                 ),
                 label: 'Customer Support',
-                value: formatCustomerSupportPhoneDisplay(STORE1920_CUSTOMER_SUPPORT_PHONE),
-                href: STORE1920_CUSTOMER_SUPPORT_TEL,
+                value: formatCustomerSupportPhoneDisplay(HAMODY_CUSTOMER_SUPPORT_TEL),
+                href: HAMODY_CUSTOMER_SUPPORT_TEL,
               },
               {
                 icon: (
@@ -153,7 +130,7 @@ export default function ContactUs() {
                   </svg>
                 ),
                 label: 'Email Us',
-                value: STORE1920_SUPPORT_EMAIL,
+                value: HAMODY_SUPPORT_EMAIL,
                 href: null,
               },
               {
@@ -163,7 +140,7 @@ export default function ContactUs() {
                   </svg>
                 ),
                 label: 'Business Hours',
-                value: STORE1920_BUSINESS_HOURS_EN,
+                value: HAMODY_BUSINESS_HOURS_EN,
                 href: null,
               },
               {
@@ -187,46 +164,43 @@ export default function ContactUs() {
                 href: null,
               },
             ].map(({ icon, label, value, href }) => (
-              <div key={label} className="flex items-start gap-4 bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 hover:shadow-md transition-shadow">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: `rgba(${r},${g},${b},0.1)`, color: navBg }}
-                >
+              <div key={label} className="flex items-start gap-4 rounded-2xl border border-[#E9D6B5]/80 bg-white px-5 py-4 shadow-sm transition-shadow hover:shadow-md">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#E9D6B5] text-[#1F5C4A]">
                   {icon}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">{label}</p>
+                  <p className="mb-0.5 text-xs font-semibold uppercase tracking-wider text-[#9C6E20]">{label}</p>
                   {href ? (
-                    <a href={href} className="text-sm font-medium text-gray-800 hover:underline break-all" style={{ '--tw-ring-color': navBg }}>
+                    <a href={href} className="break-all text-sm font-medium text-[#123D33] hover:text-[#1F5C4A] hover:underline">
                       {value}
                     </a>
                   ) : (
-                    <p className="text-sm font-medium text-gray-800">{value}</p>
+                    <p className="text-sm font-medium text-[#123D33]">{value}</p>
                   )}
                 </div>
               </div>
             ))}
 
             {/* Business info card */}
-            <div className="bg-gray-50 rounded-2xl border border-gray-100 px-5 py-4 text-sm text-gray-600 space-y-2">
-              <p className="font-semibold text-gray-700">Store1920</p>
+            <div className="space-y-2 rounded-2xl border border-[#E9D6B5]/80 bg-[#FAF8F3] px-5 py-4 text-sm text-[#123D33]/80">
+              <p className="font-semibold text-[#123D33]">hamody.com</p>
               <p>
-                Operated by <strong>{STORE1920_LEGAL_NAME}</strong> (UAE Trade License {STORE1920_TRADE_LICENSE_NO}).
+                Operated by <strong>{HAMODY_LEGAL_NAME}</strong> (UAE Trade License {HAMODY_TRADE_LICENSE_NO}).
               </p>
               <p>
                 Full company details:{' '}
-                <Link href="/business-information" className="font-semibold text-[#E52721] hover:underline">
+                <Link href="/business-information" className="font-semibold text-[#9C6E20] hover:text-[#123D33] hover:underline">
                   Business Information
                 </Link>
               </p>
               <p>We typically reply the next business day. We are not a 24/7 desk.</p>
               <p>
                 Guest return or complaint:{' '}
-                <Link href="/support" className="font-semibold text-[#E52721] hover:underline">
+                <Link href="/support" className="font-semibold text-[#9C6E20] hover:text-[#123D33] hover:underline">
                   Support form
                 </Link>
                 {' '}or this page. Signed-in customers can also use{' '}
-                <Link href="/return-request" className="font-semibold text-[#E52721] hover:underline">
+                <Link href="/return-request" className="font-semibold text-[#9C6E20] hover:text-[#123D33] hover:underline">
                   Return Request
                 </Link>.
               </p>
@@ -235,15 +209,14 @@ export default function ContactUs() {
 
           {/* Right — form */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              {/* Card top bar */}
-              <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, rgba(${r},${g},${b},1), rgba(${r},${g},${b},0.5))` }} />
+            <div className="overflow-hidden rounded-2xl border border-[#E9D6B5]/80 bg-white shadow-sm">
+              <div className="h-1 w-full bg-[#C9963B]" />
 
               <div className="p-7">
                 {submitted ? (
                   <div className="flex flex-col items-center justify-center py-14 text-center gap-4">
-                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: `rgba(${r},${g},${b},0.1)` }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke={navBg} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#E9D6B5]">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#1F5C4A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8">
                         <polyline points="20 6 9 17 4 12"/>
                       </svg>
                     </div>
@@ -253,8 +226,7 @@ export default function ContactUs() {
                     </div>
                     <button
                       onClick={() => { setSubmitted(false); setForm({ name: '', email: '', topic: 'Question', orderNumber: '', message: '' }); }}
-                      className="mt-2 text-sm font-semibold px-5 py-2 rounded-xl text-white transition-opacity hover:opacity-90"
-                      style={{ backgroundColor: navBg }}
+                      className="mt-2 rounded-xl bg-[#1F5C4A] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#123D33]"
                     >
                       Send Another Message
                     </button>
@@ -277,8 +249,7 @@ export default function ContactUs() {
                             name="topic"
                             value={form.topic}
                             onChange={handleChange}
-                            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:border-transparent transition"
-                            style={{ '--tw-ring-color': `rgba(${r},${g},${b},0.4)` }}
+                            className={fieldClass}
                           >
                             <option value="Question">Question</option>
                             <option value="Complaint">Complaint</option>
@@ -295,8 +266,7 @@ export default function ContactUs() {
                             value={form.orderNumber}
                             onChange={handleChange}
                             placeholder="If this is a return or complaint"
-                            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition"
-                            style={{ '--tw-ring-color': `rgba(${r},${g},${b},0.4)` }}
+                            className={fieldClass}
                           />
                         </div>
                       </div>
@@ -311,8 +281,7 @@ export default function ContactUs() {
                             onChange={handleChange}
                             required
                             placeholder="John Doe"
-                            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition"
-                            style={{ '--tw-ring-color': `rgba(${r},${g},${b},0.4)` }}
+                            className={fieldClass}
                           />
                         </div>
                         <div>
@@ -324,8 +293,7 @@ export default function ContactUs() {
                             onChange={handleChange}
                             required
                             placeholder="john@example.com"
-                            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition"
-                            style={{ '--tw-ring-color': `rgba(${r},${g},${b},0.4)` }}
+                            className={fieldClass}
                           />
                         </div>
                       </div>
@@ -339,16 +307,14 @@ export default function ContactUs() {
                           required
                           rows={6}
                           placeholder="Describe your issue or question in detail..."
-                          className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition resize-none"
-                          style={{ '--tw-ring-color': `rgba(${r},${g},${b},0.4)` }}
+                          className={`${fieldClass} resize-none`}
                         />
                       </div>
 
                       <button
                         type="submit"
                         disabled={submitting}
-                        className="w-full flex items-center justify-center gap-2 rounded-xl py-3 font-bold text-white text-sm shadow-md transition-opacity hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
-                        style={{ backgroundColor: navBg, boxShadow: `0 4px 14px rgba(${r},${g},${b},0.35)` }}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1F5C4A] py-3 text-sm font-bold text-white shadow-[0_4px_14px_rgba(31,92,74,0.35)] transition hover:bg-[#123D33] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
                           <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>

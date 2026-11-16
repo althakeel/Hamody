@@ -18,7 +18,7 @@ test('sales and customer questions need the super-admin PIN', () => {
   assert.equal(wantsSuperAdminHelpDetails('i need to downaldo the customer names in excel'), true);
   assert.equal(wantsSuperAdminHelpDetails('how many pages are ther in this website'), false);
   assert.equal(wantsSuperAdminHelpDetails('Where do I add category banners?'), false);
-  assert.equal(wantsSuperAdminHelpDetails('Who is the author of Store1920?'), false);
+  assert.equal(wantsSuperAdminHelpDetails('Who is the author of HAMODY?'), false);
 });
 
 test('PIN unlocks a pending sales question', () => {

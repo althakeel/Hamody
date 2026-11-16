@@ -13,7 +13,7 @@ async function loadSharp() {
   }
 }
 
-const ALLOWED_HOST = 'store1920-images.s3.ap-south-1.amazonaws.com';
+const ALLOWED_HOST = 'hamody-images.s3.ap-south-1.amazonaws.com';
 const ALLOWED_WIDTHS = new Set([256, 384, 512]);
 const MAX_BYTES = 12 * 1024 * 1024;
 const CACHE_MAX = 300;

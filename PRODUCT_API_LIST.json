@@ -1,5 +1,5 @@
 {
-  "baseUrl": "https://Store1920.com",
+  "baseUrl": "https://hamody.com",
   "notes": "All endpoints are under /api and return JSON.",
   "auth": {
     "type": "Firebase ID token",

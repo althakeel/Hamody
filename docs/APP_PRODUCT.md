@@ -1,22 +1,22 @@
-# Store1920 app product
+# HAMODY app product
 
 Last updated: 28 October 2026  
 Audience: Android and Flutter  
-Website: `https://www.store1920.com/product/{slug}`  
-API root: `https://www.store1920.com/api`
+Website: `https://www.hamody.com/product/{slug}`  
+API root: `https://www.hamody.com/api`
 
 This is the product page. It covers the name, sale price, regular price, app discount price, images, product badges, the delivery time badge, and whether the product is a bundle, a variant, both, or neither. **Add to cart** is included.
 
 Other product-page calls (reviews, delivery, related products) are in [ANDROID_PRODUCT_PAGE.md](./ANDROID_PRODUCT_PAGE.md). The share sheet is in [APP_PRODUCT_SHARE.md](./APP_PRODUCT_SHARE.md).
 
-Send `Accept-Language: en` or `ar`. Arabic replaces `name` with the Arabic name. Prices stay numbers. Draw `https://www.store1920.com/currency/aed-dirham.png` next to the number. Do not print the letters AED.
+Send `Accept-Language: en` or `ar`. Arabic replaces `name` with the Arabic name. Prices stay numbers. Draw `https://www.hamody.com/currency/aed-dirham.png` next to the number. Do not print the letters AED.
 
 ---
 
 ## 1. Load the product
 
 ```http
-GET https://www.store1920.com/api/products/by-slug?slug={slug}
+GET https://www.hamody.com/api/products/by-slug?slug={slug}
 ```
 
 No sign-in. `200` is `{ "product": { } }`. `404` is **Product not found**.
@@ -182,7 +182,7 @@ One cart line per product `_id`. Changing the variant or the bundle replaces tha
 Keep the cart on the phone. After a signed-in add, also send the whole cart:
 
 ```http
-POST https://www.store1920.com/api/cart
+POST https://www.hamody.com/api/cart
 Authorization: Bearer {Firebase ID token}
 Content-Type: application/json
 ```
@@ -225,7 +225,7 @@ Two kinds sit on the product page. They are separate from the delivery time badg
 Load once and reuse:
 
 ```http
-GET https://www.store1920.com/api/public/new-tag
+GET https://www.hamody.com/api/public/new-tag
 ```
 
 No sign-in. `enabled` false, or `showOnImageOverlay` false, means draw nothing on the photo.
@@ -253,7 +253,7 @@ Draw a wrap row under the title. Text is 12 px, bold, horizontal padding about 1
 ## 7. Time badge
 
 ```http
-GET https://www.store1920.com/api/store/appearance/sections/public
+GET https://www.hamody.com/api/store/appearance/sections/public
 ```
 
 No sign-in. Read `timeBadges`.
@@ -286,7 +286,7 @@ The product call does not include `appDiscountEnabled`, `appDiscountType`, or `a
 The server applies the discount when the app places the order, after the variant or bundle price is chosen:
 
 ```http
-POST https://www.store1920.com/api/orders
+POST https://www.hamody.com/api/orders
 X-Store1920-Client: app
 X-Store1920-Platform: android
 ```

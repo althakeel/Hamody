@@ -15,7 +15,7 @@ import { cleanDisplayText } from '@/lib/displayText'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
 import { trackWhatsAppClick } from '@/lib/ga4Ecommerce'
 
-const PLACEHOLDER_IMAGE = 'https://store1920-images.s3.ap-south-1.amazonaws.com/uploads/placeholder.png'
+const PLACEHOLDER_IMAGE = 'https://hamody-images.s3.ap-south-1.amazonaws.com/uploads/placeholder.png'
 
 function ShareOptionButton({ label, onClick, children, tileClass = '' }) {
   return (

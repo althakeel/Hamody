@@ -1802,8 +1802,8 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                             percent: 30,
                             phase: 'analyzing',
                             message: waitSec > 45
-                                ? 'Store1920 AI is analyzing your product image (this may take up to a minute)...'
-                                : 'Store1920 AI is analyzing your product image...',
+                                ? ' AI is analyzing your product image (this may take up to a minute)...'
+                                : 'Hamody AI is analyzing your product image...',
                         })
                     }
                 } catch {
@@ -1811,7 +1811,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                 }
             }, 900)
 
-            updateProgress({ percent: 18, message: 'Sending request to Store1920 AI...' })
+            updateProgress({ percent: 18, message: 'Sending request to Hamody AI...' })
 
             const payload = sourceImage.imageUrl
                 ? {
@@ -2708,7 +2708,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                             >
                                 {aiLoading
                                     ? (aiProgress?.message || 'Auto filling...')
-                                    : 'Auto Fill With Store1920 AI'}
+                                    : 'Auto Fill With Hamody AI'}
                             </button>
                         </div>
                     </div>
@@ -4131,7 +4131,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                                     {v.options?.imageSlot ? (
                                       <div className="h-16 w-16 shrink-0 rounded-lg border border-slate-200 overflow-hidden bg-white">
                                         <Image
-                                          src={variantImageOptions.find(opt => opt.slot === v.options?.imageSlot)?.preview || 'https://store1920-images.s3.ap-south-1.amazonaws.com/uploads/placeholder.png'}
+                                          src={variantImageOptions.find(opt => opt.slot === v.options?.imageSlot)?.preview || 'https://hamody-images.s3.ap-south-1.amazonaws.com/uploads/placeholder.png'}
                                           alt={`Variant ${idx + 1} preview`}
                                           width={64}
                                           height={64}

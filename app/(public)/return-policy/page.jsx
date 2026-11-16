@@ -4,24 +4,24 @@ import Link from 'next/link';
 import PolicyPageLayout from '@/components/PolicyPageLayout';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 import {
-  STORE1920_CUSTOMER_SUPPORT_PHONE,
-  STORE1920_CUSTOMER_SUPPORT_TEL,
-  STORE1920_SUPPORT_EMAIL,
+  HAMODY_CUSTOMER_SUPPORT_PHONE,
+  HAMODY_CUSTOMER_SUPPORT_TEL,
+  HAMODY_SUPPORT_EMAIL,
   formatCustomerSupportPhoneDisplay,
 } from '@/lib/storeContact';
 import PolicyContactBlock from '@/components/PolicyContactBlock';
 import {
-  STORE1920_LEGAL_NAME,
-  STORE1920_LEGAL_NAME_AR,
-  STORE1920_BUSINESS_HOURS_EN,
-  STORE1920_BUSINESS_HOURS_AR,
+  HAMODY_LEGAL_NAME,
+  HAMODY_LEGAL_NAME_AR,
+  HAMODY_BUSINESS_HOURS_EN,
+  HAMODY_BUSINESS_HOURS_AR,
   getRegisteredOfficeSingleLine,
   getFulfilmentAddressSingleLine,
 } from '@/lib/businessIdentity';
 
 const RETURNS_ADDRESS = getFulfilmentAddressSingleLine();
 const REGISTERED_OFFICE = getRegisteredOfficeSingleLine();
-const PHONE_DISPLAY = formatCustomerSupportPhoneDisplay(STORE1920_CUSTOMER_SUPPORT_PHONE);
+const PHONE_DISPLAY = formatCustomerSupportPhoneDisplay(HAMODY_CUSTOMER_SUPPORT_PHONE);
 
 const EMAIL_SPLIT_PATTERN = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
 const EMAIL_MATCH_PATTERN = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -38,11 +38,11 @@ function PolicyText({ children, className = 'text-gray-700 mt-2 first:mt-0' }) {
   return (
     <Tag className={className}>
       {withPhoneParts.map((segment, segmentIndex) => {
-        if (segment === STORE1920_CUSTOMER_SUPPORT_PHONE || segment === PHONE_DISPLAY) {
+        if (segment === HAMODY_CUSTOMER_SUPPORT_PHONE || segment === PHONE_DISPLAY) {
           return (
             <a
               key={`phone-${segmentIndex}`}
-              href={STORE1920_CUSTOMER_SUPPORT_TEL}
+              href={HAMODY_CUSTOMER_SUPPORT_TEL}
               className="text-orange-600 underline"
             >
               {segment}
@@ -70,7 +70,7 @@ function buildPageCopy() {
   en: {
     title: 'Return, Refund, Replacement & Cancellation Policy',
     intro:
-      `Store1920.com is owned and operated by ${STORE1920_LEGAL_NAME} (“Store1920”, “we”, “us”). Store1920 purchases products from manufacturers and suppliers and sells them directly to customers. We are your seller of record and first point of contact for returns, refunds, replacements and warranty support.`,
+      `hamody.com is owned and operated by ${HAMODY_LEGAL_NAME} (“hamody.com”, “we”, “us”). hamody.com purchases products from manufacturers and suppliers and sells them directly to customers. We are your seller of record and first point of contact for returns, refunds, replacements and warranty support.`,
     lastUpdated: 'Last updated: 11 September 2026',
     sections: [
       {
@@ -83,7 +83,7 @@ function buildPageCopy() {
       {
         title: '2. Reasons we accept returns',
         bullets: [
-          'Store1920 error: the item is wrong, missing, damaged in transit, defective on arrival, incomplete, or materially different from its description.',
+          'hamody.com error: the item is wrong, missing, damaged in transit, defective on arrival, incomplete, or materially different from its description.',
           'Change of mind: the eligible item is unused, unopened where a seal applies, unactivated, in resalable condition, and returned with original packaging, labels, accessories, manuals, gifts and proof of purchase.',
           'Delivery delay: where UAE law or the order terms provide a remedy because the delay makes the product no longer useful for its intended purpose.',
         ],
@@ -112,8 +112,8 @@ function buildPageCopy() {
       {
         title: '5. Return shipping and collection',
         paragraphs: [
-          'If Store1920 confirms that the item is wrong, damaged, defective, incomplete or not as described, Store1920 will arrange collection or provide return instructions at no return-shipping cost to you. For an approved change-of-mind return, the customer pays the disclosed return-collection charge. The charge will be confirmed before collection and may be deducted from the refund with your agreement.',
-          `Do not send products to a manufacturer, supplier or unlisted location. Returns must follow the instructions issued by Store1920. Return address: ${RETURNS_ADDRESS}.`,
+          'If hamody.com confirms that the item is wrong, damaged, defective, incomplete or not as described, hamody.com will arrange collection or provide return instructions at no return-shipping cost to you. For an approved change-of-mind return, the customer pays the disclosed return-collection charge. The charge will be confirmed before collection and may be deducted from the refund with your agreement.',
+          `Do not send products to a manufacturer, supplier or unlisted location. Returns must follow the instructions issued by hamody.com. Return address: ${RETURNS_ADDRESS}.`,
         ],
       },
       {
@@ -125,7 +125,7 @@ function buildPageCopy() {
       {
         title: '7. Remedies',
         paragraphs: [
-          'For a valid Store1920-error, defect or non-conformity claim, we will provide the remedy required by applicable law, which may include repair, replacement or refund. If a replacement is approved but unavailable, we will issue a refund. For an approved change-of-mind return, we will issue a refund; customers may place a new order for a different item.',
+          'For a valid hamody.com-error, defect or non-conformity claim, we will provide the remedy required by applicable law, which may include repair, replacement or refund. If a replacement is approved but unavailable, we will issue a refund. For an approved change-of-mind return, we will issue a refund; customers may place a new order for a different item.',
         ],
       },
       {
@@ -134,32 +134,32 @@ function buildPageCopy() {
           'Cards: refund initiated to the original card/payment method within 5–7 business days after approval.',
           'Tabby/Tamara: refund submitted through the original provider within 5–7 business days after approval; instalment adjustments follow the provider’s processing rules.',
           'Cash on Delivery: refund by verified UAE bank transfer within 5–7 business days after approval and receipt of complete bank details.',
-          'Original delivery charges are refunded when the return is caused by Store1920’s error or where required by law. Change-of-mind delivery charges are not refundable.',
+          'Original delivery charges are refunded when the return is caused by hamody.com’s error or where required by law. Change-of-mind delivery charges are not refundable.',
         ],
         paragraphsAfter: [
-          'Your bank or payment provider may require additional time to display the refund after Store1920 initiates it. We will provide a refund reference on request.',
+          'Your bank or payment provider may require additional time to display the refund after hamody.com initiates it. We will provide a refund reference on request.',
         ],
       },
       {
         title: '9. Cancellations',
         paragraphs: [
-          'You may request cancellation any time before dispatch through My Orders or customer support. If the order has already been dispatched, cancellation may not be possible and this return policy will apply after delivery. Approved prepaid cancellations are refunded to the original payment method. Store1920 may cancel an order for stock, pricing, payment verification, safety or fraud-prevention reasons and will refund any captured payment.',
+          'You may request cancellation any time before dispatch through My Orders or customer support. If the order has already been dispatched, cancellation may not be possible and this return policy will apply after delivery. Approved prepaid cancellations are refunded to the original payment method. hamody.com may cancel an order for stock, pricing, payment verification, safety or fraud-prevention reasons and will refund any captured payment.',
         ],
       },
       {
         title: '10. Warranty support',
         paragraphs: [
-          'Warranty coverage varies by product and is shown on the product page or warranty document where applicable. Contact Store1920 first with the order number, serial number and issue details. We will coordinate the appropriate assessment, repair, replacement or other remedy with the manufacturer or supplier. Warranty exclusions may include misuse, accidental damage, unauthorised repairs and normal wear, subject to applicable law.',
+          'Warranty coverage varies by product and is shown on the product page or warranty document where applicable. Contact hamody.com first with the order number, serial number and issue details. We will coordinate the appropriate assessment, repair, replacement or other remedy with the manufacturer or supplier. Warranty exclusions may include misuse, accidental damage, unauthorised repairs and normal wear, subject to applicable law.',
         ],
       },
       {
         title: '11. How to contact us',
         bullets: [
           'Online: My Orders or Return Request page',
-          `Email: ${STORE1920_SUPPORT_EMAIL}`,
+          `Email: ${HAMODY_SUPPORT_EMAIL}`,
           `Phone: ${PHONE_DISPLAY}`,
-          `Business hours: ${STORE1920_BUSINESS_HOURS_EN}`,
-          `Legal entity: ${STORE1920_LEGAL_NAME}`,
+          `Business hours: ${HAMODY_BUSINESS_HOURS_EN}`,
+          `Legal entity: ${HAMODY_LEGAL_NAME}`,
           `Registered office: ${REGISTERED_OFFICE}`,
           `Fulfilment and returns: ${RETURNS_ADDRESS}`,
         ],
@@ -172,7 +172,7 @@ function buildPageCopy() {
   ar: {
     title: 'سياسة الإرجاع والاسترداد والاستبدال والإلغاء',
     intro:
-      `Store1920.com مملوك ويُدار من قبل ${STORE1920_LEGAL_NAME_AR} (${STORE1920_LEGAL_NAME}) («Store1920» أو «نحن»). تشتري Store1920 المنتجات من المصنّعين والمورّدين وتبيعها مباشرة للعملاء. نحن بائع السجل وجهة التواصل الأولى للإرجاع والاسترداد والاستبدال ودعم الضمان.`,
+      `hamody.com مملوك ويُدار من قبل ${HAMODY_LEGAL_NAME_AR} (${HAMODY_LEGAL_NAME}) («hamody.com» أو «نحن»). تشتري hamody.com المنتجات من المصنّعين والمورّدين وتبيعها مباشرة للعملاء. نحن بائع السجل وجهة التواصل الأولى للإرجاع والاسترداد والاستبدال ودعم الضمان.`,
     lastUpdated: 'آخر تحديث: 11 سبتمبر 2026',
     sections: [
       {
@@ -185,7 +185,7 @@ function buildPageCopy() {
       {
         title: '2. أسباب قبول الإرجاع',
         bullets: [
-          'خطأ Store1920: المنتج خاطئ أو ناقص أو تالف أثناء النقل أو معيب عند الوصول أو غير مكتمل أو يختلف جوهريًا عن وصفه.',
+          'خطأ hamody.com: المنتج خاطئ أو ناقص أو تالف أثناء النقل أو معيب عند الوصول أو غير مكتمل أو يختلف جوهريًا عن وصفه.',
           'تغيير الرأي: المنتج المؤهل غير مستخدم، وغير مفتوح حيث يوجد ختم، وغير مفعّل، وقابل لإعادة البيع، ويُعاد مع العبوة الأصلية والملصقات والملحقات والكتيبات والهدايا وإثبات الشراء.',
           'تأخير التسليم: حيث يوفّر قانون الإمارات أو شروط الطلب معالجة لأن التأخير جعل المنتج غير مفيد للغرض المقصود منه.',
         ],
@@ -214,8 +214,8 @@ function buildPageCopy() {
       {
         title: '5. شحن الإرجاع والاستلام',
         paragraphs: [
-          'إذا أكدت Store1920 أن المنتج خاطئ أو تالف أو معيب أو ناقص أو غير مطابق للوصف، ترتّب Store1920 الاستلام أو تقدّم تعليمات الإرجاع دون تكلفة شحن إرجاع عليك. لإرجاع تغيير الرأي المعتمد، يدفع العميل رسوم استلام الإرجاع المُفصح عنها. تُؤكَّد الرسوم قبل الاستلام وقد تُخصم من المبلغ المسترد بموافقتك.',
-          `لا ترسل المنتجات إلى الشركة المصنعة أو المورّد أو إلى عنوان غير مدرج. يجب أن يتبع الإرجاع التعليمات الصادرة من Store1920. عنوان الإرجاع: ${RETURNS_ADDRESS}.`,
+          'إذا أكدت hamody.com أن المنتج خاطئ أو تالف أو معيب أو ناقص أو غير مطابق للوصف، ترتّب hamody.com الاستلام أو تقدّم تعليمات الإرجاع دون تكلفة شحن إرجاع عليك. لإرجاع تغيير الرأي المعتمد، يدفع العميل رسوم استلام الإرجاع المُفصح عنها. تُؤكَّد الرسوم قبل الاستلام وقد تُخصم من المبلغ المسترد بموافقتك.',
+          `لا ترسل المنتجات إلى الشركة المصنعة أو المورّد أو إلى عنوان غير مدرج. يجب أن يتبع الإرجاع التعليمات الصادرة من hamody.com. عنوان الإرجاع: ${RETURNS_ADDRESS}.`,
         ],
       },
       {
@@ -227,7 +227,7 @@ function buildPageCopy() {
       {
         title: '7. سبل المعالجة',
         paragraphs: [
-          'لمطالبة صحيحة بسبب خطأ Store1920 أو عيب أو عدم مطابقة، نقدّم المعالجة التي يوجبها القانون الساري، وقد تشمل الإصلاح أو الاستبدال أو الاسترداد. إذا وُوفق على الاستبدال ولم يتوفر المخزون، نعيد المبلغ. لإرجاع تغيير الرأي المعتمد نعيد المبلغ؛ ويمكن للعميل إنشاء طلب جديد لمنتج آخر.',
+          'لمطالبة صحيحة بسبب خطأ hamody.com أو عيب أو عدم مطابقة، نقدّم المعالجة التي يوجبها القانون الساري، وقد تشمل الإصلاح أو الاستبدال أو الاسترداد. إذا وُوفق على الاستبدال ولم يتوفر المخزون، نعيد المبلغ. لإرجاع تغيير الرأي المعتمد نعيد المبلغ؛ ويمكن للعميل إنشاء طلب جديد لمنتج آخر.',
         ],
       },
       {
@@ -236,32 +236,32 @@ function buildPageCopy() {
           'البطاقات: يبدأ الاسترداد إلى البطاقة أو وسيلة الدفع الأصلية خلال 5 إلى 7 أيام عمل بعد الموافقة.',
           'تابي/تمارا: يُقدَّم الاسترداد عبر المزود الأصلي خلال 5 إلى 7 أيام عمل بعد الموافقة؛ وتعديلات الأقساط تتبع قواعد معالجة المزود.',
           'الدفع عند الاستلام: استرداد بتحويل بنكي إماراتي موثّق خلال 5 إلى 7 أيام عمل بعد الموافقة واستلام بيانات الحساب كاملة.',
-          'تُعاد رسوم التوصيل الأصلية إذا كان الإرجاع بسبب خطأ Store1920 أو حيث يوجب القانون ذلك. رسوم توصيل تغيير الرأي غير قابلة للاسترداد.',
+          'تُعاد رسوم التوصيل الأصلية إذا كان الإرجاع بسبب خطأ hamody.com أو حيث يوجب القانون ذلك. رسوم توصيل تغيير الرأي غير قابلة للاسترداد.',
         ],
         paragraphsAfter: [
-          'قد يحتاج البنك أو مزود الدفع وقتًا إضافيًا لإظهار المبلغ بعد أن تبدأ Store1920 الاسترداد. نقدّم مرجع الاسترداد عند الطلب.',
+          'قد يحتاج البنك أو مزود الدفع وقتًا إضافيًا لإظهار المبلغ بعد أن تبدأ hamody.com الاسترداد. نقدّم مرجع الاسترداد عند الطلب.',
         ],
       },
       {
         title: '9. الإلغاء',
         paragraphs: [
-          'يمكنك طلب الإلغاء في أي وقت قبل الشحن عبر طلباتي أو دعم العملاء. إذا شُحن الطلب، قد لا يكون الإلغاء ممكنًا وتسري سياسة الإرجاع هذه بعد التسليم. تُعاد دفعات الإلغاء المسبق المعتمدة إلى وسيلة الدفع الأصلية. يجوز لـ Store1920 إلغاء طلب لأسباب تتعلق بالمخزون أو التسعير أو التحقق من الدفع أو السلامة أو منع الاحتيال، وتعيد أي مبلغ تم تحصيله.',
+          'يمكنك طلب الإلغاء في أي وقت قبل الشحن عبر طلباتي أو دعم العملاء. إذا شُحن الطلب، قد لا يكون الإلغاء ممكنًا وتسري سياسة الإرجاع هذه بعد التسليم. تُعاد دفعات الإلغاء المسبق المعتمدة إلى وسيلة الدفع الأصلية. يجوز لـ hamody.com إلغاء طلب لأسباب تتعلق بالمخزون أو التسعير أو التحقق من الدفع أو السلامة أو منع الاحتيال، وتعيد أي مبلغ تم تحصيله.',
         ],
       },
       {
         title: '10. دعم الضمان',
         paragraphs: [
-          'تغطية الضمان تختلف حسب المنتج وتظهر في صفحة المنتج أو وثيقة الضمان حيثما وُجدت. تواصل مع Store1920 أولًا مع رقم الطلب والرقم التسلسلي وتفاصيل المشكلة. ننسّق التقييم أو الإصلاح أو الاستبدال أو أي معالجة مناسبة مع الشركة المصنعة أو المورّد. قد يستثني الضمان سوء الاستخدام والتلف العرضي والإصلاح غير المصرّح به والبلى الطبيعي، مع مراعاة القانون الساري.',
+          'تغطية الضمان تختلف حسب المنتج وتظهر في صفحة المنتج أو وثيقة الضمان حيثما وُجدت. تواصل مع hamody.com أولًا مع رقم الطلب والرقم التسلسلي وتفاصيل المشكلة. ننسّق التقييم أو الإصلاح أو الاستبدال أو أي معالجة مناسبة مع الشركة المصنعة أو المورّد. قد يستثني الضمان سوء الاستخدام والتلف العرضي والإصلاح غير المصرّح به والبلى الطبيعي، مع مراعاة القانون الساري.',
         ],
       },
       {
         title: '11. كيفية التواصل معنا',
         bullets: [
           'عبر الموقع: طلباتي أو صفحة طلب الإرجاع',
-          `البريد الإلكتروني: ${STORE1920_SUPPORT_EMAIL}`,
+          `البريد الإلكتروني: ${HAMODY_SUPPORT_EMAIL}`,
           `الهاتف: ${PHONE_DISPLAY}`,
-          `ساعات العمل: ${STORE1920_BUSINESS_HOURS_AR}`,
-          `الكيان القانوني: ${STORE1920_LEGAL_NAME_AR} (${STORE1920_LEGAL_NAME})`,
+          `ساعات العمل: ${HAMODY_BUSINESS_HOURS_AR}`,
+          `الكيان القانوني: ${HAMODY_LEGAL_NAME_AR} (${HAMODY_LEGAL_NAME})`,
           `المكتب المسجّل: ${REGISTERED_OFFICE}`,
           `عنوان التجهيز والإرجاع: ${RETURNS_ADDRESS}`,
         ],

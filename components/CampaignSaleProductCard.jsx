@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from '@/components/SafeNextImage';
 import Link from 'next/link';
 import { FaStar } from 'react-icons/fa';
-import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
+import { Minus, Plus, Trash2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
@@ -227,7 +227,15 @@ export default function CampaignSaleProductCard({
                 style={{ background: accent }}
                 aria-label="Add to cart"
               >
-                <ShoppingCart size={15} strokeWidth={2} />
+                <img
+                  src="/icons/add-to-cart.png"
+                  alt=""
+                  width={22}
+                  height={22}
+                  draggable={false}
+                  aria-hidden="true"
+                  className="h-[22px] w-[22px] select-none object-contain"
+                />
               </button>
             )
           ) : null}

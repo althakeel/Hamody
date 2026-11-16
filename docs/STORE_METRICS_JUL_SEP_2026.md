@@ -1,4 +1,4 @@
-# Store1920 metrics, July–September 2026
+# HAMODY metrics, July–September 2026
 
 Prepared 26 October 2026. Months run on Asia/Dubai time. Money is AED. This is the public website. Orders typed in by staff are not included. Deleted orders are not included.
 

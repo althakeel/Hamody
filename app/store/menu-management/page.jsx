@@ -8,7 +8,7 @@ import PageSkeleton from '@/components/PageSkeleton';
 import NavbarPreview from '@/components/store/NavbarPreview';
 import NavbarItemArrange from '@/components/store/NavbarItemArrange';
 import StoreDropdown from '@/components/store/StoreDropdown';
-import { STORE1920_LOGO_PATH } from '@/lib/brandLogo';
+import { HAMODY_LOGO_PATH } from '@/lib/brandLogo';
 import {
   DEFAULT_CATEGORIES_BUTTON_STYLE,
   DEFAULT_NAVBAR_LAYOUT,
@@ -2351,7 +2351,7 @@ export default function MenuManagementPage() {
                 navActionsVisibility={form.navActionsVisibility}
                 navbarPhone={form.navbarPhone}
                 navbarLanguage={form.navbarLanguage}
-                userName={user?.displayName || user?.email?.split('@')[0] || 'store1920'}
+                userName={user?.displayName || user?.email?.split('@')[0] || 'hamody'}
                 searchPlaceholder={navbarLayout.searchPlaceholder || 'Wireless Headphones'}
                 extraButtons={navbarLayout.extraButtons}
                 searchMaxWidth={navbarLayout.searchMaxWidth}
@@ -3242,7 +3242,7 @@ export default function MenuManagementPage() {
                   }}
                 >
                   <img
-                    src={String(navbarBranding.logoUrl || '').trim() || STORE1920_LOGO_PATH}
+                    src={String(navbarBranding.logoUrl || '').trim() || HAMODY_LOGO_PATH}
                     alt="Navbar logo preview"
                     className="max-h-16 max-w-full object-contain"
                   />
@@ -3257,7 +3257,7 @@ export default function MenuManagementPage() {
                   <p className="text-xs text-slate-500">
                     {String(navbarBranding.logoUrl || '').trim()
                       ? 'Custom logo is saved and used on the live site.'
-                      : 'No custom logo uploaded yet. The live site uses the default Store1920 logo until you upload one.'}
+                      : 'No custom logo uploaded yet. The live site uses the default Hamody logo until you upload one.'}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <label className="inline-flex cursor-pointer items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
@@ -3905,7 +3905,7 @@ export default function MenuManagementPage() {
               navActionsVisibility={form.navActionsVisibility}
               navbarPhone={form.navbarPhone}
               navbarLanguage={form.navbarLanguage}
-              userName={user?.displayName || user?.email?.split('@')[0] || 'store1920'}
+              userName={user?.displayName || user?.email?.split('@')[0] || 'Hamody'}
               searchPlaceholder={navbarLayout.searchPlaceholder || 'Coffee Maker'}
               extraButtons={navbarLayout.extraButtons}
               searchMaxWidth={navbarLayout.searchMaxWidth}

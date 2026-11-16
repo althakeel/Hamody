@@ -2,7 +2,7 @@
 
 Last updated: 2 November 2026
 Audience: storefront and app developers
-API root: `https://www.store1920.com/api`
+API root: `https://www.hamody.com/api`
 
 This document describes the public product data used to render product cards: catalog endpoints, fields, pricing, images and video previews, availability, ratings, badges, delivery labels, links, and card actions.
 

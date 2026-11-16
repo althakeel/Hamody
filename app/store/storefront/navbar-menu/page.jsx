@@ -199,7 +199,7 @@ export default function NavbarMenuPage() {
                                         navMenuEnabled={previewMenu.navMenuEnabled}
                                         navMenuItems={previewMenu.navMenuItems}
                                         navActionsVisibility={previewMenu.navActionsVisibility}
-                                        userName={user?.displayName || user?.email?.split('@')[0] || 'store1920'}
+                                        userName={user?.displayName || user?.email?.split('@')[0] || 'Hamody'}
                                         searchPlaceholder="Coffee Maker"
                                     />
                                     <p className="mt-3 text-[11px] text-slate-500">

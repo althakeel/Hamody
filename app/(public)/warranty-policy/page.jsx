@@ -3,24 +3,24 @@
 import PolicyPageLayout from '@/components/PolicyPageLayout';
 import PolicyContactBlock from '@/components/PolicyContactBlock';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
-import { STORE1920_LEGAL_NAME, STORE1920_LEGAL_NAME_AR } from '@/lib/businessIdentity';
+import { HAMODY_LEGAL_NAME, HAMODY_LEGAL_NAME_AR } from '@/lib/businessIdentity';
 import {
-  STORE1920_SUPPORT_EMAIL,
+  HAMODY_SUPPORT_EMAIL,
 } from '@/lib/storeContact';
 
-const TRADING_AS = `${STORE1920_LEGAL_NAME}, trading as Store1920`;
+const TRADING_AS = `${HAMODY_LEGAL_NAME}, trading as hamody.com`;
 
 const PAGE_COPY = {
   en: {
     title: 'Warranty Policy',
     intro:
-      `Warranty support for products sold on Store1920.com starts with ${TRADING_AS}. Contact Store1920 first. Do not open a claim with an unidentified third-party seller.`,
+      `Warranty support for products sold on hamody.com starts with ${TRADING_AS}. Contact hamody.com first. Do not open a claim with an unidentified third-party seller.`,
     lastUpdated: 'Last updated: 8 September 2026',
     sections: [
       {
         title: '1. Who you contact',
         paragraphs: [
-          'Email support@Store1920.com or call our customer support number with your order ID, the product SKU or product page link, the serial number if the item has one, and a short description of the fault (photos or video help).',
+          'Email support@hamody.com or call our customer support number with your order ID, the product SKU or product page link, the serial number if the item has one, and a short description of the fault (photos or video help).',
           'We review the claim, confirm coverage for that SKU, and either resolve it ourselves or take it to the manufacturer’s authorised service process. You should not be asked to find a separate seller on your own.',
         ],
       },
@@ -28,13 +28,13 @@ const PAGE_COPY = {
         title: '2. Per-SKU warranty on the product page',
         paragraphs: [
           'Warranty is published per product (SKU) on that product’s page — for example a stated period, what is covered, or “manufacturer warranty” with the brand’s term.',
-          'The warranty that applies to your item is the warranty shown on the product page at the time you ordered, together with this policy. If a product page does not show a warranty period, Store1920 does not promise a fixed period for that SKU. Your statutory rights under UAE law still apply.',
+          'The warranty that applies to your item is the warranty shown on the product page at the time you ordered, together with this policy. If a product page does not show a warranty period, hamody.com does not promise a fixed period for that SKU. Your statutory rights under UAE law still apply.',
         ],
       },
       {
         title: '3. Manufacturer cover',
         paragraphs: [
-          'Many SKUs also include a manufacturer warranty. Store1920 remains your first contact. We help you raise and progress that claim and stay responsible for our quality and statutory obligations as the retailer who sold you the goods.',
+          'Many SKUs also include a manufacturer warranty. hamody.com remains your first contact. We help you raise and progress that claim and stay responsible for our quality and statutory obligations as the retailer who sold you the goods.',
         ],
       },
       {
@@ -54,13 +54,13 @@ const PAGE_COPY = {
   ar: {
     title: 'سياسة الضمان',
     intro:
-      `دعم الضمان للمنتجات المباعة على Store1920.com يبدأ مع ${STORE1920_LEGAL_NAME_AR} (${STORE1920_LEGAL_NAME}). تواصل مع Store1920 أولًا. لا تفتح مطالبة مع بائع غير محدد من طرف ثالث.`,
+      `دعم الضمان للمنتجات المباعة على hamody.com يبدأ مع ${HAMODY_LEGAL_NAME_AR} (${HAMODY_LEGAL_NAME}). تواصل مع hamody.com أولًا. لا تفتح مطالبة مع بائع غير محدد من طرف ثالث.`,
     lastUpdated: 'آخر تحديث: 8 سبتمبر 2026',
     sections: [
       {
         title: '1. جهة التواصل',
         paragraphs: [
-          `راسل ${STORE1920_SUPPORT_EMAIL} أو اتصل برقم الدعم مع رقم الطلب ورمز المنتج (SKU) أو رابط صفحة المنتج والرقم التسلسلي إن وُجد ووصفًا مختصرًا للعطل (الصور أو الفيديو تساعد).`,
+          `راسل ${HAMODY_SUPPORT_EMAIL} أو اتصل برقم الدعم مع رقم الطلب ورمز المنتج (SKU) أو رابط صفحة المنتج والرقم التسلسلي إن وُجد ووصفًا مختصرًا للعطل (الصور أو الفيديو تساعد).`,
           'نراجع المطالبة ونؤكد التغطية لذلك المنتج، ثم نعالجها أو نرفعها إلى مسار الخدمة المعتمد للشركة المصنعة. لا يُطلب منك البحث عن بائع منفصل بنفسك.',
         ],
       },
@@ -68,13 +68,13 @@ const PAGE_COPY = {
         title: '2. ضمان كل منتج على صفحته',
         paragraphs: [
           'يُنشر الضمان لكل منتج (SKU) على صفحة ذلك المنتج — مثل المدة أو نطاق التغطية أو «ضمان الشركة المصنعة» مع مدة العلامة.',
-          'الضمان الذي يسري على منتجك هو الضمان الظاهر على صفحة المنتج وقت الطلب، مع هذه السياسة. إذا لم تظهر مدة ضمان على الصفحة، لا تعد Store1920 بمدة ثابتة لذلك المنتج. تبقى حقوقك النظامية بموجب قوانين دولة الإمارات.',
+          'الضمان الذي يسري على منتجك هو الضمان الظاهر على صفحة المنتج وقت الطلب، مع هذه السياسة. إذا لم تظهر مدة ضمان على الصفحة، لا تعد hamody.com بمدة ثابتة لذلك المنتج. تبقى حقوقك النظامية بموجب قوانين دولة الإمارات.',
         ],
       },
       {
         title: '3. ضمان الشركة المصنعة',
         paragraphs: [
-          'تشمل منتجات كثيرة ضمان الشركة المصنعة أيضًا. تبقى Store1920 جهة التواصل الأولى. نساعدك في رفع المطالبة ومتابعتها، ونبقى مسؤولين عن التزامات الجودة والحقوق النظامية بصفتنا بائع التجزئة الذي باعك المنتج.',
+          'تشمل منتجات كثيرة ضمان الشركة المصنعة أيضًا. تبقى hamody.com جهة التواصل الأولى. نساعدك في رفع المطالبة ومتابعتها، ونبقى مسؤولين عن التزامات الجودة والحقوق النظامية بصفتنا بائع التجزئة الذي باعك المنتج.',
         ],
       },
       {

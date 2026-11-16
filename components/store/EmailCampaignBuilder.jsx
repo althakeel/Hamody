@@ -36,7 +36,7 @@ import {
 } from '@/lib/emailCampaignBuilder';
 import { getMjmlStarter, isMjmlMarkup } from '@/lib/emailMjmlDetect';
 
-const UPLOADED_IMAGES_KEY = 'store1920-email-uploaded-images';
+const UPLOADED_IMAGES_KEY = 'hamody-email-uploaded-images';
 
 function loadUploadedImages() {
   if (typeof window === 'undefined') return [];
@@ -117,7 +117,7 @@ const PREVIEW_IFRAME_SCRIPT = `
 `;
 
 function buildPreviewIframeDocument(bodyHtml, origin = '') {
-  const baseHref = String(origin || '').replace(/\/$/, '') || 'https://www.store1920.com';
+  const baseHref = String(origin || '').replace(/\/$/, '') || 'https://hamody.com';
   const raw = String(bodyHtml || '');
   const previewAssets = [
     `<meta name="referrer" content="no-referrer"><base href="${baseHref}/">`,
@@ -1288,7 +1288,7 @@ function BlockEditor({ block, onChange, previewProducts, heroImages, categories,
             getToken={getToken}
             uploadType="logo"
             allowPickExisting={false}
-            hint="PNG or WebP with transparent background works best. Leave empty for the default Store1920 logo."
+            hint="PNG or WebP with transparent background works best. Leave empty for the default HAMODY logo."
             onUploaded={onUploaded}
           />
           <label className="block text-xs text-gray-600">
@@ -1297,7 +1297,7 @@ function BlockEditor({ block, onChange, previewProducts, heroImages, categories,
               value={block.logoLink || ''}
               onChange={(e) => set('logoLink', e.target.value)}
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              placeholder="https://www.store1920.com"
+              placeholder="https://hamody.com"
             />
           </label>
           <label className="block text-xs text-gray-600">
@@ -1306,7 +1306,7 @@ function BlockEditor({ block, onChange, previewProducts, heroImages, categories,
               value={block.logoAlt || ''}
               onChange={(e) => set('logoAlt', e.target.value)}
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              placeholder="Store1920"
+              placeholder="HAMODY"
             />
           </label>
           <div>
@@ -1446,7 +1446,7 @@ function BlockEditor({ block, onChange, previewProducts, heroImages, categories,
                         key={preset.id}
                         type="button"
                         onClick={() => {
-                          const base = String(block.logoLink || 'https://www.store1920.com').replace(/\/$/, '');
+                          const base = String(block.logoLink || 'https://hamody.com').replace(/\/$/, '');
                           set('navItems', preset.items.map((item) => ({
                             id: createBlockId(),
                             label: item.label,
@@ -1585,7 +1585,7 @@ function BlockEditor({ block, onChange, previewProducts, heroImages, categories,
                       onClick={() => {
                         const next = [
                           ...(Array.isArray(block.navItems) ? block.navItems : []),
-                          { id: createBlockId(), label: 'New link', url: block.logoLink || 'https://www.store1920.com' },
+                          { id: createBlockId(), label: 'New link', url: block.logoLink || 'https://hamody.com' },
                         ];
                         set('navItems', next);
                       }}
@@ -1622,7 +1622,7 @@ function BlockEditor({ block, onChange, previewProducts, heroImages, categories,
                               set('navItems', next);
                             }}
                             className="mt-1 w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
-                            placeholder="https://www.store1920.com"
+                            placeholder="https://hamody.com"
                           />
                         </label>
                         <button
@@ -2214,7 +2214,7 @@ function BlockEditor({ block, onChange, previewProducts, heroImages, categories,
                     value={block.ctaUrl || ''}
                     onChange={(e) => set('ctaUrl', e.target.value)}
                     className="mt-1 w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
-                    placeholder="https://www.store1920.com"
+                    placeholder="https://hamody.com"
                   />
                 </label>
                 <label className="block text-xs text-gray-600">
@@ -2656,7 +2656,7 @@ function BlockEditor({ block, onChange, previewProducts, heroImages, categories,
           </label>
           <label className="block text-xs text-gray-600">
             Signup / success URL
-            <input value={block.successUrl || ''} onChange={(e) => set('successUrl', e.target.value)} className="mt-1 w-full rounded border border-gray-300 px-2 py-1.5 text-sm" placeholder="https://www.store1920.com/welcome-offer" />
+            <input value={block.successUrl || ''} onChange={(e) => set('successUrl', e.target.value)} className="mt-1 w-full rounded border border-gray-300 px-2 py-1.5 text-sm" placeholder="https://hamody.com/welcome-offer" />
           </label>
         </div>
       );
@@ -2709,7 +2709,7 @@ function BlockEditor({ block, onChange, previewProducts, heroImages, categories,
                 getToken={getToken}
                 uploadType="logo"
                 allowPickExisting={false}
-                hint="Upload a logo, or leave empty for the default Store1920 logo"
+                hint="Upload a logo, or leave empty for the default HAMODY logo"
               />
               <label className="block text-xs text-gray-600">
                 Logo position
@@ -2774,7 +2774,7 @@ function BlockEditor({ block, onChange, previewProducts, heroImages, categories,
               value={block.companyWebsite || ''}
               onChange={(e) => set('companyWebsite', e.target.value)}
               className="mt-1 w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
-              placeholder="https://www.store1920.com"
+              placeholder="https://hamody.com"
             />
           </label>
           <label className="inline-flex items-center gap-2 text-xs text-gray-700">
@@ -3148,7 +3148,7 @@ export default function EmailCampaignBuilder({
     const frame = previewFrameRef.current;
     if (!frame) return undefined;
 
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.store1920.com';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://hamody.com';
     const html = buildPreviewIframeDocument(previewHtml, origin);
 
     // Avoid rewriting the same document — setting srcdoc fires "load" and was

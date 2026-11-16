@@ -57,7 +57,7 @@ export async function POST(request) {
     const { code, expiresAt } = await issueOtp(decoded.uid, 'mfa');
     await sendMail({
       to: email,
-      subject: 'Your Store1920 login code',
+      subject: 'Your HAMODY login code',
       html: `<p>Your multi-factor authentication code is <strong>${code}</strong>.</p><p>Expires ${expiresAt.toISOString()}.</p>`,
       fromType: 'transactional',
     }).catch((e) => console.error('[mfa] mail', e));

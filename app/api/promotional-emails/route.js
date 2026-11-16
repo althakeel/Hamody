@@ -110,7 +110,7 @@ async function resolveCampaignContent(body, products) {
     const compiledBlocks = (await compileEmailBlocksMjml(blocks)).blocks;
     return {
       id: customTemplateId || templateId || 'custom-blocks',
-      subject: customSubject || 'A message from Store1920',
+      subject: customSubject || 'A message from HAMODY',
       preheader,
       render: (recipientEmail) => renderEmailFromBlocks(compiledBlocks, {
         products,

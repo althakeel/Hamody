@@ -1,5 +1,5 @@
 /**
- * Store1920 marketplace category tree (12 L1 categories, max 3 levels).
+ * HAMODY marketplace category tree (12 L1 categories, max 3 levels).
  * URL pattern: /category/{l1}/{l2?}/{l3?}
  */
 export const CATEGORY_HIERARCHY = [

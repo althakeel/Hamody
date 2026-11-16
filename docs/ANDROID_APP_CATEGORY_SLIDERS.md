@@ -1,4 +1,4 @@
-# Store1920 app category sliders
+# HAMODY app category sliders
 
 Last updated: 27 October 2026  
 Audience: Android and Flutter  
@@ -13,7 +13,7 @@ The app does not build this row from `GET /api/categories`. The children are alr
 ## 1. API
 
 ```http
-GET https://www.store1920.com/api/public/mobile-features
+GET https://www.hamody.com/api/public/mobile-features
 ```
 
 No login. Do not send `Authorization`.

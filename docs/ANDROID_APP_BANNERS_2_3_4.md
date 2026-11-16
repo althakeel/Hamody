@@ -1,4 +1,4 @@
-# Store1920 app Banner 2, Banner 3, and Banner 4
+# HAMODY app Banner 2, Banner 3, and Banner 4
 
 Last updated: 27 October 2026  
 Audience: Android and Flutter  
@@ -19,7 +19,7 @@ These are not the website home sliders. Do not read `GET /api/public/shop-showca
 ## 1. API
 
 ```http
-GET https://www.store1920.com/api/public/mobile-features
+GET https://www.hamody.com/api/public/mobile-features
 ```
 
 No login. Do not send `Authorization`.
@@ -232,7 +232,7 @@ Three banners in one `mobileFeatures` object. Empty slides are omitted by the AP
       "heightPx": 110,
       "slides": [
         {
-          "image": "https://www.store1920.com/banner-2.jpg",
+          "image": "https://www.hamody.com/banner-2.jpg",
           "link": "/shop",
           "path": "/shop",
           "title": "",
@@ -264,7 +264,7 @@ Three banners in one `mobileFeatures` object. Empty slides are omitted by the AP
       "heightPx": 110,
       "slides": [
         {
-          "image": "https://www.store1920.com/banner-3.jpg",
+          "image": "https://www.hamody.com/banner-3.jpg",
           "link": "/shop",
           "path": "/shop",
           "title": "Today only",
@@ -297,7 +297,7 @@ Three banners in one `mobileFeatures` object. Empty slides are omitted by the AP
       "heightPx": 110,
       "slides": [
         {
-          "image": "https://www.store1920.com/banner-4.jpg",
+          "image": "https://www.hamody.com/banner-4.jpg",
           "link": "/category/beds",
           "path": "/category/beds",
           "title": "",

@@ -1,9 +1,9 @@
-# Store1920 image search — app API
+# HAMODY image search — app API
 
 Last updated: 19 October 2026  
 Audience: Android and Flutter  
 Website: camera button in the phone navbar, then `/search-results?source=image`  
-API root: `https://www.store1920.com/api`  
+API root: `https://www.hamody.com/api`  
 Product card: [FLUTTER_PRODUCT_CARDS.md](./FLUTTER_PRODUCT_CARDS.md)
 
 Send this file to the app developer. Camera and upload use the same call. The server returns the closest products and a related list.
@@ -50,7 +50,7 @@ One file field. The field name is `image`.
 | Body | `image` = the file bytes. Do not send JSON or a base64 string |
 
 ```
-POST https://www.store1920.com/api/search-by-image
+POST https://www.hamody.com/api/search-by-image
 ```
 
 | Status | Body | App |
@@ -132,15 +132,15 @@ Sort chips, same as shop: Best match (the order the server sent), Price: low to 
 
 Phone grid: **2 columns**, **12 px** gap. Page background `#f5f5f5`.
 
-Under the preview, show this disclaimer. Terms link `https://www.store1920.com/terms-and-conditions`. Privacy link `https://www.store1920.com/privacy-policy`.
+Under the preview, show this disclaimer. Terms link `https://www.hamody.com/terms-and-conditions`. Privacy link `https://www.hamody.com/privacy-policy`.
 
 English:
 
-> By continuing to use image search services and/or submitting images on Store1920, you agree to the Store1920 Terms of Use, and you agree to let Store1920 process images related to your use of image search services, your submitted images, and other related information, in order to improve your shopping experience. Rest assured we will handle your personal information in accordance with the Store1920 Privacy Policy to keep it safe.
+> By continuing to use image search services and/or submitting images on HAMODY, you agree to the HAMODY Terms of Use, and you agree to let HAMODY process images related to your use of image search services, your submitted images, and other related information, in order to improve your shopping experience. Rest assured we will handle your personal information in accordance with the HAMODY Privacy Policy to keep it safe.
 
 Arabic:
 
-> بمتابعتك استخدام خدمات البحث بالصورة و/أو رفع الصور على Store1920، فإنك توافق على شروط استخدام Store1920، وتوافق على أن تعالج Store1920 الصور المتعلقة باستخدامك لخدمات البحث بالصورة، والصور التي ترفعها، والمعلومات المرتبطة بها، لتحسين تجربة التسوق. ونطمئنك بأن معلوماتك الشخصية تُعالَج وفق سياسة خصوصية Store1920 للحفاظ على سلامتها.
+> بمتابعتك استخدام خدمات البحث بالصورة و/أو رفع الصور على HAMODY، فإنك توافق على شروط استخدام HAMODY، وتوافق على أن تعالج HAMODY الصور المتعلقة باستخدامك لخدمات البحث بالصورة، والصور التي ترفعها، والمعلومات المرتبطة بها، لتحسين تجربة التسوق. ونطمئنك بأن معلوماتك الشخصية تُعالَج وفق سياسة خصوصية HAMODY للحفاظ على سلامتها.
 
 ---
 

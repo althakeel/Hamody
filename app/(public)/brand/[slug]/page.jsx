@@ -19,11 +19,11 @@ export async function generateMetadata({ params }) {
   const description = brand.metaDescription || brand.description || '';
   const canonical = buildAbsoluteUrl(brandPagePath(brand.slug || slug));
   return {
-    title: `${title} | Store1920`,
+    title: `${title} | hamody.com`,
     description,
     alternates: { canonical },
     openGraph: {
-      title: `${title} | Store1920`,
+      title: `${title} | hamody.com`,
       description,
       url: canonical,
     },

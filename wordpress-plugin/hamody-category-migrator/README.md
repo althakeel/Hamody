@@ -1,6 +1,6 @@
-# Store1920 Category Migrator (WordPress Plugin)
+# HAMODY Category Migrator (WordPress Plugin)
 
-This plugin sends WooCommerce product categories and category image URLs to Store1920.
+This plugin sends WooCommerce product categories and category image URLs to Hamody.
 
 ## What It Migrates (Phase 1)
 
@@ -13,18 +13,18 @@ This plugin sends WooCommerce product categories and category image URLs to Stor
 
 ## Install
 
-1. Copy `store1920-category-migrator` folder into your WordPress plugins directory.
-2. Activate **Store1920 Category Migrator** in WordPress Admin.
+1. Copy `hamody-category-migrator` folder into your WordPress plugins directory.
+2. Activate **HAMODY Category Migrator** in WordPress Admin.
 3. Open the plugin page from the admin menu.
 
 ## Required Settings
 
-- **Store1920 API URL**
+- **HAMODY API URL**
   - Example: `https://newsite.com/api/store/migration/wp-categories`
 - **Migration token**
-  - Must match `WP_MIGRATION_TOKEN` (or `MIGRATION_SHARED_TOKEN`) on Store1920 server.
+  - Must match `WP_MIGRATION_TOKEN` (or `MIGRATION_SHARED_TOKEN`) on HAMODY server.
 - **Store username**
-  - Exact `username` from Store document in Store1920.
+  - Exact `username` from Store document in Hamody.
 - **Batch size**
   - Recommended `200`.
 
@@ -34,7 +34,7 @@ This plugin sends WooCommerce product categories and category image URLs to Stor
 2. Plugin sends categories in batches.
 3. Check success/error notice in WordPress admin.
 
-## Store1920 Receiver Endpoint
+## HAMODY Receiver Endpoint
 
 - File: `app/api/store/migration/wp-categories/route.js`
 - Auth: `x-migration-token` header

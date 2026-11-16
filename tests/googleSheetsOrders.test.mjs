@@ -120,7 +120,7 @@ test('dashboard groups order status and EMX updates and includes recent details'
       { amount: 10, startDate: '2026-11-01T00:00:00.000Z', startTime: '15:00' },
     ],
   );
-  assert.equal(dashboard.values[0][0], 'Store1920 Orders Summary - November 2026');
+  assert.equal(dashboard.values[0][0], 'HAMODY Orders Summary - November 2026');
   assert.equal(dashboard.values[2][1], 3);
   assert.equal(dashboard.values[2][3], 3);
   assert.equal(dashboard.values[2][5], 3);

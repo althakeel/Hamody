@@ -16,8 +16,8 @@ import { useStoreOrderNotifications } from "./StoreOrderNotificationProvider"
 
 
 const VAULTSPAY_STATEMENT_URL = 'https://merchant.vaultspay.com/app/my-transactions';
-const SIDEBAR_PIN_KEY = 'store1920.sellerSidebarPinned';
-const SECTION_PINS_KEY = 'store1920.sellerSidebarSectionPins';
+const SIDEBAR_PIN_KEY = 'hamody.sellerSidebarPinned';
+const SECTION_PINS_KEY = 'hamody.sellerSidebarSectionPins';
 
 const StoreSidebar = ({ storeInfo, isOwner = false, isSuperAdmin = false, permissions = {}, canViewActivityHistory = false }) => {
 

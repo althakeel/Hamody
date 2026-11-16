@@ -75,37 +75,27 @@ export default function SitemapProductsSection({
 
   return (
     <section id="sitemap-products" className="scroll-mt-28">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-stone-300 pb-3">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#E52721]">Live catalog</p>
-          <h2 className="mt-1 text-2xl font-semibold tracking-tight text-stone-900">Products</h2>
-        </div>
-        <p className="text-sm text-stone-500">
-          Loaded {links.length.toLocaleString()} / {total.toLocaleString()}
-          <span className="mx-2 text-stone-300">·</span>
-          <Link href="/shop" className="font-medium text-stone-800 underline-offset-2 hover:text-[#E52721] hover:underline">
-            Shop all
+      <div className="mb-3 flex items-baseline justify-between gap-4 border-b border-[#E9D6B5] pb-2">
+        <h2 className="text-lg font-semibold tracking-tight text-[#123D33]">Products</h2>
+        <p className="shrink-0 text-xs text-[#9C6E20]">
+          {total.toLocaleString()} {total === 1 ? 'product' : 'products'}
+          <span className="mx-2 text-[#E9D6B5]">·</span>
+          <Link href="/shop" className="font-medium text-[#123D33] underline-offset-2 hover:text-[#1F5C4A] hover:underline">
+            All Products
           </Link>
-          <span className="mx-2 text-stone-300">·</span>
-          <a href="/sitemap-products.xml" className="font-medium text-stone-800 underline-offset-2 hover:text-[#E52721] hover:underline">
-            XML
-          </a>
         </p>
       </div>
 
       {links.length === 0 ? (
-        <p className="text-sm text-stone-500">No published products yet.</p>
+        <p className="text-sm leading-6 text-[#9C6E20]">No published products yet.</p>
       ) : (
-        <div
-          ref={listRef}
-          className="max-h-[32rem] overflow-y-auto rounded-xl border border-stone-200 bg-white/80 p-4 backdrop-blur-sm"
-        >
-          <ul className="columns-1 gap-x-8 sm:columns-2 lg:columns-3">
+        <div ref={listRef}>
+          <ul className="grid max-w-4xl grid-cols-1 gap-x-6 gap-y-0.5 sm:grid-cols-2 lg:grid-cols-3">
             {links.map((link) => (
-              <li key={link.path} className="mb-2 break-inside-avoid">
+              <li key={link.path} className="min-w-0">
                 <Link
                   href={link.path || '#'}
-                  className="text-sm text-stone-700 transition hover:text-[#E52721]"
+                  className="inline-block max-w-full truncate py-1 text-sm leading-5 text-[#123D33] transition hover:text-[#1F5C4A]"
                   title={link.text}
                 >
                   {link.text}
@@ -113,13 +103,13 @@ export default function SitemapProductsSection({
               </li>
             ))}
           </ul>
-          <div ref={sentinelRef} className="mt-4 border-t border-stone-100 pt-3 text-center text-xs text-stone-400">
-            {loading ? 'Loading more products…' : hasMore ? 'Scroll inside this list to load more' : 'All listed products loaded'}
+          <div ref={sentinelRef} className="mt-3 text-xs leading-5 text-[#9C6E20]">
+            {loading ? 'Loading more products…' : hasMore ? 'Scroll to load more' : null}
           </div>
         </div>
       )}
 
-      {error ? <p className="mt-2 text-xs text-[#E52721]">{error}</p> : null}
+      {error ? <p className="mt-2 text-xs text-red-700">{error}</p> : null}
     </section>
   );
 }

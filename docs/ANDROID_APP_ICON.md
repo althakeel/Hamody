@@ -1,4 +1,4 @@
-# Store1920 app main icon
+# HAMODY app main icon
 
 Last updated: 27 October 2026  
 Audience: Android and Flutter  
@@ -11,7 +11,7 @@ The icon of the app itself, the mark on the phone home screen. This is not the h
 ## 1. API
 
 ```http
-GET https://www.store1920.com/api/public/mobile-features
+GET https://www.hamody.com/api/public/mobile-features
 ```
 
 No login. Do not send `Authorization`. Do not call `/api/store/mobile-features`.

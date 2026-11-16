@@ -1,14 +1,14 @@
 <?php
 /**
- * Plugin Name: Store1920 Product Export
- * Plugin URI:  https://store1920.com
- * Description: Export all WooCommerce products (5000+) to CSV with images for Store1920 bulk import.
+ * Plugin Name: HAMODY Product Export
+ * Plugin URI:  https://hamody.com
+ * Description: Export all WooCommerce products (5000+) to CSV with images for HAMODY bulk import.
  * Version:     1.1.2
- * Author:      Store1920
+ * Author:      HAMODY
  * Requires Plugins: woocommerce
  *
  * INSTALL (choose one):
- * 1) Upload this file to wp-content/plugins/store1920-product-export/store1920-product-export.php and activate.
+ * 1) Upload this file to wp-content/plugins/hamody-product-export/hamody-product-export.php and activate.
  * 2) OR paste everything BELOW the "PASTE INTO functions.php" line into your theme functions.php.
  */
 
@@ -16,11 +16,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-if (!class_exists('Store1920_Product_Export')) {
+if (!class_exists('Hamody_Product_Export')) {
 
-    class Store1920_Product_Export
+    class Hamody_Product_Export
     {
-        const MENU_SLUG = 'store1920-product-export';
+        const MENU_SLUG = 'hamody-product-export';
         const BATCH_SIZE = 100;
         const MAX_ATTRIBUTES = 5;
         const TEST_EXPORT_LIMIT = 50;
@@ -28,7 +28,7 @@ if (!class_exists('Store1920_Product_Export')) {
         public static function boot()
         {
             add_action('admin_menu', [__CLASS__, 'register_menu']);
-            add_action('admin_post_store1920_export_products', [__CLASS__, 'handle_export']);
+            add_action('admin_post_hamody_export_products', [__CLASS__, 'handle_export']);
             add_action('admin_notices', [__CLASS__, 'admin_notices']);
         }
 
@@ -36,8 +36,8 @@ if (!class_exists('Store1920_Product_Export')) {
         {
             add_submenu_page(
                 'woocommerce',
-                'Store1920 Export',
-                'Store1920 Export',
+                'HAMODY Export',
+                'HAMODY Export',
                 'manage_woocommerce',
                 self::MENU_SLUG,
                 [__CLASS__, 'render_page']
@@ -46,17 +46,17 @@ if (!class_exists('Store1920_Product_Export')) {
 
         public static function admin_notices()
         {
-            if (!isset($_GET['store1920_export_error'])) {
+            if (!isset($_GET['hamody_export_error'])) {
                 return;
             }
 
-            $message = sanitize_text_field(wp_unslash($_GET['store1920_export_error']));
+            $message = sanitize_text_field(wp_unslash($_GET['hamody_export_error']));
             if (!$message) {
                 return;
             }
 
             printf(
-                '<div class="notice notice-error is-dismissible"><p><strong>Store1920 Export:</strong> %s</p></div>',
+                '<div class="notice notice-error is-dismissible"><p><strong>HAMODY Export:</strong> %s</p></div>',
                 esc_html($message)
             );
         }
@@ -64,16 +64,16 @@ if (!class_exists('Store1920_Product_Export')) {
         public static function render_page()
         {
             if (!current_user_can('manage_woocommerce')) {
-                wp_die(esc_html__('You do not have permission to export products.', 'store1920'));
+                wp_die(esc_html__('You do not have permission to export products.', 'hamody'));
             }
 
             $export_all_url = wp_nonce_url(
-                admin_url('admin-post.php?action=store1920_export_products'),
-                'store1920_export_products'
+                admin_url('admin-post.php?action=hamody_export_products'),
+                'hamody_export_products'
             );
             $export_test_url = wp_nonce_url(
-                admin_url('admin-post.php?action=store1920_export_products&limit=' . self::TEST_EXPORT_LIMIT),
-                'store1920_export_products'
+                admin_url('admin-post.php?action=hamody_export_products&limit=' . self::TEST_EXPORT_LIMIT),
+                'hamody_export_products'
             );
 
             $product_count = wp_count_posts('product');
@@ -82,14 +82,14 @@ if (!class_exists('Store1920_Product_Export')) {
             $total += isset($product_count->private) ? (int) $product_count->private : 0;
             ?>
             <div class="wrap">
-                <h1>Store1920 Product Export</h1>
+                <h1>HAMODY Product Export</h1>
                 <p>Export all WooCommerce products to CSV for <strong>Store → Bulk Import</strong>.</p>
                     <p>Includes: name, descriptions, prices, categories, SKU, stock, brands, <strong>variants (size/color/etc.)</strong>, attributes, and <strong>full image URLs</strong>.</p>
 
                 <div class="card" style="max-width:720px;padding:16px 20px;">
                     <p><strong>Products found:</strong> <?php echo esc_html(number_format_i18n($total)); ?></p>
                     <p><strong>Format:</strong> WooCommerce-compatible CSV (works with 5000+ products).</p>
-                    <p style="color:#646970;">Tip: Start with the <strong>50-product test export</strong> to verify variants and images on Store1920 before exporting all <?php echo esc_html(number_format_i18n($total)); ?> products.</p>
+                    <p style="color:#646970;">Tip: Start with the <strong>50-product test export</strong> to verify variants and images on HAMODY before exporting all <?php echo esc_html(number_format_i18n($total)); ?> products.</p>
                     <p style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
                         <a class="button button-secondary button-hero" href="<?php echo esc_url($export_test_url); ?>">
                             Test Export (<?php echo esc_html((string) self::TEST_EXPORT_LIMIT); ?> products)
@@ -101,13 +101,13 @@ if (!class_exists('Store1920_Product_Export')) {
                     <p style="color:#646970;margin-top:12px;">For the full export, run when traffic is low. Do not close the browser until download starts.</p>
                 </div>
 
-                <h2 style="margin-top:24px;">Import on Store1920</h2>
+                <h2 style="margin-top:24px;">Import on HAMODY</h2>
                 <ol>
-                    <li>Go to <code>/store/bulk-import</code> in your Store1920 dashboard.</li>
+                    <li>Go to <code>/store/bulk-import</code> in your HAMODY dashboard.</li>
                     <li>Upload this CSV (or convert to .xlsx if you prefer).</li>
                     <li>Variable products export as <strong>1 parent row + 1 row per variation</strong>.</li>
-                    <li>Each variation exports its <strong>own image</strong> (if set in WooCommerce) for color/size switching on Store1920.</li>
-                    <li>On Store1920 import, variations become size/color options on the same product.</li>
+                    <li>Each variation exports its <strong>own image</strong> (if set in WooCommerce) for color/size switching on Hamody.</li>
+                    <li>On HAMODY import, variations become size/color options on the same product.</li>
                 </ol>
             </div>
             <?php
@@ -116,10 +116,10 @@ if (!class_exists('Store1920_Product_Export')) {
         public static function handle_export()
         {
             if (!current_user_can('manage_woocommerce')) {
-                wp_die(esc_html__('Permission denied.', 'store1920'));
+                wp_die(esc_html__('Permission denied.', 'hamody'));
             }
 
-            check_admin_referer('store1920_export_products');
+            check_admin_referer('hamody_export_products');
 
             if (!function_exists('wc_get_products')) {
                 self::redirect_with_error('WooCommerce is not active.');
@@ -138,8 +138,8 @@ if (!class_exists('Store1920_Product_Export')) {
             }
 
             $filename = $limit > 0
-                ? 'store1920-products-test-' . $limit . '-' . gmdate('Y-m-d-His') . '.csv'
-                : 'store1920-products-' . gmdate('Y-m-d-His') . '.csv';
+                ? 'hamody-products-test-' . $limit . '-' . gmdate('Y-m-d-His') . '.csv'
+                : 'hamody-products-' . gmdate('Y-m-d-His') . '.csv';
 
             nocache_headers();
             header('Content-Type: text/csv; charset=UTF-8');
@@ -204,7 +204,7 @@ if (!class_exists('Store1920_Product_Export')) {
         private static function redirect_with_error($message)
         {
             wp_safe_redirect(add_query_arg(
-                'store1920_export_error',
+                'hamody_export_error',
                 rawurlencode($message),
                 admin_url('admin.php?page=' . self::MENU_SLUG)
             ));
@@ -601,7 +601,7 @@ if (!class_exists('Store1920_Product_Export')) {
         if (!class_exists('WooCommerce')) {
             return;
         }
-        Store1920_Product_Export::boot();
+        Hamody_Product_Export::boot();
     });
 }
 
@@ -611,7 +611,7 @@ if (!class_exists('Store1920_Product_Export')) {
  * Copy from line below until end of file if you prefer functions.php
  * ============================================================
  *
- * require_once get_stylesheet_directory() . '/store1920-product-export.php';
+ * require_once get_stylesheet_directory() . '/hamody-product-export.php';
  *
  * Or upload this same file via FTP and require it from functions.php.
  */

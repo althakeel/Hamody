@@ -33,9 +33,9 @@ export async function GET() {
     },
     fixSteps: [
       'Open Firebase Console → Authentication → Settings → Authorized domains.',
-      'Add store1920.com, www.store1920.com, and localhost if missing.',
-      'Keep NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN as store1920-7d673.firebaseapp.com (do not use store1920.com here).',
-      'Set NEXT_PUBLIC_APP_URL=https://www.store1920.com in production env (Vercel/hosting).',
+      'Add hamody.com, www.hamody.com, and localhost if missing.',
+      'Keep NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN as hamody-7d673.firebaseapp.com (do not use hamody.com here).',
+      'Set NEXT_PUBLIC_APP_URL=https://www.hamody.com in production env (Vercel/hosting).',
     ],
   })
 }

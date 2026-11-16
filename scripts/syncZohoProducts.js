@@ -1,5 +1,5 @@
 /**
- * Bulk sync Store1920 MongoDB products → Zoho Inventory items.
+ * Bulk sync HAMODY MongoDB products → Zoho Inventory items.
  *
  * Usage:
  *   npm run sync:zoho-products
@@ -73,7 +73,7 @@ async function main() {
   await mongoose.connect(process.env.MONGODB_URI);
   console.log('Connected to MongoDB');
   console.log('Zoho organization:', process.env.ZOHO_ORGANIZATION_ID);
-  console.log('Location name:', process.env.ZOHO_INVENTORY_LOCATION_NAME || 'Store1920');
+  console.log('Location name:', process.env.ZOHO_INVENTORY_LOCATION_NAME || 'HAMODY');
   if (dryRun) console.log('DRY RUN — no writes to Zoho or MongoDB');
 
   const summary = await syncProductsToZoho({

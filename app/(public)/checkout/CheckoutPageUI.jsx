@@ -54,10 +54,10 @@ import { computeCouponDiscount } from "@/lib/couponDiscount";
 import { getCartProductIdsNeedingVariants, mergeFetchedProducts } from '@/lib/cartProductFetch';
 import { resolveCartLinePricing, resolveMatrixCartMaxPacks, isBulkBundleProduct, isMatrixStyleProduct, findBulkBundleVariant, getBulkBundleTiers } from "@/lib/bulkBundleCart";
 import { decrementCartItem, incrementCartItem } from "@/lib/bundleCartActions";
-import { STORE1920_LOGO_PATH } from "@/lib/brandLogo";
+import { HAMODY_LOGO_PATH } from "@/lib/brandLogo";
 import {
-  STORE1920_SUPPORT_EMAIL,
-  STORE1920_CUSTOMER_SUPPORT_PHONE,
+  HAMODY_SUPPORT_EMAIL,
+  HAMODY_CUSTOMER_SUPPORT_TEL,
   formatCustomerSupportPhoneDisplay,
 } from '@/lib/storeContact';
 import {
@@ -123,7 +123,7 @@ function getGuestCountryCode(countryName) {
 
 const CHECKOUT_ORDER_PREVIEW_LIMIT = 4;
 const CHECKOUT_ORDER_MOBILE_PREVIEW_LIMIT = 1;
-const CHECKOUT_RETURN_PATH_KEY = 'store1920_checkout_return_path';
+const CHECKOUT_RETURN_PATH_KEY = 'Hamody_checkout_return_path';
 
 function isCouponAllowedPayment(payment) {
   return payment === 'card' || payment === 'cod';
@@ -227,7 +227,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   const [useWalletBalance, setUseWalletBalance] = useState(true);
   const beginCheckoutTrackedRef = useRef(false);
   const tabbyPublicKey = process.env.NEXT_PUBLIC_TABBY_PUBLIC_KEY || '';
-  const tabbyMerchantCode = process.env.NEXT_PUBLIC_TABBY_MERCHANT_CODE || process.env.TABBY_MERCHANT_CODE || 'Store1920';
+  const tabbyMerchantCode = process.env.NEXT_PUBLIC_TABBY_MERCHANT_CODE || process.env.TABBY_MERCHANT_CODE || 'HAMODY';
   const formatMoneyPlain = (amount) => {
     const converted = Number(convertPrice(Number(amount || 0)) || 0);
     return `${market.currency} ${converted.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
@@ -795,7 +795,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     }
   }
 
-  const pickupAvailable = isCustomerPickupAllowedForLines(
+  const pickupAvailable = false && isCustomerPickupAllowedForLines(
     pickupRule,
     cartArray.map((item) => {
       const matchedVariant = matchVariantByOptions(item.variants || [], item.variantOptions || {});
@@ -1391,7 +1391,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     const selectedAddr = (form.addressId && checkoutAddressList.find((a) => a._id === form.addressId)) || null;
     const resolvedPhone =
       cleanedPhone || cleanDigits(selectedAddr?.phone) || cleanDigits(user?.phoneNumber || user?.phone);
-    // Store1920 delivers in UAE only — country is fixed.
+    // hamody.com delivers in UAE only — country is fixed.
     const resolvedCountry = 'United Arab Emirates';
     const resolvedPincode = '';
     return { resolvedPhone, resolvedCountry, resolvedPincode };
@@ -1815,7 +1815,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
     const selectedAddr = (form.addressId && checkoutAddressList.find(a => a._id === form.addressId)) || null;
     const fallbackPhone = cleanDigits(selectedAddr?.phone) || cleanDigits(user?.phoneNumber || user?.phone);
     const resolvedPhone = cleanedPhone || fallbackPhone;
-    // Store1920 delivers in UAE only — country is fixed.
+    // hamody.com delivers in UAE only — country is fixed.
     const resolvedCountry = 'United Arab Emirates';
     const isIndiaCheckout = false;
     let resolvedPincode = sanitizePincode(form.pincode);
@@ -2775,9 +2775,9 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
           <CheckoutAlertBanner alert={activeCheckoutAlert} />
         </div>
       ) : null}
-      <div className="mx-auto grid w-full max-w-[1400px] grid-cols-1 gap-0 md:grid-cols-3 md:gap-8 md:px-6" dir={isArabic ? 'rtl' : 'ltr'}>
+      <div className="mx-auto grid w-full max-w-[1400px] grid-cols-1 gap-0 lg:grid-cols-[minmax(0,1fr)_minmax(280px,400px)] lg:gap-8 lg:px-6" dir={isArabic ? 'rtl' : 'ltr'}>
         {/* Left column: address, form, payment */}
-        <div className="md:col-span-2">
+        <div className="min-w-0">
           <div className="border-y border-gray-100 bg-white px-4 pb-4 pt-2 md:rounded-xl md:border md:p-8 md:shadow-sm">
             {/* Cart Items Section */}
             <div className="mb-4 md:mb-6">
@@ -3750,7 +3750,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
           </div>
         </div>
         {/* Right column: discount input, order summary and place order button */}
-        <div className="flex h-fit flex-col border-t border-slate-200 bg-white px-4 pb-4 pt-2 md:rounded-xl md:border-2 md:border-slate-200 md:p-8">
+        <div className="flex h-fit min-w-0 flex-col border-t border-slate-200 bg-white px-4 pb-4 pt-4 sm:px-6 lg:rounded-xl lg:border-2 lg:border-slate-200 lg:p-8">
           <div className="mb-4 pb-4 border-b border-slate-100">
             <h2 className="text-lg font-bold text-slate-900">{t('checkout.orderSummary')}</h2>
             <p className="mt-1 text-sm text-slate-500">
@@ -3764,7 +3764,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                 <Tag size={16} className="text-slate-500" />
                 <span className="text-sm font-semibold text-slate-800">{t('checkout.applyCoupon')}</span>
               </div>
-              <form onSubmit={handleApplyCoupon} className="flex gap-2">
+              <form onSubmit={handleApplyCoupon} className="flex flex-col gap-2 min-[420px]:flex-row">
                 <input
                   type="text"
                   value={coupon}
@@ -3809,15 +3809,15 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
 
           {/* Price breakdown */}
           <div className="mb-4 space-y-3 border-b border-emerald-100 pb-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-600">{t('checkout.subtotal')}</span>
-              <span className="font-medium text-slate-900">{formatMoney(subtotal)}</span>
+            <div className="flex min-w-0 items-start justify-between gap-3 text-sm">
+              <span className="min-w-0 text-slate-600">{t('checkout.subtotal')}</span>
+              <span className="shrink-0 text-end font-medium tabular-nums text-slate-900">{formatMoney(subtotal)}</span>
             </div>
 
             {appliedCoupon && couponDiscount > 0 && (
-              <div className="flex items-center justify-between text-sm text-blue-700">
-                <span>{t('checkout.couponDiscount')} ({appliedCoupon.code})</span>
-                <span className="font-semibold">-{formatMoney(couponDiscount)}</span>
+              <div className="flex min-w-0 items-start justify-between gap-3 text-sm text-blue-700">
+                <span className="min-w-0 break-words">{t('checkout.couponDiscount')} ({appliedCoupon.code})</span>
+                <span className="shrink-0 text-end font-semibold tabular-nums">-{formatMoney(couponDiscount)}</span>
               </div>
             )}
 
@@ -3896,10 +3896,10 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
             </div>
           )}
 
-          <div className="mb-1 rounded-lg border border-emerald-200 bg-white px-3 py-3">
-            <div className="flex items-center justify-between">
+            <div className="mb-1 rounded-lg border border-emerald-200 bg-white px-3 py-3">
+            <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
               <span className="text-base font-bold text-slate-900">{t('checkout.totalToPay')}</span>
-              <span className="text-xl font-bold text-slate-900">{formatMoney(totalAfterWallet)}</span>
+              <span className="text-[clamp(18px,4.5vw,24px)] font-bold tabular-nums text-slate-900">{formatMoney(totalAfterWallet)}</span>
             </div>
             <p className="mt-1 text-xs text-slate-500">{t('checkout.inclVat')}</p>
           </div>
@@ -3992,8 +3992,8 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
             <div className="mb-3 text-xs text-gray-600">
               <p>
                 {t('checkout.customerSupport', {
-                  phone: formatCustomerSupportPhoneDisplay(STORE1920_CUSTOMER_SUPPORT_PHONE),
-                  email: STORE1920_SUPPORT_EMAIL,
+                  phone: formatCustomerSupportPhoneDisplay(HAMODY_CUSTOMER_SUPPORT_TEL),
+                  email: HAMODY_SUPPORT_EMAIL,
                 })}
               </p>
             </div>

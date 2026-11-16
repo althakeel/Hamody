@@ -105,13 +105,13 @@ function applyStagingRobotsTag(request: NextRequest, response: NextResponse) {
 function redirectApexHostToWww(request: NextRequest) {
   const host = getRequestHost(request);
 
-  if (host !== 'store1920.com') return null;
+  if (host !== 'hamody.com') return null;
 
   const { pathname, search } = request.nextUrl;
   if (pathname === '/api' || pathname.startsWith('/api/')) return null;
 
   return NextResponse.redirect(
-    new URL(`https://www.store1920.com${pathname}${search}`),
+    new URL(`https://www.hamody.com${pathname}${search}`),
     301,
   );
 }

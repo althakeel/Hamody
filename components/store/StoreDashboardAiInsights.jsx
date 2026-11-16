@@ -94,7 +94,7 @@ export default function StoreDashboardAiInsights({ getToken, stats, currency = '
               {insights?.aiEnabled === false
                 ? 'Rule-based tips (add GEMINI_API_KEY or OPENAI_API_KEY for AI)'
                 : insights?.provider && insights.provider !== 'rules'
-                  ? 'Powered by Store1920 AI'
+                  ? 'Powered by HAMODY AI'
                   : 'Analyzing your sales data…'}
             </p>
           </div>

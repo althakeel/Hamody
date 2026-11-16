@@ -30,7 +30,7 @@ function patchFile(filePath, replacements) {
   let source = fs.readFileSync(filePath, 'utf8');
   const original = source;
   for (const { find, replace, label } of replacements) {
-    if (source.includes(replace.trim()) || source.includes('STORE1920_BLOCK_STREAMING_METADATA')) {
+    if (source.includes(replace.trim()) || source.includes('HAMODY_BLOCK_STREAMING_METADATA')) {
       continue;
     }
     if (!source.includes(find)) {
@@ -47,11 +47,11 @@ function patchFile(filePath, replacements) {
 
 const APP_PAGE_FIND_CJS =
   'const serveStreamingMetadata = botType && isRoutePPREnabled ? false : !userAgent ? true : (0, _streamingmetadata.shouldServeStreamingMetadata)(userAgent, nextConfig.htmlLimitedBots);';
-const APP_PAGE_REPLACE_CJS = `const serveStreamingMetadata = /* STORE1920_BLOCK_STREAMING_METADATA */ botType && isRoutePPREnabled ? false : nextConfig.htmlLimitedBots === '.*' ? false : !userAgent ? true : (0, _streamingmetadata.shouldServeStreamingMetadata)(userAgent, nextConfig.htmlLimitedBots);`;
+const APP_PAGE_REPLACE_CJS = `const serveStreamingMetadata = /* HAMODY_BLOCK_STREAMING_METADATA */ botType && isRoutePPREnabled ? false : nextConfig.htmlLimitedBots === '.*' ? false : !userAgent ? true : (0, _streamingmetadata.shouldServeStreamingMetadata)(userAgent, nextConfig.htmlLimitedBots);`;
 
 const APP_PAGE_FIND_ESM =
   'const serveStreamingMetadata = botType && isRoutePPREnabled ? false : !userAgent ? true : shouldServeStreamingMetadata(userAgent, nextConfig.htmlLimitedBots);';
-const APP_PAGE_REPLACE_ESM = `const serveStreamingMetadata = /* STORE1920_BLOCK_STREAMING_METADATA */ botType && isRoutePPREnabled ? false : nextConfig.htmlLimitedBots === '.*' ? false : !userAgent ? true : shouldServeStreamingMetadata(userAgent, nextConfig.htmlLimitedBots);`;
+const APP_PAGE_REPLACE_ESM = `const serveStreamingMetadata = /* HAMODY_BLOCK_STREAMING_METADATA */ botType && isRoutePPREnabled ? false : nextConfig.htmlLimitedBots === '.*' ? false : !userAgent ? true : shouldServeStreamingMetadata(userAgent, nextConfig.htmlLimitedBots);`;
 
 const STREAMING_FIND = `function shouldServeStreamingMetadata(userAgent, htmlLimitedBots) {
     const blockingMetadataUARegex = new RegExp(htmlLimitedBots || _isbot.HTML_LIMITED_BOT_UA_RE_STRING, 'i');
@@ -63,7 +63,7 @@ const STREAMING_FIND = `function shouldServeStreamingMetadata(userAgent, htmlLim
 }`;
 
 const STREAMING_REPLACE = `function shouldServeStreamingMetadata(userAgent, htmlLimitedBots) {
-    // STORE1920_BLOCK_STREAMING_METADATA: htmlLimitedBots /.*/ must also cover empty-UA ISR/export.
+    // HAMODY_BLOCK_STREAMING_METADATA: htmlLimitedBots /.*/ must also cover empty-UA ISR/export.
     if (htmlLimitedBots === '.*') {
         return false;
     }
@@ -85,7 +85,7 @@ const STREAMING_FIND_ESM = `export function shouldServeStreamingMetadata(userAge
 }`;
 
 const STREAMING_REPLACE_ESM = `export function shouldServeStreamingMetadata(userAgent, htmlLimitedBots) {
-    // STORE1920_BLOCK_STREAMING_METADATA: htmlLimitedBots /.*/ must also cover empty-UA ISR/export.
+    // HAMODY_BLOCK_STREAMING_METADATA: htmlLimitedBots /.*/ must also cover empty-UA ISR/export.
     if (htmlLimitedBots === '.*') {
         return false;
     }
@@ -103,7 +103,7 @@ const EXPORT_FIND = `        // During the export phase in next build, we always
         // If it's dynamic, then it can be handled when request hits the route.
         serveStreamingMetadata: true,`;
 
-const EXPORT_REPLACE = `        // STORE1920_BLOCK_STREAMING_METADATA: keep title/canonical/description in <head> for SEO crawlers.
+const EXPORT_REPLACE = `        // HAMODY_BLOCK_STREAMING_METADATA: keep title/canonical/description in <head> for SEO crawlers.
         serveStreamingMetadata: false,`;
 
 let changed = false;

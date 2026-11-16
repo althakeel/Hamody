@@ -1,4 +1,4 @@
-# Store1920 app product share
+# HAMODY app product share
 
 Last updated: 27 October 2026  
 Audience: Android and Flutter  
@@ -61,7 +61,7 @@ The price is the unit sale price, not the line total after the customer changes 
 ## 3. Link and text
 
 ```text
-https://www.store1920.com/product/{slug}
+https://www.hamody.com/product/{slug}
 ```
 
 Share that product URL. If the open page has a query string, keep it, so the friend opens the same variant.

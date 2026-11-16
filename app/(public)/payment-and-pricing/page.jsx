@@ -3,15 +3,15 @@
 import PolicyPageLayout from '@/components/PolicyPageLayout';
 import PolicyContactBlock from '@/components/PolicyContactBlock';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
-import { STORE1920_LEGAL_NAME, STORE1920_LEGAL_NAME_AR } from '@/lib/businessIdentity';
+import { HAMODY_LEGAL_NAME, HAMODY_LEGAL_NAME_AR } from '@/lib/businessIdentity';
 
-const TRADING_AS = `${STORE1920_LEGAL_NAME}, trading as Store1920`;
+const TRADING_AS = `${HAMODY_LEGAL_NAME}, trading as hamody.com`;
 
 const PAGE_COPY = {
   en: {
     title: 'Payment & Pricing Policy',
     intro:
-      `This policy explains how ${TRADING_AS} prices products and accepts payment on Store1920.com in the UAE, including live buy-now-pay-later methods. Refunds follow one process, set out below and in our Return Policy.`,
+      `This policy explains how ${TRADING_AS} prices products and accepts payment on hamody.com in the UAE, including live buy-now-pay-later methods. Refunds follow one process, set out below and in our Return Policy.`,
     lastUpdated: 'Last updated: 8 September 2026',
     sections: [
       {
@@ -24,7 +24,7 @@ const PAGE_COPY = {
           'Tabby — pay in 12 interest-free monthly installments where offered',
           'Tamara — pay in 4 interest-free installments where offered',
           'Cash on Delivery (COD) where offered for your address',
-          'Store1920 wallet credit, when enabled on your signed-in account',
+          'hamody.com wallet credit, when enabled on your signed-in account',
         ],
       },
       {
@@ -35,7 +35,7 @@ const PAGE_COPY = {
         bullets: [
           'Available to customers aged 18 or over who are citizens or residents of the UAE (Tabby may also serve other countries; we only deliver inside the UAE)',
           'You pay in 12 interest-free monthly installments if Tabby approves the application',
-          'Approval, limits, and identity checks are decided by Tabby, not by Store1920',
+          'Approval, limits, and identity checks are decided by Tabby, not by hamody.com',
           'Tabby may decline an application; you can then choose another method shown at checkout',
           'An order-total limit may apply; if your total exceeds it, Tabby will not appear or cannot be selected',
           'By using Tabby you accept Tabby’s own terms and privacy notice',
@@ -50,7 +50,7 @@ const PAGE_COPY = {
           'You must be over 18 years of age',
           'You pay in 4 interest-free installments if Tamara approves the application',
           'Opening a Tamara account requires personal information such as your name, address, email, phone number, and age',
-          'Approval, limits, and identity checks are decided by Tamara, not by Store1920',
+          'Approval, limits, and identity checks are decided by Tamara, not by hamody.com',
           'Tamara may decline an application; you can then choose another method shown at checkout',
           'An order-total limit may apply; if your total exceeds it, Tamara will not appear or cannot be selected',
           'By using Tamara you accept Tamara’s own terms and privacy notice',
@@ -79,7 +79,7 @@ const PAGE_COPY = {
           'We initiate the refund within 5–7 business days after approval',
           'The refund goes back through the original payment method',
           'Card and Apple Pay: credited to the same card; your bank may take extra time to show it after we initiate',
-          'Wallet: credited to your Store1920 wallet',
+          'Wallet: credited to your hamody.com wallet',
           'COD: paid by bank transfer after we verify the account details you provide',
           'Tabby or Tamara: we instruct the provider to reverse or reduce the payment; they adjust your installment plan under their terms',
         ],
@@ -87,7 +87,7 @@ const PAGE_COPY = {
       {
         title: '7. Billing questions',
         paragraphs: [
-          'If you see an incorrect or duplicate charge, email support@Store1920.com with your order ID, payment reference, and details. After we confirm the issue, any refund uses the process in section 6.',
+          'If you see an incorrect or duplicate charge, email support@hamody.com with your order ID, payment reference, and details. After we confirm the issue, any refund uses the process in section 6.',
         ],
       },
     ],
@@ -95,7 +95,7 @@ const PAGE_COPY = {
   ar: {
     title: 'سياسة الدفع والتسعير',
     intro:
-      `توضح هذه السياسة كيف يسعّر ${STORE1920_LEGAL_NAME_AR} (${STORE1920_LEGAL_NAME}) المنتجات ويقبل الدفع على Store1920.com في الإمارات، بما في ذلك طرق اشترِ الآن وادفع لاحقًا المتاحة. الاسترداد يتبع عملية واحدة موضحة أدناه وفي سياسة الإرجاع.`,
+      `توضح هذه السياسة كيف يسعّر ${HAMODY_LEGAL_NAME_AR} (${HAMODY_LEGAL_NAME}) المنتجات ويقبل الدفع على hamody.com في الإمارات، بما في ذلك طرق اشترِ الآن وادفع لاحقًا المتاحة. الاسترداد يتبع عملية واحدة موضحة أدناه وفي سياسة الإرجاع.`,
     lastUpdated: 'آخر تحديث: 8 سبتمبر 2026',
     sections: [
       {
@@ -108,7 +108,7 @@ const PAGE_COPY = {
           'تابي — الدفع على 12 قسطًا شهريًا بدون فوائد حيث تتوفر',
           'تمارا — الدفع على 4 أقساط بدون فوائد حيث تتوفر',
           'الدفع عند الاستلام حيث يتوفر لعنوانك',
-          'رصيد محفظة Store1920 عند تفعيله لحسابك المسجّل',
+          'رصيد محفظة hamody.com عند تفعيله لحسابك المسجّل',
         ],
       },
       {
@@ -119,7 +119,7 @@ const PAGE_COPY = {
         bullets: [
           'متاحة لمن بلغ 18 عامًا من مواطني أو مقيمي الإمارات (قد تخدم تابي دولًا أخرى؛ نحن نوصل داخل الإمارات فقط)',
           'الدفع على 12 قسطًا شهريًا بدون فوائد إذا وافقت تابي',
-          'الموافقة والحدود والتحقق من الهوية تقررها تابي وليس Store1920',
+          'الموافقة والحدود والتحقق من الهوية تقررها تابي وليس hamody.com',
           'قد ترفض تابي الطلب؛ يمكنك اختيار طريقة أخرى ظاهرة عند الدفع',
           'قد يُطبق حد لمجموع الطلب؛ إذا تجاوزته لن تظهر تابي أو لن يمكن اختيارها',
           'باستخدام تابي فإنك تقبل شروطها وإشعار الخصوصية الخاص بها',
@@ -134,7 +134,7 @@ const PAGE_COPY = {
           'يجب أن يتجاوز عمرك 18 عامًا',
           'الدفع على 4 أقساط بدون فوائد إذا وافقت تمارا',
           'يتطلب فتح حساب تمارا معلومات شخصية مثل الاسم والعنوان والبريد والهاتف والعمر',
-          'الموافقة والحدود والتحقق من الهوية تقررها تمارا وليس Store1920',
+          'الموافقة والحدود والتحقق من الهوية تقررها تمارا وليس hamody.com',
           'قد ترفض تمارا الطلب؛ يمكنك اختيار طريقة أخرى ظاهرة عند الدفع',
           'قد يُطبق حد لمجموع الطلب؛ إذا تجاوزته لن تظهر تمارا أو لن يمكن اختيارها',
           'باستخدام تمارا فإنك تقبل شروطها وإشعار الخصوصية الخاص بها',
@@ -163,7 +163,7 @@ const PAGE_COPY = {
           'نبدأ الاسترداد خلال 5 إلى 7 أيام عمل بعد الموافقة',
           'يُعاد المبلغ عبر وسيلة الدفع الأصلية',
           'البطاقة وApple Pay: إلى البطاقة نفسها؛ قد يتأخر ظهوره لدى البنك بعد بدء التحويل',
-          'المحفظة: إلى محفظة Store1920',
+          'المحفظة: إلى محفظة hamody.com',
           'الدفع عند الاستلام: تحويل بنكي بعد التحقق من بيانات الحساب التي تقدّمها',
           'تابي أو تمارا: نطلب من المزود عكس الدفع أو تخفيضه؛ ويعدّل خطة الأقساط وفق شروطه',
         ],
@@ -171,7 +171,7 @@ const PAGE_COPY = {
       {
         title: '7. استفسارات الفوترة',
         paragraphs: [
-          'إذا رأيت رسمًا غير صحيح أو مكررًا، راسل support@Store1920.com مع رقم الطلب ومرجع الدفع والتفاصيل. بعد التأكيد، أي استرداد يتبع العملية في القسم 6.',
+          'إذا رأيت رسمًا غير صحيح أو مكررًا، راسل support@hamody.com مع رقم الطلب ومرجع الدفع والتفاصيل. بعد التأكيد، أي استرداد يتبع العملية في القسم 6.',
         ],
       },
     ],

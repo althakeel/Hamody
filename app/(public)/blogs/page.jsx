@@ -51,8 +51,8 @@ export default function BlogsPage() {
       </h1>
       <p className="mb-8 max-w-2xl text-[15px] leading-relaxed text-gray-600">
         {isArabic
-          ? 'مقالات ونصائح من متجر store1920.'
-          : 'Tips, guides, and updates from store1920.'}
+          ? 'مقالات ونصائح من متجر hamody.com.'
+          : 'Tips, guides, and updates from hamody.com.'}
       </p>
 
       <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -148,7 +148,7 @@ export default function BlogsPage() {
                     />
                   ) : (
                     <div className="flex aspect-[16/10] items-center justify-center bg-slate-100 text-sm text-slate-400">
-                      store1920
+                      hamody.com
                     </div>
                   )}
                   <div className="p-4">

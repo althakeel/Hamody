@@ -1,40 +1,40 @@
 <?php
 /**
- * Plugin Name: Store1920 Category Migrator
- * Description: Push WooCommerce product categories (including category images) to Store1920 migration API.
+ * Plugin Name: HAMODY Category Migrator
+ * Description: Push WooCommerce product categories (including category images) to HAMODY migration API.
  * Version: 1.0.0
- * Author: Store1920
+ * Author: HAMODY
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-class Store1920CategoryMigrator {
-    const OPTION_KEY = 'store1920_category_migrator_settings';
-    const NOTICE_KEY = 'store1920_category_migrator_notice';
+class HamodyCategoryMigrator {
+    const OPTION_KEY = 'hamody_category_migrator_settings';
+    const NOTICE_KEY = 'hamody_category_migrator_notice';
     const DEFAULT_BATCH_SIZE = 200;
 
     public function __construct() {
         add_action('admin_menu', array($this, 'register_admin_page'));
         add_action('admin_init', array($this, 'register_settings'));
-        add_action('admin_post_store1920_push_categories', array($this, 'handle_push_categories'));
+        add_action('admin_post_hamody_push_categories', array($this, 'handle_push_categories'));
         add_action('admin_notices', array($this, 'render_admin_notice'));
     }
 
     public function register_admin_page() {
         add_menu_page(
-            'Store1920 Migrator',
-            'Store1920 Migrator',
+            'HAMODY Migrator',
+            'HAMODY Migrator',
             'manage_options',
-            'store1920-category-migrator',
+            'hamody-category-migrator',
             array($this, 'render_admin_page'),
             'dashicons-upload'
         );
     }
 
     public function register_settings() {
-        register_setting('store1920_category_migrator_group', self::OPTION_KEY, array($this, 'sanitize_settings'));
+        register_setting('hamody_category_migrator_group', self::OPTION_KEY, array($this, 'sanitize_settings'));
     }
 
     public function sanitize_settings($input) {
@@ -86,35 +86,35 @@ class Store1920CategoryMigrator {
 
         ?>
         <div class="wrap">
-            <h1>Store1920 Category Migrator</h1>
-            <p>First migration step: send all WooCommerce product categories and category images to Store1920.</p>
+            <h1>HAMODY Category Migrator</h1>
+            <p>First migration step: send all WooCommerce product categories and category images to Hamody.</p>
 
             <form method="post" action="options.php" style="max-width: 760px;">
-                <?php settings_fields('store1920_category_migrator_group'); ?>
+                <?php settings_fields('hamody_category_migrator_group'); ?>
 
                 <table class="form-table" role="presentation">
                     <tr>
-                        <th scope="row"><label for="store1920_api_url">Store1920 API URL</label></th>
+                        <th scope="row"><label for="hamody_api_url">HAMODY API URL</label></th>
                         <td>
-                            <input type="url" id="store1920_api_url" name="<?php echo esc_attr(self::OPTION_KEY); ?>[api_url]" class="regular-text" value="<?php echo esc_attr($settings['api_url']); ?>" placeholder="https://your-new-site.com/api/store/migration/wp-categories" />
+                            <input type="url" id="hamody_api_url" name="<?php echo esc_attr(self::OPTION_KEY); ?>[api_url]" class="regular-text" value="<?php echo esc_attr($settings['api_url']); ?>" placeholder="https://your-new-site.com/api/store/migration/wp-categories" />
                         </td>
                     </tr>
                     <tr>
-                        <th scope="row"><label for="store1920_migration_token">Migration token</label></th>
+                        <th scope="row"><label for="hamody_migration_token">Migration token</label></th>
                         <td>
-                            <input type="text" id="store1920_migration_token" name="<?php echo esc_attr(self::OPTION_KEY); ?>[migration_token]" class="regular-text" value="<?php echo esc_attr($settings['migration_token']); ?>" placeholder="Same token as WP_MIGRATION_TOKEN in Store1920" />
+                            <input type="text" id="hamody_migration_token" name="<?php echo esc_attr(self::OPTION_KEY); ?>[migration_token]" class="regular-text" value="<?php echo esc_attr($settings['migration_token']); ?>" placeholder="Same token as WP_MIGRATION_TOKEN in HAMODY" />
                         </td>
                     </tr>
                     <tr>
-                        <th scope="row"><label for="store1920_store_username">Store username</label></th>
+                        <th scope="row"><label for="hamody_store_username">Store username</label></th>
                         <td>
-                            <input type="text" id="store1920_store_username" name="<?php echo esc_attr(self::OPTION_KEY); ?>[store_username]" class="regular-text" value="<?php echo esc_attr($settings['store_username']); ?>" placeholder="Exact store username in new app" />
+                            <input type="text" id="hamody_store_username" name="<?php echo esc_attr(self::OPTION_KEY); ?>[store_username]" class="regular-text" value="<?php echo esc_attr($settings['store_username']); ?>" placeholder="Exact store username in new app" />
                         </td>
                     </tr>
                     <tr>
-                        <th scope="row"><label for="store1920_batch_size">Batch size</label></th>
+                        <th scope="row"><label for="hamody_batch_size">Batch size</label></th>
                         <td>
-                            <input type="number" id="store1920_batch_size" name="<?php echo esc_attr(self::OPTION_KEY); ?>[batch_size]" min="20" max="500" value="<?php echo esc_attr(intval($settings['batch_size'])); ?>" />
+                            <input type="number" id="hamody_batch_size" name="<?php echo esc_attr(self::OPTION_KEY); ?>[batch_size]" min="20" max="500" value="<?php echo esc_attr(intval($settings['batch_size'])); ?>" />
                             <p class="description">Recommended: 200</p>
                         </td>
                     </tr>
@@ -128,8 +128,8 @@ class Store1920CategoryMigrator {
             <h2>Push Categories</h2>
             <p>This will send all WooCommerce <code>product_cat</code> terms with image URLs and parent hierarchy.</p>
             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                <?php wp_nonce_field('store1920_push_categories'); ?>
-                <input type="hidden" name="action" value="store1920_push_categories" />
+                <?php wp_nonce_field('hamody_push_categories'); ?>
+                <input type="hidden" name="action" value="hamody_push_categories" />
                 <?php submit_button('Push Categories Now', 'primary', 'submit', false); ?>
             </form>
         </div>
@@ -209,7 +209,7 @@ class Store1920CategoryMigrator {
             wp_die('Unauthorized');
         }
 
-        check_admin_referer('store1920_push_categories');
+        check_admin_referer('hamody_push_categories');
 
         $settings = $this->get_settings();
         $api_url = $this->get_setting($settings, 'api_url');
@@ -219,14 +219,14 @@ class Store1920CategoryMigrator {
 
         if (!$api_url || !$token || !$store_username) {
             $this->set_notice('Missing API URL, migration token, or store username.', false);
-            wp_safe_redirect(admin_url('admin.php?page=store1920-category-migrator'));
+            wp_safe_redirect(admin_url('admin.php?page=hamody-category-migrator'));
             exit;
         }
 
         $categories = $this->collect_categories();
         if (empty($categories)) {
             $this->set_notice('No WooCommerce categories found to export.', false);
-            wp_safe_redirect(admin_url('admin.php?page=store1920-category-migrator'));
+            wp_safe_redirect(admin_url('admin.php?page=hamody-category-migrator'));
             exit;
         }
 
@@ -238,7 +238,7 @@ class Store1920CategoryMigrator {
 
             if (is_wp_error($response)) {
                 $this->set_notice('Push failed: ' . $response->get_error_message(), false);
-                wp_safe_redirect(admin_url('admin.php?page=store1920-category-migrator'));
+                wp_safe_redirect(admin_url('admin.php?page=hamody-category-migrator'));
                 exit;
             }
 
@@ -247,7 +247,7 @@ class Store1920CategoryMigrator {
             if ($status_code < 200 || $status_code >= 300) {
                 $error_message = $this->extract_api_error($response);
                 $this->set_notice('Push failed: ' . $error_message, false);
-                wp_safe_redirect(admin_url('admin.php?page=store1920-category-migrator'));
+                wp_safe_redirect(admin_url('admin.php?page=hamody-category-migrator'));
                 exit;
             }
 
@@ -255,9 +255,9 @@ class Store1920CategoryMigrator {
         }
 
         $this->set_notice('Categories pushed successfully. Total sent: ' . $total_sent, true);
-        wp_safe_redirect(admin_url('admin.php?page=store1920-category-migrator'));
+        wp_safe_redirect(admin_url('admin.php?page=hamody-category-migrator'));
         exit;
     }
 }
 
-new Store1920CategoryMigrator();
+new HamodyCategoryMigrator();

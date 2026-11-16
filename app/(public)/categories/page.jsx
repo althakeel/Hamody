@@ -5,8 +5,8 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 300;
 
 export const metadata = {
-  title: 'Shop by Category | Store1920',
-  description: 'Browse all product categories at Store1920 — electronics, fashion, home, beauty, and more.',
+  title: 'Shop by Category | hamody.com',
+  description: 'Browse all product categories at hamody.com — electronics, fashion, home, beauty, and more.',
 };
 
 function buildChildrenByParent(allCategories) {
@@ -30,8 +30,13 @@ function buildChildrenByParent(allCategories) {
 
 export default async function CategoriesPage() {
   const allCategories = await getAllActiveCategories();
+  const hiddenRootIds = new Set(
+    allCategories
+      .filter((cat) => String(cat.slug || '').toLowerCase() === 'home-living')
+      .map((cat) => String(cat._id)),
+  );
   const parentCategories = allCategories
-    .filter((cat) => !cat.parentId)
+    .filter((cat) => !cat.parentId && !hiddenRootIds.has(String(cat._id)))
     .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0) || String(a.name).localeCompare(String(b.name)));
 
   const childrenByParent = buildChildrenByParent(allCategories);

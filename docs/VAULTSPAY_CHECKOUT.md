@@ -2,8 +2,8 @@
 
 Last updated: 16 October 2026  
 Audience: Android and Flutter  
-Website checkout: `https://www.store1920.com/checkout`  
-API root: `https://www.store1920.com/api`  
+Website checkout: `https://www.hamody.com/checkout`  
+API root: `https://www.hamody.com/api`  
 Web source: `lib/vaultsPay.js`, `app/api/orders/route.js`, `app/order-success/page.jsx`
 
 This is the hosted card payment used at checkout. It covers **credit / debit card**, **Google Pay**, and **Apple Pay**. Stripe card is a different row and a different verify call. Cash, Tabby, Tamara, and wallet are in [ANDROID_CHECKOUT_PAGE.md](./ANDROID_CHECKOUT_PAGE.md).
@@ -75,7 +75,7 @@ Open `checkout_url` in a browser or in-app web view. Do not change the URL. Ever
 
 The return URL alone is not proof of payment. The order is paid only after `POST /api/orders/verify-vaultspay` returns `success: true`, or after the server webhook does the same check.
 
-Every initialization request sends `https://www.store1920.com/api/vaultspay/callback` as `callBackUrl`. VaultsPay calls that endpoint when the transaction changes. The callback never trusts the posted status by itself; the server loads the authoritative transaction from VaultsPay before changing the order. A dedicated expiry sweep also checks due transactions every minute, marking an order failed shortly after the 30-minute expiry if VaultsPay still reports it as unpaid (`Initiated` or `Pending`). Provider-confirmed success always takes precedence.
+Every initialization request sends `https://www.hamody.com/api/vaultspay/callback` as `callBackUrl`. VaultsPay calls that endpoint when the transaction changes. The callback never trusts the posted status by itself; the server loads the authoritative transaction from VaultsPay before changing the order. A dedicated expiry sweep also checks due transactions every minute, marking an order failed shortly after the 30-minute expiry if VaultsPay still reports it as unpaid (`Initiated` or `Pending`). Provider-confirmed success always takes precedence.
 
 ### Errors from place order
 
@@ -96,7 +96,7 @@ Do not mark the cart paid on these responses.
 The server tells VaultsPay to send the shopper back to:
 
 ```
-https://www.store1920.com/order-success?orderId={orderId}&vaultspay=1
+https://www.hamody.com/order-success?orderId={orderId}&vaultspay=1
 ```
 
 Watch the web view for that URL. `orderId` is the id from `POST /api/orders`. Close the hosted page, then verify. Do not treat the redirect itself as paid.

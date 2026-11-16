@@ -1,12 +1,12 @@
-# Store1920 shopper login and register — app API
+# HAMODY shopper login and register — app API
 
 Last updated: 28 October 2026  
 Audience: Android and Flutter  
-Website: sign-in sheet on `https://www.store1920.com`  
-API root: `https://www.store1920.com/api`  
+Website: sign-in sheet on `https://www.hamody.com`  
+API root: `https://www.hamody.com/api`  
 WhatsApp sample: [FLUTTER_WHATSAPP_OTP_AUTH.md](./FLUTTER_WHATSAPP_OTP_AUTH.md)
 
-Send this file to the app developer. It is every shopper sign-in and register path on the website. Identity is **Firebase Auth**. The app does not send the password to a Store1920 login route.
+Send this file to the app developer. It is every shopper sign-in and register path on the website. Identity is **Firebase Auth**. The app does not send the password to a HAMODY login route.
 
 After any successful sign-in, protected calls use:
 
@@ -70,7 +70,7 @@ By continuing, I confirm that I have read the Privacy Policy
 
 Apple is not a button. Do not add it.
 
-The password is never posted to Store1920. Firebase takes it. The calls below are CAPTCHA, lockout, and the result.
+The password is never posted to Hamody. Firebase takes it. The calls below are CAPTCHA, lockout, and the result.
 
 ---
 
@@ -78,7 +78,7 @@ The password is never posted to Store1920. Firebase takes it. The calls below ar
 
 The website sheet has these methods. Build the same set.
 
-| Method | Where the secret goes | Store1920 calls |
+| Method | Where the secret goes | HAMODY calls |
 |---|---|---|
 | Email and password — sign in | Firebase `signInWithEmailAndPassword` | CAPTCHA, pre-login, login-result |
 | Email and password — register | Firebase `createUserWithEmailAndPassword` | CAPTCHA, pre-login, login-result |
@@ -234,7 +234,7 @@ On Log in, the password field rejects fewer than 6 characters before Firebase is
 | `auth/too-many-requests` | Too many attempts. Please wait and try again. |
 | `auth/network-request-failed` | Network error. Please check your connection. |
 
-The password is never posted to Store1920.
+The password is never posted to Hamody.
 
 ### Register
 
@@ -265,7 +265,7 @@ There is no `POST /api/auth/register`. Firebase creates the user.
 2. `POST /api/auth/login-result` with the Google account email, `success: true`, and `idToken`.
 3. Treat as a new account when Firebase `creationTime` equals `lastSignInTime`.
 
-No CAPTCHA. No password. No Store1920 token exchange.
+No CAPTCHA. No password. No HAMODY token exchange.
 
 | Firebase code | Show |
 |---|---|
@@ -447,7 +447,7 @@ PUT /api/auth/whatsapp-otp
 | 423 | Locked for 15 minutes |
 | 503 | Firebase account or token failed |
 
-Do not send the OTP through any other WhatsApp API. Store1920 sends it.
+Do not send the OTP through any other WhatsApp API. HAMODY sends it.
 
 ---
 
@@ -650,7 +650,7 @@ Email verify success is `{ "ok": true, "emailVerified": true }`. Phone verify su
 ## 12. What not to build
 
 - A second password database or a custom JWT.
-- `POST` of the email/password to Store1920. Firebase takes the password.
+- `POST` of the email/password to Hamody. Firebase takes the password.
 - Reuse of `customToken` after `signInWithCustomToken`.
 - WhatsApp login for a non-UAE number.
 - Apple on the sign-in sheet.

@@ -1,9 +1,9 @@
-# Store1920 brands — app API
+# HAMODY brands — app API
 
 Last updated: 19 October 2026  
 Audience: Android and Flutter  
-Website: `https://www.store1920.com/brand/{slug}`  
-API root: `https://www.store1920.com/api`  
+Website: `https://www.hamody.com/brand/{slug}`  
+API root: `https://www.hamody.com/api`  
 Screen layout: [ANDROID_BRAND_PAGE.md](./ANDROID_BRAND_PAGE.md)
 
 Send this file to the app developer. The home logo row and each brand page load from the calls below. Do not type the brand names into the app.
@@ -175,7 +175,7 @@ The seven saved brand pages are Green Lion, LéPRESSO, NEXSO, Porodo, TEKNUM, To
 Example:
 
 ```http
-GET https://www.store1920.com/api/public/brand-products?slug=porodo&page=1&limit=100
+GET https://www.hamody.com/api/public/brand-products?slug=porodo&page=1&limit=100
 ```
 
-Open `https://www.store1920.com/brand/porodo`.
+Open `https://www.hamody.com/brand/porodo`.

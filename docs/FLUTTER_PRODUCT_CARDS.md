@@ -1,8 +1,8 @@
-# Store1920 product cards
+# HAMODY product cards
 
 **Audience:** Android / Flutter / storefront  
 **Last updated:** 9 November 2026  
-**API root:** `https://www.store1920.com/api`  
+**API root:** `https://www.hamody.com/api`  
 **Website card:** `components/ProductCard.jsx`  
 **Deeper API contract:** [PRODUCT_CARD_API.md](./PRODUCT_CARD_API.md)
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { getProductThumbnailUrl } from '@/lib/productMedia'
 
-const DIRHAM = 'https://www.store1920.com/currency/aed-dirham.png'
+const DIRHAM = 'https://www.hamody.com/currency/aed-dirham.png'
 
 function slideSrc(slide) {
   return String(slide?.mobileImage || slide?.tabletImage || slide?.image || '').trim()
@@ -215,7 +215,7 @@ export default function AppHomePhonePreview() {
           <span>5G</span>
         </div>
         <div className="border-b border-slate-100 px-3 py-2">
-          <p className="text-sm font-bold tracking-tight text-slate-900">Store1920</p>
+          <p className="text-sm font-bold tracking-tight text-slate-900">Hamody</p>
           <div className="mt-2 h-8 rounded-full bg-slate-100" />
         </div>
         <div className="h-[640px] overflow-y-auto bg-white [scrollbar-width:thin]">

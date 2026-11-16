@@ -240,7 +240,7 @@ export default function HomeWelcomePopupCard({
           {copy.logoUrl ? (
             <img src={copy.logoUrl} alt="" className="max-h-16 max-w-[240px] object-contain" />
           ) : (
-            <p className="text-center text-2xl font-black tracking-wide text-white">STORE1920</p>
+            <p className="text-center text-2xl font-black tracking-wide text-white">HAMODY</p>
           )}
         </div>
       ) : null}

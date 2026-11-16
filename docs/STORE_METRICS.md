@@ -1,6 +1,6 @@
-# Store1920 store metrics
+# HAMODY store metrics
 
-Prepared 26 October 2026 from the Store1920 database. Money is AED. This is the public website. Orders typed in by staff are not included.
+Prepared 26 October 2026 from the HAMODY database. Money is AED. This is the public website. Orders typed in by staff are not included.
 
 A sales order is a website order that was placed. Cancelled orders are left out. Failed card, Tabby, and Tamara attempts are left out. Checkouts still waiting for payment are left out. Cash on delivery is included when the customer places the order.
 

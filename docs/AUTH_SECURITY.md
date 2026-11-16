@@ -1,6 +1,6 @@
 # Authentication & account security
 
-Store1920 uses **Firebase Authentication** for identity. Passwords are never stored in MongoDB; Firebase hashes them with scrypt. This app adds lockout, CAPTCHA, OTP MFA, verification, sessions, and logout-all on top.
+HAMODY uses **Firebase Authentication** for identity. Passwords are never stored in MongoDB; Firebase hashes them with scrypt. This app adds lockout, CAPTCHA, OTP MFA, verification, sessions, and logout-all on top.
 
 ## Checklist mapping
 

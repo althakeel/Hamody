@@ -1,12 +1,12 @@
-# Store1920 brand page — design and APIs
+# HAMODY brand page — design and APIs
 
 Last updated: 12 October 2026  
 Audience: Android app  
-Website: `https://www.store1920.com`  
-API root: `https://www.store1920.com/api`  
+Website: `https://www.hamody.com`  
+API root: `https://www.hamody.com/api`  
 Web source: `app/(public)/brand/[slug]/page.jsx`, `components/brand/BrandPageView.jsx`
 
-A brand page is `https://www.store1920.com/brand/{slug}`. Example: `/brand/nexso`.
+A brand page is `https://www.hamody.com/brand/{slug}`. Example: `/brand/nexso`.
 
 The brands on the store, and the products call, are in [APP_BRANDS_API.md](./APP_BRANDS_API.md).
 

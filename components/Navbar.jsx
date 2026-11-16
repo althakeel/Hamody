@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, ShoppingCart, Menu, X, HeartIcon, StarIcon, ArrowLeft, LogOut, User, MapPin, Package, ChevronDown, Grid3x3, Heart, Shield, History, Flame, Sparkles, Camera, Phone } from "lucide-react";
+import { Search, ShoppingCart, ShoppingBag, Menu, X, HeartIcon, StarIcon, ArrowLeft, LogOut, User, MapPin, Package, ChevronDown, Grid3x3, Heart, Shield, History, Flame, Sparkles, Camera, Phone } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
@@ -15,7 +15,6 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import WalletIcon from '@/assets/icons/wallet.png';
 import { isStorefrontWalletEnabled } from '@/lib/storefrontWallet';
-import NavbarMenuBar from './NavbarMenuBar';
 import OutdoorCampingMenu from './OutdoorCampingMenu';
 import StorefrontLanguageMarketSwitch from './StorefrontLanguageMarketSwitch';
 
@@ -56,19 +55,19 @@ import { getProductPath } from '@/lib/productUrl';
 import NewProductTagBadge from '@/components/NewProductTagBadge';
 import { secureSignOut } from '@/lib/authClient';
 import { showStorefrontActionToast } from '@/lib/storefrontActionToast';
-import { DEFAULT_NAVBAR_LAYOUT, applyUnifiedNavbarText, getNavbarCategoriesButtonAppearance, getNavbarCategoriesButtonLabel, getNavbarDesktopRowSlots, getNavbarSearchAppearance, getNavbarSearchSlotProps, getUnifiedNavbarFontId, getUnifiedNavbarTextCss, groupNavbarItemsBySide, isNavbarItemVisible, normalizeNavbarItemOrder, normalizeNavbarLayout, resolveNavbarItemSide, resolveNavbarSearchSlotAlign, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';
+import { DEFAULT_NAVBAR_LAYOUT, applyUnifiedNavbarText, getNavbarCategoriesButtonAppearance, getNavbarCategoriesButtonLabel, getNavbarSearchAppearance, getUnifiedNavbarFontId, getUnifiedNavbarTextCss, isNavbarItemVisible, normalizeNavbarItemOrder, normalizeNavbarLayout, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';
 import {
   DEFAULT_NAVBAR_PHONE,
   resolveNavbarPhone,
 } from '@/lib/storeContact';
 import { DEFAULT_NAVBAR_LANGUAGE, normalizeNavbarLanguage } from '@/lib/storefrontMarket';
-import { STORE1920_LOGO_PATH } from '@/lib/brandLogo';
+import { HAMODY_LOGO_PATH } from '@/lib/brandLogo';
 
 const NAVBAR_SELECTED_ADDRESS_KEY = 'navbarSelectedAddressId';
 const NAVBAR_APPEARANCE_CACHE_KEY = 'navbarAppearanceCache';
 
 const STOREFRONT_BRAND_NAME = 'Hamody';
-/** Empty colors until API/cache. Logo falls back to the Store1920 mark. */
+/** Empty colors until API/cache. Logo falls back to the Hamody mark. */
 const EMPTY_NAVBAR_APPEARANCE = {
   logoUrl: '',
   logoWidth: 120,
@@ -82,7 +81,7 @@ const getNavbarContainerStyle = (maxWidth = 1400) => ({
 });
 const NAVBAR_CONTAINER_CLASS = 'mx-auto w-full px-4 sm:px-6';
 
-const resolveNavbarLogoSrc = (logoUrl) => String(logoUrl || '').trim() || STORE1920_LOGO_PATH;
+const resolveNavbarLogoSrc = (logoUrl) => String(logoUrl || '').trim() || HAMODY_LOGO_PATH;
 
 const normalizeNavbarAppearance = (appearance = {}) => {
   try {
@@ -273,6 +272,20 @@ const Navbar = () => {
       <User size={22} strokeWidth={1.85} aria-hidden="true" />
     );
 
+    if (variant === 'labeled') {
+      return (
+        <button
+          type="button"
+          onClick={onClick}
+          className={`inline-flex items-center gap-1.5 text-[15px] font-medium transition hover:opacity-80 ${isLightTone ? 'text-white' : 'text-[#123D33]'} ${className}`.trim()}
+          aria-label={signedIn ? t('navbar.account') : t('navbar.signInRegister')}
+        >
+          <User size={18} strokeWidth={1.75} aria-hidden="true" />
+          <span>{t('navbar.accountShort')}</span>
+        </button>
+      );
+    }
+
     if (variant === 'icon') {
       const iconButtonSizeClass = compactIcon ? 'h-7 w-7' : 'h-9 w-9';
       const iconUserSize = compactIcon ? 16 : 18;
@@ -309,7 +322,7 @@ const Navbar = () => {
 
     const bottomLine = storefrontWalletEnabled && signedIn && walletCoins > 0
       ? renderWalletAmount({ size: 16, amountClassName: 'text-[11px] font-normal leading-none', tone: isLightTone ? 'light' : 'dark' })
-      : (navActionsVisibility.orders ? t('navbar.ordersAndAccount') : t('navbar.account'));
+      : t('navbar.accountAndLists');
 
     return (
       <button
@@ -322,7 +335,7 @@ const Navbar = () => {
         <span className="flex h-7 w-7 shrink-0 items-center justify-center">
           {accountIcon}
         </span>
-        <span className="min-w-0 flex flex-col leading-[1.15]">
+        <span className="flex min-w-0 flex-col leading-[1.15]">
           <span
             className={`truncate font-bold leading-none ${navbarAppearance.unifyNavbarText ? '' : 'text-[13px] xl:text-[14px]'} ${isLightTone ? 'text-white' : 'text-gray-900'}`}
             data-font={getUnifiedNavbarFontId(navbarAppearance) || undefined}
@@ -355,7 +368,7 @@ const Navbar = () => {
         aria-label={dealsNavLabel}
         className={`navbar-deals-btn shrink-0 font-extrabold tracking-[0.04em] transition hover:opacity-90 ${appearance.animationClass || ''} ${
           isDesktop
-            ? 'hidden lg:inline-flex shrink-0 items-center leading-none'
+            ? 'hidden shrink-0 items-center leading-none xl:inline-flex'
             : `inline-flex flex-col items-center justify-center leading-[1.05] ${
                 appearance.hasChrome ? 'max-w-[140px]' : 'h-8 max-w-[54px]'
               }`
@@ -393,10 +406,8 @@ const Navbar = () => {
   const searchParams = useSearchParams();
   const isHomePage = pathname === '/';
 
-  const resolvedNavbarBg = String(navbarAppearance.backgroundColor || '').trim();
-  const desktopNavbarBackgroundColor = resolvedNavbarBg || '#1F5C4A';
-  const mobileNavbarBackgroundColor = resolvedNavbarBg || '#1F5C4A';
-  const navbarTextColor = getContrastColor(desktopNavbarBackgroundColor);
+  const desktopNavbarBackgroundColor = '#FFFFFF';
+  const mobileNavbarBackgroundColor = '#FFFFFF';
   const mobileNavbarUsesBrandColor = getContrastColor(mobileNavbarBackgroundColor) === '#ffffff';
   const mobileNavbarControlClass = mobileNavbarUsesBrandColor
     ? 'text-white/95 hover:bg-white/15'
@@ -495,11 +506,10 @@ const Navbar = () => {
     if (!firebaseUser) return t('navbar.signInToChoose');
     if (!selectedDeliveryAddress) return addressList.length ? t('navbar.selectAddress') : t('navbar.addAddress');
 
-    const primary = [selectedDeliveryAddress.city, selectedDeliveryAddress.state]
-      .filter(Boolean)
-      .join(' . ');
-
-    return primary || selectedDeliveryAddress.country || t('navbar.selectAddress');
+    const city = String(selectedDeliveryAddress.city || '').trim();
+    const area = String(selectedDeliveryAddress.district || selectedDeliveryAddress.state || '').trim();
+    if (city && area && area.toLowerCase() !== city.toLowerCase()) return `${city}, ${area}`;
+    return city || area || selectedDeliveryAddress.country || t('navbar.selectAddress');
   }, [addressList.length, firebaseUser, selectedDeliveryAddress, storefrontLanguage]);
 
   useEffect(() => {
@@ -1530,6 +1540,7 @@ const Navbar = () => {
     tone = 'light',
     compact = false,
     iconOnly = false,
+    stacked = '',
   }) => {
     const isLightTone = tone === 'light';
     const textClass = isLightTone ? 'text-white' : 'text-gray-900';
@@ -1537,11 +1548,11 @@ const Navbar = () => {
       ? 'text-white hover:bg-white/12'
       : 'text-gray-900 hover:bg-gray-100';
     const className = iconOnly
-      ? `relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition ${iconOnlyClass}`
+      ? `relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition ${iconOnlyClass}`
       : `relative inline-flex shrink-0 items-center ${
           compact ? 'gap-1 px-0.5' : 'gap-2 px-1'
         } py-1 ${textClass} transition hover:opacity-85`;
-    const iconSize = iconOnly ? 20 : compact ? 18 : 22;
+    const iconSize = iconOnly ? 18 : compact ? 18 : 22;
 
     const content = (
       <>
@@ -1554,9 +1565,16 @@ const Navbar = () => {
           ) : null}
         </span>
         {!iconOnly ? (
-          <span className={`${compact ? 'text-[10px]' : 'text-[14px]'} font-normal leading-none whitespace-nowrap`}>
-            {label}
-          </span>
+          stacked ? (
+            <span className="flex flex-col items-start leading-[1.05]">
+              <span className="text-[11px] font-normal leading-none text-white/80">{stacked}</span>
+              <span className="text-[13px] font-bold leading-none whitespace-nowrap">{label}</span>
+            </span>
+          ) : (
+            <span className={`${compact ? 'text-[10px]' : 'text-[14px]'} font-normal leading-none whitespace-nowrap`}>
+              {label}
+            </span>
+          )
         ) : null}
       </>
     );
@@ -1739,12 +1757,71 @@ const Navbar = () => {
             {renderNavbarLogoImage({
               width: navbarAppearance.logoWidth,
               height: navbarAppearance.logoHeight,
-              className: 'h-auto w-auto max-w-[112px] object-contain flex-shrink-0 xl:max-w-[140px]',
-              style: { maxHeight: '34px' },
+              className: 'h-auto w-auto max-w-[160px] object-contain flex-shrink-0 xl:max-w-[190px]',
+              style: { maxHeight: '48px' },
               priority: true,
-              panel: true,
+              panel: false,
             })}
           </Link>
+        </div>
+      );
+    }
+
+    if (itemId === 'location') {
+      return (
+        <button
+          type="button"
+          onClick={handleDeliveryLocationClick}
+          className="flex max-w-[148px] flex-col items-start rounded-sm px-1 py-0.5 text-white transition hover:outline hover:outline-1 hover:outline-white/70"
+          aria-label={`${t('navbar.deliverTo')} ${selectedDeliveryLabel}`}
+        >
+          <span className="ps-[16px] text-[11px] font-normal leading-none text-white/80">
+            {t('navbar.deliverTo')}
+          </span>
+          <span className="mt-0.5 flex min-w-0 items-center gap-0.5">
+            <MapPin size={14} strokeWidth={2.25} className="shrink-0" aria-hidden="true" />
+            <span className="truncate text-[13px] font-bold leading-none">
+              {selectedDeliveryLabel}
+            </span>
+          </span>
+        </button>
+      );
+    }
+
+    if (itemId === 'departments') {
+      const tabClass = (active) =>
+        `inline-flex items-center gap-1 rounded-full px-3 py-2 text-[14px] transition hover:bg-white/10 ${
+          active ? 'font-semibold text-[#E9D6B5]' : 'font-medium text-white/90 hover:text-white'
+        }`;
+      const pageLinks = [
+        { href: '/', label: t('navbar.home'), active: pathname === '/' },
+        { href: '/contact-us', label: t('navbar.contactUs'), active: pathname === '/contact-us' },
+        { href: '/offers', label: t('navbar.hotDeals'), active: pathname === '/offers' || pathname.startsWith('/offers/') },
+      ];
+      return (
+        <div className="relative flex items-center gap-1" ref={categoriesTriggerRef}>
+          <Link href="/" className={tabClass(pageLinks[0].active)}>
+            {pageLinks[0].label}
+          </Link>
+          <button
+            type="button"
+            aria-expanded={categoriesDropdownOpen}
+            aria-haspopup="true"
+            onClick={() => {
+              if (categoriesDropdownOpen) closeCategoriesDropdownNow();
+              else openCategoriesDropdown();
+            }}
+            className={tabClass(categoriesDropdownOpen)}
+          >
+            {t('navbar.categories')}
+            <ChevronDown size={14} strokeWidth={2.2} aria-hidden="true" />
+          </button>
+          {pageLinks.slice(1).map((link) => (
+            <Link key={link.href} href={link.href} className={tabClass(link.active)}>
+              {link.label}
+            </Link>
+          ))}
+          {desktopCategoriesDropdown}
         </div>
       );
     }
@@ -1797,41 +1874,22 @@ const Navbar = () => {
 
     if (itemId === 'search') {
       return (
-        <div className="relative min-w-0 w-full" style={{ maxWidth: Number(navbarAppearance.searchMaxWidth) || 600 }}>
+        <div className="relative min-w-0 w-full">
             <form onSubmit={handleSearch} className="w-full">
-              <div
-                className="flex h-[44px] w-full min-w-0 items-center overflow-hidden px-2 shadow-sm xl:px-3"
-                data-font={desktopSearchAppearance.fontId || 'inherit'}
-                style={desktopSearchAppearance.boxStyle}
-              >
+              <div className="flex h-8 w-full min-w-0 items-center rounded-full bg-white px-2.5 ring-1 ring-[#1F5C4A]/30">
+                <button type="submit" aria-label="Search" className="inline-flex shrink-0 text-[#1F5C4A]">
+                  <Search size={14} strokeWidth={2} />
+                </button>
                 <input
                   type="text"
-                  placeholder={customSearchPlaceholder || searchPlaceholder || t('navbar.searchFragrances')}
+                  placeholder={t('navbar.searchProduct')}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   onPaste={handleSearchImagePaste}
                   onFocus={() => setSearchFocused(true)}
                   onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
-                  className="min-w-0 flex-1 bg-transparent leading-none outline-none placeholder:opacity-50"
-                  style={desktopSearchAppearance.inputStyle}
+                  className="min-w-0 flex-1 bg-transparent px-1.5 text-[13px] leading-none text-[#123D33] outline-none placeholder:text-[#123D33]/50"
                 />
-                <button
-                  type="button"
-                  onClick={() => openImageSearch()}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition hover:bg-black/5"
-                  style={{ color: desktopSearchAppearance.textColor || searchAccentColor }}
-                  aria-label={t('navbar.imageSearch')}
-                >
-                  <Camera size={16} />
-                </button>
-                <button
-                  type="submit"
-                  className="ml-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white transition hover:opacity-90"
-                  style={{ backgroundColor: searchAccentColor }}
-                  aria-label="Search"
-                >
-                  <Search size={15} />
-                </button>
               </div>
             </form>
             {renderSearchSuggestionsDropdown(
@@ -1848,7 +1906,9 @@ const Navbar = () => {
             {renderAccountMenuTrigger({
               signedIn: true,
               onClick: () => setUserDropdownOpen((prev) => !prev),
-              tone: 'light',
+              tone: 'dark',
+              variant: 'icon',
+              compactIcon: true,
             })}
             {userDropdownOpen && (
               <div className="absolute right-0 top-12 min-w-[220px] bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-2">
@@ -1891,7 +1951,9 @@ const Navbar = () => {
             setSignInMode('login');
             setSignInOpen(true);
           },
-          tone: 'light',
+          tone: 'dark',
+          variant: 'icon',
+          compactIcon: true,
         })
       );
     }
@@ -1903,6 +1965,7 @@ const Navbar = () => {
         onClick: handleOrdersClick,
         icon: Package,
         label: t('navbar.orders'),
+        stacked: t('navbar.returns'),
         ariaLabel: t('navbar.orders'),
         tone: 'light',
       });
@@ -1916,7 +1979,8 @@ const Navbar = () => {
         label: t('navbar.wishlist'),
         badgeCount: wishlistCount,
         ariaLabel: t('navbar.wishlist'),
-        tone: 'light',
+        tone: 'dark',
+        iconOnly: true,
       });
     }
 
@@ -1924,11 +1988,12 @@ const Navbar = () => {
       if (!navActionsVisibility.cart) return null;
       return renderLabeledNavAction({
         onClick: handleCartClick,
-        icon: ShoppingCart,
+        icon: ShoppingBag,
         label: t('navbar.cart'),
         badgeCount: isClient ? cartCount : 0,
         ariaLabel: t('navbar.cart'),
-        tone: 'light',
+        tone: 'dark',
+        iconOnly: true,
       });
     }
 
@@ -1943,7 +2008,7 @@ const Navbar = () => {
           aria-label={`${phone.displayLabel || t('navbar.support')} ${phone.number}`}
         >
           <Phone size={18} strokeWidth={1.7} aria-hidden="true" />
-          <span className="flex min-w-0 flex-col leading-[1.05]">
+          <span className="hidden min-w-0 flex-col leading-[1.05] xl:flex">
             <span className="text-[13px] font-bold tabular-nums leading-none" dir="ltr">
               {phone.short}
             </span>
@@ -1962,7 +2027,7 @@ const Navbar = () => {
       return (
         <StorefrontLanguageMarketSwitch
           initialLanguage={storefrontLanguage}
-          tone="onDark"
+          tone="onLight"
           appearance={navbarLanguage}
         />
       );
@@ -2026,7 +2091,7 @@ const Navbar = () => {
         className="lg:hidden sticky top-0 z-50 border-b shadow-[0_1px_3px_rgba(15,23,42,0.06)]"
         style={{
           backgroundColor: mobileNavbarBackgroundColor,
-          borderColor: '#123D33',
+          borderColor: '#E7E1D6',
         }}
       >
         <div
@@ -2054,7 +2119,7 @@ const Navbar = () => {
                 className: 'h-6 w-auto max-w-[78px] object-contain sm:max-w-[92px]',
                 style: { maxHeight: '24px' },
                 priority: true,
-                panel: true,
+                panel: false,
               })}
             </Link>
           </div>
@@ -2146,92 +2211,55 @@ const Navbar = () => {
         onMouseLeave={categoriesDropdownOpen ? closeCategoriesDropdown : undefined}
       >
       <nav
-        className="overflow-visible border-b text-white shadow-[0_12px_28px_rgba(18,61,51,0.18)]"
+        className="overflow-visible border-b text-[#123D33] shadow-[0_1px_3px_rgba(15,23,42,0.06)]"
         style={{
           backgroundColor: desktopNavbarBackgroundColor,
-          borderColor: '#123D33',
-          color: navbarTextColor,
+          borderColor: '#E7E1D6',
+          color: '#123D33',
         }}
       >
       <div className={NAVBAR_CONTAINER_CLASS} style={getNavbarContainerStyle(navbarAppearance.navbarMaxWidth)}>
-        {(() => {
-          try {
-            const sides = groupNavbarItemsBySide(
-              desktopItemOrder,
-              navbarAppearance.itemAlign,
-              navbarAppearance.extraButtons,
-              navbarAppearance.searchAlign,
-            );
-            const rowSlots = getNavbarDesktopRowSlots(sides, navbarAppearance.itemGap);
-            const searchOnSide = (sides.left || []).includes('search') || (sides.right || []).includes('search');
-            const renderSide = (itemIds = []) => {
-              const ids = Array.isArray(itemIds) ? itemIds : [];
-              const holdsSearch = ids.includes('search');
-              const searchMax = Number(navbarAppearance.searchMaxWidth) || 600;
-              return (
-              <div className={`flex items-center ${holdsSearch ? 'min-w-0 flex-1' : 'shrink-0'}`} style={rowSlots.clusterStyle}>
-                {ids.map((itemId) => {
-                  const node = renderDesktopNavbarItem(itemId);
-                  if (!node) return null;
-                  return (
-                    <div
-                      key={itemId}
-                      className={itemId === 'search' ? 'relative z-[70] min-w-0 flex-1' : 'shrink-0'}
-                      style={itemId === 'search' ? { maxWidth: searchMax } : undefined}
-                    >
-                      {node}
-                    </div>
-                  );
-                })}
-              </div>
-              );
-            };
-            return (
-              <div className={rowSlots.rowClassName}>
-                {renderSide(sides.left)}
-                {rowSlots.hasCenter ? (
-                  <div className={rowSlots.centerClassName} style={rowSlots.centerStyle}>
-                    {(sides.center || []).map((itemId) => {
-                      const node = renderDesktopNavbarItem(itemId);
-                      if (!node) return null;
-                      const searchSlot = itemId === 'search'
-                        ? getNavbarSearchSlotProps(
-                          resolveNavbarSearchSlotAlign('center', navbarAppearance.searchAlign),
-                          navbarAppearance.searchMaxWidth,
-                        )
-                        : null;
-                      return (
-                        <div
-                          key={itemId}
-                          className={searchSlot ? searchSlot.slotClassName : 'shrink-0'}
-                        >
-                          {node}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : searchOnSide ? null : (
-                  <div className={rowSlots.spacerClassName} style={rowSlots.spacerStyle} aria-hidden="true" />
-                )}
-                {renderSide(sides.right)}
-              </div>
-            );
-          } catch (error) {
-            console.error('[Navbar] Desktop row failed:', error);
-            return (
-              <div className="flex min-w-0 w-full items-center gap-3 py-2.5">
-                {desktopItemOrder.map((itemId) => {
-                  const node = renderDesktopNavbarItem(itemId);
-                  return node ? <div key={itemId} className="shrink-0">{node}</div> : null;
-                })}
-              </div>
-            );
-          }
-        })()}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-3">
+          <div />
+          <div className="justify-self-center">{renderDesktopNavbarItem('logo')}</div>
+          <div className="flex items-center justify-self-end">
+            {renderDesktopNavbarItem('language')}
+          </div>
+        </div>
+      </div>
+      <div className="border-t border-[#E9D6B5]">
+      <div className={NAVBAR_CONTAINER_CLASS} style={getNavbarContainerStyle(navbarAppearance.navbarMaxWidth)}>
+        <div className="relative">
+          <div className="flex items-center justify-center gap-8 px-44">
+            {[
+              { href: '/', label: t('navbar.home'), active: pathname === '/' },
+              { href: '/shop', label: t('navbar.allProducts'), active: pathname === '/shop' },
+              { href: '/categories', label: t('navbar.collections'), active: pathname === '/categories' || pathname.startsWith('/category/') },
+              { href: '/contact-us', label: t('navbar.contactUs'), active: pathname === '/contact-us' },
+            ].map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`border-b-2 py-3 text-[15px] text-[#123D33] transition hover:opacity-80 ${
+                  link.active ? 'border-[#1F5C4A] font-semibold' : 'border-transparent font-medium'
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <div className="w-[168px] shrink-0 py-2">
+              {renderDesktopNavbarItem('search')}
+            </div>
+          </div>
+          <div className="absolute end-0 top-1/2 flex -translate-y-1/2 items-center gap-0.5">
+            {renderDesktopNavbarItem('account')}
+            {renderDesktopNavbarItem('wishlist')}
+            {renderDesktopNavbarItem('cart')}
+          </div>
+        </div>
+      </div>
       </div>
       </nav>
-
-      <NavbarMenuBar />
       </div>
 
 
@@ -2427,6 +2455,15 @@ const Navbar = () => {
                     {t('navbar.shopOptions')}
                   </p>
                   <div className="divide-y divide-slate-100">
+                    <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50">
+                      <span>{t('navbar.home')}</span>
+                    </Link>
+                    <Link href="/contact-us" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50">
+                      <span>{t('navbar.contactUs')}</span>
+                    </Link>
+                    <Link href="/offers" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50">
+                      <span>{t('navbar.hotDeals')}</span>
+                    </Link>
                     <Link href="/top-selling" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50">
                       <Flame size={17} className="text-[#9C6E20]" />
                       <span>{t('navbar.topSellingItems')}</span>

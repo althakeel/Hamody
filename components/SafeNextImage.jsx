@@ -13,14 +13,14 @@ import { isRetiredStoreMediaUrl, PLACEHOLDER_IMAGE } from '@/lib/mediaUrls';
  */
 const OPTIMIZED_HOSTS = [
   'ik.imagekit.io',
-  'www.store1920.com',
-  'store1920.com',
+  'www.hamody.com',
+  'hamody.com',
   'placehold.co',
   'lh3.googleusercontent.com',
 ];
 
 const DIRECT_IMG_HOSTS = [
-  'store1920-images.s3.ap-south-1.amazonaws.com',
+  'hamody-images.s3.ap-south-1.amazonaws.com',
 ];
 
 /** Resolve next/image StaticImport objects to a usable URL string. */
@@ -49,7 +49,7 @@ export function shouldBypassNextImageOptimizer(src) {
   try {
     const { hostname, protocol } = new URL(value);
     if (protocol !== 'http:' && protocol !== 'https:') return true;
-    if (hostname.toLowerCase() === 'db.store1920.com') return true;
+    if (hostname.toLowerCase() === 'db.hamody.com') return true;
 
     const direct = DIRECT_IMG_HOSTS.some(
       (host) => hostname === host || hostname.endsWith(`.${host}`),

@@ -1320,7 +1320,7 @@ export default function EmailCampaignLandingPages({ getToken }) {
                 value={form.ctaUrl}
                 onChange={(e) => setField('ctaUrl', e.target.value)}
                 className={fieldClass}
-                placeholder="https://www.store1920.com/shop"
+                placeholder="https://hamody.com/shop"
               />
             </label>
           </div>

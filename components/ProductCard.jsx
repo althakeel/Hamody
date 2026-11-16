@@ -330,7 +330,15 @@ const ProductCard = ({
         className="inline-flex h-8 w-8 shrink-0 items-center justify-center border-0 bg-transparent p-0 shadow-none outline-none ring-0 transition-opacity duration-200 hover:opacity-70 focus:outline-none focus-visible:outline-none active:scale-95"
         aria-label={t('common.addToCart')}
       >
-        <Plus size={18} className="text-[#1F5C4A]" strokeWidth={2.4} />
+        <img
+          src="/icons/add-to-cart.png"
+          alt=""
+          width={26}
+          height={26}
+          draggable={false}
+          aria-hidden="true"
+          className="h-[26px] w-[26px] select-none object-contain"
+        />
       </button>
     )
   }
@@ -469,21 +477,21 @@ const ProductCard = ({
             ) : null}
 
             {livePrice > 0 ? (
-              <div className="flex min-w-0 flex-nowrap items-baseline justify-start gap-x-1.5 overflow-hidden">
-                <span dir="ltr" className="inline-flex min-w-0 flex-nowrap items-baseline gap-x-1.5 overflow-hidden">
-                  <span className={`inline-flex shrink-0 items-baseline gap-0.5 font-semibold leading-none text-slate-950 ${compactAll ? 'text-xs' : compactLg ? 'text-sm sm:text-base lg:text-xs' : 'text-sm sm:text-base'}`}>
+              <div className="flex min-w-0 flex-wrap items-baseline justify-start gap-x-1.5 gap-y-0.5">
+                <span dir="ltr" className="inline-flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                  <span className={`inline-flex items-baseline gap-0.5 font-semibold leading-none text-slate-950 ${compactAll ? 'text-xs' : compactLg ? 'text-sm sm:text-base lg:text-xs' : 'text-sm sm:text-base'}`}>
                     <CurrencySymbol currency={market.currency} />
                     <span>{formatNumber(convertedPrice, language, { maximumFractionDigits: 0 })}</span>
                   </span>
                   {comparePrice > 0 ? (
-                    <StruckPrice className="shrink-0 gap-0.5 text-[10px] leading-none text-slate-400 sm:text-xs">
+                    <StruckPrice className="gap-0.5 text-[10px] leading-none text-slate-400 sm:text-xs">
                       <CurrencySymbol currency={market.currency} />
                       <span>{formatNumber(convertedAED, language, { maximumFractionDigits: 0 })}</span>
                     </StruckPrice>
                   ) : null}
                 </span>
                 {discount > 0 ? (
-                  <span className="shrink-0 whitespace-nowrap text-[10px] font-semibold leading-none text-[#9C6E20] sm:text-xs">
+                  <span className="text-[10px] font-semibold leading-none text-[#9C6E20] sm:text-xs">
                     {t('common.offPercent', {
                       discount: formatNumber(discount, language, { maximumFractionDigits: 0 }),
                     })}

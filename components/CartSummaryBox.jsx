@@ -71,7 +71,7 @@ export default function CartSummaryBox({
   // Temporarily hidden on cart — keep Tabby available at checkout.
   const showTabbyPromo = false;
   const tabbyPublicKey = process.env.NEXT_PUBLIC_TABBY_PUBLIC_KEY || '';
-  const tabbyMerchantCode = process.env.NEXT_PUBLIC_TABBY_MERCHANT_CODE || process.env.TABBY_MERCHANT_CODE || 'Store1920';
+  const tabbyMerchantCode = process.env.NEXT_PUBLIC_TABBY_MERCHANT_CODE || process.env.TABBY_MERCHANT_CODE || 'HAMODY';
 
   const listValue = Number(productValue);
   const discountAmount = Number(discount);
@@ -120,31 +120,31 @@ export default function CartSummaryBox({
   }, [showTabbyPromo, total, tabbyPublicKey, tabbyMerchantCode]);
 
   return (
-    <div className="w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="w-full min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
       <div className="mb-4">
         {showPriceBreakdown ? (
           <>
-            <div className="flex justify-between text-sm text-gray-500 mb-2">
-              <span>{t('cart.productValue')}</span>
-              <span className="inline-flex items-baseline gap-1 tabular-nums"><CurrencySymbol currency={market.currency} />{formatAmount(listValue)}</span>
+            <div className="mb-2 flex min-w-0 items-start justify-between gap-3 text-sm text-gray-500">
+              <span className="min-w-0">{t('cart.productValue')}</span>
+              <span className="inline-flex shrink-0 items-baseline gap-1 text-end tabular-nums"><CurrencySymbol currency={market.currency} />{formatAmount(listValue)}</span>
             </div>
-            <div className="flex justify-between text-sm text-gray-500 mb-2">
-              <span>{t('cart.salePrice')}</span>
-              <span className="inline-flex items-baseline gap-1 tabular-nums"><CurrencySymbol currency={market.currency} />{formatAmount(subtotal)}</span>
+            <div className="mb-2 flex min-w-0 items-start justify-between gap-3 text-sm text-gray-500">
+              <span className="min-w-0">{t('cart.salePrice')}</span>
+              <span className="inline-flex shrink-0 items-baseline gap-1 text-end tabular-nums"><CurrencySymbol currency={market.currency} />{formatAmount(subtotal)}</span>
             </div>
-            <div className="flex justify-between text-sm text-emerald-600 mb-2 font-medium">
-              <span>{t('cart.discount')}</span>
-              <span className="inline-flex items-baseline gap-1 tabular-nums">− <CurrencySymbol currency={market.currency} />{formatAmount(discountAmount)}</span>
+            <div className="mb-2 flex min-w-0 items-start justify-between gap-3 text-sm font-medium text-emerald-600">
+              <span className="min-w-0">{t('cart.discount')}</span>
+              <span className="inline-flex shrink-0 items-baseline gap-1 text-end tabular-nums">− <CurrencySymbol currency={market.currency} />{formatAmount(discountAmount)}</span>
             </div>
           </>
         ) : (
-          <div className="flex justify-between text-sm text-gray-500 mb-2">
-            <span>{t('cart.items')}</span>
-            <span className="inline-flex items-baseline gap-1"><CurrencySymbol currency={market.currency} />{formatAmount(subtotal)}</span>
+          <div className="mb-2 flex min-w-0 items-start justify-between gap-3 text-sm text-gray-500">
+            <span className="min-w-0">{t('cart.items')}</span>
+            <span className="inline-flex shrink-0 items-baseline gap-1 text-end tabular-nums"><CurrencySymbol currency={market.currency} />{formatAmount(subtotal)}</span>
           </div>
         )}
         {showShipping && (
-          <div className="flex justify-between text-sm mb-2">
+          <div className="mb-2 flex min-w-0 items-start justify-between gap-3 text-sm">
             <span className={shipping === 0 ? 'text-green-600' : 'text-gray-400'}>
               {t('cart.shippingAndHandling')}
             </span>
@@ -159,9 +159,9 @@ export default function CartSummaryBox({
           </div>
         )}
         <hr className="my-2" />
-        <div className="flex justify-between font-bold text-base text-gray-800">
+        <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 font-bold text-gray-800">
           <span>{t('cart.total')}</span>
-          <span className="inline-flex items-baseline gap-1"><CurrencySymbol currency={market.currency} />{formatAmount(total)}</span>
+          <span className="inline-flex items-baseline gap-1 text-[clamp(16px,4vw,18px)] tabular-nums"><CurrencySymbol currency={market.currency} />{formatAmount(total)}</span>
         </div>
         <p className="mt-3 text-xs leading-relaxed text-slate-500">
           {t('cart.freeDeliveryNote')}

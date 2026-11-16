@@ -8,7 +8,6 @@ import { HOME_SECTION_CLASS, PRODUCT_CARD_CELL_CLASS } from '@/lib/storefrontCar
 import { useAuth } from '@/lib/useAuth'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
 import { filterStorefrontInStockProducts } from '@/lib/productVisibility'
-import Title from './Title'
 
 const DEFAULT_ITEMS_PER_ROW = 5
 const DEFAULT_ROWS = 2
@@ -33,23 +32,15 @@ function normalizeLayoutStyle(style) {
 // Featured selection component (only show admin-selected featured products)
 const BestSelling = ({
   initialProducts = null,
-  initialSectionTitle = null,
-  initialSectionDescription = null,
-  initialSectionTitleAr = null,
-  initialSectionDescriptionAr = null,
   initialLayout = null,
 }) => {
   // Homepage SSR already applies published/in-stock filters — trust that list.
   const hasInitialProducts = Array.isArray(initialProducts) && initialProducts.length > 0
   const { getToken, user, loading: authLoading } = useAuth()
-  const { t, isArabic } = useStorefrontI18n()
+  const { t } = useStorefrontI18n()
   const [featuredProducts, setFeaturedProducts] = useState(hasInitialProducts ? initialProducts : [])
   const [isLoading, setIsLoading] = useState(!hasInitialProducts)
   const [error, setError] = useState(null)
-  const [sectionTitle, setSectionTitle] = useState(initialSectionTitle || 'Craziest sale of the year!')
-  const [sectionDescription, setSectionDescription] = useState(initialSectionDescription || "Grab the best deals before they're gone!")
-  const [sectionTitleAr, setSectionTitleAr] = useState(String(initialSectionTitleAr || ''))
-  const [sectionDescriptionAr, setSectionDescriptionAr] = useState(String(initialSectionDescriptionAr || ''))
   const [layoutSettings, setLayoutSettings] = useState(() => {
     const homeMenu = initialLayout || {}
     return {
@@ -67,12 +58,6 @@ const BestSelling = ({
     1,
     Math.min(40, clampItemsPerRow(layoutSettings.itemsPerRow) * clampRows(layoutSettings.rows)),
   )
-  const titleAr = String(sectionTitleAr || '').trim()
-  const descriptionAr = String(sectionDescriptionAr || '').trim()
-  const effectiveSectionTitle =
-    (isArabic && titleAr ? titleAr : String(sectionTitle || '').trim()) || t('featured.title')
-  const effectiveSectionDescription =
-    (isArabic && descriptionAr ? descriptionAr : String(sectionDescription || '').trim()) || t('featured.description')
   const isCarousel = layoutSettings.style === 'carousel'
 
   const fetchFeaturedAndSectionText = useCallback(async () => {
@@ -126,13 +111,6 @@ const BestSelling = ({
           itemsPerRow: clampItemsPerRow(homeMenu.itemsPerRow, prev.itemsPerRow),
           rows: clampRows(homeMenu.rows, prev.rows),
         }))
-
-        if (typeof featuredData?.sectionTitle === 'string') setSectionTitle(featuredData.sectionTitle)
-        if (typeof featuredData?.sectionDescription === 'string') setSectionDescription(featuredData.sectionDescription)
-        if (typeof featuredData?.sectionTitleAr === 'string') setSectionTitleAr(featuredData.sectionTitleAr)
-        if (typeof featuredData?.sectionDescriptionAr === 'string') {
-          setSectionDescriptionAr(featuredData.sectionDescriptionAr)
-        }
 
         const resolvedProducts = filterStorefrontInStockProducts(
           (Array.isArray(featuredData.products) ? featuredData.products : [])
@@ -224,23 +202,7 @@ const BestSelling = ({
     if (typeof window === 'undefined') return
 
     const applyLivePayload = (payload) => {
-      const nextTitle = payload?.sectionTitle
-      const nextDescription = payload?.sectionDescription
-      const nextTitleAr = payload?.sectionTitleAr
-      const nextDescriptionAr = payload?.sectionDescriptionAr
       const nextLayout = payload?.layout
-      if (typeof nextTitle === 'string' && nextTitle.trim()) {
-        setSectionTitle(nextTitle)
-      }
-      if (typeof nextDescription === 'string' && nextDescription.trim()) {
-        setSectionDescription(nextDescription)
-      }
-      if (typeof nextTitleAr === 'string') {
-        setSectionTitleAr(nextTitleAr)
-      }
-      if (typeof nextDescriptionAr === 'string') {
-        setSectionDescriptionAr(nextDescriptionAr)
-      }
       if (nextLayout && typeof nextLayout === 'object') {
         setLayoutSettings((prev) => ({
           style: normalizeLayoutStyle(nextLayout.style) || prev.style,
@@ -286,15 +248,8 @@ const BestSelling = ({
 
   return (
     <div className={`${HOME_SECTION_CLASS} relative z-10 mx-auto w-full max-w-[1400px] px-4 sm:px-6`}>
-      <Title
-        title={effectiveSectionTitle}
-        description={effectiveSectionDescription}
-        href="/offers"
-        visibleButton={false}
-      />
-
       {isCarousel ? (
-        <div className="mt-6">
+        <div>
           {isLoading && featuredProducts.length === 0 ? (
             <div className="flex gap-3 overflow-hidden">
               {Array(Math.min(visibleCount, clampItemsPerRow(layoutSettings.itemsPerRow))).fill(0).map((_, idx) => (
@@ -324,7 +279,7 @@ const BestSelling = ({
         </div>
       ) : (
         <div
-          className="featured-products-grid mt-6 grid grid-cols-2 items-stretch gap-3 md:grid-cols-3 lg:grid-cols-5"
+          className="featured-products-grid grid grid-cols-2 items-stretch gap-3 md:grid-cols-3 lg:grid-cols-5"
           style={{ '--desktop-cols': String(clampItemsPerRow(layoutSettings.itemsPerRow)) }}
         >
           {isLoading && featuredProducts.length === 0

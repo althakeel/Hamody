@@ -1,9 +1,9 @@
-# Store1920 app checkout
+# HAMODY app checkout
 
 Last updated: 27 October 2026  
 Audience: Android and Flutter  
-Website: `https://www.store1920.com/checkout`  
-API root: `https://www.store1920.com/api`
+Website: `https://www.hamody.com/checkout`  
+API root: `https://www.hamody.com/api`
 
 This is the shopper checkout. Place the order with `POST /api/orders`. Do not call seller routes, and do not talk to VaultsPay, Stripe, Tabby, or Tamara from the app.
 
@@ -72,7 +72,7 @@ The pay button label is **Pay by Cash on Delivery**, **Pay by Card**, **Pay by A
 ## 3. Place the order
 
 ```http
-POST https://www.store1920.com/api/orders
+POST https://www.hamody.com/api/orders
 Content-Type: application/json
 X-Store1920-Client: app
 X-Store1920-Platform: android
@@ -220,7 +220,7 @@ Use the same items, address, and shipping fields as cash. Do not send `vaultsPay
 
 Open the hosted URL in a browser or in-app web view. Do not change it. Every VaultsPay page expires after **30 minutes** (`expiryInSeconds: 1800`). The order stays unpaid until verify succeeds.
 
-The server includes `https://www.store1920.com/api/vaultspay/callback` as `callBackUrl` on every VaultsPay initialization. The callback confirms the authoritative transaction with VaultsPay before it changes the order; the callback payload alone is not proof of payment.
+The server includes `https://www.hamody.com/api/vaultspay/callback` as `callBackUrl` on every VaultsPay initialization. The callback confirms the authoritative transaction with VaultsPay before it changes the order; the callback payload alone is not proof of payment.
 
 The callback handles provider updates as they arrive. A separate expiry check runs every minute and marks still-unpaid VaultsPay orders failed shortly after the 30-minute checkout expiry. Provider-confirmed success always takes precedence.
 

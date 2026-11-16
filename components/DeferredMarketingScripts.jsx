@@ -32,14 +32,14 @@ function injectInlineScript(id, source) {
 function loadGtm() {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
   window.dataLayer = window.dataLayer || [];
-  window.__store1920GtmLoaded = window.__store1920GtmLoaded || {};
-  if (window.__store1920GtmLoaded[GTM_ID]) return;
+  window.__HANODYGtmLoaded = window.__HANODYGtmLoaded || {};
+  if (window.__HANODYGtmLoaded[GTM_ID]) return;
   if (document.querySelector(`script[src*="googletagmanager.com/gtm.js?id=${GTM_ID}"]`)) {
-    window.__store1920GtmLoaded[GTM_ID] = true;
+    window.__HANODYGtmLoaded[GTM_ID] = true;
     return;
   }
 
-  window.__store1920GtmLoaded[GTM_ID] = true;
+  window.__HANODYGtmLoaded[GTM_ID] = true;
   window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
 
   const script = document.createElement('script');
@@ -51,8 +51,8 @@ function loadGtm() {
 
 function loadMarketingPixels() {
   if (typeof window === 'undefined') return;
-  if (window.__store1920MarketingLoaded) return;
-  window.__store1920MarketingLoaded = true;
+  if (window.__HAMODYMarketingLoaded) return;
+  window.__HAMODYMarketingLoaded = true;
 
   loadGtm();
   injectInlineScript('meta-pixel-deferred', getMetaPixelBootstrapScript(META_PIXEL_ID));

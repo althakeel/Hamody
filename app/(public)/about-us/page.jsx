@@ -3,40 +3,40 @@
 import Link from 'next/link';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 import {
-  STORE1920_CUSTOMER_SUPPORT_PHONE,
-  STORE1920_SUPPORT_EMAIL,
+  HAMODY_CUSTOMER_SUPPORT_PHONE,
+  HAMODY_SUPPORT_EMAIL,
 } from '@/lib/storeContact';
 import {
-  STORE1920_LEGAL_NAME,
-  STORE1920_LEGAL_NAME_AR,
-  STORE1920_TRADE_LICENSE_NO,
+  HAMODY_LEGAL_NAME,
+  HAMODY_LEGAL_NAME_AR,
+  HAMODY_TRADE_LICENSE_NO,
 } from '@/lib/businessIdentity';
 
 const PAGE_COPY = {
   en: {
     headline: 'Smart living.\nSmarter prices.',
     support:
-      'Store1920 is a UAE online retailer offering electronics, home, and lifestyle essentials at competitive prices with fast delivery on eligible items.',
+      'hamody.com is a UAE store for traditional sculptures and outdoor camping, with delivery on eligible items.',
     ctaShop: 'Shop now',
     ctaBusiness: 'Business information',
     whoEyebrow: 'Who we are',
     whoTitle: 'Built in the UAE for everyday shoppers',
     whoLead:
-      'Store1920 is your go-to online destination in the UAE for quality electronics, gadgets, and home essentials — all at prices that make sense.',
-    whoP1: `Store1920 is owned and operated by ${STORE1920_LEGAL_NAME} (${STORE1920_LEGAL_NAME_AR}), a UAE Limited Liability Company licensed by the Department of Economic Development (License No. ${STORE1920_TRADE_LICENSE_NO}).`,
+      'hamody.com sells traditional tabletop sculptures and outdoor camping gear in the UAE.',
+    whoP1: `hamody.com is owned and operated by ${HAMODY_LEGAL_NAME} (${HAMODY_LEGAL_NAME_AR}), a UAE Limited Liability Company licensed by the Department of Economic Development (License No. ${HAMODY_TRADE_LICENSE_NO}).`,
     whoP2:
       'We were founded on a simple belief: everyone deserves great products without overpaying. Whether you are upgrading your setup, finding a gift, or buying something that just works — we handpick it, price it fairly, and deliver it to your door.',
     whoP3Prefix: 'Full trade license and company details are on our',
     whoP3Link: 'Business Information',
-    whoP3Suffix: `page, including our Dubai registered office, Sharjah fulfilment and returns address, phone ${STORE1920_CUSTOMER_SUPPORT_PHONE}, and email ${STORE1920_SUPPORT_EMAIL}.`,
+    whoP3Suffix: `page, including our Dubai registered office, Sharjah fulfilment and returns address, phone ${HAMODY_CUSTOMER_SUPPORT_PHONE}, and email ${HAMODY_SUPPORT_EMAIL}.`,
     offerEyebrow: 'What we offer',
     offerTitle: 'Two clear collections. No clutter.',
-    offerElectronicsTitle: 'Electronics & gadgets',
+    offerElectronicsTitle: 'Traditional sculptures',
     offerElectronicsText:
-      'Smart devices, personal tech, and tools that make daily life more efficient — selected for quality and value.',
-    offerHomeTitle: 'Home living',
+      'Tabletop sculptures, including angel wings, branches, and marble pieces, chosen for the home.',
+    offerHomeTitle: 'Outdoor & camping',
     offerHomeText:
-      'Practical, well-designed essentials that turn any space into a comfortable, functional home.',
+      'Tents and camping gear for trips in the UAE, from pop-up shelters to larger family tents.',
     offerFoot:
       'Every item is chosen for relevance to life in the UAE. No filler — just products worth buying.',
     whyEyebrow: 'Why shop with us',
@@ -61,33 +61,33 @@ const PAGE_COPY = {
     ],
     closeTitle: 'Shop smart. Live better.',
     closeText:
-      'Join thousands of UAE shoppers who trust Store1920 for electronics and home needs — great products, fair prices, delivered to your door.',
+      'Browse traditional sculptures and outdoor camping at hamody.com, with delivery on eligible items.',
     closeCta: 'Browse the store',
   },
   ar: {
     headline: 'حياة أذكى.\nبأسعار أوضح.',
     support:
-      'Store1920 متجر تجزئة إلكتروني في الإمارات يقدّم الإلكترونيات ومستلزمات المنزل ونمط الحياة بأسعار تنافسية مع توصيل سريع للمنتجات المؤهلة.',
+      'hamody.com متجر في الإمارات للمنحوتات التقليدية والتخييم في الهواء الطلق، مع توصيل للمنتجات المؤهلة.',
     ctaShop: 'تسوق الآن',
     ctaBusiness: 'معلومات الأعمال',
     whoEyebrow: 'من نحن',
     whoTitle: 'متجر إماراتي لصاحب التسوق اليومي',
     whoLead:
-      'Store1920 وجهتك في الإمارات للإلكترونيات والأجهزة ومستلزمات المنزل بجودة موثوقة وأسعار منطقية.',
-    whoP1: `Store1920 مملوك ويُدار من قبل ${STORE1920_LEGAL_NAME_AR} (${STORE1920_LEGAL_NAME})، وهي شركة ذات مسؤولية محدودة مرخصة من دائرة التنمية الاقتصادية (رقم الرخصة ${STORE1920_TRADE_LICENSE_NO}).`,
+      'يبيع hamody.com منحوتات الطاولة التقليدية ومستلزمات التخييم في الهواء الطلق داخل الإمارات.',
+    whoP1: `hamody.com مملوك ويُدار من قبل ${HAMODY_LEGAL_NAME_AR} (${HAMODY_LEGAL_NAME})، وهي شركة ذات مسؤولية محدودة مرخصة من دائرة التنمية الاقتصادية (رقم الرخصة ${HAMODY_TRADE_LICENSE_NO}).`,
     whoP2:
       'تأسسنا على قناعة بسيطة: يستحق الجميع منتجات جيدة دون دفع مبالغ زائدة. سواء كنت تحدّث أجهزتك أو تبحث عن هدية أو عن منتج يعمل كما يجب — نختاره بعناية ونسعّره بعدل ونوصله إلى بابك.',
     whoP3Prefix: 'تفاصيل الرخصة والشركة كاملة على صفحة',
     whoP3Link: 'معلومات الأعمال',
-    whoP3Suffix: `، وتشمل المكتب المسجّل في دبي، وعنوان التجهيز والإرجاع في الشارقة، والهاتف ${STORE1920_CUSTOMER_SUPPORT_PHONE}، والبريد ${STORE1920_SUPPORT_EMAIL}.`,
+    whoP3Suffix: `، وتشمل المكتب المسجّل في دبي، وعنوان التجهيز والإرجاع في الشارقة، والهاتف ${HAMODY_CUSTOMER_SUPPORT_PHONE}، والبريد ${HAMODY_SUPPORT_EMAIL}.`,
     offerEyebrow: 'ماذا نقدّم',
     offerTitle: 'مجموعتان واضحتان. بلا فوضى.',
-    offerElectronicsTitle: 'إلكترونيات وأجهزة',
+    offerElectronicsTitle: 'منحوتات تقليدية',
     offerElectronicsText:
-      'أجهزة ذكية وتقنية شخصية وأدوات تسهّل يومك — مختارة للجودة والقيمة.',
-    offerHomeTitle: 'مستلزمات المنزل',
+      'منحوتات للطاولة، منها أجنحة الملائكة والأغصان وقطع الرخام، مختارة للمنزل.',
+    offerHomeTitle: 'الهواء الطلق والتخييم',
     offerHomeText:
-      'منتجات عملية بتصميم جيد تحوّل أي مساحة إلى منزل مريح وعملي.',
+      'خيام ومستلزمات تخييم للرحلات في الإمارات، من المظلات السريعة إلى خيام العائلة.',
     offerFoot:
       'كل منتج يُختار ليلائم الحياة في الإمارات. بلا حشو — فقط ما يستحق الشراء.',
     whyEyebrow: 'لماذا تتسوق معنا',
@@ -112,7 +112,7 @@ const PAGE_COPY = {
     ],
     closeTitle: 'تسوق بذكاء. عش أفضل.',
     closeText:
-      'انضم إلى آلاف المتسوقين في الإمارات الذين يثقون بـ Store1920 للإلكترونيات والمنزل — منتجات جيدة، أسعار عادلة، وتوصيل إلى بابك.',
+      'تصفح المنحوتات التقليدية ومستلزمات التخييم على hamody.com، مع توصيل للمنتجات المؤهلة.',
     closeCta: 'تصفح المتجر',
   },
 };

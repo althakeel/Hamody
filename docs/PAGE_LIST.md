@@ -1,4 +1,4 @@
-# Store1920 page list
+# HAMODY page list
 
 All live routes in this app. Dynamic segments are shown in brackets.
 

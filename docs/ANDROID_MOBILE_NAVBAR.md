@@ -1,9 +1,9 @@
-# Store1920 phone header — design and APIs
+# HAMODY phone header — design and APIs
 
 Last updated: 12 October 2026  
 Audience: Android app  
-Website: `https://www.store1920.com`  
-API root: `https://www.store1920.com/api`  
+Website: `https://www.hamody.com`  
+API root: `https://www.hamody.com/api`  
 Web source: `components/TopBar.jsx`, `components/Navbar.jsx`
 
 The phone header is two bars, stacked, pinned to the top of every screen.
@@ -135,7 +135,7 @@ The row is one horizontal line. It does not wrap.
 | Slot | Size | Draw | Tap |
 |---|---|---|---|
 | Menu | 36 × 36 circle | Hamburger 20 px. X 20 px while the drawer is open | Open or close the drawer |
-| Logo | max height 32, max width 72 | `logoUrl`, contain, no crop. Empty URL uses the bundled Store1920 mark | Home |
+| Logo | max height 32, max width 72 | `logoUrl`, contain, no crop. Empty URL uses the bundled HAMODY mark | Home |
 | Search | height 36, takes the remaining width | Section 6 | — |
 | Phone | height 36, width hugs the label | Handset 16 px. Optional 8 px label under it | `tel:{number}` |
 | Account | 36 × 36 circle | Person icon 20 px. **Hidden on home** | Sign-in if logged out, otherwise account |

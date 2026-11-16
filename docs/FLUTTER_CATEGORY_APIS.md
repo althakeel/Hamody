@@ -1,9 +1,9 @@
-# Store1920 categories — mobile API
+# HAMODY categories — mobile API
 
 Last updated: 9 October 2026  
 Audience: Flutter developers  
-Website: `https://www.store1920.com`  
-API root: `https://www.store1920.com/api`
+Website: `https://www.hamody.com`  
+API root: `https://www.hamody.com/api`
 
 This file is only **categories**: the category index, a category page, the home category icons, and the home category sliders. The rest of the app is in [FLUTTER_ENTIRE_APP.md](./FLUTTER_ENTIRE_APP.md). Product cards on these screens use [the product card in that file](./FLUTTER_ENTIRE_APP.md).
 

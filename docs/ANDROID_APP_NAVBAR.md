@@ -1,4 +1,4 @@
-# Store1920 app navbar — API and drawing spec
+# HAMODY app navbar — API and drawing spec
 
 Last updated: 27 October 2026  
 Audience: Android and Flutter  
@@ -13,7 +13,7 @@ This is not the website header. Do not read `GET /api/store/navbar-menu` or `GET
 ## 1. API
 
 ```http
-GET https://www.store1920.com/api/public/mobile-features
+GET https://www.hamody.com/api/public/mobile-features
 ```
 
 No login. Do not send `Authorization`.

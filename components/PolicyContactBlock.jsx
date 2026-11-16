@@ -1,23 +1,24 @@
 import {
-  STORE1920_CUSTOMER_SUPPORT_PHONE,
-  STORE1920_CUSTOMER_SUPPORT_TEL,
-  STORE1920_SUPPORT_EMAIL,
+  HAMODY_CUSTOMER_SUPPORT_PHONE,
+  HAMODY_CUSTOMER_SUPPORT_TEL,
+  HAMODY_SUPPORT_EMAIL,
   formatCustomerSupportPhoneDisplay,
 } from '@/lib/storeContact';
 import {
-  STORE1920_LEGAL_NAME,
-  STORE1920_BRAND_DISPLAY,
+  HAMODY_LEGAL_NAME,
+  HAMODY_BRAND_DISPLAY,
   getRegisteredOfficeSingleLine,
   getFulfilmentAddressSingleLine,
-  STORE1920_BUSINESS_HOURS_EN,
-  STORE1920_BUSINESS_HOURS_AR,
+  HAMODY_BUSINESS_HOURS_EN,
+  HAMODY_BUSINESS_HOURS_AR,
 } from '@/lib/businessIdentity';
 
-const STORE1920_WEBSITE = 'https://www.store1920.com';
+const HAMODY_WEBSITE = 'https://hamody.com';
+const HAMODY_WEBSITE_LABEL = 'hamody.com';
 
 export default function PolicyContactBlock({ isArabic = false }) {
-  const hours = isArabic ? STORE1920_BUSINESS_HOURS_AR : STORE1920_BUSINESS_HOURS_EN;
-  const phoneDisplay = formatCustomerSupportPhoneDisplay(STORE1920_CUSTOMER_SUPPORT_PHONE);
+  const hours = isArabic ? HAMODY_BUSINESS_HOURS_AR : HAMODY_BUSINESS_HOURS_EN;
+  const phoneDisplay = formatCustomerSupportPhoneDisplay(HAMODY_CUSTOMER_SUPPORT_PHONE);
   const registeredOffice = getRegisteredOfficeSingleLine();
   const fulfilmentAddress = getFulfilmentAddressSingleLine();
 
@@ -26,10 +27,10 @@ export default function PolicyContactBlock({ isArabic = false }) {
       <section className="border-t border-gray-200 pt-4">
         <h2 className="font-semibold text-gray-900 mb-2">معلومات التواصل</h2>
         <p className="text-gray-700 mb-1">
-          <strong>اسم النشاط:</strong> {STORE1920_LEGAL_NAME}
+          <strong>اسم النشاط:</strong> {HAMODY_LEGAL_NAME}
         </p>
         <p className="text-gray-700 mb-1">
-          <strong>الاسم التجاري:</strong> {STORE1920_BRAND_DISPLAY}
+          <strong>الاسم التجاري:</strong> {HAMODY_BRAND_DISPLAY}
         </p>
         <p className="text-gray-700 mb-1">
           <strong>المكتب المسجّل:</strong> {registeredOffice}
@@ -39,19 +40,19 @@ export default function PolicyContactBlock({ isArabic = false }) {
         </p>
         <p className="text-gray-700 mb-1">
           <strong>الموقع:</strong>{' '}
-          <a href={STORE1920_WEBSITE} className="text-orange-600 underline">
-            {STORE1920_WEBSITE}
+          <a href={HAMODY_WEBSITE} className="text-orange-600 underline">
+            {HAMODY_WEBSITE_LABEL}
           </a>
         </p>
         <p className="text-gray-700 mb-1">
           <strong>البريد الإلكتروني:</strong>{' '}
-          <a href={`mailto:${STORE1920_SUPPORT_EMAIL}`} className="text-orange-600 underline">
-            {STORE1920_SUPPORT_EMAIL}
+          <a href={`mailto:${HAMODY_SUPPORT_EMAIL}`} className="text-orange-600 underline">
+            {HAMODY_SUPPORT_EMAIL}
           </a>
         </p>
         <p className="text-gray-700 mb-1">
           <strong>دعم العملاء:</strong>{' '}
-          <a href={STORE1920_CUSTOMER_SUPPORT_TEL} className="text-orange-600 underline">
+          <a href={HAMODY_CUSTOMER_SUPPORT_TEL} className="text-orange-600 underline">
             {phoneDisplay}
           </a>
         </p>
@@ -66,10 +67,10 @@ export default function PolicyContactBlock({ isArabic = false }) {
     <section className="border-t border-gray-200 pt-4">
       <h2 className="font-semibold text-gray-900 mb-2">Contact Information</h2>
       <p className="text-gray-700 mb-1">
-        <strong>Business Name:</strong> {STORE1920_LEGAL_NAME}
+        <strong>Business Name:</strong> {HAMODY_LEGAL_NAME}
       </p>
       <p className="text-gray-700 mb-1">
-        <strong>Trading as:</strong> {STORE1920_BRAND_DISPLAY}
+        <strong>Trading as:</strong> {HAMODY_BRAND_DISPLAY}
       </p>
       <p className="text-gray-700 mb-1">
         <strong>Registered office:</strong> {registeredOffice}
@@ -79,19 +80,19 @@ export default function PolicyContactBlock({ isArabic = false }) {
       </p>
       <p className="text-gray-700 mb-1">
         <strong>Website:</strong>{' '}
-        <a href={STORE1920_WEBSITE} className="text-orange-600 underline">
-          {STORE1920_WEBSITE}
+        <a href={HAMODY_WEBSITE} className="text-orange-600 underline">
+          {HAMODY_WEBSITE_LABEL}
         </a>
       </p>
       <p className="text-gray-700 mb-1">
         <strong>Email:</strong>{' '}
-        <a href={`mailto:${STORE1920_SUPPORT_EMAIL}`} className="text-orange-600 underline">
-          {STORE1920_SUPPORT_EMAIL}
+        <a href={`mailto:${HAMODY_SUPPORT_EMAIL}`} className="text-orange-600 underline">
+          {HAMODY_SUPPORT_EMAIL}
         </a>
       </p>
       <p className="text-gray-700 mb-1">
         <strong>Customer Support:</strong>{' '}
-        <a href={STORE1920_CUSTOMER_SUPPORT_TEL} className="text-orange-600 underline">
+        <a href={HAMODY_CUSTOMER_SUPPORT_TEL} className="text-orange-600 underline">
           {phoneDisplay}
         </a>
       </p>

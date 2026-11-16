@@ -84,10 +84,13 @@ export default function OutdoorCampingMenu({ isArabic = false, onNavigate }) {
   if (!active) return null
 
   return (
-    <div className="flex items-stretch overflow-hidden rounded-[18px] bg-white shadow-[0_18px_50px_rgba(15,23,42,0.16)]">
+    <div
+      dir={isArabic ? 'rtl' : 'ltr'}
+      className="flex min-h-[460px] w-[min(920px,calc(100vw-32px))] items-stretch overflow-hidden rounded-lg bg-white shadow-[0_12px_40px_rgba(15,23,42,0.14)]"
+    >
       <nav
         aria-label={isArabic ? 'الفئات' : 'Categories'}
-        className="w-[232px] shrink-0 py-2"
+        className="flex w-[248px] shrink-0 flex-col border-e border-[#ededed] py-2"
       >
         {MENU_ITEMS.map((item, index) => {
           const selected = index === activeIndex
@@ -98,40 +101,47 @@ export default function OutdoorCampingMenu({ isArabic = false, onNavigate }) {
               onMouseEnter={() => setActiveIndex(index)}
               onFocus={() => setActiveIndex(index)}
               onClick={onNavigate}
-              className={`flex items-center justify-between gap-3 px-4 py-[9px] text-start text-[13.5px] leading-5 ${
-                selected ? 'font-semibold text-[#111111]' : 'font-medium text-[#3f3f46] hover:text-[#111111]'
+              className={`flex items-center justify-between gap-3 px-5 py-3 text-start text-[14px] leading-5 text-[#1a1a1a] ${
+                selected ? 'bg-[#f4f4f4] font-semibold' : 'font-medium hover:bg-[#fafafa]'
               }`}
             >
               <span className="min-w-0 truncate">{labelOf(item, isArabic)}</span>
-              <Chevron size={14} strokeWidth={1.75} className="shrink-0 text-[#a1a1aa]" />
+              <Chevron size={16} strokeWidth={1.75} className="shrink-0 text-[#9ca3af]" />
             </Link>
           )
         })}
       </nav>
 
-      <div className="w-[560px] max-w-[calc(100vw-280px)] px-6 pb-6 pt-4">
-        <div className="flex justify-end">
+      <div className="flex min-w-0 flex-1 flex-col px-8 pb-8 pt-6">
+        <div className="flex items-center justify-between gap-6 border-b border-[#ededed] pb-4">
+          <h2 className="min-w-0 truncate text-[22px] font-bold leading-none text-[#111111]">
+            {labelOf(active, isArabic)}
+          </h2>
           <Link
             href={active.href}
             onClick={onNavigate}
-            className="shrink-0 text-[12px] font-semibold uppercase tracking-wide text-[#9C6E20]"
+            className="shrink-0 text-[13px] font-bold uppercase tracking-wide text-[#9C6E20] hover:text-[#7d5818]"
           >
             {isArabic ? 'عرض الكل' : 'VIEW ALL'}
           </Link>
         </div>
-        <div className="mt-5 grid grid-cols-2 gap-x-10 gap-y-6">
+        <div className="grid grid-cols-2 gap-x-14 gap-y-8 pt-6">
           {active.groups.map((group) => (
             <div key={group.slug} className="min-w-0">
-              <Link href={group.href} onClick={onNavigate} className="block text-[14px] font-bold leading-5 text-[#111111]">
+              <Link
+                href={group.href}
+                onClick={onNavigate}
+                className="block text-[15px] font-bold leading-5 text-[#111111] hover:text-[#1F5C4A]"
+              >
                 {labelOf(group, isArabic)}
               </Link>
-              <div className="mt-2 space-y-1.5">
+              <div className="mt-3 space-y-2">
                 {group.children.map((child) => (
                   <Link
                     key={child.slug}
                     href={child.href}
                     onClick={onNavigate}
-                    className="block truncate text-[13px] leading-5 text-[#6b7280] hover:text-[#111111]"
+                    className="block truncate text-[14px] leading-5 text-[#5c6370] hover:text-[#111111]"
                   >
                     {labelOf(child, isArabic)}
                   </Link>

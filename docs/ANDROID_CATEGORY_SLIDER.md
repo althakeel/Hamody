@@ -1,15 +1,15 @@
-# Store1920 category slider — Android API
+# HAMODY category slider — Android API
 
 Last updated: 13 October 2026  
 Audience: Android app  
 Website: home page category rows (`/store/category-slider` is the seller screen, not a public URL)  
-API root: `https://www.store1920.com/api`  
+API root: `https://www.hamody.com/api`  
 Web source: `app/api/public/featured-sections/route.js`
 
 One public call. No login. Do not send `Authorization`.
 
 ```http
-GET https://www.store1920.com/api/public/featured-sections
+GET https://www.hamody.com/api/public/featured-sections
 Accept-Language: en
 ```
 

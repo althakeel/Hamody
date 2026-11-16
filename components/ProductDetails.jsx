@@ -98,7 +98,7 @@ function isMansoryNoonProduct(product) {
   return String(product?.slug || '').trim().toLowerCase() === MANSORY_NOON_SLUG;
 }
 
-const PLACEHOLDER_IMAGE = 'https://store1920-images.s3.ap-south-1.amazonaws.com/uploads/placeholder.png';
+const PLACEHOLDER_IMAGE = 'https://hamody-images.s3.ap-south-1.amazonaws.com/uploads/placeholder.png';
 const GALLERY_CROSSFADE = { duration: 0.55, ease: [0.22, 1, 0.36, 1] };
 
 function GalleryMediaLayer({
@@ -3148,7 +3148,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                     }`}>
                       <div className={`relative ${isMobile ? 'h-[44px] w-[44px]' : 'h-[66px] w-[66px]'}`}>
                         <Image
-                          src={card.image || 'https://store1920-images.s3.ap-south-1.amazonaws.com/uploads/placeholder.png'}
+                          src={card.image || 'https://hamody-images.s3.ap-south-1.amazonaws.com/uploads/placeholder.png'}
                           alt={card.name}
                           fill
                           className="pointer-events-none object-contain"
@@ -3241,19 +3241,19 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
               });
             })()}
             <span className="text-gray-400">{isArabic ? '‹' : '›'}</span>
-            <span className="text-gray-700 truncate max-w-[160px] sm:max-w-xs md:max-w-sm">{productHeading}</span>
+            <span className="min-w-0 max-w-[46vw] truncate text-gray-700 sm:max-w-xs md:max-w-sm lg:max-w-md">{productHeading}</span>
           </nav>
         </div>
       </div>
 
-      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 pt-0 max-lg:pb-6 lg:py-6 overflow-x-visible">
+      <div className="mx-auto w-full max-w-[1400px] overflow-x-clip px-3 pt-0 max-lg:pb-28 sm:px-4 md:px-6 lg:py-6">
         <div className="product-page-grid grid grid-cols-1 items-start gap-0 lg:grid-cols-2 lg:gap-x-[10px]">
 
           {/* LEFT: Media gallery */}
           <div className="relative z-20 w-full min-w-0 space-y-3 lg:sticky lg:top-24 lg:space-y-4">
             <div className="hidden w-full min-w-0 lg:flex lg:flex-col lg:gap-2.5">
               <div className="min-w-0">
-                <div className={`relative w-full max-w-none overflow-hidden bg-white lg:rounded-none ${aspectRatioClass}`}>
+                <div className={`product-main-frame relative w-full max-w-none overflow-hidden bg-white lg:rounded-none ${aspectRatioClass}`}>
                 <NewProductTagBadge product={product} size="page" />
                 {product.attributes?.condition === 'used' && (
                   <div className="absolute top-4 left-16 z-10">
@@ -3378,8 +3378,8 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
             </div>
 
             {/* Mobile: Swipeable image slider */}
-            <div className="lg:hidden relative -mx-4 sm:mx-0 overflow-x-clip">
-              <div className={`relative w-full ${aspectRatioClass} bg-white border border-gray-200 rounded-none sm:rounded-lg overflow-hidden`}>
+            <div className="relative -mx-3 overflow-x-clip sm:mx-0 lg:hidden">
+              <div className={`product-mobile-frame relative w-full ${aspectRatioClass} overflow-hidden rounded-none border border-gray-200 bg-white sm:rounded-lg`}>
                 <NewProductTagBadge product={product} size="page" />
                 {product.attributes?.condition === 'used' && (
                   <div className="absolute top-4 left-16 z-10">
@@ -3463,7 +3463,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
             </div>
 
             {/* Mobile Thumbnail Gallery */}
-            <div className="lg:hidden -mx-4 sm:mx-0 overflow-x-clip">
+            <div className="-mx-3 overflow-x-clip sm:mx-0 lg:hidden">
             <div
               ref={mobileThumbnailsRef}
               className="px-4 sm:px-0 flex gap-2 overflow-x-auto overflow-y-hidden pb-2 scrollbar-hide scroll-smooth"
@@ -3534,8 +3534,8 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
               </div>
 
               <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <bdi dir={isArabic ? 'rtl' : 'ltr'} className="text-[24px] font-semibold leading-none text-[#E52721]">
+                <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5">
+                  <bdi dir={isArabic ? 'rtl' : 'ltr'} className="min-w-0 text-[clamp(22px,6.4vw,32px)] font-semibold leading-none text-[#E52721]">
                     {displayMobileSalePrice}
                   </bdi>
                   {effAED > effPrice ? (
@@ -3880,7 +3880,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
 
           {/* RIGHT: Product Info (buy box) — desktop/tablet only; mobile uses fixed bar below */}
           <div className="min-w-0 w-full self-start overflow-hidden max-lg:hidden">
-          <div className="relative z-0 min-w-0 w-full rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:p-5" dir={isArabic ? 'rtl' : 'ltr'}>
+          <div className="relative z-0 min-w-0 w-full rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4 xl:p-5" dir={isArabic ? 'rtl' : 'ltr'}>
 
             {/* Special Offer - Countdown Timer */}
             {offerData?.countdownTimer && (
@@ -3943,24 +3943,24 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                   {t('common.outOfStock')}
                 </div>
               )}
-              <div className="flex flex-wrap items-end gap-2">
-                <span className={`${isSpecialOffer ? 'text-green-600' : 'text-gray-900'}`}>
+              <div className="flex min-w-0 flex-wrap items-end gap-x-2 gap-y-1.5">
+                <span className={`min-w-0 ${isSpecialOffer ? 'text-green-600' : 'text-gray-900'}`}>
                   {renderSplitPrice(buyBoxSalePrice, {
                     currencyClass: `text-[15px] font-medium ${isSpecialOffer ? 'text-green-600' : 'text-gray-900'}`,
-                    mainClass: `text-[36px] font-semibold leading-none ${isSpecialOffer ? 'text-green-600' : 'text-gray-900'}`,
-                    decimalClass: `text-[14px] font-semibold leading-none ${isSpecialOffer ? 'text-green-600' : 'text-gray-900'}`,
-                    wrapperClass: 'inline-flex items-start leading-none tracking-[-0.01em]'
+                    mainClass: `text-[clamp(24px,2.1vw,36px)] font-semibold leading-none ${isSpecialOffer ? 'text-green-600' : 'text-gray-900'}`,
+                    decimalClass: `text-[clamp(12px,1.1vw,16px)] font-semibold leading-none ${isSpecialOffer ? 'text-green-600' : 'text-gray-900'}`,
+                    wrapperClass: 'inline-flex max-w-full flex-wrap items-start leading-none tracking-[-0.01em]'
                   })}
                 </span>
 
                 {effAED > effPrice && (
-                  <StruckPrice className="text-sm text-gray-500 whitespace-nowrap pb-1">
+                  <StruckPrice className="pb-1 text-sm text-gray-500">
                     <AedText>{formatMoney(buyBoxRegularPrice, true)}</AedText>
                   </StruckPrice>
                 )}
 
                 {effAED > effPrice && (
-                  <span className="inline-flex items-center border border-orange-400 bg-orange-50 text-orange-500 text-[12px] font-medium px-2 py-0.5 rounded-sm leading-none whitespace-nowrap">
+                  <span className="inline-flex max-w-full items-center rounded-sm border border-orange-400 bg-orange-50 px-2 py-0.5 text-[12px] font-medium leading-snug text-orange-500">
                     {t('common.offPercent', {
                       discount: formatCount(discountPercent, { maximumFractionDigits: 0 }),
                     })} {t('product.limitedTime')}
@@ -3968,7 +3968,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                 )}
 
                 {Number(availableStock) > 0 && Number(availableStock) <= 20 && (
-                  <span className="inline-flex items-center border border-orange-400 bg-orange-50 text-orange-500 text-[12px] font-medium px-2 py-0.5 rounded-sm leading-none whitespace-nowrap">
+                  <span className="inline-flex max-w-full items-center rounded-sm border border-orange-400 bg-orange-50 px-2 py-0.5 text-[12px] font-medium leading-snug text-orange-500">
                     {t('product.limitedStockAvailable', { count: availableStock })}
                   </span>
                 )}
@@ -4504,7 +4504,12 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
           display: grid;
           grid-template-columns: minmax(0, 1fr);
           column-gap: 0;
-          row-gap: 0;
+          row-gap: 12px;
+        }
+        .product-mobile-frame {
+          width: min(100%, 72dvh);
+          max-width: 100%;
+          margin-inline: auto;
         }
         @media (min-width: 1024px) {
           .product-page-grid {
@@ -4520,6 +4525,11 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
             margin: 0;
             padding-left: 0;
             padding-right: 0;
+          }
+          .product-main-frame {
+            width: min(100%, calc(100dvh - 8.5rem));
+            max-width: 100%;
+            margin-inline: auto;
           }
         }
       `}</style>

@@ -6,7 +6,7 @@ import { getLiveHomePopup, popupMatchesPath } from '@/lib/homeWelcomePopup';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 import HomeWelcomePopupCard from '@/components/HomeWelcomePopupCard';
 
-const DISMISS_KEY = 'store1920-home-welcome-popup';
+const DISMISS_KEY = 'hamody-home-welcome-popup';
 const HOUR_MS = 60 * 60 * 1000;
 const DISMISS_MS = {
   hour: HOUR_MS,

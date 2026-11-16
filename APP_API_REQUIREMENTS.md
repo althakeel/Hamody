@@ -1,4 +1,4 @@
-# Store1920 App API Requirements
+# Hamody App API Requirements
 
 Last updated: 2026-05-11  
 App version target: 1.0.0+1  
@@ -6,7 +6,7 @@ Android app id: com.quickfynd.v1
 
 ## 1. Purpose
 
-This document is the consolidated API contract for the Store1920 mobile application.
+This document is the consolidated API contract for the hamody mobile application.
 
 It combines:
 
@@ -19,7 +19,7 @@ Use this as the working handoff document for backend and mobile integration.
 
 ## 2. API Basics
 
-- Base URL: `https://store1920.com`
+- Base URL: `https://hamody.com`
 - Default content type: `application/json`
 - Auth type: Firebase ID token
 - Auth header: `Authorization: Bearer <firebase_id_token>`

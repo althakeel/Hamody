@@ -8,14 +8,14 @@ import { isGtmInternalPath } from '@/lib/gtmEvents';
 function loadStorefrontGtm() {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
   window.dataLayer = window.dataLayer || [];
-  window.__store1920GtmLoaded = window.__store1920GtmLoaded || {};
-  if (window.__store1920GtmLoaded[GTM_ID]) return;
+  window.__HAMODYGtmLoaded = window.__HAMODYGtmLoaded || {};
+  if (window.__HAMODYGtmLoaded[GTM_ID]) return;
   if (document.querySelector(`script[src*="googletagmanager.com/gtm.js?id=${GTM_ID}"]`)) {
-    window.__store1920GtmLoaded[GTM_ID] = true;
+    window.__HAMODYGtmLoaded[GTM_ID] = true;
     return;
   }
 
-  window.__store1920GtmLoaded[GTM_ID] = true;
+  window.__HAMODYGtmLoaded[GTM_ID] = true;
   window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
 
   const script = document.createElement('script');

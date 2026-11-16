@@ -1,10 +1,10 @@
-# Store1920 app account profile
+# HAMODY app account profile
 
 Last updated: 28 October 2026  
 Audience: Android and Flutter  
 App screens: Profile and Account Settings  
 Website pages: `/dashboard/profile` and `/settings`  
-API root: `https://www.store1920.com/api`
+API root: `https://www.hamody.com/api`
 
 The bottom menu Account item opens the profile. Path: `/dashboard/profile`. Account Settings is a second screen. Path: `/settings`.
 
@@ -72,7 +72,7 @@ Name, email, photo, and account created come from the Firebase user, not from `G
 Email is read-only on this screen. Do not offer an email field.
 
 ```http
-GET https://www.store1920.com/api/profile
+GET https://www.hamody.com/api/profile
 ```
 
 ```json
@@ -103,7 +103,7 @@ Save writes Firebase and the store together.
 2. `PATCH /api/profile` with the same name, phone, image, and the current email.
 
 ```http
-PATCH https://www.store1920.com/api/profile
+PATCH https://www.hamody.com/api/profile
 Content-Type: application/json
 ```
 
@@ -125,7 +125,7 @@ Cancel closes the form and does not call the API.
 The customer picks an image under 5 MB. Larger files stay on the phone. Show **Image must be less than 5MB**.
 
 ```http
-POST https://www.store1920.com/api/imagekit-auth/upload
+POST https://www.hamody.com/api/imagekit-auth/upload
 Content-Type: multipart/form-data
 ```
 
@@ -157,7 +157,7 @@ Copy on the screen:
 **Share your referral code. When your invited customer places their first order, you earn wallet reward.**
 
 ```http
-GET https://www.store1920.com/api/referral/my-code
+GET https://www.hamody.com/api/referral/my-code
 ```
 
 ```json
@@ -169,7 +169,7 @@ While this call is in flight, show **Generating...**. If it fails, show **Not av
 | Button | What it shares |
 |---|---|
 | Copy | The code only |
-| Copy link | `https://www.store1920.com/?ref={code}` |
+| Copy link | `https://www.hamody.com/?ref={code}` |
 | WhatsApp | `Join and shop with my referral code {code}! {link}` |
 | Telegram | Same sentence, link passed separately |
 | X | Same sentence plus the link |
@@ -178,7 +178,7 @@ While this call is in flight, show **Generating...**. If it fails, show **Not av
 Share link:
 
 ```text
-https://www.store1920.com/?ref={referralCode}
+https://www.hamody.com/?ref={referralCode}
 ```
 
 ### Apply a code
@@ -186,7 +186,7 @@ https://www.store1920.com/?ref={referralCode}
 One code per account, and only before the first order. Uppercase the input before sending.
 
 ```http
-POST https://www.store1920.com/api/referral/claim
+POST https://www.hamody.com/api/referral/claim
 Content-Type: application/json
 ```
 
@@ -223,7 +223,7 @@ Show the `error` string. While the request is in flight, the button reads **Appl
 ## 5. Saved addresses
 
 ```http
-GET https://www.store1920.com/api/address
+GET https://www.hamody.com/api/address
 ```
 
 ```json
@@ -255,7 +255,7 @@ Each row shows name, then street, city, state, and zip, then country, then phone
 ### Add and edit
 
 ```http
-POST https://www.store1920.com/api/address
+POST https://www.hamody.com/api/address
 ```
 
 ```json
@@ -279,7 +279,7 @@ POST https://www.store1920.com/api/address
 Edit uses the same body plus the id.
 
 ```http
-PUT https://www.store1920.com/api/address
+PUT https://www.hamody.com/api/address
 ```
 
 ```json
@@ -348,7 +348,7 @@ Server messages to show as-is:
 Ask **Delete this address?** before calling.
 
 ```http
-DELETE https://www.store1920.com/api/address?id={addressId}
+DELETE https://www.hamody.com/api/address?id={addressId}
 ```
 
 `200` is `{ "message": "Address deleted" }`. Remove the row. `404` is **Not found**.
@@ -390,7 +390,7 @@ Permanently delete your account and all associated data.
 Load with the signed-in email. No Firebase token on this call.
 
 ```http
-GET https://www.store1920.com/api/email-preferences?email={email}
+GET https://www.hamody.com/api/email-preferences?email={email}
 ```
 
 ```json
@@ -408,7 +408,7 @@ GET https://www.store1920.com/api/email-preferences?email={email}
 Each switch is on by default. Changing one switch sends that one type.
 
 ```http
-POST https://www.store1920.com/api/email-preferences
+POST https://www.hamody.com/api/email-preferences
 Content-Type: application/json
 ```
 
@@ -440,7 +440,7 @@ Text: **This will permanently delete your account and data. This action cannot b
 The customer must type `DELETE` in capitals. Until that matches, the delete button stays disabled. Cancel closes the dialog and clears the field.
 
 ```http
-POST https://www.store1920.com/api/account/delete
+POST https://www.hamody.com/api/account/delete
 Authorization: Bearer {Firebase ID token}
 ```
 
@@ -468,7 +468,7 @@ A guest can place an order without an account. The profile screen stays behind s
 The app sends the guest details on `POST /api/orders`. There is no Firebase token. Send `isGuest: true` and `guestInfo`. Also send the app headers so the order is saved as an app order:
 
 ```http
-POST https://www.store1920.com/api/orders
+POST https://www.hamody.com/api/orders
 Content-Type: application/json
 X-Store1920-Client: app
 X-Store1920-Platform: android
@@ -513,7 +513,7 @@ Store pickup still sends name, email, and phone. Payment methods are the same as
 The guest order does not appear on the profile until the customer signs in with the same email or the same phone. After sign-in or sign-up, the app calls:
 
 ```http
-POST https://www.store1920.com/api/user/link-guest-orders
+POST https://www.hamody.com/api/user/link-guest-orders
 Authorization: Bearer {Firebase ID token}
 Content-Type: application/json
 ```

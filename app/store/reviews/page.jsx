@@ -904,7 +904,7 @@ export default function StoreReviews() {
                   onChange={(event) => setFormData({ ...formData, customerConsent: event.target.checked })}
                   className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-slate-900"
                 />
-                <span>I confirm this is the customer’s own review and the customer gave permission for Store1920 to publish it. *</span>
+                <span>I confirm this is the customer’s own review and the customer gave permission for Hamody to publish it. *</span>
               </label>
 
               <div>

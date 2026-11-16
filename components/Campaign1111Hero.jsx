@@ -99,7 +99,7 @@ export default function Campaign1111Hero({
       >
         <div className={`shrink-0 ${isArabic ? 'text-right' : 'text-left'}`}>
           <p className="text-xs font-medium text-white/50">
-            {isArabic ? 'عرض خاص · Store1920' : 'Store1920 exclusive'}
+            {isArabic ? 'عرض خاص · hamody.com' : 'hamody.com exclusive'}
           </p>
           <h1 className="mt-1 text-[2.75rem] font-semibold leading-none tracking-tight sm:text-5xl">
             11.11 <span className="font-normal text-white/80">{isArabic ? 'تخفيضات' : 'Sale'}</span>

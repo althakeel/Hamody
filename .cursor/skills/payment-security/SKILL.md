@@ -1,6 +1,6 @@
 ---
 name: payment-security
-description: Store1920 PCI-aligned payment security — hosted gateways, no card storage, 3DS, fraud scoring, refund dual-control, transaction logs. Use when editing checkout payments, Stripe sessions, refunds, or /store/payment-security.
+description: Hamody PCI-aligned payment security — hosted gateways, no card storage, 3DS, fraud scoring, refund dual-control, transaction logs. Use when editing checkout payments, Stripe sessions, refunds, or /store/payment-security.
 ---
 
 # Payment security skill

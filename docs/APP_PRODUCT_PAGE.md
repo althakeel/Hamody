@@ -1,9 +1,9 @@
-# Store1920 product page
+# HAMODY product page
 
 **Audience:** Android / Flutter / storefront  
 **Last updated:** 9 November 2026  
-**Website:** `https://www.store1920.com/product/{slug}`  
-**API root:** `https://www.store1920.com/api`  
+**Website:** `https://www.hamody.com/product/{slug}`  
+**API root:** `https://www.hamody.com/api`  
 **Web source:** `app/(public)/product/[slug]/page.jsx`, `components/ProductDetails.jsx`
 
 This is the **full product page** document: what to load, what to draw, prices, gallery, variants / bundles, add to cart, Notify Me, reviews, related products, and badges.
@@ -19,7 +19,7 @@ Deeper splits (keep using these when you need more detail):
 | Product cards (related / FBT rows) | [FLUTTER_PRODUCT_CARDS.md](./FLUTTER_PRODUCT_CARDS.md) |
 | Checkout after cart | [APP_CHECKOUT.md](./APP_CHECKOUT.md) |
 
-Send `Accept-Language: en` or `ar`. Prices stay numbers. Draw `https://www.store1920.com/currency/aed-dirham.png` next to the number. Do **not** print the letters `AED`.
+Send `Accept-Language: en` or `ar`. Prices stay numbers. Draw `https://www.hamody.com/currency/aed-dirham.png` next to the number. Do **not** print the letters `AED`.
 
 Do not scrape the HTML page. Do not call `/api/store/product*`.
 

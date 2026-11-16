@@ -1,9 +1,9 @@
-# Store1920 blogs — app API
+# HAMODY blogs — app API
 
 Last updated: 27 October 2026  
 Audience: Android and Flutter  
-Website list: `https://www.store1920.com/blogs`  
-Website article: `https://www.store1920.com/blogs/{slug}`
+Website list: `https://www.hamody.com/blogs`  
+Website article: `https://www.hamody.com/blogs/{slug}`
 
 The app reads published posts only. Do not call `/api/store/blogs`. That route needs a seller login and includes drafts.
 
@@ -18,7 +18,7 @@ A future publish date stays hidden until that time. Drafts are hidden.
 ## 1. List
 
 ```http
-GET https://www.store1920.com/api/public/blogs
+GET https://www.hamody.com/api/public/blogs
 ```
 
 | Query | Default | Meaning |
@@ -52,7 +52,7 @@ The response is cached for about 1 minute. If the call fails, the server still r
       "contentHtml": "<p>Full article HTML…</p>",
       "coverImage": "https://…/cover.jpg",
       "bannerImage": "https://…/banner.jpg",
-      "authorName": "Store1920",
+      "authorName": "HAMODY",
       "publishedAt": "2026-10-01T08:00:00.000Z",
       "seoTitle": "How to choose a mattress",
       "seoDescription": "A short summary for the card.",
@@ -71,7 +71,7 @@ On the list, draw the card from `coverImage`, `title`, `excerpt`, and `published
 ## 2. One article
 
 ```http
-GET https://www.store1920.com/api/public/blogs/{slug}
+GET https://www.hamody.com/api/public/blogs/{slug}
 ```
 
 `slug` is lowercase. Example: `GET /api/public/blogs/how-to-choose-a-mattress?lang=ar`.
@@ -100,7 +100,7 @@ GET https://www.store1920.com/api/public/blogs/{slug}
     "contentHtml": "<h2>Firmness</h2><p>Body text.</p><img src=\"https://…/photo.jpg\" alt=\"\" data-width=\"full\" data-align=\"center\" />",
     "coverImage": "https://…/cover.jpg",
     "bannerImage": "https://…/banner.jpg",
-    "authorName": "Store1920",
+    "authorName": "HAMODY",
     "publishedAt": "2026-10-01T08:00:00.000Z",
     "seoTitle": "How to choose a mattress",
     "seoDescription": "A short summary for the card.",

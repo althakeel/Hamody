@@ -286,7 +286,7 @@ export async function PATCH(request) {
         await sendAbandonedCartConversionEmail({
           email: trimmedResendEmail,
           customerName: resendCustomerName,
-          storeName: store?.name || 'Store1920',
+          storeName: store?.name || 'HAMODY',
           amount: cart.convertedCartTotal,
           currency: cart.currency || 'AED',
           paymentMethodLabel: getConversionPaymentMethodLabel(cart.conversionPaymentMethod),
@@ -430,7 +430,7 @@ export async function PATCH(request) {
           await sendAbandonedCartRecoveryLinkEmail({
             email: resolvedCustomerEmail,
             customerName: trimmedCustomerName,
-            storeName: store?.name || 'Store1920',
+            storeName: store?.name || 'HAMODY',
             originalTotal: cartTotalMax,
             offerTotal,
             currency: cart.currency || 'AED',
@@ -778,7 +778,7 @@ export async function PATCH(request) {
         await sendAbandonedCartConversionEmail({
           email: resolvedCustomerEmail,
           customerName: resolvedCustomerName || trimmedCustomerName || cart.name || 'Customer',
-          storeName: store?.name || 'Store1920',
+          storeName: store?.name || 'HAMODY',
           amount: finalTotal,
           currency: cart.currency || 'AED',
           paymentMethodLabel: getConversionPaymentMethodLabel(paymentDetails.paymentMethod),

@@ -1,7 +1,7 @@
 export const metadata = {
-  title: 'Shipping & Delivery Policy | Store1920 UAE',
+  title: 'Shipping & Delivery Policy | hamody.com UAE',
   description:
-    'Store1920 shipping and delivery policy for UAE orders: processing cut-off, delivery estimates, fees, attempts, and remote-area rules.',
+    'hamody.com shipping and delivery policy for UAE orders: processing cut-off, delivery estimates, fees, attempts, and remote-area rules.',
 };
 
 export default function ShippingPolicyLayout({ children }) {

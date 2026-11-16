@@ -34,9 +34,9 @@ try {
   console.log('SMTP verify: OK');
 
   const info = await transporter.sendMail({
-    from: `"Store1920" <${user}>`,
+    from: `"HAMODY" <${user}>`,
     to: user,
-    subject: 'Store1920 SMTP test',
+    subject: 'HAMODY SMTP test',
     html: '<p>If you see this, Hostinger SMTP works.</p>',
   });
   console.log('Sent:', info.messageId);

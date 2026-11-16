@@ -1,9 +1,9 @@
 {
-  "title": "Store1920 ERP Integration API",
+  "title": "Hamody ERP Integration API",
   "style": "Zoho Inventory–style attribute documentation",
   "documentation": "docs/ERP_INTEGRATION_API.md",
-  "baseUrl": "https://www.store1920.com",
-  "apiRoot": "https://www.store1920.com/api/erp",
+  "baseUrl": "https://www.hamody.com",
+  "apiRoot": "https://www.hamody.com/api/erp",
   "lastUpdated": "2026-11-09",
   "headers": {
     "x-erp-key": {
@@ -48,7 +48,7 @@
             "productName": { "type": "string", "description": "English product name", "example": "Fitness Band 2 Straps Included Soft Silicone" },
             "category": { "type": "string", "description": "Primary category name", "example": "Fitness Trackers" },
             "active": { "type": "boolean", "description": "Sellable / not archived", "example": true },
-            "imageUrl": { "type": "string|null", "description": "Image if the website has one", "example": "https://www.store1920.com/.../product.jpg" }
+            "imageUrl": { "type": "string|null", "description": "Image if the website has one", "example": "https://www.hamody.com/.../product.jpg" }
           }
         }
       ]
@@ -160,7 +160,7 @@
           "staffAttributes": {
             "id": { "type": "string", "example": "uid_abc123" },
             "name": { "type": "string", "example": "Sara Al Blooshi" },
-            "email": { "type": "string", "example": "verifier@store1920.com" },
+            "email": { "type": "string", "example": "verifier@hamody.com" },
             "role": {
               "type": "string",
               "enum": ["Manager", "Accounts", "Procurement", "Receiving", "Verifier", "Admin", "Management"]
@@ -170,7 +170,7 @@
       ]
     }
   ],
-  "notStore1920Apis": [
+  "notHamodyApis": [
     "Manager and Accounts approval",
     "Purchase orders and supplier prices",
     "Goods receipts and receiver cannot verify own delivery",

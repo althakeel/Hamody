@@ -3,7 +3,7 @@
 import { useLayoutEffect } from 'react';
 import { isDomReconcileError, reloadOnceForDomRace } from '@/lib/domReconcileError';
 
-const CHUNK_RELOAD_KEY = 'store1920-chunk-reload';
+const CHUNK_RELOAD_KEY = 'hamody-chunk-reload';
 
 export default function PublicError({ error, reset }) {
   const message = String(error?.message || '');

@@ -77,7 +77,7 @@ function WelcomeOfferForm() {
         {done ? (
           <div className="mt-6 space-y-4">
             <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-              You are signed up. Check your inbox for offers from Store1920.
+              You are signed up. Check your inbox for offers from hamody.com.
             </p>
             <Link
               href="/"

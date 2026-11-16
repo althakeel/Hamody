@@ -77,13 +77,13 @@ test('VaultsPay initialization sends the shared expiry and callback URL', async 
   await createVaultsPayCheckout({
     amount: 125.5,
     orderId: 'order-1',
-    callbackUrl: `https://www.store1920.com${VAULTSPAY_CALLBACK_PATH}`,
-    redirectUrl: 'https://www.store1920.com/order-success',
+    callbackUrl: `https://www.hamody.com${VAULTSPAY_CALLBACK_PATH}`,
+    redirectUrl: 'https://www.hamody.com/order-success',
   });
 
   const initialization = JSON.parse(calls[2].options.body);
   assert.equal(initialization.expiryInSeconds, 1800);
-  assert.equal(initialization.callBackUrl, 'https://www.store1920.com/api/vaultspay/callback');
+  assert.equal(initialization.callBackUrl, 'https://www.hamody.com/api/vaultspay/callback');
 });
 
 test('VaultsPay checkout rejects a missing callback URL before gateway authentication', async () => {
@@ -97,7 +97,7 @@ test('VaultsPay callback resolves transaction and order references from body ali
   assert.deepEqual(
     resolveVaultsPayWebhookIdentifiers({
       body: { payment_id: 'payment-22', clientReference: '100022' },
-      url: 'https://www.store1920.com/api/vaultspay/callback',
+      url: 'https://www.hamody.com/api/vaultspay/callback',
     }),
     { transactionId: 'payment-22', orderId: '100022' },
   );
@@ -107,14 +107,14 @@ test('VaultsPay callback resolves identifiers from query parameters and safely a
   assert.deepEqual(
     resolveVaultsPayWebhookIdentifiers({
       body: {},
-      url: 'https://www.store1920.com/api/vaultspay/callback?transactionId=payment-23&orderId=order-23',
+      url: 'https://www.hamody.com/api/vaultspay/callback?transactionId=payment-23&orderId=order-23',
     }),
     { transactionId: 'payment-23', orderId: 'order-23' },
   );
   assert.deepEqual(
     resolveVaultsPayWebhookIdentifiers({
       body: {},
-      url: 'https://www.store1920.com/api/vaultspay/callback',
+      url: 'https://www.hamody.com/api/vaultspay/callback',
     }),
     { transactionId: '', orderId: '' },
   );

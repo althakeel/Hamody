@@ -1,4 +1,4 @@
-# Store1920 app shop blocks
+# HAMODY app shop blocks
 
 Last updated: 27 October 2026  
 Audience: Android and Flutter  
@@ -13,7 +13,7 @@ This is the app home block. It is not the shop tab, and it is not Banner 2, Bann
 ## 1. API
 
 ```http
-GET https://www.store1920.com/api/public/mobile-features
+GET https://www.hamody.com/api/public/mobile-features
 ```
 
 No login. Do not send `Authorization`. Do not call `/api/store/mobile-features`.

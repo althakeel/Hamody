@@ -1,4 +1,4 @@
-# Store1920 app push notifications
+# HAMODY app push notifications
 
 Last updated: 27 October 2026  
 Audience: Android and Flutter  
@@ -35,7 +35,7 @@ Also send the platform so the server knows the phone:
 Call this after Firebase returns a device token, and again whenever that token changes. Call it on each app open so the phone stays in the send list.
 
 ```http
-POST https://www.store1920.com/api/public/app-device
+POST https://www.hamody.com/api/public/app-device
 Content-Type: application/json
 X-Store1920-App-Id: …
 X-Store1920-App-Key: …
@@ -115,7 +115,7 @@ Show `imageUrl` above the title when it is not empty.
 Use this for an in-app list. It returns the last 20 messages for that phone’s platform, newest first. It does not register the phone.
 
 ```http
-GET https://www.store1920.com/api/public/app-notifications?platform=android
+GET https://www.hamody.com/api/public/app-notifications?platform=android
 X-Store1920-App-Id: …
 X-Store1920-App-Key: …
 ```

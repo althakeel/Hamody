@@ -38,9 +38,9 @@ export async function GET(request) {
       .filter(Boolean);
 
     const xml = buildGoogleMerchantFeedXml(items, {
-      title: 'Store1920 Products',
+      title: 'HAMODY Products',
       link: baseUrl,
-      description: 'Store1920 product feed for Google Merchant Center',
+      description: 'HAMODY product feed for Google Merchant Center',
     });
 
     return new NextResponse(xml, {

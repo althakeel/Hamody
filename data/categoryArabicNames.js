@@ -1,5 +1,5 @@
 /**
- * UAE Arabic display names for the Store1920 category tree.
+ * UAE Arabic display names for the HAMODY category tree.
  * Keys are category slugs from data/categoryHierarchy.js.
  */
 export const CATEGORY_ARABIC_BY_SLUG = {

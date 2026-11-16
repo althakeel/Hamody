@@ -9,17 +9,9 @@ import { findTopDealsSection } from '@/lib/homeTopDeals';
 
 import HeroBannerSlider from '@/components/HeroBannerSlider';
 import ShopShowcaseSection from '@/components/ShopShowcaseSection';
+import LatestProducts from '@/components/LatestProducts';
+import Section3 from '@/components/section3';
 import LazyMount from '@/components/LazyMount';
-
-// Keep above-the-fold light: defer heavy product sections until near viewport / after JS chunks load.
-const LatestProducts = dynamic(() => import('@/components/LatestProducts'), {
-  ssr: false,
-  loading: () => <div className="min-h-[220px]" aria-hidden />,
-});
-const Section3 = dynamic(() => import('@/components/section3'), {
-  ssr: false,
-  loading: () => <div className="min-h-[200px]" aria-hidden />,
-});
 const Section4 = dynamic(() => import('@/components/section4'), {
   ssr: false,
   loading: () => <div className="min-h-[240px]" aria-hidden />,
@@ -64,7 +56,7 @@ export default function HomePageClient({ initialData }) {
 
   const shopShowcaseConfig = shopShowcase?.config || null;
   const featuredList = Array.isArray(featuredProducts?.products) ? featuredProducts.products : [];
-  // Product grids stay out of the first HTML document. They mount after paint.
+  // Lower sections can wait. The grids directly under the banner must be in the first HTML.
   const [catalogReady, setCatalogReady] = useState(false);
   useEffect(() => {
     setCatalogReady(true);
@@ -104,8 +96,8 @@ export default function HomePageClient({ initialData }) {
       )}
       <h1 className="sr-only">
         {isArabic
-          ? 'تسوق الإلكترونيات ومنتجات المنزل ونمط الحياة عبر الإنترنت في الإمارات'
-          : 'Shop Electronics, Home and Lifestyle Products Online in the UAE'}
+          ? 'تسوق المنحوتات التقليدية ومستلزمات التخييم في الإمارات'
+          : 'Shop traditional sculptures and outdoor camping in the UAE'}
       </h1>
       <div className={`${HOME_SECTION_STACK_CLASS} w-full min-w-0 max-lg:pb-0 lg:pb-8`}>
         <ShopShowcaseSection
@@ -124,22 +116,16 @@ export default function HomePageClient({ initialData }) {
           </LazyMount>
         ) : null}
 
-        {catalogReady ? (
-        <LazyMount rootMargin="60px 0px" minHeight={240}>
-          <LatestProducts
-            initialProducts={featuredList}
-            initialSectionTitle={featuredProducts.sectionTitleEn || featuredProducts.sectionTitle}
-            initialSectionDescription={
-              featuredProducts.sectionDescriptionEn || featuredProducts.sectionDescription
-            }
-            initialSectionTitleAr={featuredProducts.sectionTitleAr || ''}
-            initialSectionDescriptionAr={featuredProducts.sectionDescriptionAr || ''}
-            initialLayout={appearance?.homeMenuCategories}
-          />
-        </LazyMount>
-        ) : (
-          <div className="min-h-[220px]" aria-hidden />
-        )}
+        <LatestProducts
+          initialProducts={featuredList}
+          initialSectionTitle={featuredProducts.sectionTitleEn || featuredProducts.sectionTitle}
+          initialSectionDescription={
+            featuredProducts.sectionDescriptionEn || featuredProducts.sectionDescription
+          }
+          initialSectionTitleAr={featuredProducts.sectionTitleAr || ''}
+          initialSectionDescriptionAr={featuredProducts.sectionDescriptionAr || ''}
+          initialLayout={appearance?.homeMenuCategories}
+        />
         {featuredSectionsCount === 0 ? (
           <LazyMount rootMargin="100px 0px" minHeight={140}>
             <BannerSlider config={shopShowcaseConfig} />
@@ -151,18 +137,12 @@ export default function HomePageClient({ initialData }) {
           </LazyMount>
         ) : null}
 
-        {catalogReady ? (
-        <LazyMount rootMargin="100px 0px" minHeight={220}>
-          <Section3
-            homeSections={homeSections}
-            sectionsLoading={false}
-            initialProducts={topDealsProducts}
-            initialTitle={findTopDealsSection(homeSections)?.title || ''}
-          />
-        </LazyMount>
-        ) : (
-          <div className="min-h-[220px]" aria-hidden />
-        )}
+        <Section3
+          homeSections={homeSections}
+          sectionsLoading={false}
+          initialProducts={topDealsProducts}
+          initialTitle={findTopDealsSection(homeSections)?.title || ''}
+        />
 
         {showSecondaryBannerAt('below_top_deals') ? (
           <LazyMount rootMargin="100px 0px" minHeight={120}>

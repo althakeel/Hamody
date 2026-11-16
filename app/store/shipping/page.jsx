@@ -17,8 +17,8 @@ import {
   upsertExpressShippingOption,
 } from '@/lib/shippingOptions'
 
-const SHIPPING_SECTIONS_STORAGE_KEY = 'store1920-shipping-sections'
-const SHIPPING_OPTIONS_STORAGE_KEY = 'store1920-shipping-delivery-options'
+const SHIPPING_SECTIONS_STORAGE_KEY = 'hamody-shipping-sections'
+const SHIPPING_OPTIONS_STORAGE_KEY = 'hamody-shipping-delivery-options'
 
 function parseSettingNumber(value, fallback = 0) {
   const parsed = Number(value)

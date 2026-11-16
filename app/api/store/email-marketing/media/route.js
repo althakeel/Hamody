@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 const ALLOWED_HOST_SUFFIXES = [
+  'hamody.com',
   'store1920.com',
   'store1920.store',
   'amazonaws.com',
@@ -46,7 +47,7 @@ export async function GET(request) {
     const upstream = await fetch(target, {
       headers: {
         Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
-        'User-Agent': 'Store1920EmailPreview/1.0',
+        'User-Agent': 'HamodyEmailPreview/1.0',
       },
       redirect: 'follow',
       cache: 'force-cache',

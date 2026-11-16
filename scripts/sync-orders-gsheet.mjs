@@ -1,5 +1,5 @@
 /**
- * Force-sync Store1920 orders into the orders Google Sheet.
+ * Force-sync HAMODY orders into the orders Google Sheet.
  * Usage: node --env-file=.env --import ./scripts/registerModuleAliasLoader.mjs scripts/sync-orders-gsheet.mjs
  */
 import { syncOrdersToGoogleSheet } from '@/lib/googleSheetsOrders.js';

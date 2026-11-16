@@ -11,7 +11,7 @@ import { AedText, StruckPrice } from '@/components/CurrencySymbol';
 import NewProductTagBadge from '@/components/NewProductTagBadge';
 
 const LINE_TOTAL_CLASS =
-  'shrink-0 min-w-[7.5rem] text-right tabular-nums text-base font-bold text-slate-900 sm:text-lg';
+  'text-end tabular-nums text-[clamp(15px,4vw,18px)] font-bold text-slate-900';
 
 function getItemSubtitle(item) {
   if (item._isFreeGift) {
@@ -126,7 +126,7 @@ export default function CartLineItem({
             )}
           </div>
 
-          <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
             <div className="min-w-0">
               {item._isFreeGift ? (
                 <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">

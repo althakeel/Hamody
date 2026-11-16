@@ -6,7 +6,7 @@ export default function CookiePolicyPage() {
   return (
     <PolicyPageLayout>
       <h1 className="text-3xl font-bold text-gray-900 mb-2">Cookie Policy</h1>
-      <p className="text-gray-600 mb-8">Information about the cookies and similar technologies we use on Store1920.com.</p>
+      <p className="text-gray-600 mb-8">Information about the cookies and similar technologies we use on hamody.com.</p>
 
       <div className="space-y-6 border border-gray-200 rounded-xl p-6">
         <section>

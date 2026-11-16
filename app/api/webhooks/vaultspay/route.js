@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   return NextResponse.json({
     ok: true,
-    service: 'Store1920 VaultsPay webhook',
+    service: 'HAMODY VaultsPay webhook',
     methods: ['card', 'applepay', 'googlepay'],
   });
 }

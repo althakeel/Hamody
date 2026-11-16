@@ -57,7 +57,7 @@ export default function LazyMount({
       ref={ref}
       style={
         visible
-          ? { contentVisibility: 'auto', containIntrinsicSize: `auto ${Math.max(minHeight, 1)}px` }
+          ? undefined
           : { minHeight, contentVisibility: 'auto', containIntrinsicSize: `auto ${Math.max(minHeight, 1)}px` }
       }
     >

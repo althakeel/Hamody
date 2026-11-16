@@ -5,26 +5,26 @@ import { Headphones, Package, ShoppingBag, Monitor, MapPin, Clock } from 'lucide
 import CareersForm from './CareersForm';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 import {
-  STORE1920_CUSTOMER_SUPPORT_PHONE,
-  STORE1920_SUPPORT_EMAIL,
+  HAMODY_CUSTOMER_SUPPORT_TEL,
+  HAMODY_SUPPORT_EMAIL,
   formatCustomerSupportPhoneDisplay,
 } from '@/lib/storeContact';
 import {
-  STORE1920_LEGAL_NAME,
-  STORE1920_LEGAL_NAME_AR,
-  STORE1920_BUSINESS_STREET,
-  STORE1920_BUSINESS_CITY,
-  STORE1920_BUSINESS_COUNTRY,
-  STORE1920_BUSINESS_HOURS_EN,
-  STORE1920_BUSINESS_HOURS_AR,
+  HAMODY_LEGAL_NAME,
+  HAMODY_LEGAL_NAME_AR,
+  HAMODY_BUSINESS_STREET,
+  HAMODY_BUSINESS_CITY,
+  HAMODY_BUSINESS_COUNTRY,
+  HAMODY_BUSINESS_HOURS_EN,
+  HAMODY_BUSINESS_HOURS_AR,
 } from '@/lib/businessIdentity';
 
 const PAGE_COPY = {
   en: {
     eyebrow: 'Careers',
-    title: 'Work with Store1920',
+    title: 'Work with hamody.com',
     intro:
-      'Store1920 is a UAE online retailer for electronics, home and lifestyle products. We are owned and operated by {legal}. If you want to help customers shop with clear prices and reliable delivery, we want to hear from you.',
+      'hamody.com is a UAE store for traditional sculptures and outdoor camping. We are owned and operated by {legal}. If you want to help customers shop with clear prices and reliable delivery, we want to hear from you.',
     applyCta: 'Apply now',
     aboutCta: 'About us',
     whyTitle: 'Why people join us',
@@ -73,7 +73,7 @@ const PAGE_COPY = {
     ],
     processTitle: 'How we hire',
     steps: [
-      { title: '1. Send your details', text: 'Use the form below. Tell us the role you want and why Store1920 is a fit.' },
+      { title: '1. Send your details', text: 'Use the form below. Tell us the role you want and why hamody.com is a fit.' },
       { title: '2. We review', text: 'We read applications against current and upcoming needs. This can take several working days.' },
       { title: '3. Conversation', text: 'If there is a match, we contact you by email or phone for a short call or interview.' },
       { title: '4. Next steps', text: 'We confirm role, location, hours and start date before any offer. Nothing is agreed until that is written.' },
@@ -93,14 +93,14 @@ const PAGE_COPY = {
     applyLead:
       'There is no fee to apply. Do not send payment details. We will only contact you about your application.',
     contactLead: 'Questions about careers:',
-    shopCta: 'Shop Store1920',
+    shopCta: 'Shop hamody.com',
     businessCta: 'Business information',
   },
   ar: {
     eyebrow: 'الوظائف',
-    title: 'اعمل مع Store1920',
+    title: 'اعمل مع hamody.com',
     intro:
-      'Store1920 متجر تجزئة إلكتروني في الإمارات للإلكترونيات والمنزل ونمط الحياة. المتجر مملوك ويُدار بواسطة {legal}. إذا كنت تريد مساعدة العملاء على التسوق بأسعار واضحة وتوصيل موثوق، نود أن نسمع منك.',
+      'hamody.com متجر في الإمارات للمنحوتات التقليدية والتخييم في الهواء الطلق. المتجر مملوك ويُدار بواسطة {legal}. إذا كنت تريد مساعدة العملاء على التسوق بأسعار واضحة وتوصيل موثوق، نود أن نسمع منك.',
     applyCta: 'قدّم الآن',
     aboutCta: 'من نحن',
     whyTitle: 'لماذا ينضم إلينا الناس',
@@ -149,7 +149,7 @@ const PAGE_COPY = {
     ],
     processTitle: 'كيف نوظّف',
     steps: [
-      { title: '1. أرسل بياناتك', text: 'استخدم النموذج أدناه. اذكر الدور الذي تريده ولماذا يناسبك Store1920.' },
+      { title: '1. أرسل بياناتك', text: 'استخدم النموذج أدناه. اذكر الدور الذي تريده ولماذا يناسبك hamody.com.' },
       { title: '2. نراجع الطلب', text: 'نقرأ الطلبات مقابل الاحتياج الحالي والمقبل. قد يستغرق ذلك عدة أيام عمل.' },
       { title: '3. محادثة', text: 'إن وُجد توافق نتواصل معك بالبريد أو الهاتف لمكالمة أو مقابلة قصيرة.' },
       { title: '4. الخطوات التالية', text: 'نؤكد الدور والموقع وساعات العمل وتاريخ البدء قبل أي عرض. لا يُتفق على شيء قبل أن يُكتب.' },
@@ -169,7 +169,7 @@ const PAGE_COPY = {
     applyLead:
       'لا توجد رسوم للتقديم. لا ترسل بيانات دفع. سنتواصل معك فقط بشأن طلبك.',
     contactLead: 'أسئلة عن الوظائف:',
-    shopCta: 'تسوق Store1920',
+    shopCta: 'تسوق hamody.com',
     businessCta: 'معلومات الأعمال',
   },
 };
@@ -181,8 +181,8 @@ function fill(template, vars) {
 export default function CareersPage() {
   const { isArabic } = useStorefrontI18n();
   const copy = isArabic ? PAGE_COPY.ar : PAGE_COPY.en;
-  const legal = isArabic ? STORE1920_LEGAL_NAME_AR : STORE1920_LEGAL_NAME;
-  const hours = isArabic ? STORE1920_BUSINESS_HOURS_AR : STORE1920_BUSINESS_HOURS_EN;
+  const legal = isArabic ? HAMODY_LEGAL_NAME_AR : HAMODY_LEGAL_NAME;
+  const hours = isArabic ? HAMODY_BUSINESS_HOURS_AR : HAMODY_BUSINESS_HOURS_EN;
   const phone = formatCustomerSupportPhoneDisplay();
 
   return (
@@ -270,9 +270,9 @@ export default function CareersPage() {
             <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#E52721]" />
             <span>
               {fill(copy.locationText, {
-                street: STORE1920_BUSINESS_STREET,
-                city: STORE1920_BUSINESS_CITY,
-                country: STORE1920_BUSINESS_COUNTRY,
+                street: HAMODY_BUSINESS_STREET,
+                city: HAMODY_BUSINESS_CITY,
+                country: HAMODY_BUSINESS_COUNTRY,
                 hours,
               })}
             </span>
@@ -291,11 +291,11 @@ export default function CareersPage() {
             <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">{copy.applyLead}</p>
             <p className="mt-6 text-sm text-slate-600">
               {copy.contactLead}{' '}
-              <a href={`mailto:${STORE1920_SUPPORT_EMAIL}`} className="font-semibold text-[#E52721] hover:underline">
-                {STORE1920_SUPPORT_EMAIL}
+              <a href={`mailto:${HAMODY_SUPPORT_EMAIL}`} className="font-semibold text-[#E52721] hover:underline">
+                {HAMODY_SUPPORT_EMAIL}
               </a>
               {' · '}
-              <a href={`tel:${STORE1920_CUSTOMER_SUPPORT_PHONE}`} className="font-semibold text-slate-800 hover:underline">
+              <a href={`tel:${HAMODY_CUSTOMER_SUPPORT_TEL}`} className="font-semibold text-slate-800 hover:underline">
                 {phone}
               </a>
             </p>

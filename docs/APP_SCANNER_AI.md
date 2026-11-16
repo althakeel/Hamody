@@ -1,14 +1,14 @@
-# Store1920 scanner — Gemini and ChatGPT through the backend
+# HAMODY scanner — Gemini and ChatGPT through the backend
 
 Last updated: 21 October 2026  
 Audience: Android and iOS  
-API root: `https://www.store1920.com/api`  
+API root: `https://www.hamody.com/api`  
 Camera bar: [ANDROID_PRODUCT_IMAGE_SCAN.md](./ANDROID_PRODUCT_IMAGE_SCAN.md)  
 Results screen: [APP_IMAGE_SEARCH.md](./APP_IMAGE_SEARCH.md)
 
 The phone searches. It does not check products.
 
-The shopper takes a photo or picks one from the gallery. The app sends that file to Store1920. Gemini and ChatGPT already run on the server. The server reads the photo, then checks the catalog. The app draws whatever product list comes back.
+The shopper takes a photo or picks one from the gallery. The app sends that file to Hamody. Gemini and ChatGPT already run on the server. The server reads the photo, then checks the catalog. The app draws whatever product list comes back.
 
 Do not put a Gemini key or an OpenAI key in the Android or iOS app. Do not call `generativelanguage.googleapis.com` or `api.openai.com` from the phone. Those keys stay on the server.
 
@@ -43,7 +43,7 @@ No login. Do not send `Authorization`. Send `Accept-Language: en` or `ar`.
 | Timeout | At least **60 seconds** |
 
 ```
-POST https://www.store1920.com/api/search-by-image
+POST https://www.hamody.com/api/search-by-image
 ```
 
 There is no GET on this path.

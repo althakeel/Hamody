@@ -1,4 +1,4 @@
-# Store1920 product badges for the app
+# HAMODY product badges for the app
 
 Last updated: 27 October 2026  
 Audience: Android and Flutter
@@ -8,9 +8,9 @@ Badges on a product card and on the product page. No login. Do not call `/api/st
 The product itself comes from the public product calls the app already uses:
 
 ```http
-GET https://www.store1920.com/api/products
-GET https://www.store1920.com/api/products/by-slug?slug=
-GET https://www.store1920.com/api/products/batch
+GET https://www.hamody.com/api/products
+GET https://www.hamody.com/api/products/by-slug?slug=
+GET https://www.hamody.com/api/products/batch
 ```
 
 Home, shop, category, brand, search, and offers lists use the same product fields. Prices are in AED. `price` is the selling price. `AED` or `mrp` is the compare-at price when it is higher than `price`.
@@ -34,7 +34,7 @@ A product can show more than one image badge and more than one delivery badge.
 ## 2. Image badges
 
 ```http
-GET https://www.store1920.com/api/public/new-tag
+GET https://www.hamody.com/api/public/new-tag
 ```
 
 No login. Cached for about 1 minute. Keep the last good copy on the device.
@@ -135,7 +135,7 @@ On top of the product photo. Stack badges that share a `placement`, about 4 px a
 ## 3. Delivery time badge
 
 ```http
-GET https://www.store1920.com/api/store/appearance/sections/public
+GET https://www.hamody.com/api/store/appearance/sections/public
 ```
 
 No login. Cached for about 2 minutes. Read `timeBadges`.
@@ -229,7 +229,7 @@ This is the website sale. It is not the app discount.
 The server applies the discount when the app places the order:
 
 ```http
-POST https://www.store1920.com/api/orders
+POST https://www.hamody.com/api/orders
 X-Store1920-Client: app
 X-Store1920-Platform: android
 ```
