@@ -13,7 +13,10 @@ async function loadSharp() {
   }
 }
 
-const ALLOWED_HOST = 'hamody-images.s3.ap-south-1.amazonaws.com';
+const ALLOWED_HOSTS = new Set([
+  'hamody-images.s3.ap-south-1.amazonaws.com',
+  'store1920-images.s3.ap-south-1.amazonaws.com',
+]);
 const ALLOWED_WIDTHS = new Set([256, 384, 512]);
 const MAX_BYTES = 12 * 1024 * 1024;
 const CACHE_MAX = 300;
@@ -41,7 +44,7 @@ function allowedSource(value) {
   try {
     const parsed = new URL(String(value || ''));
     if (parsed.protocol !== 'https:') return null;
-    if (parsed.hostname !== ALLOWED_HOST) return null;
+    if (!ALLOWED_HOSTS.has(parsed.hostname)) return null;
     if (!parsed.pathname.startsWith('/products/') && !parsed.pathname.startsWith('/categories/')) return null;
     return parsed.toString();
   } catch {

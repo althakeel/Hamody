@@ -45,7 +45,6 @@ const emailHistorySchema = new mongoose.Schema({
   /** Opaque token embedded in open-pixel / click redirects */
   trackingToken: {
     type: String,
-    sparse: true,
   },
   openCount: {
     type: Number,
