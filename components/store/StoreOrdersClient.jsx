@@ -6406,9 +6406,7 @@ export default function StoreOrders() {
                                     </div>
                                 ) : null}
 
-                                <details className="rounded-lg border border-slate-200 bg-white/80 p-3"></details>
-
-                                
+                                <details className="rounded-lg border border-slate-200 bg-white/80 p-3">
                                     <summary className="cursor-pointer text-sm font-semibold text-slate-800">
                                         Manual tracking (other couriers)
                                     </summary>
