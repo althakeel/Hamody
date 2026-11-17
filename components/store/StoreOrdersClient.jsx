@@ -6401,8 +6401,12 @@ export default function StoreOrders() {
                                                 ) : (
                                                     <p className="text-slate-400">No URL</p>
                                                 )}
-                                            </div>
+                                                                                        </div>
                                         </div>
+                                    </div>
+                                ) : null}
+
+                                <details className="rounded-lg border border-slate-200 bg-white/80 p-3"></details>
 
                                 <details className="rounded-lg border border-slate-200 bg-white/80 p-3">
                                     <summary className="cursor-pointer text-sm font-semibold text-slate-800">
