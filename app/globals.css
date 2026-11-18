@@ -547,15 +547,9 @@ html:has([data-store-language-scope]) #Hamody-root {
 
     @media (min-width: 768px) {
         .shop-showcase-banner-row--full {
-            height: 240px;
-            max-height: 240px;
-        }
-    }
-
-    @media (min-width: 1024px) {
-        .shop-showcase-banner-row--full {
-            height: 300px;
-            max-height: 300px;
+            height: auto;
+            max-height: none;
+            aspect-ratio: 872 / 274;
         }
     }
 

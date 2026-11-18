@@ -38,6 +38,7 @@ import RelatedProductAdCard from "./RelatedProductAdCard";
 import ProductDescription from "./ProductDescription";
 import ProductReviewsSection from "./ProductReviewsSection";
 import StorefrontActionToast from "./StorefrontActionToast";
+import { openAddToCartPopup } from "@/lib/addToCartPopup";
 import FastDeliveryInfoPopup from "./FastDeliveryInfoPopup";
 import { useAuth } from '@/lib/useAuth';
 import { sortOutOfStockLast } from '@/lib/productVisibility';
@@ -1697,7 +1698,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                         {tagLabel ? (
                           <span
                             className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-white ${
-                              tag === 'BEST_VALUE' ? 'bg-[#1F5C4A]' : 'bg-[#9C6E20]'
+                              tag === 'BEST_VALUE' ? 'bg-[#C8F404] text-[#05090D]' : 'bg-[#05090D] text-white'
                             }`}
                           >
                             {tagLabel}
@@ -1845,7 +1846,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
         <div className="mb-1.5 flex items-center justify-end">
           <span
             className="inline-flex items-baseline gap-1.5 text-[13px] font-extrabold leading-none tracking-tight"
-            style={{ color: '#9C6E20' }}
+            style={{ color: '#05090D' }}
           >
             <span className="tabular-nums">{formatCount(displaySoldCount)}</span>
             <span className="uppercase tracking-[0.12em]">
@@ -1856,7 +1857,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
 
         <div className="relative h-2 w-full overflow-hidden rounded-full bg-[#eceef2]">
           <div
-            className="product-sold-progress-fill absolute inset-y-0 start-0 rounded-full bg-[#9C6E20]"
+            className="product-sold-progress-fill absolute inset-y-0 start-0 rounded-full bg-[#C8F404]"
             style={{ width: `${soldProgressPercent}%` }}
             role="progressbar"
             aria-valuenow={soldProgressPercent}
@@ -2602,16 +2603,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
   };
 
   const notifyCartAdded = () => {
-    // Buybox already switches to the matched cart UI — skip the floating toast there.
-    if (cartUiReady) return;
-    showActionToast({
-      variant: 'cart',
-      title: t('product.addedToCartToast'),
-      subtitle: t('product.addedToCartSubtitle'),
-      actionLabel: t('product.viewCart'),
-      actionHref: '/cart',
-      duration: 4500,
-    });
+    openAddToCartPopup(product);
   };
 
   const notifyWishlistUpdate = (type) => {
@@ -4011,7 +4003,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                     className={`h-9 w-full rounded-lg px-3 text-[13px] font-semibold transition-[background-color,box-shadow,transform] duration-200 active:scale-[0.99] ${
                       !isSelectionInStock
                         ? 'cursor-not-allowed bg-slate-200 text-slate-500 shadow-none'
-                        : 'bg-[#E9D6B5] text-[#123D33] shadow-sm hover:bg-[#DCC9A4] hover:shadow-[0_6px_16px_rgba(18,61,51,0.12)]'
+                        : 'bg-[#F8FEE6] text-[#05090D] shadow-sm hover:bg-[#E5FA94] hover:shadow-[0_6px_16px_rgba(5,9,13,0.12)]'
                     }`}
                   >
                     {!isSelectionInStock
@@ -4023,11 +4015,11 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                     onClick={handleOrderNow}
                     disabled={!isSelectionInStock}
                     className={isMansoryNoonProduct(product)
-                      ? 'flex h-[52px] w-full flex-col items-center justify-center rounded-xl bg-[#1F5C4A] px-4 text-white shadow-[0_8px_18px_rgba(31,92,74,0.28)] transition hover:bg-[#123D33] active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none'
+                      ? 'flex h-[52px] w-full flex-col items-center justify-center rounded-xl bg-[#C8F404] px-4 text-[#05090D] shadow-[0_8px_18px_rgba(5,9,13,0.28)] transition hover:bg-[#ADD300] active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none'
                       : `h-9 w-full rounded-lg px-3 text-[13px] font-semibold transition-[background-color,box-shadow,transform] duration-200 active:scale-[0.99] ${
                         !isSelectionInStock
                           ? 'cursor-not-allowed bg-slate-200 text-slate-500 shadow-none'
-                          : 'bg-[#1F5C4A] text-white shadow-sm hover:bg-[#123D33] hover:shadow-[0_6px_16px_rgba(31,92,74,0.28)]'
+                          : 'bg-[#C8F404] text-[#05090D] shadow-sm hover:bg-[#ADD300] hover:shadow-[0_6px_16px_rgba(5,9,13,0.28)]'
                       }`}
                   >
                     <span className={isMansoryNoonProduct(product) ? 'text-[15px] font-bold leading-none' : ''}>
@@ -4168,7 +4160,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                     <button
                       type="button"
                       onClick={() => router.push('/checkout')}
-                      className="h-10 rounded-lg bg-[#1F5C4A] px-4 text-sm font-semibold text-white transition hover:bg-[#123D33]"
+                      className="h-10 rounded-lg bg-[#C8F404] px-4 text-sm font-semibold text-[#05090D] transition hover:bg-[#ADD300]"
                     >
                       {t('cart.checkout')}
                     </button>

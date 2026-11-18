@@ -25,8 +25,8 @@ export function CartSummaryActions({
   const checkoutButton = (
     <button
       type="button"
-      className={`w-full rounded-xl py-3 text-sm font-bold text-white transition ${
-        checkoutDisabled ? 'cursor-not-allowed bg-slate-400' : 'bg-[#1F5C4A] hover:bg-[#123D33]'
+      className={`w-full rounded-xl py-3 text-sm font-bold text-[#05090D] transition ${
+        checkoutDisabled ? 'cursor-not-allowed bg-slate-400' : 'bg-[#C8F404] hover:bg-[#ADD300]'
       }`}
       onClick={() => {
         if (checkoutDisabled) return;

@@ -1,557 +1,223 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
-import { PackageOpen, Loader2 } from 'lucide-react';
-import ProductCard from '@/components/ProductCard';
-import {
-  HOME_SECTION_CLASS,
-  HOME_SECTION_BLOCK_HEADING_CLASS,
-  HOME_SECTION_GRID_INNER_CLASS,
-  MOBILE_SECTION_FULL_BLEED_CLASS,
-  HOME_PRODUCT_GRID_CLASS,
-} from '@/lib/storefrontCarousel';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { HOME_SECTION_CLASS, HOME_SECTION_GRID_INNER_CLASS } from '@/lib/storefrontCarousel';
 import { cleanDisplayText } from '@/lib/displayText';
 import { getLocalizedCategoryName } from '@/lib/categoryLocalization';
-import { getProductThumbnailUrl } from '@/lib/productMedia';
-import { PLACEHOLDER_IMAGE } from '@/lib/mediaUrls';
-import {
-  MANUAL_RECOMMENDED_MAX,
-  RECOMMENDED_HOME_INITIAL,
-  RECOMMENDED_HOME_SHOW_MORE_STEP,
-  fetchProductsByIdsInOrder,
-} from '@/lib/recommendedProductCatalog';
+import { toPublicCategoryPath } from '@/lib/categorySlug';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
-import { isStorefrontProductInStock } from '@/lib/productVisibility';
-import CategoryChipScroller from '@/components/CategoryChipScroller';
-import { HomeExploreInterestsSkeleton } from '@/components/home/HomeSectionSkeletons';
 
-const MAX_CATEGORIES = 10;
-const MAX_CATEGORY_PRODUCTS = 60;
-const RECOMMENDED_CATALOG_LIMIT = RECOMMENDED_HOME_INITIAL;
+const HIDDEN_SLUGS = new Set(['home-living', 'home-decor']);
 
-function getFullRowDisplayLimit(requestedCount, totalCount, columnsPerRow) {
-  if (totalCount <= 0 || columnsPerRow <= 0) return 0;
-
-  const capped = Math.min(requestedCount, totalCount);
-  // Last batch: show every remaining product (may be a short final row).
-  if (capped >= totalCount) return totalCount;
-
-  const fullRowLimit = Math.floor(capped / columnsPerRow) * columnsPerRow;
-  if (fullRowLimit > 0) return fullRowLimit;
-
-  return Math.min(totalCount, columnsPerRow);
+function categoryImage(category, records) {
+  const own = String(category?.image || '').trim();
+  if (own) return own;
+  const id = String(category?._id || '');
+  const child = records.find(
+    (item) => String(item?.parentId || '') === id && String(item?.image || '').trim(),
+  );
+  return child ? String(child.image).trim() : '';
 }
 
-function ExploreInterestsProductSkeleton({ count = 6 }) {
-  return Array.from({ length: count }).map((_, index) => (
-    <div
-      key={`interest-skeleton-${index}`}
-      className="h-full w-full min-w-0 overflow-hidden rounded-[2px] border border-gray-100 bg-white animate-pulse"
-    >
-      <div className="aspect-square w-full bg-gray-100" />
-      <div className="space-y-2 p-3">
-        <div className="h-3 w-4/5 rounded bg-gray-100" />
-        <div className="h-4 w-1/2 rounded bg-gray-100" />
-      </div>
-    </div>
-  ));
-}
-
-const LOAD_MORE_DELAY_MS = 450;
-
-function getColumnsForWidth(width) {
-  if (width >= 1024) return 6;
-  if (width >= 768) return 4;
-  if (width >= 640) return 3;
-  return 2;
-}
-
-function normalizeCategory(value) {
-  return cleanDisplayText(value);
-}
-
-function normalizeToken(value) {
-  return normalizeCategory(value).toLowerCase();
-}
-
-function isRootParentCategory(category) {
-  const parentId = category?.parentId;
-  if (parentId === null || parentId === undefined) return true;
-  const normalized = String(parentId).trim().toLowerCase();
-  return !normalized || normalized === 'null' || normalized === '0';
-}
-
-function isDisplayableCategoryName(name) {
-  const label = normalizeCategory(name);
-  if (!label || label.length < 2) return false;
-  if (/^\d+$/.test(label)) return false;
-  if (/^[a-f0-9]{24}$/i.test(label)) return false;
-  return true;
-}
-
-function isRenderableProduct(product) {
-  if (!product || typeof product !== 'object') return false;
-  if (!product.name || !product.slug) return false;
-  if (!isStorefrontProductInStock(product)) return false;
-  const thumbnail = getProductThumbnailUrl(product, { fallback: PLACEHOLDER_IMAGE });
-  return Boolean(thumbnail && thumbnail !== PLACEHOLDER_IMAGE);
-}
-
-function sortByLatest(products) {
-  return [...products].sort((left, right) => {
-    const leftTime = new Date(left?.createdAt || 0).getTime();
-    const rightTime = new Date(right?.createdAt || 0).getTime();
-    return rightTime - leftTime;
-  });
+function cardSubtitle(category, language, t) {
+  const description = cleanDisplayText(
+    language === 'ar' ? category?.descriptionAr || category?.description : category?.description,
+  );
+  if (description) {
+    const sentence = description.split(/(?<=[.!?])\s/)[0].trim();
+    return sentence.length > 88 ? `${sentence.slice(0, 85).trim()}…` : sentence;
+  }
+  const count = Number(category?.productCount) || 0;
+  return count > 0 ? t('category.productCount', { count }) : '';
 }
 
 export default function CategoryInterestSection() {
   const { t, language, isArabic } = useStorefrontI18n();
-  const [categoryRecords, setCategoryRecords] = useState([]);
+  const scrollRef = useRef(null);
+  const [records, setRecords] = useState([]);
   const [manualCategoryIds, setManualCategoryIds] = useState([]);
   const [sectionEnabled, setSectionEnabled] = useState(true);
-  const [manualRecommendedIds, setManualRecommendedIds] = useState([]);
-  const [manualRecommendedProducts, setManualRecommendedProducts] = useState([]);
-  const [catalogProducts, setCatalogProducts] = useState([]);
-  const [categoryCatalogProducts, setCategoryCatalogProducts] = useState([]);
-  const [catalogLoading, setCatalogLoading] = useState(true);
-  const [manualRecommendedLoading, setManualRecommendedLoading] = useState(false);
-  const [settingsLoaded, setSettingsLoaded] = useState(false);
-  const [categoryDataLoading, setCategoryDataLoading] = useState(false);
-  const [columnsPerRow, setColumnsPerRow] = useState(6);
-  const [visibleProductCount, setVisibleProductCount] = useState(RECOMMENDED_HOME_INITIAL);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   useEffect(() => {
-    const updateColumns = () => {
-      setColumnsPerRow(getColumnsForWidth(window.innerWidth));
-    };
-
-    updateColumns();
-    window.addEventListener('resize', updateColumns);
-    return () => window.removeEventListener('resize', updateColumns);
-  }, []);
-
-  const latestProducts = useMemo(
-    () => sortByLatest(catalogProducts.filter(isRenderableProduct)).slice(0, MANUAL_RECOMMENDED_MAX),
-    [catalogProducts]
-  );
-
-  const [selectedCategoryKey, setSelectedCategoryKey] = useState('recommended');
-  const isRecommendedTab = selectedCategoryKey === 'recommended';
-
-  useEffect(() => {
-    let isActive = true;
-
-    const fetchExploreInterestsSettings = async () => {
+    let active = true;
+    const load = async () => {
       try {
-        const response = await fetch('/api/store/explore-interests/public').catch(() => null);
-        if (!response?.ok || !isActive) return;
-
-        const data = await response.json();
-        if (!isActive) return;
-
-        const ids = Array.isArray(data?.productIds)
-          ? data.productIds.map((id) => String(id || '').trim()).filter(Boolean)
-          : [];
-
-        setSectionEnabled(typeof data?.enabled === 'boolean' ? data.enabled : true);
-        setManualRecommendedIds(ids);
-        setManualCategoryIds(
-          Array.isArray(data?.categoryIds)
-            ? data.categoryIds.map((id) => String(id || '').trim()).filter(Boolean)
-            : []
-        );
-      } catch {
-        // Settings failure falls back to automatic catalog below.
-      } finally {
-        if (isActive) setSettingsLoaded(true);
-      }
-    };
-
-    fetchExploreInterestsSettings();
-
-    return () => {
-      isActive = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-
-    const handleLiveUpdate = (event) => {
-      const payload = event?.detail;
-      if (!payload || typeof payload !== 'object') return;
-
-      setSectionEnabled(typeof payload.enabled === 'boolean' ? payload.enabled : true);
-      setManualRecommendedIds(
-        Array.isArray(payload.productIds)
-          ? payload.productIds.map((id) => String(id || '').trim()).filter(Boolean)
-          : []
-      );
-      if (Array.isArray(payload.categoryIds)) {
-        setManualCategoryIds(payload.categoryIds.map((id) => String(id || '').trim()).filter(Boolean));
-      }
-    };
-
-    window.addEventListener('exploreInterestsUpdated', handleLiveUpdate);
-    return () => {
-      window.removeEventListener('exploreInterestsUpdated', handleLiveUpdate);
-    };
-  }, []);
-
-  useEffect(() => {
-    let isActive = true;
-
-    const loadRecommendedCatalog = async () => {
-      setCatalogLoading(true);
-
-      try {
-        const response = await fetch(`/api/products?limit=${RECOMMENDED_CATALOG_LIMIT}&slim=true`);
-        if (!response.ok || !isActive) return;
-
-        const data = await response.json();
-        if (!isActive) return;
-
-        const products = Array.isArray(data?.products)
-          ? data.products
-          : Array.isArray(data)
-            ? data
-            : [];
-
-        setCatalogProducts(products.filter(isRenderableProduct));
-      } catch {
-        if (isActive) setCatalogProducts([]);
-      } finally {
-        if (isActive) setCatalogLoading(false);
-      }
-    };
-
-    loadRecommendedCatalog();
-
-    return () => {
-      isActive = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let isActive = true;
-
-    const fetchManualProducts = async () => {
-      if (!Array.isArray(manualRecommendedIds) || manualRecommendedIds.length === 0) {
-        setManualRecommendedProducts([]);
-        setManualRecommendedLoading(false);
-        return;
-      }
-
-      const idsToFetch = manualRecommendedIds.slice(0, MANUAL_RECOMMENDED_MAX);
-      const loadedIds = new Set(
-        manualRecommendedProducts.map((product) => String(product?._id || product?.id || ''))
-      );
-      const missingIds = idsToFetch.filter((id) => !loadedIds.has(String(id)));
-
-      if (missingIds.length === 0) {
-        setManualRecommendedLoading(false);
-        return;
-      }
-
-      setManualRecommendedLoading(true);
-
-      try {
-        const normalized = await fetchProductsByIdsInOrder(missingIds);
-        if (!isActive) return;
-
-        setManualRecommendedProducts((previous) => {
-          const productMap = new Map(
-            previous.map((product) => [String(product?._id || product?.id || ''), product])
+        const [settingsResponse, categoriesResponse] = await Promise.all([
+          fetch('/api/store/explore-interests/public').catch(() => null),
+          fetch('/api/categories'),
+        ]);
+        if (!active) return;
+        if (settingsResponse?.ok) {
+          const settings = await settingsResponse.json();
+          setSectionEnabled(typeof settings?.enabled === 'boolean' ? settings.enabled : true);
+          setManualCategoryIds(
+            Array.isArray(settings?.categoryIds)
+              ? settings.categoryIds.map((id) => String(id || '').trim()).filter(Boolean)
+              : [],
           );
-          normalized.forEach((product) => {
-            productMap.set(String(product?._id || product?.id || ''), product);
-          });
-
-          return manualRecommendedIds
-            .slice(0, MANUAL_RECOMMENDED_MAX)
-            .map((id) => productMap.get(String(id)))
-            .filter(isRenderableProduct);
-        });
+        }
+        if (categoriesResponse?.ok) {
+          const data = await categoriesResponse.json();
+          setRecords(Array.isArray(data?.categories) ? data.categories : []);
+        }
       } catch {
-        if (isActive) setManualRecommendedProducts([]);
+        if (active) setRecords([]);
       } finally {
-        if (isActive) setManualRecommendedLoading(false);
+        if (active) setReady(true);
       }
     };
-
-    fetchManualProducts();
-
+    load();
     return () => {
-      isActive = false;
-    };
-  }, [manualRecommendedIds]);
-
-  useEffect(() => {
-    let isActive = true;
-
-    const fetchParentCategories = async () => {
-      try {
-        const response = await fetch('/api/categories', { next: { revalidate: 300 } });
-        if (!response.ok || !isActive) return;
-
-        const data = await response.json();
-        if (!isActive) return;
-
-        const categoryList = Array.isArray(data?.categories) ? data.categories : [];
-        setCategoryRecords(categoryList);
-      } catch {
-        // Chips fall back to Recommended only if categories fail to load.
-      }
-    };
-
-    fetchParentCategories();
-
-    return () => {
-      isActive = false;
+      active = false;
     };
   }, []);
 
-  const apiCategories = useMemo(() => {
-    const toChip = (cat) => ({
-      key: `api:${String(cat._id || cat.slug || cat.name)}`,
-      label: normalizeCategory(cat.name),
-      nameAr: normalizeCategory(cat.nameAr),
-      id: String(cat._id || ''),
-      slug: normalizeToken(cat.slug),
+  const cards = useMemo(() => {
+    const visible = records.filter((category) => {
+      const slug = String(category?.slug || '').trim().toLowerCase();
+      if (!slug || HIDDEN_SLUGS.has(slug)) return false;
+      return Number(category?.productCount) > 0 || manualCategoryIds.includes(String(category?._id || ''));
     });
+    const byId = new Map(visible.map((category) => [String(category._id || ''), category]));
+    const chosen = manualCategoryIds.length
+      ? manualCategoryIds.map((id) => byId.get(String(id))).filter(Boolean)
+      : visible.filter((category) => categoryImage(category, records));
 
-    const records = categoryRecords.filter((cat) => cat && isDisplayableCategoryName(cat.name) && (cat.productCount == null || Number(cat.productCount) > 0));
-    if (manualCategoryIds.length) {
-      const byId = new Map(records.map((cat) => [String(cat._id || ''), cat]));
-      return manualCategoryIds
-        .map((id) => byId.get(String(id)))
-        .filter(Boolean)
-        .map(toChip);
-    }
-
-    return records
-      .filter((cat) => isRootParentCategory(cat))
-      .map(toChip)
-      .sort((left, right) => left.label.localeCompare(right.label))
-      .slice(0, MAX_CATEGORIES);
-  }, [categoryRecords, manualCategoryIds]);
-
-  const categoriesToRender = useMemo(() => {
-    return [
-      {
-        key: 'recommended',
-        label: t('exploreInterests.recommended'),
-        matchName: null,
-        id: null,
-        slug: null,
-      },
-      ...apiCategories.map((category) => ({
-        ...category,
-        matchName: category.label,
-        label: getLocalizedCategoryName(
-          { name: category.label, nameAr: category.nameAr, slug: category.slug },
-          language,
-        ),
-      })),
-    ];
-  }, [apiCategories, language, t]);
-
-  const selectedCategoryOption = useMemo(() => {
-    return categoriesToRender.find((category) => category.key === selectedCategoryKey) || categoriesToRender[0];
-  }, [categoriesToRender, selectedCategoryKey]);
+    return chosen.map((category) => ({
+      id: String(category._id || category.slug),
+      href: toPublicCategoryPath(category.slug),
+      title: getLocalizedCategoryName(category, language),
+      subtitle: cardSubtitle(category, language, t),
+      image: categoryImage(category, records),
+    })).filter((card) => card.title);
+  }, [language, manualCategoryIds, records, t]);
 
   useEffect(() => {
-    const categoryId = String(selectedCategoryOption?.id || '').trim();
-    if (isRecommendedTab || !categoryId) return undefined;
-
-    let isActive = true;
-
-    const loadCategoryProducts = async () => {
-      setCategoryDataLoading(true);
-      setCategoryCatalogProducts([]);
-
-      try {
-        const response = await fetch(
-          `/api/public/category-products?categoryId=${encodeURIComponent(categoryId)}&limit=${MAX_CATEGORY_PRODUCTS}`,
-        );
-        if (!response.ok || !isActive) return;
-
-        const data = await response.json();
-        if (!isActive) return;
-
-        const products = Array.isArray(data?.products) ? data.products : [];
-        setCategoryCatalogProducts(products.filter(isRenderableProduct));
-      } catch {
-        if (isActive) setCategoryCatalogProducts([]);
-      } finally {
-        if (isActive) setCategoryDataLoading(false);
-      }
+    const track = scrollRef.current;
+    if (!track) return undefined;
+    const update = () => {
+      const maxScroll = track.scrollWidth - track.clientWidth;
+      const left = Math.abs(track.scrollLeft);
+      setCanScrollLeft(left > 4);
+      setCanScrollRight(maxScroll - left > 4);
     };
-
-    loadCategoryProducts();
-
+    update();
+    track.addEventListener('scroll', update, { passive: true });
+    const observer = new ResizeObserver(update);
+    observer.observe(track);
     return () => {
-      isActive = false;
+      track.removeEventListener('scroll', update);
+      observer.disconnect();
     };
-  }, [isRecommendedTab, selectedCategoryOption?.id]);
+  }, [cards.length]);
 
-  useEffect(() => {
-    const exists = categoriesToRender.some((category) => category.key === selectedCategoryKey);
-    if (!exists) {
-      setSelectedCategoryKey('recommended');
-    }
-  }, [categoriesToRender, selectedCategoryKey]);
-
-  useEffect(() => {
-    setVisibleProductCount(RECOMMENDED_HOME_INITIAL);
-    setLoadingMore(false);
-  }, [selectedCategoryKey]);
-
-  useEffect(() => {
-    if (!loadingMore || manualRecommendedLoading) return undefined;
-
-    let cancelled = false;
-    const timer = window.setTimeout(() => {
-      if (!cancelled) {
-        setVisibleProductCount((current) => current + RECOMMENDED_HOME_SHOW_MORE_STEP);
-        setLoadingMore(false);
-      }
-    }, LOAD_MORE_DELAY_MS);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [loadingMore, manualRecommendedLoading]);
-
-  const tabProducts = useMemo(() => {
-    if (!selectedCategoryOption || selectedCategoryOption.key === 'recommended') {
-      if (manualRecommendedProducts.length > 0) {
-        return manualRecommendedProducts.slice(0, MANUAL_RECOMMENDED_MAX);
-      }
-      return latestProducts;
-    }
-
-    return categoryCatalogProducts.slice(0, MAX_CATEGORY_PRODUCTS);
-  }, [
-    categoryCatalogProducts,
-    selectedCategoryOption,
-    manualRecommendedProducts,
-    latestProducts,
-  ]);
-
-  const displayLimit = useMemo(
-    () => getFullRowDisplayLimit(visibleProductCount, tabProducts.length, columnsPerRow),
-    [visibleProductCount, tabProducts.length, columnsPerRow]
-  );
-
-  const displayedProducts = useMemo(
-    () => tabProducts.slice(0, displayLimit),
-    [tabProducts, displayLimit]
-  );
-
-  const showMoreProducts = displayLimit < tabProducts.length;
-
-  const loadMoreSkeletonCount = Math.min(columnsPerRow * 2, 12);
-
-  const handleShowMore = () => {
-    if (loadingMore || !showMoreProducts) return;
-    setLoadingMore(true);
+  const scrollByCard = (direction) => {
+    const track = scrollRef.current;
+    if (!track) return;
+    const card = track.querySelector('[data-explore-card]');
+    const amount = (card?.getBoundingClientRect().width || 220) + 16;
+    const sign = isArabic ? -1 : 1;
+    track.scrollBy({ left: sign * direction * amount, behavior: 'smooth' });
   };
 
-  const recommendedStillLoading =
-    isRecommendedTab &&
-    (!settingsLoaded ||
-      manualRecommendedLoading ||
-      (manualRecommendedProducts.length === 0 && catalogLoading));
+  if (!sectionEnabled || (ready && cards.length === 0)) return null;
 
-  if (!sectionEnabled) {
-    return null;
-  }
-
-  if (recommendedStillLoading && displayedProducts.length === 0) {
-    return <HomeExploreInterestsSkeleton productCount={columnsPerRow} />;
-  }
-
-  if (!isRecommendedTab && categoryDataLoading && displayedProducts.length === 0) {
-    return <HomeExploreInterestsSkeleton productCount={columnsPerRow} />;
-  }
+  const EndChevrons = isArabic ? ChevronsLeft : ChevronsRight;
 
   return (
     <section className={HOME_SECTION_CLASS}>
       <div className={HOME_SECTION_GRID_INNER_CLASS}>
-        <div className="mb-4 sm:mb-5">
-          <h2 className={`${HOME_SECTION_BLOCK_HEADING_CLASS} text-start`}>
+        <div className="relative mb-5 flex items-center justify-center sm:mb-6">
+          <h2 className="text-center text-xl font-extrabold uppercase tracking-wide text-[#05090D] sm:text-2xl">
             {t('exploreInterests.title')}
           </h2>
+          {canScrollRight ? (
+            <button
+              type="button"
+              onClick={() => scrollByCard(1)}
+              className="absolute end-0 inline-flex items-center text-[#05090D] transition hover:opacity-70"
+              aria-label={t('exploreInterests.scrollRight')}
+            >
+              <EndChevrons size={22} strokeWidth={2.4} />
+            </button>
+          ) : null}
         </div>
 
-        <div className={MOBILE_SECTION_FULL_BLEED_CLASS}>
-          <CategoryChipScroller
-            items={categoriesToRender}
-            activeKey={selectedCategoryKey}
-            onSelect={setSelectedCategoryKey}
-            isRtl={isArabic}
-            ariaLabel={t('exploreInterests.categoriesAria')}
-            scrollLeftLabel={t('exploreInterests.scrollLeft')}
-            scrollRightLabel={t('exploreInterests.scrollRight')}
-          />
-        </div>
+        <div className="relative px-11 sm:px-12">
+          {canScrollLeft ? (
+            <button
+              type="button"
+              onClick={() => scrollByCard(-1)}
+              className="absolute start-0 top-[38%] z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#E2E7E8] bg-white text-[#05090D] shadow-md transition hover:bg-[#F8FAFA]"
+              aria-label={t('exploreInterests.scrollLeft')}
+            >
+              <ChevronLeft size={18} />
+            </button>
+          ) : null}
 
-        {(recommendedStillLoading || (!isRecommendedTab && categoryDataLoading)) && displayedProducts.length === 0 ? (
-          <div className={`${MOBILE_SECTION_FULL_BLEED_CLASS} mt-5`}>
-            <div className={HOME_PRODUCT_GRID_CLASS}>
-              <ExploreInterestsProductSkeleton count={columnsPerRow} />
-            </div>
-          </div>
-        ) : displayedProducts.length > 0 ? (
-          <div className={`${MOBILE_SECTION_FULL_BLEED_CLASS} mt-5`}>
-            <div className={HOME_PRODUCT_GRID_CLASS}>
-            {displayedProducts.map((product, index) => (
-              <ProductCard
-                key={product._id || product.id || product.slug}
-                product={product}
-                priorityImages={index < 6}
-              />
-            ))}
-            </div>
-            {loadingMore ? (
-              <div className={`${HOME_PRODUCT_GRID_CLASS} mt-3 sm:mt-4`}>
-                <ExploreInterestsProductSkeleton count={loadMoreSkeletonCount} />
-              </div>
-            ) : null}
-            {showMoreProducts || loadingMore ? (
-              <div className="mt-6 flex justify-center sm:mt-8">
-                <button
-                  type="button"
-                  onClick={handleShowMore}
-                  disabled={loadingMore}
-                  aria-busy={loadingMore}
-                  className="inline-flex min-w-[9.5rem] items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+          <div
+            ref={scrollRef}
+            className="flex gap-4 overflow-x-auto scroll-smooth scrollbar-hide"
+            dir={isArabic ? 'rtl' : 'ltr'}
+          >
+            {ready
+              ? cards.map((card) => (
+                <Link
+                  key={card.id}
+                  href={card.href}
+                  data-explore-card
+                  className="w-[68%] shrink-0 overflow-hidden rounded-2xl border border-[#E2E7E8] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:w-[42%] md:w-[30%] lg:w-[calc((100%-64px)/5)]"
                 >
-                  {loadingMore ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                      {t('exploreInterests.loadingMore')}
-                    </>
-                  ) : (
-                    t('exploreInterests.loadMore')
-                  )}
-                </button>
-              </div>
-            ) : null}
+                  <div className="relative aspect-[3/4] bg-[#F2F5F5]">
+                    {card.image ? (
+                      <Image
+                        src={card.image}
+                        alt=""
+                        fill
+                        sizes="(min-width: 1024px) 18vw, 70vw"
+                        className="object-cover"
+                      />
+                    ) : null}
+                  </div>
+                  <div className="px-3 py-3">
+                    <p className="line-clamp-1 text-sm font-bold text-[#05090D]">{card.title}</p>
+                    {card.subtitle ? (
+                      <p className="mt-1 line-clamp-2 text-xs leading-4 text-[#5E6870]">{card.subtitle}</p>
+                    ) : null}
+                  </div>
+                </Link>
+              ))
+              : Array.from({ length: 5 }).map((_, index) => (
+                <div
+                  key={`explore-skeleton-${index}`}
+                  className="w-[68%] shrink-0 overflow-hidden rounded-2xl border border-[#E2E7E8] bg-white sm:w-[42%] md:w-[30%] lg:w-[calc((100%-64px)/5)]"
+                >
+                  <div className="aspect-[3/4] animate-pulse bg-[#F2F5F5]" />
+                  <div className="space-y-2 px-3 py-3">
+                    <div className="h-3 w-2/3 animate-pulse rounded bg-[#F2F5F5]" />
+                    <div className="h-3 w-1/2 animate-pulse rounded bg-[#F2F5F5]" />
+                  </div>
+                </div>
+              ))}
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-6 py-10 text-center">
-            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-slate-200">
-              <PackageOpen size={28} className="text-slate-400" strokeWidth={1.75} aria-hidden="true" />
-            </div>
-            <p className="text-sm font-medium text-slate-600">{t('exploreInterests.emptyTitle')}</p>
-            <p className="mt-1 text-xs text-slate-400">{t('exploreInterests.emptySubtitle')}</p>
-          </div>
-        )}
+
+          {canScrollRight ? (
+            <button
+              type="button"
+              onClick={() => scrollByCard(1)}
+              className="absolute end-0 top-[38%] z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#E2E7E8] bg-white text-[#05090D] shadow-md transition hover:bg-[#F8FAFA]"
+              aria-label={t('exploreInterests.scrollRight')}
+            >
+              <ChevronRight size={18} />
+            </button>
+          ) : null}
+        </div>
       </div>
     </section>
   );

@@ -41,8 +41,8 @@ export default function DashboardSidebar() {
                   href={item.href}
                   className={`block px-3 py-2 rounded-lg font-medium ${
                     isActive(item.href)
-                      ? 'bg-[#E9D6B5] text-[#123D33]'
-                      : 'text-gray-700 hover:bg-[#FAF8F3]'
+                      ? 'bg-[#F8FEE6] text-[#05090D]'
+                      : 'text-gray-700 hover:bg-[#F8FAFA]'
                   }`}
                 >
                   {item.label}
@@ -63,8 +63,8 @@ export default function DashboardSidebar() {
               href={item.href}
               className={`px-3 py-2 rounded-lg font-medium ${
                 isActive(item.href)
-                  ? 'bg-[#E9D6B5] text-[#123D33]'
-                  : 'text-gray-700 hover:bg-[#FAF8F3]'
+                  ? 'bg-[#F8FEE6] text-[#05090D]'
+                  : 'text-gray-700 hover:bg-[#F8FAFA]'
               }`}
             >
               {item.label}

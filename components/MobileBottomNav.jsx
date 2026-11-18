@@ -1,7 +1,25 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { Home, ShoppingCart, User, Store, Percent } from 'lucide-react'
+import { Home, User, Store, Percent } from 'lucide-react'
+
+function NavbarCartIcon({ size = 18, color, className = '' }) {
+  const dimension = typeof size === 'number' ? `${size}px` : size
+  return (
+    <span
+      aria-hidden="true"
+      className={className}
+      style={{
+        width: dimension,
+        height: dimension,
+        display: 'inline-block',
+        backgroundColor: color || 'currentColor',
+        WebkitMask: 'url(/icons/navbar-cart.png) center / contain no-repeat',
+        mask: 'url(/icons/navbar-cart.png) center / contain no-repeat',
+      }}
+    />
+  )
+}
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSelector } from 'react-redux'
@@ -16,7 +34,7 @@ import {
   splitOffersNavLabel,
 } from '@/lib/offersPageSettings'
 
-const DEFAULT_BRAND_COLOR = '#1F5C4A'
+const DEFAULT_BRAND_COLOR = '#05090D'
 const INACTIVE_NAV_COLOR = '#94a3b8'
 const NAVBAR_APPEARANCE_CACHE_KEY = 'navbarAppearanceCache'
 const OFFERS_HREF = '/offers'
@@ -95,8 +113,8 @@ function RegularNavItem({ item, pathname, brandColor, hydrated }) {
           />
           {hydrated && item.badge > 0 && (
             <span
-              className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-0.5 text-[9px] font-bold leading-none text-white"
-              style={{ backgroundColor: '#C9963B' }}
+              className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-0.5 text-[9px] font-bold leading-none text-[#05090D]"
+              style={{ backgroundColor: '#C8F404' }}
             >
               {item.badge > 99 ? '99+' : item.badge}
             </span>
@@ -328,7 +346,7 @@ export default function MobileBottomNav() {
   ]
 
   const rightItems = [
-    { href: '/cart', icon: ShoppingCart, label: t('navbar.cart'), badge: cartCount, match: (path) => path === '/cart' },
+    { href: '/cart', icon: NavbarCartIcon, label: t('navbar.cart'), badge: cartCount, match: (path) => path === '/cart' },
     {
       href: accountHref,
       icon: User,
@@ -341,7 +359,7 @@ export default function MobileBottomNav() {
     <nav
       aria-label="Mobile navigation"
       dir={isArabic ? 'rtl' : 'ltr'}
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#E9D6B5] bg-white lg:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#E2E7E8] bg-white lg:hidden"
       style={{
         paddingBottom: 'max(0.35rem, env(safe-area-inset-bottom))',
         boxShadow: '0 -8px 24px rgba(15, 23, 42, 0.06)',

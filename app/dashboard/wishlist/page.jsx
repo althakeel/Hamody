@@ -8,6 +8,7 @@ import Image from "@/components/SafeNextImage";
 import { HeartIcon, ShoppingCartIcon, TrashIcon, StarIcon, CheckCircle2 } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { addToCart } from "@/lib/features/cart/cartSlice";
+import { openAddToCartPopup } from "@/lib/addToCartPopup";
 import { trackProductAddToCart } from '@/lib/ecommerceTracking';
 import { STORE_CURRENCY } from '@/lib/storeCurrency';
 import Loading from "@/components/Loading";
@@ -85,6 +86,7 @@ export default function DashboardWishlistPage() {
             productId,
             price: Number(product?.price) || 0,
         }));
+        openAddToCartPopup(product);
     };
 
     const toggleSelectItem = (productId) => {
@@ -139,7 +141,7 @@ export default function DashboardWishlistPage() {
             <div className="max-w-4xl mx-auto px-4 py-10 min-h-[50dvh]">
                 <h1 className="text-2xl font-semibold text-slate-800 mb-3">My Wishlist</h1>
                 <p className="text-slate-600 mb-6">Please sign in to view your wishlist.</p>
-                <Link href="/" className="inline-block px-4 py-2 bg-[#1F5C4A] text-white rounded-lg hover:bg-[#123D33]">Go to Home</Link>
+                <Link href="/" className="inline-block px-4 py-2 bg-[#C8F404] text-[#05090D] rounded-lg hover:bg-[#ADD300]">Go to Home</Link>
             </div>
         );
     }
@@ -157,7 +159,7 @@ export default function DashboardWishlistPage() {
                             <p className="text-gray-600 mb-6">Start adding products you love!</p>
                             <button
                                 onClick={() => router.push('/shop')}
-                                className="bg-[#1F5C4A] text-white px-6 py-3 rounded-lg hover:bg-[#123D33] transition"
+                                className="bg-[#C8F404] text-[#05090D] px-6 py-3 rounded-lg hover:bg-[#ADD300] transition"
                             >
                                 Browse Products
                             </button>
@@ -171,7 +173,7 @@ export default function DashboardWishlistPage() {
                                         type="checkbox"
                                         checked={selectedItems.length === wishlist.length}
                                         onChange={selectAllItems}
-                                        className="w-4 h-4 accent-[#1F5C4A]"
+                                        className="w-4 h-4 accent-[#C8F404]"
                                     />
                                     <span className="text-sm text-slate-700">
                                         {selectedItems.length > 0 ? `${selectedItems.length} selected` : 'Select all'}
@@ -181,7 +183,7 @@ export default function DashboardWishlistPage() {
                                     <button
                                         onClick={addSelectedToCart}
                                         disabled={addingToCart}
-                                        className="bg-[#E9D6B5] text-[#123D33] px-4 py-2 rounded-lg hover:bg-[#DCC9A4] transition flex items-center gap-2"
+                                        className="bg-[#F8FEE6] text-[#05090D] px-4 py-2 rounded-lg hover:bg-[#E5FA94] transition flex items-center gap-2"
                                     >
                                         <ShoppingCartIcon size={16} />
                                         {addingToCart ? 'Adding...' : 'Add to Cart'}
@@ -198,7 +200,7 @@ export default function DashboardWishlistPage() {
                                                 type="checkbox"
                                                 checked={selectedItems.includes(item.productId)}
                                                 onChange={() => toggleSelectItem(item.productId)}
-                                                className="w-4 h-4 mt-2 accent-[#1F5C4A]"
+                                                className="w-4 h-4 mt-2 accent-[#C8F404]"
                                             />
                                             <div className="relative w-24 h-24 flex-shrink-0">
                                                 <Image
@@ -221,13 +223,13 @@ export default function DashboardWishlistPage() {
                                             <div className="flex flex-col gap-2">
                                                 <button
                                                     onClick={() => handleAddToCart(item.product)}
-                                                    className="px-4 py-2 bg-[#E9D6B5] text-[#123D33] rounded-lg hover:bg-[#DCC9A4] transition text-sm"
+                                                    className="px-4 py-2 bg-[#F8FEE6] text-[#05090D] rounded-lg hover:bg-[#E5FA94] transition text-sm"
                                                 >
                                                     Add to Cart
                                                 </button>
                                                 <button
                                                     onClick={() => removeFromWishlist(item.productId)}
-                                                    className="px-4 py-2 bg-[#FAF8F3] text-[#9C6E20] rounded-lg hover:bg-[#E9D6B5] transition text-sm"
+                                                    className="px-4 py-2 bg-[#F8FAFA] text-[#5E6870] rounded-lg hover:bg-[#F8FEE6] transition text-sm"
                                                 >
                                                     Remove
                                                 </button>
@@ -248,7 +250,7 @@ export default function DashboardWishlistPage() {
                                         <button
                                             onClick={addSelectedToCart}
                                             disabled={addingToCart}
-                                            className="bg-[#1F5C4A] text-white px-6 py-3 rounded-lg hover:bg-[#123D33] transition flex items-center gap-2"
+                                            className="bg-[#C8F404] text-[#05090D] px-6 py-3 rounded-lg hover:bg-[#ADD300] transition flex items-center gap-2"
                                         >
                                             <ShoppingCartIcon size={18} />
                                             {addingToCart ? 'Adding...' : 'Add Selected to Cart'}

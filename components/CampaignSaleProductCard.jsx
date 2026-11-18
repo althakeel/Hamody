@@ -12,7 +12,7 @@ import { addToCart, uploadCart, removeFromCart } from '@/lib/features/cart/cartS
 import { useStorefrontMarket } from '@/lib/useStorefrontMarket';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 import { getLocalizedProductName } from '@/lib/displayText';
-import { showStorefrontActionToast } from '@/lib/storefrontActionToast';
+import { openAddToCartPopup } from '@/lib/addToCartPopup';
 import { PLACEHOLDER_IMAGE as PLACEHOLDER } from '@/lib/mediaUrls';
 import { getImageUrlAt, getProductThumbnailUrl, normalizeProductImages } from '@/lib/productMedia';
 import { trackProductAddToCart } from '@/lib/ecommerceTracking';
@@ -109,13 +109,7 @@ export default function CampaignSaleProductCard({
       price: priceNum > 0 ? priceNum : undefined,
     }));
     dispatch(uploadCart({ getToken }));
-    showStorefrontActionToast({
-      variant: 'cart',
-      title: t('product.addedToCartToast'),
-      subtitle: t('product.addedToCartSubtitle'),
-      actionLabel: t('product.viewCart'),
-      actionHref: '/cart',
-    });
+    openAddToCartPopup(product);
   };
 
   return (
@@ -227,14 +221,14 @@ export default function CampaignSaleProductCard({
                 style={{ background: accent }}
                 aria-label="Add to cart"
               >
-                <img
-                  src="/icons/add-to-cart.png"
-                  alt=""
-                  width={22}
-                  height={22}
-                  draggable={false}
+                <span
                   aria-hidden="true"
-                  className="h-[22px] w-[22px] select-none object-contain"
+                  className="inline-block h-4 w-4"
+                  style={{
+                    backgroundColor: 'currentColor',
+                    WebkitMask: 'url(/icons/navbar-cart.png) center / contain no-repeat',
+                    mask: 'url(/icons/navbar-cart.png) center / contain no-repeat',
+                  }}
                 />
               </button>
             )

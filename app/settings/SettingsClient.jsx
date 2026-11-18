@@ -185,7 +185,7 @@ export default function SettingsClient() {
         <div className="max-w-4xl mx-auto px-4 py-10">
           <h1 className="text-2xl font-semibold text-slate-800 mb-3">Account Settings</h1>
           <p className="text-slate-600 mb-6">Please sign in to access your account settings.</p>
-          <Link href="/" className="inline-block px-4 py-2 bg-[#1F5C4A] text-white rounded-lg hover:bg-[#123D33]">Go to Home</Link>
+          <Link href="/" className="inline-block px-4 py-2 bg-[#C8F404] text-[#05090D] rounded-lg hover:bg-[#ADD300]">Go to Home</Link>
         </div>
       </>
     )
@@ -201,7 +201,7 @@ export default function SettingsClient() {
           {message && (
             <div className={`mb-6 p-4 rounded-lg ${
               message.type === 'success'
-                ? 'bg-[#E7F0EC] border border-[#C5D9D1] text-[#123D33]'
+                ? 'bg-[#E7F0EC] border border-[#C5D9D1] text-[#05090D]'
                 : 'bg-red-50 border border-red-200 text-red-800'
             }`}>
               {message.text}
@@ -213,10 +213,10 @@ export default function SettingsClient() {
               <h2 className="text-lg font-semibold text-slate-800 mb-4">📧 Email Preferences</h2>
               <p className="text-slate-600 text-sm mb-4">Manage which types of emails you want to receive</p>
               <div className="space-y-4">
-                <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#FAF8F3] cursor-pointer">
+                <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#F8FAFA] cursor-pointer">
                   <input
                     type="checkbox"
-                    className="w-4 h-4 cursor-pointer accent-[#1F5C4A]"
+                    className="w-4 h-4 cursor-pointer accent-[#C8F404]"
                     checked={emailPreferences.promotional}
                     onChange={(e) => handlePreferenceChange('promotional', e.target.checked)}
                     disabled={loading}
@@ -227,10 +227,10 @@ export default function SettingsClient() {
                   </div>
                 </label>
 
-                <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#FAF8F3] cursor-pointer">
+                <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#F8FAFA] cursor-pointer">
                   <input
                     type="checkbox"
-                    className="w-4 h-4 cursor-pointer accent-[#1F5C4A]"
+                    className="w-4 h-4 cursor-pointer accent-[#C8F404]"
                     checked={emailPreferences.orders}
                     onChange={(e) => handlePreferenceChange('orders', e.target.checked)}
                     disabled={loading}
@@ -241,10 +241,10 @@ export default function SettingsClient() {
                   </div>
                 </label>
 
-                <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#FAF8F3] cursor-pointer">
+                <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#F8FAFA] cursor-pointer">
                   <input
                     type="checkbox"
-                    className="w-4 h-4 cursor-pointer accent-[#1F5C4A]"
+                    className="w-4 h-4 cursor-pointer accent-[#C8F404]"
                     checked={emailPreferences.updates}
                     onChange={(e) => handlePreferenceChange('updates', e.target.checked)}
                     disabled={loading}
@@ -260,7 +260,7 @@ export default function SettingsClient() {
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
               <h2 className="text-lg font-semibold text-slate-800 mb-4">🔒 Privacy</h2>
               <p className="text-slate-600 text-sm mb-4">Control how your data is used and shared.</p>
-              <button className="px-4 py-2 bg-[#1F5C4A] text-white rounded-lg hover:bg-[#123D33]">
+              <button className="px-4 py-2 bg-[#C8F404] text-[#05090D] rounded-lg hover:bg-[#ADD300]">
                 Manage Privacy Settings
               </button>
             </div>

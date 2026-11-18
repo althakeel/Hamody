@@ -27,17 +27,17 @@ function SectionBlock({ section }) {
 
   return (
     <section id={`sitemap-${section.id}`} className="scroll-mt-28">
-      <div className="mb-3 flex items-baseline justify-between gap-4 border-b border-[#E9D6B5] pb-2">
-        <h2 className="text-lg font-semibold tracking-tight text-[#123D33]">{section.title}</h2>
+      <div className="mb-3 flex items-baseline justify-between gap-4 border-b border-[#E2E7E8] pb-2">
+        <h2 className="text-lg font-semibold tracking-tight text-[#05090D]">{section.title}</h2>
         {links.length > 0 ? (
-          <p className="shrink-0 text-xs text-[#9C6E20]">
+          <p className="shrink-0 text-xs text-[#5E6870]">
             {links.length.toLocaleString()} {links.length === 1 ? 'page' : 'pages'}
           </p>
         ) : null}
       </div>
 
       {links.length === 0 ? (
-        <p className="text-sm leading-6 text-[#9C6E20]">{section.emptyMessage || 'Nothing listed yet.'}</p>
+        <p className="text-sm leading-6 text-[#5E6870]">{section.emptyMessage || 'Nothing listed yet.'}</p>
       ) : (
         <ul className={links.some((link) => Number(link.depth) > 0)
           ? 'space-y-1'
@@ -52,14 +52,14 @@ function SectionBlock({ section }) {
               >
                 <Link
                   href={link.path || '#'}
-                  className="inline-block py-1 text-sm leading-5 text-[#123D33] transition hover:text-[#1F5C4A]"
+                  className="inline-block py-1 text-sm leading-5 text-[#05090D] transition hover:text-[#05090D]"
                   title={link.description || link.text}
                 >
-                  {depth > 0 ? <span className="me-1.5 text-[#E9D6B5]">–</span> : null}
+                  {depth > 0 ? <span className="me-1.5 text-[#C8F404]">–</span> : null}
                   {link.text}
                 </Link>
                 {link.description ? (
-                  <p className="pb-1 text-xs leading-5 text-[#9C6E20]">{link.description}</p>
+                  <p className="pb-1 text-xs leading-5 text-[#5E6870]">{link.description}</p>
                 ) : null}
               </li>
             );
@@ -98,13 +98,13 @@ export default async function SitemapPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white text-[#123D33]">
-      <header className="relative overflow-hidden bg-[#1F5C4A] text-white">
+    <div className="min-h-screen bg-white text-[#05090D]">
+      <header className="relative overflow-hidden bg-[#05090D] text-white">
         <div
           className="pointer-events-none absolute inset-0 opacity-40"
           style={{
             backgroundImage:
-              'radial-gradient(circle at 12% 20%, rgba(233,214,181,0.35), transparent 42%), radial-gradient(circle at 88% 10%, rgba(255,255,255,0.08), transparent 35%), linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 50%)',
+              'radial-gradient(circle at 12% 20%, rgba(200,244,4,0.22), transparent 42%), radial-gradient(circle at 88% 10%, rgba(255,255,255,0.08), transparent 35%), linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 50%)',
           }}
         />
         <div
@@ -117,13 +117,13 @@ export default async function SitemapPage() {
         />
 
         <div className="relative mx-auto max-w-[1280px] px-4 py-14 md:py-20">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#E9D6B5]">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#C8F404]">
             {HAMODY_BRAND_NAME}
           </p>
           <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-tight md:text-6xl">
             Site map
           </h1>
-          <p className="mt-4 max-w-2xl text-base text-[#E9D6B5] md:text-lg">
+          <p className="mt-4 max-w-2xl text-base text-[#C8F404] md:text-lg">
             Follow the same path as the store: shop, collections, products, cart, then help and policies.
           </p>
 
@@ -136,10 +136,10 @@ export default async function SitemapPage() {
             ].filter((item) => item.label !== 'Posts' || Number(item.value) > 0).map((item) => (
               <div
                 key={item.label}
-                className="rounded-full border border-[#E9D6B5]/40 bg-white/10 px-4 py-2 text-sm text-[#E9D6B5] backdrop-blur-sm"
+                className="rounded-full border border-[#E2E7E8]/40 bg-white/10 px-4 py-2 text-sm text-[#C8F404] backdrop-blur-sm"
               >
                 <span className="font-semibold text-white">{Number(item.value || 0).toLocaleString()}</span>
-                <span className="ms-2 text-[#E9D6B5]">{item.label}</span>
+                <span className="ms-2 text-[#C8F404]">{item.label}</span>
               </div>
             ))}
           </div>
@@ -149,13 +149,13 @@ export default async function SitemapPage() {
 
       <div className="mx-auto grid max-w-[1280px] gap-10 px-4 py-10 lg:grid-cols-[220px_minmax(0,1fr)] lg:py-14">
         <aside className="lg:sticky lg:top-24 lg:self-start">
-          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9C6E20]">Jump to</p>
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5E6870]">Jump to</p>
           <nav className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
             {navItems.map((item) => (
               <a
                 key={item.id}
                 href={`#sitemap-${item.id}`}
-                className="shrink-0 rounded-full border border-[#E9D6B5] bg-white px-3 py-1.5 text-sm text-[#123D33] transition hover:border-[#1F5C4A] hover:text-[#1F5C4A] lg:rounded-lg lg:border-transparent lg:bg-transparent lg:px-2 lg:py-1.5 lg:hover:bg-[#FAF8F3]"
+                className="shrink-0 rounded-full border border-[#E2E7E8] bg-white px-3 py-1.5 text-sm text-[#05090D] transition hover:border-[#05090D] hover:text-[#05090D] lg:rounded-lg lg:border-transparent lg:bg-transparent lg:px-2 lg:py-1.5 lg:hover:bg-[#F8FAFA]"
               >
                 {item.label}
               </a>
@@ -180,27 +180,27 @@ export default async function SitemapPage() {
             <SectionBlock key={section.id} section={section} />
           ))}
 
-          <section className="border-t border-[#E9D6B5] pt-10">
-            <h3 className="text-xl font-semibold text-[#123D33]">Can&apos;t find a page?</h3>
-            <p className="mt-2 max-w-xl text-[#9C6E20]">
+          <section className="border-t border-[#E2E7E8] pt-10">
+            <h3 className="text-xl font-semibold text-[#05090D]">Can&apos;t find a page?</h3>
+            <p className="mt-2 max-w-xl text-[#5E6870]">
               Support can help you find a product, an order, or a policy.
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
               <Link
                 href="/support"
-                className="rounded-lg bg-[#1F5C4A] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#123D33]"
+                className="rounded-lg bg-[#C8F404] px-5 py-2.5 text-sm font-semibold text-[#05090D] transition hover:bg-[#ADD300]"
               >
                 Contact support
               </Link>
               <Link
                 href="/help"
-                className="rounded-lg border border-[#1F5C4A] bg-transparent px-5 py-2.5 text-sm font-semibold text-[#1F5C4A] transition hover:bg-[#1F5C4A] hover:text-white"
+                className="rounded-lg border border-[#05090D] bg-transparent px-5 py-2.5 text-sm font-semibold text-[#05090D] transition hover:bg-[#C8F404] hover:text-[#05090D]"
               >
                 Help center
               </Link>
               <Link
                 href="/"
-                className="rounded-lg px-5 py-2.5 text-sm font-semibold text-[#9C6E20] transition hover:text-[#123D33]"
+                className="rounded-lg px-5 py-2.5 text-sm font-semibold text-[#5E6870] transition hover:text-[#05090D]"
               >
                 ← Home
               </Link>

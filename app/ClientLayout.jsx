@@ -14,6 +14,7 @@ import { Toaster } from "react-hot-toast";
 import SilentDomErrorBoundary from "@/components/SilentDomErrorBoundary";
 import { installDomReconcileGuard } from "@/lib/domReconcileError";
 import { StorefrontLanguageProvider } from "@/lib/useStorefrontI18n";
+import AddToCartPopup from "@/components/AddToCartPopup";
 
 const CHUNK_RELOAD_KEY = 'Hamody-chunk-reload';
 
@@ -178,6 +179,7 @@ export default function ClientLayout({ children, initialStorefrontLanguage = 'en
           </StorefrontChromeErrorBoundary>
         ) : null}
         {children}
+        {!hideStorefrontChrome ? <AddToCartPopup /> : null}
         <DeferredWidgets />
         {!hideStorefrontChrome ? <ScrollToTopButton /> : null}
         {!hideStorefrontChrome ? (

@@ -16,10 +16,10 @@ import {
 } from '@/lib/categorySliderAutoSlide'
 
 function getArrowVisibilityClass({ showArrows, showMobileArrows }) {
-  const classes = []
-  if (showMobileArrows) classes.push('flex lg:hidden')
-  if (showArrows) classes.push('hidden lg:flex')
-  return classes.join(' ') || 'hidden'
+  if (showArrows && showMobileArrows) return 'flex'
+  if (showMobileArrows) return 'flex lg:hidden'
+  if (showArrows) return 'hidden lg:flex'
+  return 'hidden'
 }
 
 export default function ProductCarousel({
@@ -32,6 +32,7 @@ export default function ProductCarousel({
   compact = false,
   compactDesktopOnly = false,
   edgeBleed = true,
+  arrowsOutside = false,
   cardsPerRow = 6,
   autoSlide = false,
   autoSlideIntervalMs = DEFAULT_CATEGORY_SLIDER_AUTO_SLIDE_INTERVAL_MS,
@@ -40,7 +41,7 @@ export default function ProductCarousel({
 }) {
   const { isArabic } = useStorefrontI18n()
   const [canScrollLeft, setCanScrollLeft] = useState(false)
-  const [canScrollRight, setCanScrollRight] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(() => products.length > cardsPerRow)
   const rootRef = useRef(null)
   const isInViewRef = useRef(true)
   const isHoverPausedRef = useRef(false)
@@ -258,14 +259,13 @@ export default function ProductCarousel({
   useEffect(() => {
     if (useTransformAutoSlide) return undefined
 
-    const container = scrollRef.current
-    if (!container) return undefined
-
     let scrollRaf = null
     const updateScrollState = () => {
+      const container = scrollRef.current
+      if (!container) return
       const maxScroll = container.scrollWidth - container.clientWidth
       setCanScrollLeft(container.scrollLeft > 1)
-      setCanScrollRight(container.scrollLeft < maxScroll - 1)
+      setCanScrollRight(maxScroll > 1 && container.scrollLeft < maxScroll - 1)
     }
     const scheduleScrollState = () => {
       if (scrollRaf) return
@@ -276,13 +276,19 @@ export default function ProductCarousel({
     }
 
     updateScrollState()
-    container.addEventListener('scroll', scheduleScrollState, { passive: true })
+    const container = scrollRef.current
+    container?.addEventListener('scroll', scheduleScrollState, { passive: true })
     window.addEventListener('resize', scheduleScrollState)
+    const observer = typeof ResizeObserver !== 'undefined' && container
+      ? new ResizeObserver(scheduleScrollState)
+      : null
+    if (observer && container) observer.observe(container)
 
     return () => {
       if (scrollRaf) cancelAnimationFrame(scrollRaf)
-      container.removeEventListener('scroll', scheduleScrollState)
+      container?.removeEventListener('scroll', scheduleScrollState)
       window.removeEventListener('resize', scheduleScrollState)
+      observer?.disconnect()
     }
   }, [cappedProducts, displayProducts, scrollRef, cardsPerRow, autoSlide, useTransformAutoSlide])
 
@@ -399,6 +405,7 @@ export default function ProductCarousel({
 
   const arrowsVisible = showArrows || showMobileArrows
   const arrowVisibilityClass = getArrowVisibilityClass({ showArrows, showMobileArrows })
+  const outsideArrows = arrowsOutside && arrowsVisible && !autoSlide
   const bleedClass = edgeBleed ? MOBILE_CAROUSEL_BLEED_CLASS : ''
   const cardClassName = cardWidthVariant === 'categorySlider'
     ? getCategorySliderProductCardClass(cardsPerRow)
@@ -425,7 +432,7 @@ export default function ProductCarousel({
     <div
       ref={rootRef}
       dir={carouselDir}
-      className={`relative w-full min-w-0 max-lg:overflow-visible lg:overflow-x-clip ${bleedClass} ${className}`.trim()}
+      className={`relative w-full min-w-0 max-lg:overflow-visible lg:overflow-x-clip ${outsideArrows ? 'px-16' : ''} ${bleedClass} ${className}`.trim()}
       onMouseEnter={() => { isHoverPausedRef.current = true }}
       onMouseLeave={() => { isHoverPausedRef.current = false }}
     >
@@ -433,7 +440,7 @@ export default function ProductCarousel({
         <button
           type="button"
           onClick={scrollLeft}
-          className={`absolute start-1 top-[38%] z-10 -translate-y-1/2 rounded-full border border-gray-100 bg-white p-2 shadow-lg transition-all hover:bg-gray-50 active:scale-95 lg:start-0 ${arrowVisibilityClass}`}
+          className={`absolute top-[38%] z-10 -translate-y-1/2 rounded-full border border-gray-100 bg-white p-2 shadow-lg transition-all hover:bg-gray-50 active:scale-95 ${outsideArrows ? 'start-2' : 'start-1 lg:start-0'} ${arrowVisibilityClass}`}
           aria-label="Scroll left"
         >
           <ChevronLeft size={18} className="text-gray-800" />
@@ -479,7 +486,7 @@ export default function ProductCarousel({
         <button
           type="button"
           onClick={scrollRight}
-          className={`absolute end-1 top-[38%] z-10 -translate-y-1/2 rounded-full border border-gray-100 bg-white p-2 shadow-lg transition-all hover:bg-gray-50 active:scale-95 lg:end-0 ${arrowVisibilityClass}`}
+          className={`absolute top-[38%] z-10 -translate-y-1/2 rounded-full border border-gray-100 bg-white p-2 shadow-lg transition-all hover:bg-gray-50 active:scale-95 ${outsideArrows ? 'end-2' : 'end-1 lg:end-0'} ${arrowVisibilityClass}`}
           aria-label="Scroll right"
         >
           <ChevronRight size={18} className="text-gray-800" />

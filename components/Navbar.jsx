@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, ShoppingCart, ShoppingBag, Menu, X, HeartIcon, StarIcon, ArrowLeft, LogOut, User, MapPin, Package, ChevronDown, Grid3x3, Heart, Shield, History, Flame, Sparkles, Camera, Phone } from "lucide-react";
+import { Search, Menu, X, HeartIcon, StarIcon, ArrowLeft, LogOut, User, MapPin, Package, ChevronDown, Grid3x3, Heart, Shield, History, Flame, Sparkles, Camera, Phone } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
@@ -82,6 +82,23 @@ const getNavbarContainerStyle = (maxWidth = 1400) => ({
 const NAVBAR_CONTAINER_CLASS = 'mx-auto w-full px-4 sm:px-6';
 
 const resolveNavbarLogoSrc = (logoUrl) => String(logoUrl || '').trim() || HAMODY_LOGO_PATH;
+
+function NavbarCartIcon({ size = 24, color, className = '' }) {
+  const dimension = typeof size === 'number' ? `${size}px` : size;
+  return (
+    <span
+      aria-hidden="true"
+      className={`inline-block shrink-0 ${className}`.trim()}
+      style={{
+        width: dimension,
+        height: dimension,
+        backgroundColor: color || 'currentColor',
+        WebkitMask: 'url(/icons/navbar-cart.png) center / contain no-repeat',
+        mask: 'url(/icons/navbar-cart.png) center / contain no-repeat',
+      }}
+    />
+  );
+}
 
 const normalizeNavbarAppearance = (appearance = {}) => {
   try {
@@ -165,6 +182,7 @@ const Navbar = () => {
   const categoriesDropdownPanelRef = useRef(null);
   const userDropdownRef = useRef(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [navScrolled, setNavScrolled] = useState(false);
   const [mobileLanguageOpen, setMobileLanguageOpen] = useState(false);
   const [mobileExpandedCategoryId, setMobileExpandedCategoryId] = useState(null);
   const [showSearchModal, setShowSearchModal] = useState(false);
@@ -262,7 +280,7 @@ const Navbar = () => {
     );
   };
 
-  const renderAccountMenuTrigger = ({ signedIn, onClick, tone = 'light', variant = 'full', className = '', compactIcon = false }) => {
+  const renderAccountMenuTrigger = ({ signedIn, onClick, tone = 'light', variant = 'full', className = '', compactIcon = false, withCaption = false }) => {
     const isLightTone = tone === 'light';
     const iconOnlyClass = isLightTone
       ? 'text-white hover:bg-white/12'
@@ -277,7 +295,7 @@ const Navbar = () => {
         <button
           type="button"
           onClick={onClick}
-          className={`inline-flex items-center gap-1.5 text-[15px] font-medium transition hover:opacity-80 ${isLightTone ? 'text-white' : 'text-[#123D33]'} ${className}`.trim()}
+          className={`inline-flex items-center gap-1.5 text-[15px] font-medium transition hover:opacity-80 ${isLightTone ? 'text-white' : 'text-[#05090D]'} ${className}`.trim()}
           aria-label={signedIn ? t('navbar.account') : t('navbar.signInRegister')}
         >
           <User size={18} strokeWidth={1.75} aria-hidden="true" />
@@ -287,29 +305,32 @@ const Navbar = () => {
     }
 
     if (variant === 'icon') {
-      const iconButtonSizeClass = compactIcon ? 'h-7 w-7' : 'h-9 w-9';
-      const iconUserSize = compactIcon ? 16 : 18;
-
-      return (
+      const iconButtonSizeClass = withCaption ? 'h-6 w-6' : compactIcon ? 'h-9 w-9' : 'h-9 w-9';
+      const iconUserSize = withCaption ? 22 : compactIcon ? 22 : 20;
+      const button = (
         <button
           type="button"
           onClick={onClick}
-          className={`inline-flex ${iconButtonSizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full transition ${iconOnlyClass} ${className}`.trim()}
+          className={withCaption
+            ? `inline-flex w-[4.5rem] shrink-0 flex-col items-center justify-center gap-1 px-1 py-1 text-[12px] font-medium leading-none text-slate-800 transition hover:text-black ${className}`.trim()
+            : `inline-flex ${iconButtonSizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full transition ${iconOnlyClass} ${className}`.trim()}
           aria-label={signedIn ? t('navbar.account') : t('navbar.signInRegister')}
         >
           {signedIn && firebaseUser?.photoURL ? (
             <Image
               src={firebaseUser.photoURL}
               alt=""
-              width={compactIcon ? 28 : 32}
-              height={compactIcon ? 28 : 32}
-              className="h-full w-full object-cover"
+              width={36}
+              height={36}
+              className={withCaption ? 'h-6 w-6 rounded-full object-cover' : 'h-full w-full object-cover'}
             />
           ) : (
-            <User size={iconUserSize} strokeWidth={2.25} aria-hidden="true" />
+            <User size={iconUserSize} strokeWidth={1.75} aria-hidden="true" />
           )}
+          {withCaption ? <span className="whitespace-nowrap">{t('navbar.profile')}</span> : null}
         </button>
       );
+      return button;
     }
 
     const shellClass = isLightTone
@@ -413,7 +434,7 @@ const Navbar = () => {
     ? 'text-white/95 hover:bg-white/15'
     : 'text-gray-900 hover:bg-gray-100';
   const navbarLogoSrc = resolveNavbarLogoSrc(navbarAppearance.logoUrl);
-  const searchAccentColor = '#9C6E20';
+  const searchAccentColor = '#05090D';
   const categoriesAppearance = getNavbarCategoriesButtonAppearance(navbarAppearance, 'desktop');
   const desktopSearchAppearance = getNavbarSearchAppearance(navbarAppearance, 'desktop');
   const mobileSearchAppearance = getNavbarSearchAppearance(navbarAppearance, 'mobile');
@@ -422,8 +443,6 @@ const Navbar = () => {
     .filter((id) => isNavbarItemVisible(id, navbarAppearance, navActionsVisibility));
 
   const renderNavbarLogoImage = ({
-    width,
-    height,
     className = '',
     style = {},
     priority = false,
@@ -434,16 +453,17 @@ const Navbar = () => {
         <Image
           src={navbarLogoSrc}
           alt={`${STOREFRONT_BRAND_NAME} logo`}
-          width={width}
-          height={height}
+          width={1024}
+          height={387}
           className={className}
           style={style}
           priority={priority}
+          unoptimized
         />
       );
       if (!panel) return image;
       return (
-        <span className="inline-flex items-center rounded-xl bg-[#FAF8F3] px-1.5 py-1">
+        <span className="inline-flex items-center rounded-xl bg-[#F8FAFA] px-1.5 py-1">
           {image}
         </span>
       );
@@ -511,6 +531,13 @@ const Navbar = () => {
     if (city && area && area.toLowerCase() !== city.toLowerCase()) return `${city}, ${area}`;
     return city || area || selectedDeliveryAddress.country || t('navbar.selectAddress');
   }, [addressList.length, firebaseUser, selectedDeliveryAddress, storefrontLanguage]);
+
+  useEffect(() => {
+    const update = () => setNavScrolled(window.scrollY > 8);
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    return () => window.removeEventListener('scroll', update);
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1541,30 +1568,35 @@ const Navbar = () => {
     compact = false,
     iconOnly = false,
     stacked = '',
+    iconAboveLabel = false,
   }) => {
     const isLightTone = tone === 'light';
     const textClass = isLightTone ? 'text-white' : 'text-gray-900';
     const iconOnlyClass = isLightTone
       ? 'text-white hover:bg-white/12'
       : 'text-gray-900 hover:bg-gray-100';
-    const className = iconOnly
-      ? `relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition ${iconOnlyClass}`
+    const className = iconAboveLabel
+      ? 'relative inline-flex w-[4.5rem] shrink-0 flex-col items-center justify-center gap-1 px-1 py-1 text-[12px] font-medium leading-none text-slate-800 transition hover:text-black'
+      : iconOnly
+      ? `relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition ${iconOnlyClass}`
       : `relative inline-flex shrink-0 items-center ${
           compact ? 'gap-1 px-0.5' : 'gap-2 px-1'
         } py-1 ${textClass} transition hover:opacity-85`;
-    const iconSize = iconOnly ? 18 : compact ? 18 : 22;
+    const iconSize = iconAboveLabel ? 22 : iconOnly ? 24 : compact ? 18 : 22;
 
     const content = (
       <>
-        <span className={`relative inline-flex shrink-0 items-center justify-center ${iconOnly ? '' : ''}`}>
-          <Icon size={iconSize} strokeWidth={1.5} aria-hidden="true" />
+        <span className="relative inline-flex shrink-0 items-center justify-center">
+          <Icon size={iconSize} strokeWidth={1.75} aria-hidden="true" />
           {badgeCount > 0 ? (
-            <span className="absolute -right-1 -top-1 inline-flex min-h-[16px] min-w-[16px] items-center justify-center rounded-full bg-[#C9963B] px-1 text-[10px] font-bold leading-none text-white">
+            <span className="absolute -right-2 -top-1.5 inline-flex min-h-[16px] min-w-[16px] items-center justify-center rounded-full bg-[#C8F404] px-1 text-[10px] font-bold leading-none text-[#05090D]">
               {badgeCount > 99 ? '99+' : badgeCount}
             </span>
           ) : null}
         </span>
-        {!iconOnly ? (
+        {iconAboveLabel ? (
+          <span className="whitespace-nowrap">{label}</span>
+        ) : !iconOnly ? (
           stacked ? (
             <span className="flex flex-col items-start leading-[1.05]">
               <span className="text-[11px] font-normal leading-none text-white/80">{stacked}</span>
@@ -1752,13 +1784,11 @@ const Navbar = () => {
           <Link
             href="/"
             onClick={handleLogoNavigation}
-            className="flex flex-shrink-0 items-center gap-2 outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
+            className="flex h-full flex-shrink-0 items-center gap-2 outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
           >
             {renderNavbarLogoImage({
-              width: navbarAppearance.logoWidth,
-              height: navbarAppearance.logoHeight,
-              className: 'h-auto w-auto max-w-[160px] object-contain flex-shrink-0 xl:max-w-[190px]',
-              style: { maxHeight: '48px' },
+              className: 'block h-10 w-auto max-h-full object-contain',
+              style: { height: '40px', width: 'auto', imageRendering: '-webkit-optimize-contrast' },
               priority: true,
               panel: false,
             })}
@@ -1791,7 +1821,7 @@ const Navbar = () => {
     if (itemId === 'departments') {
       const tabClass = (active) =>
         `inline-flex items-center gap-1 rounded-full px-3 py-2 text-[14px] transition hover:bg-white/10 ${
-          active ? 'font-semibold text-[#E9D6B5]' : 'font-medium text-white/90 hover:text-white'
+          active ? 'font-semibold text-[#C8F404]' : 'font-medium text-white/90 hover:text-white'
         }`;
       const pageLinks = [
         { href: '/', label: t('navbar.home'), active: pathname === '/' },
@@ -1876,9 +1906,9 @@ const Navbar = () => {
       return (
         <div className="relative min-w-0 w-full">
             <form onSubmit={handleSearch} className="w-full">
-              <div className="flex h-8 w-full min-w-0 items-center rounded-full bg-white px-2.5 ring-1 ring-[#1F5C4A]/30">
-                <button type="submit" aria-label="Search" className="inline-flex shrink-0 text-[#1F5C4A]">
-                  <Search size={14} strokeWidth={2} />
+              <div className="flex h-10 w-full min-w-0 items-center rounded-md bg-[#F2F5F5] px-3">
+                <button type="submit" aria-label="Search" className="inline-flex shrink-0 text-slate-500">
+                  <Search size={16} strokeWidth={2} />
                 </button>
                 <input
                   type="text"
@@ -1888,7 +1918,7 @@ const Navbar = () => {
                   onPaste={handleSearchImagePaste}
                   onFocus={() => setSearchFocused(true)}
                   onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
-                  className="min-w-0 flex-1 bg-transparent px-1.5 text-[13px] leading-none text-[#123D33] outline-none placeholder:text-[#123D33]/50"
+                  className="min-w-0 flex-1 bg-transparent px-2 text-[14px] leading-none text-slate-900 outline-none placeholder:text-slate-500"
                 />
               </div>
             </form>
@@ -1908,7 +1938,7 @@ const Navbar = () => {
               onClick: () => setUserDropdownOpen((prev) => !prev),
               tone: 'dark',
               variant: 'icon',
-              compactIcon: true,
+              withCaption: true,
             })}
             {userDropdownOpen && (
               <div className="absolute right-0 top-12 min-w-[220px] bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-2">
@@ -1953,7 +1983,7 @@ const Navbar = () => {
           },
           tone: 'dark',
           variant: 'icon',
-          compactIcon: true,
+          withCaption: true,
         })
       );
     }
@@ -1980,7 +2010,7 @@ const Navbar = () => {
         badgeCount: wishlistCount,
         ariaLabel: t('navbar.wishlist'),
         tone: 'dark',
-        iconOnly: true,
+        iconAboveLabel: true,
       });
     }
 
@@ -1988,12 +2018,12 @@ const Navbar = () => {
       if (!navActionsVisibility.cart) return null;
       return renderLabeledNavAction({
         onClick: handleCartClick,
-        icon: ShoppingBag,
+        icon: NavbarCartIcon,
         label: t('navbar.cart'),
         badgeCount: isClient ? cartCount : 0,
         ariaLabel: t('navbar.cart'),
         tone: 'dark',
-        iconOnly: true,
+        iconAboveLabel: true,
       });
     }
 
@@ -2088,7 +2118,7 @@ const Navbar = () => {
       {/* Mobile Header */}
       <nav
         data-storefront-navbar
-        className="lg:hidden sticky top-0 z-50 border-b shadow-[0_1px_3px_rgba(15,23,42,0.06)]"
+        className={`sticky top-0 z-50 border-b transition-shadow duration-300 lg:hidden ${navScrolled ? 'shadow-[0_10px_28px_rgba(5,9,13,0.1)]' : 'shadow-[0_1px_3px_rgba(15,23,42,0.06)]'}`}
         style={{
           backgroundColor: mobileNavbarBackgroundColor,
           borderColor: '#E7E1D6',
@@ -2114,10 +2144,8 @@ const Navbar = () => {
               className="-ms-1 flex shrink-0 items-center outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
             >
               {renderNavbarLogoImage({
-                width: navbarAppearance.logoWidth,
-                height: navbarAppearance.logoHeight,
-                className: 'h-6 w-auto max-w-[78px] object-contain sm:max-w-[92px]',
-                style: { maxHeight: '24px' },
+                className: 'block h-auto w-[88px] max-w-full object-contain sm:w-[100px]',
+                style: { height: 'auto' },
                 priority: true,
                 panel: false,
               })}
@@ -2207,30 +2235,16 @@ const Navbar = () => {
       {/* Original Full Navbar (Desktop only) */}
       <div
         data-storefront-navbar
-        className={`${navbarAppearance.stickyHeader ? 'sticky top-0 z-[60]' : 'relative z-50'} hidden overflow-visible lg:block`}
+        className={`sticky top-0 z-[60] hidden overflow-visible bg-white transition-shadow duration-300 lg:block ${navScrolled ? 'shadow-[0_10px_28px_rgba(5,9,13,0.1)]' : ''}`}
         onMouseLeave={categoriesDropdownOpen ? closeCategoriesDropdown : undefined}
       >
       <nav
-        className="overflow-visible border-b text-[#123D33] shadow-[0_1px_3px_rgba(15,23,42,0.06)]"
-        style={{
-          backgroundColor: desktopNavbarBackgroundColor,
-          borderColor: '#E7E1D6',
-          color: '#123D33',
-        }}
+        className="overflow-visible border-b border-neutral-200 bg-white text-slate-900"
       >
       <div className={NAVBAR_CONTAINER_CLASS} style={getNavbarContainerStyle(navbarAppearance.navbarMaxWidth)}>
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-3">
-          <div />
-          <div className="justify-self-center">{renderDesktopNavbarItem('logo')}</div>
-          <div className="flex items-center justify-self-end">
-            {renderDesktopNavbarItem('language')}
-          </div>
-        </div>
-      </div>
-      <div className="border-t border-[#E9D6B5]">
-      <div className={NAVBAR_CONTAINER_CLASS} style={getNavbarContainerStyle(navbarAppearance.navbarMaxWidth)}>
-        <div className="relative">
-          <div className="flex items-center justify-center gap-8 px-44">
+        <div className="flex h-16 items-center gap-5 xl:gap-8">
+          <div className="shrink-0">{renderDesktopNavbarItem('logo')}</div>
+          <div className="flex shrink-0 items-center gap-5 xl:gap-7">
             {[
               { href: '/', label: t('navbar.home'), active: pathname === '/' },
               { href: '/shop', label: t('navbar.allProducts'), active: pathname === '/shop' },
@@ -2240,24 +2254,24 @@ const Navbar = () => {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`border-b-2 py-3 text-[15px] text-[#123D33] transition hover:opacity-80 ${
-                  link.active ? 'border-[#1F5C4A] font-semibold' : 'border-transparent font-medium'
+                className={`inline-flex items-center border-b-2 pb-1 text-sm font-semibold uppercase leading-none tracking-wide text-slate-900 transition hover:opacity-70 ${
+                  link.active ? 'border-black' : 'border-transparent'
                 }`}
               >
                 {link.label}
               </Link>
             ))}
-            <div className="w-[168px] shrink-0 py-2">
-              {renderDesktopNavbarItem('search')}
-            </div>
           </div>
-          <div className="absolute end-0 top-1/2 flex -translate-y-1/2 items-center gap-0.5">
+          <div className="min-w-[180px] flex-1">
+            {renderDesktopNavbarItem('search')}
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            {renderDesktopNavbarItem('language')}
             {renderDesktopNavbarItem('account')}
             {renderDesktopNavbarItem('wishlist')}
             {renderDesktopNavbarItem('cart')}
           </div>
         </div>
-      </div>
       </div>
       </nav>
       </div>
@@ -2283,10 +2297,8 @@ const Navbar = () => {
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <button type="button" onClick={handleLogoNavigation} className="flex min-w-0 max-w-[104px] items-center overflow-hidden outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0">
                     {renderNavbarLogoImage({
-                      width: navbarAppearance.logoWidth || 120,
-                      height: navbarAppearance.logoHeight || 40,
-                      className: 'h-6 w-auto max-w-[96px] object-contain',
-                      style: { maxHeight: '24px', maxWidth: '96px' },
+                      className: 'block h-auto w-[96px] max-w-full object-contain',
+                      style: { height: 'auto' },
                     })}
                   </button>
                   <button
@@ -2305,7 +2317,7 @@ const Navbar = () => {
                 {firebaseUser === undefined ? null : !firebaseUser ? (
                   <button
                     type="button"
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1F5C4A] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#123D33]"
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#C8F404] px-4 py-3 text-sm font-semibold text-[#05090D] transition hover:bg-[#ADD300]"
                     onClick={() => {
                       setSignInOpen(true);
                       setMobileMenuOpen(false);
@@ -2319,7 +2331,7 @@ const Navbar = () => {
                     {firebaseUser.photoURL ? (
                       <Image src={firebaseUser.photoURL} alt="User" width={40} height={40} className="h-10 w-10 rounded-full object-cover" />
                     ) : (
-                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1F5C4A] text-sm font-bold text-white">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#C8F404] text-sm font-bold text-[#05090D]">
                         {firebaseUser.displayName?.[0]?.toUpperCase() || firebaseUser.email?.[0]?.toUpperCase() || 'U'}
                       </span>
                     )}
@@ -2465,15 +2477,15 @@ const Navbar = () => {
                       <span>{t('navbar.hotDeals')}</span>
                     </Link>
                     <Link href="/top-selling" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50">
-                      <Flame size={17} className="text-[#9C6E20]" />
+                      <Flame size={17} className="text-[#5E6870]" />
                       <span>{t('navbar.topSellingItems')}</span>
                     </Link>
                     <Link href="/new" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50">
-                      <Sparkles size={17} className="text-[#9C6E20]" />
+                      <Sparkles size={17} className="text-[#5E6870]" />
                       <span>{t('navbar.newArrivals')}</span>
                     </Link>
                     <Link href="/5-star-rated" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50">
-                      <StarIcon size={17} className="text-[#C9963B]" fill="currentColor" />
+                      <StarIcon size={17} className="text-[#C8F404]" fill="currentColor" />
                       <span>{t('navbar.fiveStarRated')}</span>
                     </Link>
                     {navActionsVisibility.wishlist ? (
@@ -2483,11 +2495,11 @@ const Navbar = () => {
                       className="flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50"
                     >
                       <span className="flex items-center gap-3">
-                        <Heart size={17} className="text-[#9C6E20]" />
+                        <Heart size={17} className="text-[#5E6870]" />
                         <span>{t('navbar.wishlist')}</span>
                       </span>
                       {wishlistCount > 0 ? (
-                        <span className="rounded-full bg-[#9C6E20] px-2 py-0.5 text-[11px] font-bold text-white">{wishlistCount}</span>
+                        <span className="rounded-full bg-[#C8F404] px-2 py-0.5 text-[11px] font-bold text-[#05090D]">{wishlistCount}</span>
                       ) : null}
                     </Link>
                     ) : null}
@@ -2498,17 +2510,17 @@ const Navbar = () => {
                       className="flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50"
                     >
                       <span className="flex items-center gap-3">
-                        <ShoppingCart size={17} className="text-[#C9963B]" />
+                        <NavbarCartIcon size={17} className="text-gray-900" />
                         <span>{t('navbar.cart')}</span>
                       </span>
                       {isClient && cartCount > 0 ? (
-                        <span className="rounded-full bg-[#C9963B] px-2 py-0.5 text-[11px] font-bold text-white">{cartCount}</span>
+                        <span className="rounded-full bg-[#C8F404] px-2 py-0.5 text-[11px] font-bold text-[#05090D]">{cartCount}</span>
                       ) : null}
                     </Link>
                     ) : null}
                     {isSeller && navActionsVisibility.store ? (
                       <Link href="/store" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50">
-                        <span className="rounded-full bg-[#9C6E20] px-2 py-0.5 text-[10px] font-bold uppercase text-white">Seller</span>
+                        <span className="rounded-full bg-[#C8F404] px-2 py-0.5 text-[10px] font-bold uppercase text-[#05090D]">Seller</span>
                         <span>{t('navbar.dashboard')}</span>
                       </Link>
                     ) : null}
@@ -2601,7 +2613,7 @@ const Navbar = () => {
                     </button>
                     <button
                       type="button"
-                      className="w-full rounded-xl bg-[#123D33] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#123D33]/30 hover:brightness-110 transition disabled:opacity-70"
+                      className="w-full rounded-xl bg-[#05090D] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#05090D]/30 hover:brightness-110 transition disabled:opacity-70"
                       disabled={signingOut}
                       onClick={handleSignOut}
                     >

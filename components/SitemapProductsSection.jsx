@@ -75,19 +75,19 @@ export default function SitemapProductsSection({
 
   return (
     <section id="sitemap-products" className="scroll-mt-28">
-      <div className="mb-3 flex items-baseline justify-between gap-4 border-b border-[#E9D6B5] pb-2">
-        <h2 className="text-lg font-semibold tracking-tight text-[#123D33]">Products</h2>
-        <p className="shrink-0 text-xs text-[#9C6E20]">
+      <div className="mb-3 flex items-baseline justify-between gap-4 border-b border-[#E2E7E8] pb-2">
+        <h2 className="text-lg font-semibold tracking-tight text-[#05090D]">Products</h2>
+        <p className="shrink-0 text-xs text-[#5E6870]">
           {total.toLocaleString()} {total === 1 ? 'product' : 'products'}
-          <span className="mx-2 text-[#E9D6B5]">·</span>
-          <Link href="/shop" className="font-medium text-[#123D33] underline-offset-2 hover:text-[#1F5C4A] hover:underline">
+          <span className="mx-2 text-[#C8F404]">·</span>
+          <Link href="/shop" className="font-medium text-[#05090D] underline-offset-2 hover:text-[#05090D] hover:underline">
             All Products
           </Link>
         </p>
       </div>
 
       {links.length === 0 ? (
-        <p className="text-sm leading-6 text-[#9C6E20]">No published products yet.</p>
+        <p className="text-sm leading-6 text-[#5E6870]">No published products yet.</p>
       ) : (
         <div ref={listRef}>
           <ul className="grid max-w-4xl grid-cols-1 gap-x-6 gap-y-0.5 sm:grid-cols-2 lg:grid-cols-3">
@@ -95,7 +95,7 @@ export default function SitemapProductsSection({
               <li key={link.path} className="min-w-0">
                 <Link
                   href={link.path || '#'}
-                  className="inline-block max-w-full truncate py-1 text-sm leading-5 text-[#123D33] transition hover:text-[#1F5C4A]"
+                  className="inline-block max-w-full truncate py-1 text-sm leading-5 text-[#05090D] transition hover:text-[#05090D]"
                   title={link.text}
                 >
                   {link.text}
@@ -103,7 +103,7 @@ export default function SitemapProductsSection({
               </li>
             ))}
           </ul>
-          <div ref={sentinelRef} className="mt-3 text-xs leading-5 text-[#9C6E20]">
+          <div ref={sentinelRef} className="mt-3 text-xs leading-5 text-[#5E6870]">
             {loading ? 'Loading more products…' : hasMore ? 'Scroll to load more' : null}
           </div>
         </div>

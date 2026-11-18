@@ -15,7 +15,7 @@ import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
 
 import { getLocalizedProductName } from '@/lib/displayText'
 import { getContentDirection } from '@/lib/storefrontLanguage'
-import { showStorefrontActionToast } from '@/lib/storefrontActionToast'
+import { openAddToCartPopup } from '@/lib/addToCartPopup'
 import { PLACEHOLDER_IMAGE as PLACEHOLDER } from '@/lib/mediaUrls'
 import {
   getImageUrlAt,
@@ -250,13 +250,7 @@ const ProductCard = ({
       price: priceNum > 0 ? priceNum : undefined,
     }))
     dispatch(uploadCart({ getToken }))
-    showStorefrontActionToast({
-      variant: 'cart',
-      title: t('product.addedToCartToast'),
-      subtitle: t('product.addedToCartSubtitle'),
-      actionLabel: t('product.viewCart'),
-      actionHref: '/cart',
-    })
+    openAddToCartPopup(product)
   }
 
   const renderCartControl = () => {
@@ -272,7 +266,7 @@ const ProductCard = ({
       return (
         <div
           className="inline-flex items-center justify-center gap-0.5 rounded-[10px] px-0.5 py-0.5 shadow-sm"
-          style={{ backgroundColor: '#C9963B' }}
+          style={{ backgroundColor: '#C8F404' }}
         >
           <button
             type="button"
@@ -288,12 +282,12 @@ const ProductCard = ({
               dispatch(removeFromCart({ productId: product._id }))
               dispatch(uploadCart({ getToken }))
             }}
-            className="inline-flex h-7 w-6 items-center justify-center rounded-sm text-white/95 transition hover:bg-white/15"
+            className="inline-flex h-7 w-6 items-center justify-center rounded-sm text-[#05090D] transition hover:bg-black/10"
             title={itemQuantity === 1 ? 'Delete' : 'Decrease'}
           >
             {itemQuantity === 1 ? <Trash2 size={13} /> : <Minus size={13} />}
           </button>
-          <span className="min-w-[14px] text-center text-xs font-semibold text-white">{itemQuantity}</span>
+          <span className="min-w-[14px] text-center text-xs font-semibold text-[#05090D]">{itemQuantity}</span>
           <button
             type="button"
             onClick={(e) => {
@@ -314,7 +308,7 @@ const ProductCard = ({
               }))
               dispatch(uploadCart({ getToken }))
             }}
-            className="inline-flex h-7 w-6 items-center justify-center rounded-sm text-white/95 transition hover:bg-white/15"
+            className="inline-flex h-7 w-6 items-center justify-center rounded-sm text-[#05090D] transition hover:bg-black/10"
             title="Add more"
           >
             <Plus size={13} />
@@ -327,17 +321,17 @@ const ProductCard = ({
       <button
         type="button"
         onClick={handleAddToCart}
-        className="inline-flex h-8 w-8 shrink-0 items-center justify-center border-0 bg-transparent p-0 shadow-none outline-none ring-0 transition-opacity duration-200 hover:opacity-70 focus:outline-none focus-visible:outline-none active:scale-95"
+        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-black bg-white p-0 shadow-none outline-none ring-0 transition-opacity duration-200 hover:opacity-70 focus:outline-none focus-visible:outline-none active:scale-95"
         aria-label={t('common.addToCart')}
       >
         <img
-          src="/icons/add-to-cart.png"
+          src="/icons/navbar-cart.png"
           alt=""
-          width={26}
-          height={26}
+          width={16}
+          height={16}
           draggable={false}
           aria-hidden="true"
-          className="h-[26px] w-[26px] select-none object-contain"
+          className="h-4 w-4 select-none object-contain"
         />
       </button>
     )
@@ -491,7 +485,7 @@ const ProductCard = ({
                   ) : null}
                 </span>
                 {discount > 0 ? (
-                  <span className="text-[10px] font-semibold leading-none text-[#9C6E20] sm:text-xs">
+                  <span className="text-[10px] font-semibold leading-none text-[#B12F39] sm:text-xs">
                     {t('common.offPercent', {
                       discount: formatNumber(discount, language, { maximumFractionDigits: 0 }),
                     })}

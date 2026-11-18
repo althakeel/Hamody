@@ -76,16 +76,16 @@ export default function MobileProductActions({
             aria-label={t('common.addToCart')}
           >
             <img
-              src="/icons/add-to-cart.png"
+              src="/icons/navbar-cart.png"
               alt=""
-              width={28}
-              height={28}
+              width={18}
+              height={18}
               draggable={false}
               aria-hidden="true"
-              className="h-7 w-7 select-none object-contain"
+              className="h-[18px] w-[18px] select-none object-contain"
             />
             {showQuantityBadge ? (
-              <span className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#C9963B] px-1 text-[10px] font-bold leading-none text-white shadow-sm">
+              <span className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#C8F404] px-1 text-[10px] font-bold leading-none text-[#05090D] shadow-sm">
                 {formatQuantity(quantity)}
               </span>
             ) : null}
@@ -98,18 +98,18 @@ export default function MobileProductActions({
               productId={notifyProductId}
               sku={notifySku}
               defaultEmail={notifyEmail}
-              buttonClassName="flex h-12 w-full items-center justify-center rounded-lg bg-[#1F5C4A] text-base font-bold text-white active:bg-[#123D33]"
+              buttonClassName="flex h-12 w-full items-center justify-center rounded-lg bg-[#C8F404] text-base font-bold text-[#05090D] active:bg-[#82A000]"
             />
           ) : (
             <button
               onClick={onOrderNow}
               disabled={isOrdering}
-              className={`flex h-12 w-full items-center justify-center text-white transition-all ${
+              className={`flex h-12 w-full items-center justify-center text-[#05090D] transition-all ${
                 jomlaHref ? 'flex-col rounded-xl' : 'rounded-lg text-base font-bold'
               } ${
                 isOrdering
                   ? 'cursor-not-allowed bg-gray-400 opacity-70'
-                  : 'bg-[#1F5C4A] active:bg-[#123D33]'
+                  : 'bg-[#C8F404] active:bg-[#82A000]'
               }`}
             >
               {isOrdering ? (

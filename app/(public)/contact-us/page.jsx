@@ -17,7 +17,7 @@ import {
 import Link from 'next/link';
 
 const fieldClass =
-  'w-full rounded-xl border border-[#E9D6B5] bg-[#FAF8F3] px-4 py-2.5 text-sm text-[#123D33] placeholder:text-[#9C6E20]/45 focus:border-[#1F5C4A] focus:outline-none focus:ring-2 focus:ring-[#1F5C4A]/25 transition';
+  'w-full rounded-xl border border-[#E2E7E8] bg-[#F8FAFA] px-4 py-2.5 text-sm text-[#05090D] placeholder:text-[#879198]/45 focus:border-[#C8F404] focus:outline-none focus:ring-2 focus:ring-[#C8F404]/25 transition';
 
 export default function ContactUs() {
   const searchParams = useSearchParams();
@@ -94,8 +94,8 @@ export default function ContactUs() {
   return (
     <div className="w-full">
       {/* Hero banner */}
-      <div className="w-full bg-[#1F5C4A] py-16 px-4 flex flex-col items-center text-center">
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E9D6B5] text-[#1F5C4A] shadow-lg">
+      <div className="w-full bg-[#05090D] py-16 px-4 flex flex-col items-center text-center">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F8FEE6] text-[#05090D] shadow-lg">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
             <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
           </svg>
@@ -164,43 +164,43 @@ export default function ContactUs() {
                 href: null,
               },
             ].map(({ icon, label, value, href }) => (
-              <div key={label} className="flex items-start gap-4 rounded-2xl border border-[#E9D6B5]/80 bg-white px-5 py-4 shadow-sm transition-shadow hover:shadow-md">
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#E9D6B5] text-[#1F5C4A]">
+              <div key={label} className="flex items-start gap-4 rounded-2xl border border-[#E2E7E8]/80 bg-white px-5 py-4 shadow-sm transition-shadow hover:shadow-md">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#F8FEE6] text-[#05090D]">
                   {icon}
                 </div>
                 <div className="min-w-0">
-                  <p className="mb-0.5 text-xs font-semibold uppercase tracking-wider text-[#9C6E20]">{label}</p>
+                  <p className="mb-0.5 text-xs font-semibold uppercase tracking-wider text-[#5E6870]">{label}</p>
                   {href ? (
-                    <a href={href} className="break-all text-sm font-medium text-[#123D33] hover:text-[#1F5C4A] hover:underline">
+                    <a href={href} className="break-all text-sm font-medium text-[#05090D] hover:text-[#05090D] hover:underline">
                       {value}
                     </a>
                   ) : (
-                    <p className="text-sm font-medium text-[#123D33]">{value}</p>
+                    <p className="text-sm font-medium text-[#05090D]">{value}</p>
                   )}
                 </div>
               </div>
             ))}
 
             {/* Business info card */}
-            <div className="space-y-2 rounded-2xl border border-[#E9D6B5]/80 bg-[#FAF8F3] px-5 py-4 text-sm text-[#123D33]/80">
-              <p className="font-semibold text-[#123D33]">hamody.com</p>
+            <div className="space-y-2 rounded-2xl border border-[#E2E7E8]/80 bg-[#F8FAFA] px-5 py-4 text-sm text-[#05090D]/80">
+              <p className="font-semibold text-[#05090D]">hamody.com</p>
               <p>
                 Operated by <strong>{HAMODY_LEGAL_NAME}</strong> (UAE Trade License {HAMODY_TRADE_LICENSE_NO}).
               </p>
               <p>
                 Full company details:{' '}
-                <Link href="/business-information" className="font-semibold text-[#9C6E20] hover:text-[#123D33] hover:underline">
+                <Link href="/business-information" className="font-semibold text-[#5E6870] hover:text-[#05090D] hover:underline">
                   Business Information
                 </Link>
               </p>
               <p>We typically reply the next business day. We are not a 24/7 desk.</p>
               <p>
                 Guest return or complaint:{' '}
-                <Link href="/support" className="font-semibold text-[#9C6E20] hover:text-[#123D33] hover:underline">
+                <Link href="/support" className="font-semibold text-[#5E6870] hover:text-[#05090D] hover:underline">
                   Support form
                 </Link>
                 {' '}or this page. Signed-in customers can also use{' '}
-                <Link href="/return-request" className="font-semibold text-[#9C6E20] hover:text-[#123D33] hover:underline">
+                <Link href="/return-request" className="font-semibold text-[#5E6870] hover:text-[#05090D] hover:underline">
                   Return Request
                 </Link>.
               </p>
@@ -209,14 +209,14 @@ export default function ContactUs() {
 
           {/* Right — form */}
           <div className="lg:col-span-3">
-            <div className="overflow-hidden rounded-2xl border border-[#E9D6B5]/80 bg-white shadow-sm">
-              <div className="h-1 w-full bg-[#C9963B]" />
+            <div className="overflow-hidden rounded-2xl border border-[#E2E7E8]/80 bg-white shadow-sm">
+              <div className="h-1 w-full bg-[#C8F404]" />
 
               <div className="p-7">
                 {submitted ? (
                   <div className="flex flex-col items-center justify-center py-14 text-center gap-4">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#E9D6B5]">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="#1F5C4A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#F8FEE6]">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#05090D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8">
                         <polyline points="20 6 9 17 4 12"/>
                       </svg>
                     </div>
@@ -226,7 +226,7 @@ export default function ContactUs() {
                     </div>
                     <button
                       onClick={() => { setSubmitted(false); setForm({ name: '', email: '', topic: 'Question', orderNumber: '', message: '' }); }}
-                      className="mt-2 rounded-xl bg-[#1F5C4A] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#123D33]"
+                      className="mt-2 rounded-xl bg-[#C8F404] px-5 py-2 text-sm font-semibold text-[#05090D] transition hover:bg-[#ADD300]"
                     >
                       Send Another Message
                     </button>
@@ -314,7 +314,7 @@ export default function ContactUs() {
                       <button
                         type="submit"
                         disabled={submitting}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1F5C4A] py-3 text-sm font-bold text-white shadow-[0_4px_14px_rgba(31,92,74,0.35)] transition hover:bg-[#123D33] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#C8F404] py-3 text-sm font-bold text-[#05090D] shadow-[0_4px_14px_rgba(5,9,13,0.35)] transition hover:bg-[#ADD300] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
                           <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>

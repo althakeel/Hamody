@@ -120,7 +120,7 @@ export default function OutdoorCampingMenu({ isArabic = false, onNavigate }) {
           <Link
             href={active.href}
             onClick={onNavigate}
-            className="shrink-0 text-[13px] font-bold uppercase tracking-wide text-[#9C6E20] hover:text-[#7d5818]"
+            className="shrink-0 text-[13px] font-bold uppercase tracking-wide text-[#5E6870] hover:text-[#7d5818]"
           >
             {isArabic ? 'عرض الكل' : 'VIEW ALL'}
           </Link>
@@ -131,7 +131,7 @@ export default function OutdoorCampingMenu({ isArabic = false, onNavigate }) {
               <Link
                 href={group.href}
                 onClick={onNavigate}
-                className="block text-[15px] font-bold leading-5 text-[#111111] hover:text-[#1F5C4A]"
+                className="block text-[15px] font-bold leading-5 text-[#111111] hover:text-[#05090D]"
               >
                 {labelOf(group, isArabic)}
               </Link>

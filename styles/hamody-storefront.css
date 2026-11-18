@@ -1,22 +1,37 @@
-/* Hamody storefront palette. The seller dashboard is left unchanged. */
+/* Hamody storefront palette from the official color guidelines.
+   The seller dashboard is left unchanged. */
 html:not(:has([data-store-language-scope])) {
-  --hm-green: #1f5c4a;
-  --hm-deep: #123d33;
-  --hm-sand: #e9d6b5;
-  --hm-gold: #9c6e20;
-  --hm-cart: #c9963b;
-  --hm-paper: #faf8f3;
+  --hm-lime: #c8f404;
+  --hm-lime-hover: #add300;
+  --hm-lime-active: #82a000;
+  --hm-lime-50: #f8fee6;
+  --hm-lime-100: #effcc4;
+  --hm-ink: #05090d;
+  --hm-black: #000000;
   --hm-white: #ffffff;
-  background-color: #ffffff;
-  color: var(--hm-deep);
+  --hm-bg: #f8fafa;
+  --hm-border: #e2e7e8;
+  --hm-muted: #5e6870;
+  --hm-success: #217a4d;
+  --hm-warning: #8d5900;
+  --hm-error: #b12f39;
+  --hm-info: #255c9d;
+  --hm-green: var(--hm-lime);
+  --hm-deep: var(--hm-ink);
+  --hm-sand: var(--hm-bg);
+  --hm-gold: var(--hm-ink);
+  --hm-cart: var(--hm-lime);
+  --hm-paper: var(--hm-bg);
+  background-color: var(--hm-bg);
+  color: var(--hm-ink);
 }
 
 html:not(:has([data-store-language-scope])) body {
-  background-color: #ffffff;
-  color: var(--hm-deep);
+  background-color: var(--hm-bg);
+  color: var(--hm-ink);
 }
 
-/* Primary actions: the old red and orange fills. */
+/* Primary actions: lime fill, ink label. White on lime fails the contrast rule. */
 html:not(:has([data-store-language-scope])) :is(
   .bg-orange-500,
   .bg-orange-600,
@@ -24,9 +39,14 @@ html:not(:has([data-store-language-scope])) :is(
   .bg-\[\#E52721\],
   .bg-\[\#E52D27\],
   .bg-\[\#e10600\],
-  .bg-\[\#E10600\]
+  .bg-\[\#E10600\],
+  .bg-\[\#C8F404\],
+  .bg-\[\#c8f404\],
+  .bg-blue-600,
+  .bg-blue-700
 ) {
-  background-color: var(--hm-green);
+  background-color: var(--hm-lime);
+  color: var(--hm-ink);
 }
 
 html:not(:has([data-store-language-scope])) :is(
@@ -36,9 +56,25 @@ html:not(:has([data-store-language-scope])) :is(
   .hover\:bg-\[\#CC261F\]:hover,
   .hover\:bg-\[\#C41F1A\]:hover,
   .hover\:bg-\[\#B31217\]:hover,
-  .active\:bg-\[\#CC261F\]:active
+  .active\:bg-\[\#CC261F\]:active,
+  .hover\:bg-\[\#ADD300\]:hover,
+  .hover\:bg-\[\#C8F404\]:hover,
+  .bg-\[\#C8F404\]:hover,
+  .bg-\[\#c8f404\]:hover,
+  .hover\:bg-blue-600:hover,
+  .hover\:bg-blue-700:hover
 ) {
-  background-color: var(--hm-deep);
+  background-color: var(--hm-lime-hover);
+  color: var(--hm-ink);
+}
+
+html:not(:has([data-store-language-scope])) :is(
+  .active\:bg-\[\#82A000\]:active,
+  .bg-\[\#C8F404\]:active,
+  .bg-\[\#c8f404\]:active
+) {
+  background-color: var(--hm-lime-active);
+  color: var(--hm-ink);
 }
 
 html:not(:has([data-store-language-scope])) .partner-brand:is(
@@ -46,6 +82,7 @@ html:not(:has([data-store-language-scope])) .partner-brand:is(
   .bg-\[\#E52721\]
 ) {
   background-color: #e52d27;
+  color: #ffffff;
 }
 
 html:not(:has([data-store-language-scope])) .partner-brand:is(
@@ -54,9 +91,10 @@ html:not(:has([data-store-language-scope])) .partner-brand:is(
   .active\:bg-\[\#CC261F\]:active
 ) {
   background-color: #b31217;
+  color: #ffffff;
 }
 
-/* Highlights and prices. */
+/* Prices and links stay ink. Lime text on white fails contrast. */
 html:not(:has([data-store-language-scope])) :is(
   .text-orange-500,
   .text-orange-600,
@@ -69,9 +107,12 @@ html:not(:has([data-store-language-scope])) :is(
   .text-\[\#E52721\],
   .text-\[\#E52D27\],
   .text-\[\#e10600\],
-  .text-\[\#E10600\]
+  .text-\[\#E10600\],
+  .text-blue-600,
+  .text-blue-700,
+  .text-blue-800
 ) {
-  color: var(--hm-gold);
+  color: var(--hm-ink);
 }
 
 html:not(:has([data-store-language-scope])) :is(
@@ -81,16 +122,16 @@ html:not(:has([data-store-language-scope])) :is(
   .hover\:text-orange-800:hover,
   .hover\:text-\[\#E52721\]:hover
 ) {
-  color: var(--hm-deep);
+  color: var(--hm-ink);
 }
 
 html:not(:has([data-store-language-scope])) :is(
   .hover\:decoration-\[\#E52721\]:hover
 ) {
-  text-decoration-color: var(--hm-gold);
+  text-decoration-color: var(--hm-ink);
 }
 
-/* Panels, chips, and icon tiles. */
+/* Panels and structure use the neutral scale. */
 html:not(:has([data-store-language-scope])) :is(
   .bg-orange-50,
   .bg-orange-100,
@@ -103,49 +144,43 @@ html:not(:has([data-store-language-scope])) :is(
   .hover\:bg-orange-100:hover,
   .hover\:bg-orange-50\/40:hover
 ) {
-  background-color: var(--hm-sand);
+  background-color: var(--hm-bg);
 }
 
 html:not(:has([data-store-language-scope])) :is(
   .border-orange-200,
   .border-orange-300,
+  .border-orange-400,
+  .border-orange-500,
   .hover\:border-orange-200:hover,
   .hover\:border-orange-300:hover
 ) {
-  border-color: var(--hm-sand);
-}
-
-html:not(:has([data-store-language-scope])) :is(
-  .border-orange-400,
-  .border-orange-500,
-  .ring-orange-200,
-  .focus\:ring-orange-500:focus
-) {
-  border-color: var(--hm-gold);
+  border-color: var(--hm-border);
 }
 
 html:not(:has([data-store-language-scope])) :is(
   .ring-orange-200,
   .focus\:ring-orange-500:focus
 ) {
-  --tw-ring-color: var(--hm-gold);
+  --tw-ring-color: var(--hm-lime);
+  border-color: var(--hm-lime);
 }
 
-/* Success and confirmation stay in the green family. */
+/* Success stays a status color, not a brand fill. */
 html:not(:has([data-store-language-scope])) :is(
   .bg-emerald-600,
-  .bg-emerald-700,
-  .hover\:bg-emerald-700:hover,
-  .hover\:bg-emerald-800:hover
+  .bg-emerald-700
 ) {
-  background-color: var(--hm-green);
+  background-color: var(--hm-success);
+  color: var(--hm-white);
 }
 
 html:not(:has([data-store-language-scope])) :is(
   .hover\:bg-emerald-700:hover,
   .hover\:bg-emerald-800:hover
 ) {
-  background-color: var(--hm-deep);
+  background-color: var(--hm-ink);
+  color: var(--hm-white);
 }
 
 html:not(:has([data-store-language-scope])) :is(
@@ -154,48 +189,40 @@ html:not(:has([data-store-language-scope])) :is(
   .bg-emerald-50\/60,
   .bg-emerald-50\/70
 ) {
-  background-color: #e7f0ec;
+  background-color: #e8f3ec;
 }
 
 html:not(:has([data-store-language-scope])) :is(
   .border-emerald-200,
   .border-emerald-300
 ) {
-  border-color: #c5d9d1;
+  border-color: #c5ddd0;
 }
 
 html:not(:has([data-store-language-scope])) :is(
   .text-emerald-800,
   .text-emerald-900
 ) {
-  color: var(--hm-deep);
+  color: var(--hm-success);
 }
 
-/* Old blue and navy controls on the customer account pages. */
+/* Secondary actions are ink with white text. */
 html:not(:has([data-store-language-scope])) :is(
-  .bg-blue-600,
-  .bg-blue-700,
   .bg-slate-800,
-  .bg-slate-900
+  .bg-slate-900,
+  .bg-\[\#05090D\],
+  .bg-\[\#05090d\]
 ) {
-  background-color: var(--hm-green);
+  background-color: var(--hm-ink);
+  color: var(--hm-white);
 }
 
 html:not(:has([data-store-language-scope])) :is(
-  .hover\:bg-blue-600:hover,
-  .hover\:bg-blue-700:hover,
   .hover\:bg-slate-700:hover,
   .hover\:bg-slate-800:hover
 ) {
-  background-color: var(--hm-deep);
-}
-
-html:not(:has([data-store-language-scope])) :is(
-  .text-blue-600,
-  .text-blue-700,
-  .text-blue-800
-) {
-  color: var(--hm-green);
+  background-color: #151b20;
+  color: var(--hm-white);
 }
 
 html:not(:has([data-store-language-scope])) :is(
@@ -203,15 +230,43 @@ html:not(:has([data-store-language-scope])) :is(
   .border-blue-600,
   .focus\:border-blue-500:focus
 ) {
-  border-color: var(--hm-green);
+  border-color: var(--hm-ink);
 }
 
 html:not(:has([data-store-language-scope])) input[type="checkbox"],
 html:not(:has([data-store-language-scope])) input[type="radio"] {
-  accent-color: var(--hm-green);
+  accent-color: var(--hm-lime);
 }
 
-/* Stars and small gold marks. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes hm-section-in {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .hm-section-in {
+    animation: hm-section-in 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes hm-nav-shadow {
+    from { box-shadow: none; }
+    to { box-shadow: 0 10px 28px rgba(5, 9, 13, 0.1); }
+  }
+
+  html:not(:has([data-store-language-scope])) [data-storefront-navbar] {
+    animation: hm-nav-shadow linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 64px;
+  }
+}
+
+/* Stars and small marks use brand lime. */
 html:not(:has([data-store-language-scope])) :is(
   .text-yellow-400,
   .text-yellow-500,
@@ -219,5 +274,5 @@ html:not(:has([data-store-language-scope])) :is(
   .text-amber-700,
   .text-amber-800
 ) {
-  color: var(--hm-cart);
+  color: var(--hm-lime);
 }

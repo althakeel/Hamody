@@ -97,7 +97,7 @@ export default function TicketsPage() {
       <div className="max-w-4xl mx-auto px-4 py-10">
         <h1 className="text-2xl font-semibold text-slate-800 mb-3">Support Tickets</h1>
         <p className="text-slate-600 mb-6">Please sign in to view your support tickets.</p>
-        <Link href="/" className="inline-block px-4 py-2 bg-[#1F5C4A] text-white rounded-lg">Go to Home</Link>
+        <Link href="/" className="inline-block px-4 py-2 bg-[#C8F404] text-[#05090D] rounded-lg">Go to Home</Link>
       </div>
     )
   }
@@ -105,11 +105,11 @@ export default function TicketsPage() {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'open':
-        return <AlertCircle className="text-[#1F5C4A]" size={20} />
+        return <AlertCircle className="text-[#05090D]" size={20} />
       case 'in-progress':
-        return <Clock className="text-[#9C6E20]" size={20} />
+        return <Clock className="text-[#5E6870]" size={20} />
       case 'resolved':
-        return <CheckCircle className="text-[#1F5C4A]" size={20} />
+        return <CheckCircle className="text-[#05090D]" size={20} />
       case 'closed':
         return <XCircle className="text-gray-600" size={20} />
       default:
@@ -119,9 +119,9 @@ export default function TicketsPage() {
 
   const getStatusBadge = (status) => {
     const colors = {
-      open: 'bg-[#E7F0EC] text-[#1F5C4A]',
-      'in-progress': 'bg-[#E9D6B5] text-[#9C6E20]',
-      resolved: 'bg-[#E7F0EC] text-[#1F5C4A]',
+      open: 'bg-[#E7F0EC] text-[#05090D]',
+      'in-progress': 'bg-[#F8FEE6] text-[#5E6870]',
+      resolved: 'bg-[#E7F0EC] text-[#05090D]',
       closed: 'bg-gray-100 text-gray-800'
     }
     return (
@@ -133,9 +133,9 @@ export default function TicketsPage() {
 
   const getPriorityBadge = (priority) => {
     const colors = {
-      low: 'bg-[#E7F0EC] text-[#1F5C4A]',
-      normal: 'bg-[#FAF8F3] text-[#123D33]',
-      high: 'bg-[#E9D6B5] text-[#9C6E20]',
+      low: 'bg-[#E7F0EC] text-[#05090D]',
+      normal: 'bg-[#F8FAFA] text-[#05090D]',
+      high: 'bg-[#F8FEE6] text-[#5E6870]',
       urgent: 'bg-red-100 text-red-800'
     }
     return (
@@ -160,7 +160,7 @@ export default function TicketsPage() {
           <h1 className="text-2xl font-semibold text-slate-800">Support Tickets</h1>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-[#1F5C4A] text-white rounded-lg hover:bg-[#123D33] transition text-sm"
+            className="px-4 py-2 bg-[#C8F404] text-[#05090D] rounded-lg hover:bg-[#ADD300] transition text-sm"
           >
             Create New Ticket
           </button>
@@ -172,7 +172,7 @@ export default function TicketsPage() {
             onClick={() => setFilter('all')}
             className={`px-4 py-2 text-sm font-medium transition border-b-2 ${
               filter === 'all'
-                ? 'border-[#1F5C4A] text-[#1F5C4A]'
+                ? 'border-[#05090D] text-[#05090D]'
                 : 'border-transparent text-slate-600 hover:text-slate-800'
             }`}
           >
@@ -182,7 +182,7 @@ export default function TicketsPage() {
             onClick={() => setFilter('open')}
             className={`px-4 py-2 text-sm font-medium transition border-b-2 ${
               filter === 'open'
-                ? 'border-[#1F5C4A] text-[#1F5C4A]'
+                ? 'border-[#05090D] text-[#05090D]'
                 : 'border-transparent text-slate-600 hover:text-slate-800'
             }`}
           >
@@ -192,7 +192,7 @@ export default function TicketsPage() {
             onClick={() => setFilter('closed')}
             className={`px-4 py-2 text-sm font-medium transition border-b-2 ${
               filter === 'closed'
-                ? 'border-[#1F5C4A] text-[#1F5C4A]'
+                ? 'border-[#05090D] text-[#05090D]'
                 : 'border-transparent text-slate-600 hover:text-slate-800'
             }`}
           >
@@ -202,7 +202,7 @@ export default function TicketsPage() {
 
         {loading ? (
           <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-12 text-center">
-            <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-solid border-[#1F5C4A] border-r-transparent"></div>
+            <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-solid border-[#05090D] border-r-transparent"></div>
             <p className="mt-4 text-gray-600">Loading tickets...</p>
           </div>
         ) : filteredTickets.length === 0 ? (
@@ -216,7 +216,7 @@ export default function TicketsPage() {
             </p>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="inline-block px-6 py-3 bg-[#1F5C4A] text-white rounded-lg hover:bg-[#123D33] transition cursor-pointer"
+              className="inline-block px-6 py-3 bg-[#C8F404] text-[#05090D] rounded-lg hover:bg-[#ADD300] transition cursor-pointer"
             >
               Create Your First Ticket
             </button>
@@ -242,7 +242,7 @@ export default function TicketsPage() {
                       </div>
                       <p className="text-sm text-slate-600 mb-2 line-clamp-2">{ticket.description}</p>
                       <div className="flex items-center gap-4 text-xs text-slate-500">
-                        <span className="font-medium text-[#1F5C4A]">{ticket.category}</span>
+                        <span className="font-medium text-[#05090D]">{ticket.category}</span>
                         <span>Created: {new Date(ticket.createdAt).toLocaleDateString()}</span>
                         {ticket.replies && ticket.replies.length > 0 && (
                           <span className="flex items-center gap-1">
@@ -282,7 +282,7 @@ export default function TicketsPage() {
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                   placeholder="Brief description of your issue"
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-[#1F5C4A] focus:ring-2 focus:ring-[#E9D6B5] outline-none transition"
+                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-[#C8F404] focus:ring-2 focus:ring-[#E2E7E8] outline-none transition"
                   required
                 />
               </div>
@@ -293,7 +293,7 @@ export default function TicketsPage() {
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-[#1F5C4A] focus:ring-2 focus:ring-[#E9D6B5] outline-none transition"
+                    className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-[#C8F404] focus:ring-2 focus:ring-[#E2E7E8] outline-none transition"
                   >
                     <option value="Order Issue">Order Issue</option>
                     <option value="Product Question">Product Question</option>
@@ -308,7 +308,7 @@ export default function TicketsPage() {
                   <select
                     value={formData.priority}
                     onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-[#1F5C4A] focus:ring-2 focus:ring-[#E9D6B5] outline-none transition"
+                    className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-[#C8F404] focus:ring-2 focus:ring-[#E2E7E8] outline-none transition"
                   >
                     <option value="low">Low</option>
                     <option value="normal">Normal</option>
@@ -325,7 +325,7 @@ export default function TicketsPage() {
                   value={formData.orderId}
                   onChange={(e) => setFormData({ ...formData, orderId: e.target.value })}
                   placeholder="If related to an order"
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-[#1F5C4A] focus:ring-2 focus:ring-[#E9D6B5] outline-none transition"
+                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-[#C8F404] focus:ring-2 focus:ring-[#E2E7E8] outline-none transition"
                 />
               </div>
 
@@ -336,7 +336,7 @@ export default function TicketsPage() {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Describe your issue in detail..."
                   rows="6"
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-[#1F5C4A] focus:ring-2 focus:ring-[#E9D6B5] outline-none transition resize-none"
+                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-[#C8F404] focus:ring-2 focus:ring-[#E2E7E8] outline-none transition resize-none"
                   required
                 />
               </div>
@@ -352,7 +352,7 @@ export default function TicketsPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 px-6 py-3 bg-[#1F5C4A] text-white rounded-lg hover:bg-[#123D33] disabled:bg-slate-400 transition font-medium"
+                  className="flex-1 px-6 py-3 bg-[#C8F404] text-[#05090D] rounded-lg hover:bg-[#ADD300] disabled:bg-slate-400 transition font-medium"
                 >
                   {submitting ? 'Creating...' : 'Create Ticket'}
                 </button>

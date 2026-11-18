@@ -1341,7 +1341,7 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex items-center justify-center gap-2 rounded-xl bg-[#1F5C4A] py-2.5 text-sm font-semibold text-white transition hover:bg-[#123D33] disabled:opacity-50"
+                  className="flex items-center justify-center gap-2 rounded-xl bg-[#C8F404] py-2.5 text-sm font-semibold text-[#05090D] transition hover:bg-[#ADD300] disabled:opacity-50"
                 >
                   {loading ? <><Loader2 size={16} className="animate-spin" /> Sending…</> : (resetChannel === 'whatsapp' ? 'Send WhatsApp code' : 'Send email code')}
                 </button>
@@ -1349,7 +1349,7 @@ const SignInModal = ({ open, onClose, defaultMode = 'login', bonusMessage = '', 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex items-center justify-center gap-2 rounded-xl bg-[#1F5C4A] py-2.5 text-sm font-semibold text-white transition hover:bg-[#123D33] disabled:opacity-50"
+                  className="flex items-center justify-center gap-2 rounded-xl bg-[#C8F404] py-2.5 text-sm font-semibold text-[#05090D] transition hover:bg-[#ADD300] disabled:opacity-50"
                 >
                   {loading ? <><Loader2 size={16} className="animate-spin" /> Updating…</> : 'Update password'}
                 </button>

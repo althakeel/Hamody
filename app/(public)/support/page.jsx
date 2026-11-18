@@ -112,14 +112,14 @@ export default function SupportPage() {
     { icon: '💬', title: 'FAQ & Help', desc: 'Browse our help center', link: '/help' },
   ]
 
-  const fieldClass = 'w-full px-4 py-2.5 rounded-lg border border-[#E9D6B5] bg-white text-[#123D33] placeholder:text-[#9C6E20]/45 focus:border-[#1F5C4A] focus:ring-2 focus:ring-[#1F5C4A]/25 outline-none transition'
+  const fieldClass = 'w-full px-4 py-2.5 rounded-lg border border-[#E2E7E8] bg-white text-[#05090D] placeholder:text-[#879198]/45 focus:border-[#C8F404] focus:ring-2 focus:ring-[#C8F404]/25 outline-none transition'
 
   return (
     <div className="bg-white">
-      <div className="bg-[#1F5C4A] text-white py-12 px-4">
+      <div className="bg-[#05090D] text-white py-12 px-4">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-4xl font-bold mb-2">How Can We Help?</h1>
-          <p className="text-[#E9D6B5] text-lg">Support hours: {HAMODY_BUSINESS_HOURS_EN}</p>
+          <p className="text-[#C8F404] text-lg">Support hours: {HAMODY_BUSINESS_HOURS_EN}</p>
         </div>
       </div>
 
@@ -127,10 +127,10 @@ export default function SupportPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           {supportOptions.map((option, idx) => (
             <Link key={idx} href={option.link} className="group">
-              <div className="bg-white rounded-xl p-5 border border-[#E9D6B5] hover:border-[#1F5C4A] hover:shadow-lg transition text-center">
-                <div className="text-3xl mb-3 text-[#1F5C4A] group-hover:scale-110 transition">{option.icon}</div>
-                <h3 className="font-semibold text-[#123D33] mb-1">{option.title}</h3>
-                <p className="text-[#9C6E20] text-sm">{option.desc}</p>
+              <div className="bg-white rounded-xl p-5 border border-[#E2E7E8] hover:border-[#05090D] hover:shadow-lg transition text-center">
+                <div className="text-3xl mb-3 text-[#05090D] group-hover:scale-110 transition">{option.icon}</div>
+                <h3 className="font-semibold text-[#05090D] mb-1">{option.title}</h3>
+                <p className="text-[#5E6870] text-sm">{option.desc}</p>
               </div>
             </Link>
           ))}
@@ -138,14 +138,14 @@ export default function SupportPage() {
 
         <div className="grid lg:grid-cols-2 gap-8 mb-12">
           {/* Contact Form */}
-          <div className="bg-white rounded-2xl border border-[#E9D6B5] p-8 shadow-sm">
-            <h2 className="text-2xl font-bold text-[#123D33] mb-6">Submit a Ticket</h2>
+          <div className="bg-white rounded-2xl border border-[#E2E7E8] p-8 shadow-sm">
+            <h2 className="text-2xl font-bold text-[#05090D] mb-6">Submit a Ticket</h2>
             
             {!user && (
-              <div className="mb-6 p-4 bg-[#FAF8F3] border border-[#E9D6B5] rounded-lg text-[#123D33]">
+              <div className="mb-6 p-4 bg-[#F8FAFA] border border-[#E2E7E8] rounded-lg text-[#05090D]">
                 No account needed. Use this form for a complaint or return request. Include your order number if you have one.
                 {' '}Signed-in customers can also start a return from{' '}
-                <Link href="/orders" className="font-semibold text-[#1F5C4A] underline">My Orders</Link>.
+                <Link href="/orders" className="font-semibold text-[#05090D] underline">My Orders</Link>.
               </div>
             )}
 
@@ -155,7 +155,7 @@ export default function SupportPage() {
                 {user ? (
                   <>
                     {' '}
-                    <Link href="/dashboard/tickets" className="font-semibold text-[#1F5C4A] underline">View your tickets</Link>
+                    <Link href="/dashboard/tickets" className="font-semibold text-[#05090D] underline">View your tickets</Link>
                   </>
                 ) : null}
               </div>
@@ -170,7 +170,7 @@ export default function SupportPage() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#9C6E20] mb-2">Name *</label>
+                  <label className="block text-sm font-medium text-[#5E6870] mb-2">Name *</label>
                   <input
                     type="text"
                     name="name"
@@ -178,11 +178,11 @@ export default function SupportPage() {
                     onChange={handleChange}
                     placeholder="Your name"
                     readOnly={!!user}
-                    className={`${fieldClass} ${user ? 'bg-[#FAF8F3] cursor-not-allowed' : ''}`}
+                    className={`${fieldClass} ${user ? 'bg-[#F8FAFA] cursor-not-allowed' : ''}`}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#9C6E20] mb-2">Email *</label>
+                  <label className="block text-sm font-medium text-[#5E6870] mb-2">Email *</label>
                   <input
                     type="email"
                     name="email"
@@ -190,14 +190,14 @@ export default function SupportPage() {
                     onChange={handleChange}
                     placeholder="your@email.com"
                     readOnly={!!user}
-                    className={`${fieldClass} ${user ? 'bg-[#FAF8F3] cursor-not-allowed' : ''}`}
+                    className={`${fieldClass} ${user ? 'bg-[#F8FAFA] cursor-not-allowed' : ''}`}
                   />
                 </div>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#9C6E20] mb-2">Issue Type *</label>
+                  <label className="block text-sm font-medium text-[#5E6870] mb-2">Issue Type *</label>
                   <select
                     name="issue"
                     value={formData.issue}
@@ -215,7 +215,7 @@ export default function SupportPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#9C6E20] mb-2">Priority *</label>
+                  <label className="block text-sm font-medium text-[#5E6870] mb-2">Priority *</label>
                   <select
                     name="priority"
                     value={formData.priority}
@@ -231,7 +231,7 @@ export default function SupportPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#9C6E20] mb-2">Order Number (Optional)</label>
+                <label className="block text-sm font-medium text-[#5E6870] mb-2">Order Number (Optional)</label>
                 <input
                   type="text"
                   name="orderNumber"
@@ -243,7 +243,7 @@ export default function SupportPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#9C6E20] mb-2">Subject *</label>
+                <label className="block text-sm font-medium text-[#5E6870] mb-2">Subject *</label>
                 <input
                   type="text"
                   name="subject"
@@ -255,7 +255,7 @@ export default function SupportPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#9C6E20] mb-2">Message *</label>
+                <label className="block text-sm font-medium text-[#5E6870] mb-2">Message *</label>
                 <textarea
                   name="message"
                   value={formData.message}
@@ -269,7 +269,7 @@ export default function SupportPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#1F5C4A] hover:bg-[#123D33] disabled:bg-slate-400 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition"
+                className="w-full bg-[#C8F404] hover:bg-[#ADD300] disabled:bg-slate-400 disabled:cursor-not-allowed text-[#05090D] font-semibold py-3 rounded-lg transition"
               >
                 {loading ? 'Submitting...' : user ? 'Submit Support Ticket' : 'Submit complaint or return request'}
               </button>
@@ -278,43 +278,43 @@ export default function SupportPage() {
 
           {/* Contact Information */}
           <div className="space-y-6">
-            <div className="bg-white rounded-2xl border border-[#E9D6B5] p-8 shadow-sm">
-              <h2 className="text-2xl font-bold text-[#123D33] mb-6">Other Ways to Reach Us</h2>
+            <div className="bg-white rounded-2xl border border-[#E2E7E8] p-8 shadow-sm">
+              <h2 className="text-2xl font-bold text-[#05090D] mb-6">Other Ways to Reach Us</h2>
               
               <div className="space-y-6">
                 <div>
                   <div className="flex items-start gap-3 mb-2">
                     <span className="text-2xl">📧</span>
                     <div>
-                      <p className="font-medium text-[#123D33]">Email</p>
-                      <a href={`mailto:${HAMODY_SUPPORT_EMAIL}`} className="text-[#1F5C4A] hover:underline">{HAMODY_SUPPORT_EMAIL}</a>
-                      <p className="text-sm text-[#9C6E20] mt-1">We reply during business hours, usually the next business day</p>
+                      <p className="font-medium text-[#05090D]">Email</p>
+                      <a href={`mailto:${HAMODY_SUPPORT_EMAIL}`} className="text-[#05090D] hover:underline">{HAMODY_SUPPORT_EMAIL}</a>
+                      <p className="text-sm text-[#5E6870] mt-1">We reply during business hours, usually the next business day</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="border-t border-[#E9D6B5] pt-6">
+                <div className="border-t border-[#E2E7E8] pt-6">
                   <div className="flex items-start gap-3">
                     <span className="text-2xl">💬</span>
                     <div>
-                      <p className="font-medium text-[#123D33]">Live Chat</p>
-                      <p className="text-[#9C6E20] text-sm mt-1">Chat with our team in real-time during business hours</p>
+                      <p className="font-medium text-[#05090D]">Live Chat</p>
+                      <p className="text-[#5E6870] text-sm mt-1">Chat with our team in real-time during business hours</p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-[#FAF8F3] rounded-2xl border border-[#E9D6B5] p-8">
-              <h3 className="text-lg font-bold text-[#123D33] mb-3">Business hours</h3>
-              <p className="text-[#123D33] text-sm mb-3">{HAMODY_BUSINESS_HOURS_EN}</p>
-              <p className="text-[#123D33] text-sm mb-3">
+            <div className="bg-[#F8FAFA] rounded-2xl border border-[#E2E7E8] p-8">
+              <h3 className="text-lg font-bold text-[#05090D] mb-3">Business hours</h3>
+              <p className="text-[#05090D] text-sm mb-3">{HAMODY_BUSINESS_HOURS_EN}</p>
+              <p className="text-[#05090D] text-sm mb-3">
                 Phone:{' '}
-                <a href={HAMODY_CUSTOMER_SUPPORT_TEL} className="font-semibold text-[#1F5C4A] underline">
+                <a href={HAMODY_CUSTOMER_SUPPORT_TEL} className="font-semibold text-[#05090D] underline">
                   {formatCustomerSupportPhoneDisplay(HAMODY_CUSTOMER_SUPPORT_PHONE)}
                 </a>
               </p>
-              <p className="text-[#9C6E20] text-sm">
+              <p className="text-[#5E6870] text-sm">
                 We are not a 24/7 desk. Messages sent after hours are answered on the next business day.
               </p>
             </div>
@@ -322,9 +322,9 @@ export default function SupportPage() {
         </div>
 
         {/* FAQ Link */}
-        <div className="text-center py-8 border-t border-[#E9D6B5]">
-          <p className="text-[#9C6E20] mb-4">Still have questions?</p>
-          <Link href="/faq" className="inline-flex items-center gap-2 bg-[#1F5C4A] hover:bg-[#123D33] text-white font-medium px-6 py-3 rounded-lg transition">
+        <div className="text-center py-8 border-t border-[#E2E7E8]">
+          <p className="text-[#5E6870] mb-4">Still have questions?</p>
+          <Link href="/faq" className="inline-flex items-center gap-2 bg-[#C8F404] hover:bg-[#ADD300] text-[#05090D] font-medium px-6 py-3 rounded-lg transition">
             Browse our FAQ
           </Link>
         </div>
