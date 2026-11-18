@@ -72,7 +72,7 @@ const Section4 = ({ sections: initialSections = null, loading: loadingProp = fal
   if (loading) {
     return (
       <div className={HOME_SECTION_CLASS}>
-        <div className={`${HOME_SECTION_GRID_INNER_CLASS} space-y-4 lg:space-y-8`}>
+        <div className={`${HOME_SECTION_GRID_INNER_CLASS} space-y-8`}>
           {Array.from({ length: 2 }).map((_, index) => (
             <HomeSideImageSliderSkeleton key={`section4-skeleton-${index}`} withSideImage={index === 0} />
           ))}
@@ -85,7 +85,7 @@ const Section4 = ({ sections: initialSections = null, loading: loadingProp = fal
 
   return (
     <div className={HOME_SECTION_CLASS}>
-      <div className={`${HOME_SECTION_GRID_INNER_CLASS} space-y-4 lg:space-y-8`}>
+      <div className={`${HOME_SECTION_GRID_INNER_CLASS} space-y-8`}>
         {sections.map((section, sectionIdx) => {
           const isBanner = String(section?.sectionType || '').toLowerCase() === 'banner'
           const key = section._id || section.id || sectionIdx

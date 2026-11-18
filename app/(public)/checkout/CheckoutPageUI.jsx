@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Check, Info, Lock, MapPin, Tag, Truck, Zap, AlertTriangle } from "lucide-react";
+import { Check, Info, MapPin, Truck, AlertTriangle } from "lucide-react";
 import axios from "axios";
 import { countryCodes, UAE_PHONE_CODE, UAE_PHONE_CODE_OPTIONS } from "@/assets/countryCodes";
 import { indiaStatesAndDistricts } from "@/assets/indiaStatesAndDistricts";
@@ -55,11 +55,6 @@ import { getCartProductIdsNeedingVariants, mergeFetchedProducts } from '@/lib/ca
 import { resolveCartLinePricing, resolveMatrixCartMaxPacks, isBulkBundleProduct, isMatrixStyleProduct, findBulkBundleVariant, getBulkBundleTiers } from "@/lib/bulkBundleCart";
 import { decrementCartItem, incrementCartItem } from "@/lib/bundleCartActions";
 import { HAMODY_LOGO_PATH } from "@/lib/brandLogo";
-import {
-  HAMODY_SUPPORT_EMAIL,
-  HAMODY_CUSTOMER_SUPPORT_TEL,
-  formatCustomerSupportPhoneDisplay,
-} from '@/lib/storeContact';
 import {
   rememberPendingCheckoutOrder,
   getPendingCheckoutOrderId,
@@ -121,7 +116,7 @@ function getGuestCountryCode(countryName) {
   return match?.code || '+971';
 }
 
-const CHECKOUT_ORDER_PREVIEW_LIMIT = 4;
+const CHECKOUT_ORDER_PREVIEW_LIMIT = 2;
 const CHECKOUT_ORDER_MOBILE_PREVIEW_LIMIT = 1;
 const CHECKOUT_RETURN_PATH_KEY = 'Hamody_checkout_return_path';
 
@@ -135,10 +130,10 @@ function CheckoutAlertBanner({ alert, className = '' }) {
   return (
     <div
       role="alert"
-      className={`rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950 ${className}`.trim()}
+      className={`rounded-2xl border border-[#E2E7E8] bg-white px-4 py-3 text-[#05090D] ${className}`.trim()}
     >
       <div className="flex items-start gap-3">
-        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[#8D5900]" />
         <div>
           <p className="font-semibold">{alert.title}</p>
           <p className="mt-1 text-sm leading-relaxed">{alert.message}</p>
@@ -924,33 +919,16 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   const showTabbyPayment = isTabbyEnabled && !isTabbyOverLimit;
   const showTamaraPayment = isTamaraEnabled && !isTamaraOverLimit;
   const showCodPayment = !hasPersonalizedOfferItem && isPaymentMethodEnabled(shippingSetting, 'cod');
-  const paymentChoiceClass = 'flex cursor-pointer items-center gap-3 rounded-2xl border border-[#e6e8ee] bg-white px-3.5 py-3.5 transition-colors has-[:checked]:border-[#6f63f6] has-[:checked]:bg-[#f4f1ff] md:rounded-xl md:border-2 md:border-slate-200 md:bg-white md:p-4 md:has-[:checked]:border-slate-900 md:has-[:checked]:bg-slate-50';
-  const paymentRadioClass = 'h-5 w-5 shrink-0 accent-[#6f63f6] md:accent-slate-900';
+  const paymentChoiceClass = 'flex cursor-pointer items-center gap-3 rounded-xl border border-[#E2E7E8] bg-white px-3 py-2.5 transition-colors has-[:checked]:border-[#05090D] has-[:checked]:bg-[#F8FEE6]';
+  const paymentRadioClass = 'h-5 w-5 shrink-0 accent-[#05090D]';
   const isPaymentMissing = needsPaymentSelection && !form.payment;
-  const isInvalidPaymentSelection =
-    form.payment !== 'wallet' && (
-      (form.payment === 'cod' && isCODDisabledForOrder)
-      || (form.payment === 'card' && (!isCardEnabled || isCardOverLimit))
-      || (form.payment === 'vaultspay' && !showVaultsPayPayment)
-      || (form.payment === 'googlepay' && !showVaultsPayGooglePay)
-      || (form.payment === 'applepay' && !showVaultsPayApplePay)
-      || (form.payment === 'tabby' && (!isTabbyEnabled || isTabbyOverLimit))
-      || (form.payment === 'tamara' && (!isTamaraEnabled || isTamaraOverLimit))
-    );
   const isPlaceOrderDisabled = placingOrder || payingNow;
-  const hasCheckoutFormBlockers = isPaymentMissing || isInvalidPaymentSelection;
   const isCheckoutSubmitDisabled = isPlaceOrderDisabled;
-  const placeOrderButtonActiveColors = 'bg-red-600 hover:bg-red-700';
+  const placeOrderButtonActiveColors = 'bg-[#C8F404] text-[#05090D] hover:bg-[#ADD300]';
   const placeOrderButtonColors = isPlaceOrderDisabled
-    ? 'bg-gray-400 cursor-not-allowed opacity-75'
-    : hasCheckoutFormBlockers
-      ? 'bg-amber-600 hover:bg-amber-700'
-      : placeOrderButtonActiveColors;
-  const mobilePlaceOrderButtonColors = isPlaceOrderDisabled
-    ? 'bg-gray-400 cursor-not-allowed opacity-75'
-    : hasCheckoutFormBlockers
-      ? 'bg-amber-600 hover:bg-amber-700'
-      : placeOrderButtonActiveColors;
+    ? 'cursor-not-allowed bg-[#E2E7E8] text-[#5E6870]'
+    : placeOrderButtonActiveColors;
+  const mobilePlaceOrderButtonColors = placeOrderButtonColors;
   const selectedAddressForView = form.addressId ? checkoutAddressList.find((a) => a._id === form.addressId) : null;
   const isLoggedInAreaMissing = Boolean(
     user
@@ -1311,18 +1289,15 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   ]);
 
   const checkoutSelectClass =
-    'w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-left text-sm text-slate-900 outline-none transition focus:border-[#f59e0b] focus:bg-white focus:ring-4 focus:ring-[#fde7c2]';
+    'w-full rounded-lg border border-[#E2E7E8] bg-white px-3 py-2 text-left text-sm text-[#05090D] outline-none transition focus:border-[#05090D] focus:ring-2 focus:ring-[#EFFCC4]';
 
   const guestFieldClass =
-    'w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#f59e0b] focus:bg-white focus:ring-4 focus:ring-[#fde7c2]';
+    'w-full rounded-lg border border-[#E2E7E8] bg-white px-3 py-2 text-sm text-[#05090D] outline-none transition placeholder:text-[#879198] focus:border-[#05090D] focus:ring-2 focus:ring-[#EFFCC4]';
 
-  const guestLabelClass = 'mb-1.5 block text-sm font-semibold text-slate-700';
+  const guestLabelClass = 'mb-1 block text-xs font-semibold text-[#05090D]';
 
   const guestSectionClass =
-    'grid w-full min-w-0 gap-4 rounded-2xl border border-[#f1e4d3] bg-white/88 p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)] sm:gap-5 sm:p-5 md:rounded-[24px] md:p-6 md:shadow-[0_12px_32px_rgba(15,23,42,0.05)]';
-
-  const guestStepBadgeClass =
-    'rounded-full bg-[#fff5db] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#b45309]';
+    'grid w-full min-w-0 gap-3';
 
   const fieldHasError = (fieldId) => invalidFieldIds.has(fieldId);
   const fieldErrorClass = (fieldId) =>
@@ -2437,20 +2412,20 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   if (!canShowCheckoutForm) {
     const cartIsEmpty = checkoutProductsLoaded;
     return (
-      <div className="min-h-[70vh] bg-slate-50 pb-16 pt-6" dir={isArabic ? 'rtl' : 'ltr'}>
+      <div className="min-h-[70vh] bg-[#F8FAFA] pb-16 pt-6" dir={isArabic ? 'rtl' : 'ltr'}>
         <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6">
           <div className="mb-5 flex items-end justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t('checkout.pageTitle')}</h1>
-              <p className="mt-1 text-sm text-slate-500">
+              <h1 className="text-2xl font-bold tracking-tight text-[#05090D]">{t('checkout.pageTitle')}</h1>
+              <p className="mt-1 text-sm text-[#5E6870]">
                 {cartIsEmpty ? t('checkout.cartEmptyDesc') : t('checkout.loadingCart')}
               </p>
             </div>
           </div>
 
           {cartIsEmpty ? (
-            <div className="rounded-2xl border border-slate-200 bg-white px-6 py-14 text-center shadow-sm">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+            <div className="rounded-2xl border border-[#E2E7E8] bg-white px-6 py-14 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F8FAFA] text-[#05090D]">
                 <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
                   <path d="M6 6h15l-1.5 9h-12z" strokeLinejoin="round" />
                   <path d="M6 6 5 3H2" strokeLinecap="round" />
@@ -2462,7 +2437,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
               <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500">{t('checkout.cartEmptyDesc')}</p>
               <Link
                 href="/shop"
-                className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-black"
+                className="mt-6 inline-flex h-11 items-center justify-center rounded-full bg-[#C8F404] px-5 text-sm font-semibold text-[#05090D] transition hover:bg-[#ADD300]"
               >
                 {t('checkout.shopNow')}
               </Link>
@@ -2677,11 +2652,11 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   };
 
   const renderCheckoutOrderItem = (item) => (
-    <div key={item._cartKey || item._id} className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-2 md:gap-3 md:p-3">
-      <img src={item.image || item.images?.[0] || '/placeholder.png'} alt={item.name} className="h-11 w-11 shrink-0 rounded-md border object-cover md:h-14 md:w-14" />
+    <div key={item._cartKey || item._id} className="flex items-center gap-2 rounded-lg border border-[#E2E7E8] bg-[#F8FAFA] px-2 py-2">
+      <img src={item.image || item.images?.[0] || '/placeholder.png'} alt={item.name} className="h-11 w-11 shrink-0 rounded-md border border-[#E2E7E8] object-cover" />
       <div className="flex-1 min-w-0">
-        <div className="truncate text-sm font-semibold text-gray-900 md:text-base">{item.name}</div>
-        <div className="text-xs text-gray-500 truncate">
+        <div className="truncate text-sm font-semibold text-[#05090D]">{item.name}</div>
+        <div className="text-xs text-[#5E6870] truncate">
           {getProductSubtitle(item, {
             variantOptions: item.variantOptions || item._variantOptions,
             quantity: item._isMatrix ? item.quantity : undefined,
@@ -2690,7 +2665,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
         {item._isFreeGift ? (
           <div className="text-xs font-semibold text-green-600">Free gift</div>
         ) : null}
-        <div className="text-xs text-gray-400">{item._isFreeGift ? 'FREE' : formatMoney(item._lineTotal ?? item._cartPrice ?? item.price ?? 0)}</div>
+        <div className="text-xs font-semibold text-[#05090D]">{item._isFreeGift ? 'FREE' : formatMoney(item._lineTotal ?? item._cartPrice ?? item.price ?? 0)}</div>
       </div>
       <div className="flex flex-col items-center gap-1 shrink-0">
         {item._isFreeGift ? (
@@ -2700,7 +2675,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                className="px-2 py-0.5 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 active:bg-gray-400"
+                className="flex h-6 w-6 items-center justify-center rounded-full border border-[#E2E7E8] bg-white text-sm text-[#05090D]"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -2714,7 +2689,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
               </span>
               <button
                 type="button"
-                className="px-2 py-0.5 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 active:bg-gray-400 disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex h-6 w-6 items-center justify-center rounded-full border border-[#E2E7E8] bg-white text-sm text-[#05090D] disabled:cursor-not-allowed disabled:opacity-40"
                 disabled={item._isBulkBundle
                   ? (() => {
                     const tiers = getBulkBundleTiers(item);
@@ -2749,7 +2724,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
             </div>
             <button
               type="button"
-              className="text-xs text-red-500 hover:text-red-700 hover:underline mt-1 active:text-red-800"
+              className="mt-1 text-xs font-semibold text-[#B12F39] hover:underline"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2766,216 +2741,19 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
 
   return (
     <>
-      <div className="bg-white pb-24 pt-0 md:min-h-[35dvh] md:pb-14 md:py-10">
-      <div className="mx-auto hidden w-full max-w-[1400px] px-4 sm:px-6 md:block md:pb-2" dir={isArabic ? 'rtl' : 'ltr'}>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900 md:text-3xl">{t('checkout.pageTitle')}</h1>
-      </div>
-      {activeCheckoutAlert ? (
-        <div className="mx-auto w-full max-w-[1400px] px-4 pb-3 pt-3 sm:px-6 md:pb-4 md:pt-4" dir={isArabic ? 'rtl' : 'ltr'}>
-          <CheckoutAlertBanner alert={activeCheckoutAlert} />
-        </div>
-      ) : null}
-      <div className="mx-auto grid w-full max-w-[1400px] grid-cols-1 gap-0 lg:grid-cols-[minmax(0,1fr)_minmax(280px,400px)] lg:gap-8 lg:px-6" dir={isArabic ? 'rtl' : 'ltr'}>
-        {/* Left column: address, form, payment */}
+      <div className="bg-[#F8FAFA] pb-24 pt-4 md:pb-12 md:pt-8">
+      <div className="mx-auto w-full max-w-[1080px] px-4 sm:px-6" dir={isArabic ? 'rtl' : 'ltr'}>
+        <h1 className="mb-4 text-2xl font-bold tracking-tight text-[#05090D]">{t('checkout.pageTitle')}</h1>
+        {activeCheckoutAlert ? (
+          <div className="mb-4">
+            <CheckoutAlertBanner alert={activeCheckoutAlert} />
+          </div>
+        ) : null}
+      <div className="rounded-[28px] border border-[#E2E7E8] bg-white p-4 shadow-[0_16px_40px_rgba(5,9,13,0.05)] sm:p-6 lg:p-8">
+      <div className="grid w-full grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0">
-          <div className="border-y border-gray-100 bg-white px-4 pb-4 pt-2 md:rounded-xl md:border md:p-8 md:shadow-sm">
-            {/* Cart Items Section */}
-            <div className="mb-4 md:mb-6">
-              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-xl font-bold text-gray-900">{t('checkout.yourOrder')}</h2>
-                {cartArray.length > CHECKOUT_ORDER_MOBILE_PREVIEW_LIMIT ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowAllOrderItemsModal(true)}
-                    className={`rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-700 transition hover:border-[#f59e0b] hover:text-[#b45309] ${
-                      cartArray.length > CHECKOUT_ORDER_PREVIEW_LIMIT ? '' : 'md:hidden'
-                    }`}
-                  >
-                    {t('product.viewAllLink')} ({cartArray.length})
-                  </button>
-                ) : null}
-              </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:gap-4">
-                {checkoutOrderPreviewItems.map((item, index) => (
-                  <div
-                    key={item._cartKey || item._id}
-                    className={index >= CHECKOUT_ORDER_MOBILE_PREVIEW_LIMIT ? 'hidden md:block' : undefined}
-                  >
-                    {renderCheckoutOrderItem(item)}
-                  </div>
-                ))}
-                {checkoutOrderHiddenCount > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowAllOrderItemsModal(true)}
-                    className="hidden min-h-[88px] items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 p-3 text-slate-700 transition hover:border-[#f59e0b] hover:bg-amber-50 hover:text-[#b45309] md:flex"
-                  >
-                    <span className="text-lg font-bold">+{checkoutOrderHiddenCount}</span>
-                  </button>
-                ) : null}
-              </div>
-            </div>
-            {/* Shipping Method Section */}
-            <div className="mb-4 md:mb-6">
-              <div className="relative mb-4 flex items-center gap-2">
-                <h2 className="text-xl font-bold text-gray-900">{t('checkout.deliveryMethod')}</h2>
-                <button
-                  type="button"
-                  className="peer inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 text-[11px] font-semibold text-slate-500 transition hover:border-slate-900 hover:text-slate-900"
-                  aria-label={t('checkout.freeDeliveryNote')}
-                >
-                  ?
-                </button>
-                <span
-                  role="tooltip"
-                  className="pointer-events-none absolute start-0 top-full z-30 mt-2 hidden w-[min(20rem,calc(100vw-2rem))] whitespace-normal break-words rounded-xl bg-slate-900 px-3 py-2 text-start text-xs font-normal leading-relaxed text-white shadow-lg peer-hover:block peer-focus:block"
-                >
-                  {t('checkout.freeDeliveryNote')}
-                </span>
-              </div>
-              <div className="space-y-3">
-                {pickupAvailable ? (
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={() => setFulfillmentChoice('delivery')}
-                      className={`rounded-xl border-2 p-4 text-left transition-colors ${
-                        !isCustomerPickup
-                          ? 'border-slate-900 bg-slate-50'
-                          : 'border-slate-200 bg-white hover:border-slate-400'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-                          <Truck className="h-5 w-5" strokeWidth={2} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <span className="font-semibold text-slate-900">{t('checkout.deliverToYou')}</span>
-                          <p className="mt-0.5 text-sm text-slate-500">{t('checkout.deliverToYouHint')}</p>
-                        </div>
-                        <span className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
-                          !isCustomerPickup ? 'border-slate-900 bg-slate-900' : 'border-slate-300 bg-white'
-                        }`}>
-                          {!isCustomerPickup ? <Check className="h-3 w-3 text-white" strokeWidth={3} /> : null}
-                        </span>
-                      </div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFulfillmentChoice('pickup')}
-                      className={`rounded-xl border-2 p-4 text-left transition-colors ${
-                        isCustomerPickup
-                          ? 'border-amber-600 bg-amber-50'
-                          : 'border-slate-200 bg-white hover:border-slate-400'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-                          <MapPin className="h-5 w-5" strokeWidth={2} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <span className="font-semibold text-slate-900">{t('checkout.storePickup')}</span>
-                          <p className="mt-0.5 text-sm text-slate-500">{t('checkout.storePickupHint')}</p>
-                        </div>
-                        <span className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
-                          isCustomerPickup ? 'border-amber-600 bg-amber-600' : 'border-slate-300 bg-white'
-                        }`}>
-                          {isCustomerPickup ? <Check className="h-3 w-3 text-white" strokeWidth={3} /> : null}
-                        </span>
-                      </div>
-                    </button>
-                  </div>
-                ) : null}
-                {isCustomerPickup ? (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">{t('checkout.pickupAddressLabel')}</p>
-                    <p className="mt-2 text-base font-semibold leading-relaxed text-slate-900">{CUSTOMER_PICKUP_ADDRESS.line}</p>
-                    <p className="mt-1 text-sm text-slate-600">{t('checkout.pickupCollect')}</p>
-                    <button
-                      type="button"
-                      onClick={() => setShowPickupMap(true)}
-                      className="mt-3 inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black"
-                    >
-                      <MapPin className="h-4 w-4" />
-                      {t('checkout.viewLocation')}
-                    </button>
-                  </div>
-                ) : null}
-                {!isCustomerPickup && availableShippingOptions.map((option) => {
-                  const optionFee = calculateShipping({
-                    cartItems: cartArray,
-                    shippingSetting,
-                    shippingOption: option,
-                    paymentMethod: form.payment === 'cod' ? 'COD' : 'CARD',
-                    shippingState: form.state,
-                    includeCODFee: false,
-                  });
-                  const optionDays = formatDeliveryDays(option.estimatedDays, '3-5');
-                  const isSelected = shippingMethod === option.id;
-                  const isExpressLike = /express/i.test(option?.name || '');
-
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => setShippingMethod(option.id)}
-                      className={`w-full rounded-2xl border px-2.5 py-2 text-left transition-colors md:rounded-xl md:border-2 md:p-4 ${
-                        isSelected
-                          ? 'border-[#c4b8fd] bg-[#f5f3ff] md:border-slate-900 md:bg-slate-50'
-                          : 'border-slate-200 bg-white hover:border-slate-400'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 md:gap-4">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 md:h-11 md:w-11 md:rounded-xl">
-                          {isExpressLike ? (
-                            <Zap className="h-4 w-4 md:h-5 md:w-5" strokeWidth={2} />
-                          ) : (
-                            <Truck className="h-4 w-4 md:h-5 md:w-5" strokeWidth={2} />
-                          )}
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <span className="text-sm font-semibold text-slate-900 md:text-base">{option?.name || 'Delivery'}</span>
-                          <p className="text-[11px] leading-4 text-slate-500 md:mt-0.5 md:text-sm">
-                            {t('checkout.deliveredIn', { days: optionDays })}
-                          </p>
-                        </div>
-
-                        <div className="flex shrink-0 items-center gap-2 md:gap-3">
-                          <span className="text-xs font-semibold text-slate-900 md:text-sm">
-                            {optionFee === 0 ? t('cart.free') : formatMoney(optionFee)}
-                          </span>
-                          <span className={`flex h-4 w-4 items-center justify-center rounded-full border-2 md:h-5 md:w-5 ${
-                            isSelected ? 'border-[#a78bfa] bg-[#a78bfa] md:border-slate-900 md:bg-slate-900' : 'border-slate-300 bg-white'
-                          }`}>
-                            {isSelected ? <Check className="h-2.5 w-2.5 text-white md:h-3 md:w-3" strokeWidth={3} /> : null}
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-                {!isCustomerPickup && !availableShippingOptions.length ? (
-                  <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                    No delivery options are available for the selected location.
-                  </p>
-                ) : null}
-              </div>
-              
-              {/* State-wise charge note */}
-              {!isCustomerPickup && form.state && shippingSetting?.stateCharges && Array.isArray(shippingSetting.stateCharges) && (() => {
-                const stateCharge = shippingSetting.stateCharges.find(
-                  (entry) => String(entry?.state || '').trim().toLowerCase() === String(form.state || '').trim().toLowerCase()
-                );
-                return stateCharge ? (
-                  <div className="text-xs text-slate-600 mt-2">
-                    ℹ️ <span className="font-medium">Shipping charge for {form.state}:</span> {formatMoney(stateCharge.fee)} (varies by state)
-                  </div>
-                ) : null;
-              })()}
-            </div>
             {/* Shipping Details Section */}
-            <form id="checkout-form" onSubmit={handleSubmit} className="flex flex-col gap-0">
+            <form id="checkout-form" onSubmit={handleSubmit} className="flex flex-col gap-6">
               {formError && !isRateLimitError && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start gap-3">
                   <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -2988,29 +2766,8 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                 </div>
               )}
               
-              {/* Guest Checkout Notice */}
-              {!user && (
-                <div className="mb-4 overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 shadow-sm">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="font-bold text-blue-950 mb-1">{t('checkout.checkoutAsGuest')}</h3>
-                      <p className="text-sm text-blue-800/90">{t('checkout.guestSubtitle')}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowSignIn(true)}
-                      className="shrink-0 rounded-full border border-blue-200 bg-white px-3 py-1.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
-                    >
-                      {t('checkout.signInInstead')}
-                    </button>
-                  </div>
-                </div>
-              )}
-              
-              {!isCustomerPickup && !user ? (
-                <p className="mb-4 text-sm text-slate-600">{t('checkout.shippingDetails')}</p>
-              ) : !isCustomerPickup ? (
-                <h2 className="mb-2 mt-1 text-lg font-bold text-gray-900 md:mb-3 md:text-xl">{t('checkout.shippingDetails')}</h2>
+              {!isCustomerPickup && user ? (
+                <h2 className="text-base font-bold text-[#05090D]">{t('checkout.shippingDetails')}</h2>
               ) : null}
               {/* ...existing code for address/guest form... */}
               {/* Show address fetch error if present */}
@@ -3073,7 +2830,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                           className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-gray-50 md:gap-3 md:px-4 md:py-3.5"
                           onClick={() => setShowAddressModal(true)}
                         >
-                          <svg className="h-5 w-5 shrink-0 text-yellow-500" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <svg className="h-5 w-5 shrink-0 text-[#05090D]" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                           </svg>
                           <span className="min-w-0 flex-1">
@@ -3081,7 +2838,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                               <span className="truncate text-sm font-semibold text-gray-900">
                                 {t('checkout.deliverTo')} {selectedAddress.name?.toUpperCase() || 'HOME'}
                               </span>
-                              <span className="shrink-0 text-[11px] font-semibold text-blue-600 md:text-xs">
+                              <span className="shrink-0 text-[11px] font-semibold text-[#05090D] underline decoration-[#C8F404] underline-offset-2 md:text-xs">
                                 {t('checkout.switchAddress')}
                               </span>
                             </span>
@@ -3101,7 +2858,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                         className="px-4 py-4 cursor-pointer hover:bg-gray-50 transition-colors"
                         onClick={() => setShowAddressModal(true)}
                       >
-                        <div className="flex items-center justify-center gap-2 text-blue-600 font-medium">
+                        <div className="flex items-center justify-center gap-2 font-medium text-[#05090D]">
                           <span className="text-xl">+</span>
                           <span>{t('checkout.selectDeliveryAddress')}</span>
                         </div>
@@ -3161,7 +2918,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
               ) : (!isCustomerPickup && checkoutAddressList.length === 0 && user) ? (
                 <button 
                   type="button"
-                  className="w-full border-2 border-dashed border-blue-400 rounded-lg p-4 text-blue-600 font-semibold hover:bg-blue-50 transition"
+                  className="w-full rounded-2xl border border-dashed border-[#05090D] p-4 font-semibold text-[#05090D] transition hover:bg-[#F8FEE6]"
                   onClick={() => {
                     setEditingAddressId(null);
                     setShowAddressModal(true);
@@ -3170,17 +2927,17 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                   <span className="text-xl">+</span> Add Delivery Address
                 </button>
               ) : (!user) ? (
-                <div className="grid w-full min-w-0 gap-5">
+                <div className="grid w-full min-w-0 gap-4">
                   <div className={guestSectionClass}>
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <h3 className="text-base font-bold text-slate-900">{t('checkout.contactDetails')}</h3>
-                        <p className="mt-1 text-sm text-slate-500">{t('checkout.contactDetailsHint')}</p>
-                      </div>
-                      <span className={guestStepBadgeClass}>Step 1</span>
-                    </div>
+                    <h3 className="text-base font-bold text-[#05090D]">{t('checkout.contactDetails')}</h3>
+                    <p className="text-sm leading-relaxed text-[#5E6870]">
+                      {t('checkout.guestSubtitle')}{' '}
+                      <button type="button" onClick={() => setShowSignIn(true)} className="font-semibold text-[#05090D] underline">
+                        {t('checkout.signInInstead')}
+                      </button>
+                    </p>
 
-                    <div className="grid gap-5 sm:grid-cols-2">
+                    <div className="grid gap-3 sm:grid-cols-2">
                       <div className="min-w-0">
                         <label htmlFor="guest-name" className={guestLabelClass}>{t('checkout.fullName')}</label>
                         <input
@@ -3223,7 +2980,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                         }}
                         onPhoneCodeChange={handleChange}
                         countryOptions={UAE_PHONE_CODE_OPTIONS}
-                        inputClassName={`flex-1 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#f59e0b] focus:bg-white focus:ring-4 focus:ring-[#fde7c2] ${fieldErrorClass('guest-phone')}`}
+                        inputClassName={`flex-1 rounded-lg border border-[#E2E7E8] bg-white px-3 py-2 text-sm text-[#05090D] outline-none transition placeholder:text-[#879198] focus:border-[#05090D] focus:ring-2 focus:ring-[#EFFCC4] ${fieldErrorClass('guest-phone')}`}
                       />
                       {fieldRequiredHint('guest-phone')}
                     </div>
@@ -3231,15 +2988,9 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
 
                   {!isCustomerPickup ? (
                   <div className={guestSectionClass}>
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <h3 className="text-base font-bold text-slate-900">{t('checkout.deliveryAddress')}</h3>
-                        <p className="mt-1 text-sm text-slate-500">{t('checkout.deliveryAddressHint')}</p>
-                      </div>
-                      <span className={guestStepBadgeClass}>Step 2</span>
-                    </div>
+                    <h3 className="text-base font-bold text-[#05090D]">{t('checkout.shippingDetails')}</h3>
 
-                    <div className={`grid min-w-0 gap-5 ${isUaeCountry(form.country) && form.state ? 'sm:grid-cols-2' : ''}`}>
+                    <div className={`grid min-w-0 gap-3 ${isUaeCountry(form.country) && form.state ? 'sm:grid-cols-2' : ''}`}>
                       <div id="guest-state" className="min-w-0">
                         <label className={guestLabelClass}>
                           {isUaeCountry(form.country) ? t('checkout.selectEmirate') : t('checkout.emirateState')}
@@ -3333,7 +3084,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                           />
                           {fieldRequiredHint('guest-building')}
                         </div>
-                        <div className="min-w-0 sm:col-span-2">
+                        <div className="min-w-0">
                           <label htmlFor="guest-apartment" className={guestLabelClass}>{t('checkout.apartmentFloor')}</label>
                           <input
                             id="guest-apartment"
@@ -3364,7 +3115,6 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                           {fieldRequiredHint('guest-street')}
                         </div>
                       </div>
-                      <p className="mt-2 text-xs text-slate-500">{t('checkout.streetHint')}</p>
                     </div>
 
                     {form.country === 'India' && form.state ? (
@@ -3417,26 +3167,136 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                       </div>
                     ) : null}
 
-                    <div id="guest-country" className="min-w-0">
-                      <label className={guestLabelClass}>{t('checkout.country')}</label>
-                      <input
-                        type="text"
-                        value="United Arab Emirates"
-                        readOnly
-                        aria-readonly="true"
-                        className="w-full cursor-default rounded-xl border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm text-slate-700 outline-none"
-                      />
-                    </div>
+                    <p id="guest-country" className="text-xs text-[#5E6870]">{t('checkout.country')}: United Arab Emirates</p>
                   </div>
                   ) : null}
                 </div>
               ) : null}
-              <div className="mb-3 mt-4 md:mb-3">
-                <h2 className="text-[22px] font-bold tracking-tight text-gray-950 md:text-xl">{t('checkout.paymentMethods')}</h2>
-                <p className="mt-1.5 flex items-center gap-1.5 text-sm text-slate-500 md:hidden">
-                  <Lock size={14} strokeWidth={2} />
-                  {t('checkout.secureCheckout')}
-                </p>
+              <h2 className="text-base font-bold text-[#05090D]">{t('checkout.deliveryMethod')}</h2>
+              <div className="space-y-3">
+                {pickupAvailable ? (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => setFulfillmentChoice('delivery')}
+                      className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${
+                        !isCustomerPickup
+                          ? 'border-[#05090D] bg-[#F8FEE6]'
+                          : 'border-[#E2E7E8] bg-white hover:border-[#05090D]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F8FAFA] text-[#05090D]">
+                          <Truck className="h-5 w-5" strokeWidth={2} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="font-semibold text-slate-900">{t('checkout.deliverToYou')}</span>
+                          <p className="mt-0.5 text-sm text-slate-500">{t('checkout.deliverToYouHint')}</p>
+                        </div>
+                        <span className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
+                          !isCustomerPickup ? 'border-[#05090D] bg-[#C8F404]' : 'border-[#E2E7E8] bg-white'
+                        }`}>
+                          {!isCustomerPickup ? <Check className="h-3 w-3 text-[#05090D]" strokeWidth={3} /> : null}
+                        </span>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFulfillmentChoice('pickup')}
+                      className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${
+                        isCustomerPickup
+                          ? 'border-[#05090D] bg-[#F8FEE6]'
+                          : 'border-[#E2E7E8] bg-white hover:border-[#05090D]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F8FAFA] text-[#05090D]">
+                          <MapPin className="h-5 w-5" strokeWidth={2} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="font-semibold text-slate-900">{t('checkout.storePickup')}</span>
+                          <p className="mt-0.5 text-sm text-slate-500">{t('checkout.storePickupHint')}</p>
+                        </div>
+                        <span className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
+                          isCustomerPickup ? 'border-[#05090D] bg-[#C8F404]' : 'border-[#E2E7E8] bg-white'
+                        }`}>
+                          {isCustomerPickup ? <Check className="h-3 w-3 text-[#05090D]" strokeWidth={3} /> : null}
+                        </span>
+                      </div>
+                    </button>
+                  </div>
+                ) : null}
+                {isCustomerPickup ? (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">{t('checkout.pickupAddressLabel')}</p>
+                    <p className="mt-2 text-base font-semibold leading-relaxed text-slate-900">{CUSTOMER_PICKUP_ADDRESS.line}</p>
+                    <p className="mt-1 text-sm text-slate-600">{t('checkout.pickupCollect')}</p>
+                    <button
+                      type="button"
+                      onClick={() => setShowPickupMap(true)}
+                      className="mt-3 inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      {t('checkout.viewLocation')}
+                    </button>
+                  </div>
+                ) : null}
+                {!isCustomerPickup && availableShippingOptions.map((option) => {
+                  const optionFee = calculateShipping({
+                    cartItems: cartArray,
+                    shippingSetting,
+                    shippingOption: option,
+                    paymentMethod: form.payment === 'cod' ? 'COD' : 'CARD',
+                    shippingState: form.state,
+                    includeCODFee: false,
+                  });
+                  const optionDays = formatDeliveryDays(option.estimatedDays, '3-5');
+                  const isSelected = shippingMethod === option.id;
+
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setShippingMethod(option.id)}
+                      className={`w-full rounded-xl border px-3 py-2 text-left transition-colors ${
+                        isSelected
+                          ? 'border-[#05090D] bg-[#F8FEE6]'
+                          : 'border-[#E2E7E8] bg-white hover:border-[#05090D]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <span className="text-sm font-semibold text-[#05090D]">{option?.name || 'Delivery'}</span>
+                          <p className="text-xs text-[#5E6870]">{t('checkout.deliveredIn', { days: optionDays })}</p>
+                        </div>
+                        <span className="shrink-0 text-sm font-semibold text-[#05090D]">
+                          {optionFee === 0 ? t('cart.free') : formatMoney(optionFee)}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+                {!isCustomerPickup && !availableShippingOptions.length ? (
+                  <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    No delivery options are available for the selected location.
+                  </p>
+                ) : null}
+              </div>
+              
+              {/* State-wise charge note */}
+              {!isCustomerPickup && form.state && shippingSetting?.stateCharges && Array.isArray(shippingSetting.stateCharges) && (() => {
+                const stateCharge = shippingSetting.stateCharges.find(
+                  (entry) => String(entry?.state || '').trim().toLowerCase() === String(form.state || '').trim().toLowerCase()
+                );
+                return stateCharge ? (
+                  <div className="text-xs text-slate-600 mt-2">
+                    ℹ️ <span className="font-medium">Shipping charge for {form.state}:</span> {formatMoney(stateCharge.fee)} (varies by state)
+                  </div>
+                ) : null;
+              })()}
+              <div>
+                <h2 className="text-base font-bold text-[#05090D]">{t('checkout.paymentMethods')}</h2>
+                <p className="mt-1 text-sm text-[#5E6870]">{t('checkout.paymentEncrypted')}</p>
               </div>
               {fieldRequiredHint('checkout-payment')}
 
@@ -3470,7 +3330,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                   <p className="mt-1 text-sm text-emerald-800">{t('checkout.walletCoversOrder')}</p>
                 </div>
               ) : (
-              <div id="checkout-payment" className={`mb-2 flex flex-col gap-3 md:mb-4 md:gap-2 ${fieldHasError('checkout-payment') ? 'rounded-2xl ring-2 ring-red-100' : ''}`}>
+              <div id="checkout-payment" className={`flex flex-col gap-2 ${fieldHasError('checkout-payment') ? 'rounded-xl ring-2 ring-red-100' : ''}`}>
                 {/* Credit Card Option */}
                 {showCardPayment ? (
                 <label className={paymentChoiceClass}>
@@ -3566,10 +3426,10 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                     (maxCODAmount > 0 && remainingAmount > maxCODAmount);
 
                   return (
-                    <div className={`flex items-center gap-3 rounded-2xl border px-3.5 py-3.5 transition-colors md:rounded-xl md:border-2 md:p-4 ${
+                    <div className={`flex items-center gap-3 rounded-2xl border px-3.5 py-3.5 transition-colors md:p-4 ${
                       isCODDisabled
-                        ? 'cursor-not-allowed border-gray-300 bg-gray-50 opacity-50'
-                        : 'cursor-pointer border-[#e6e8ee] bg-white has-[:checked]:border-[#6f63f6] has-[:checked]:bg-[#f4f1ff] md:border-slate-200 md:has-[:checked]:border-slate-900 md:has-[:checked]:bg-slate-50'
+                        ? 'cursor-not-allowed border-[#E2E7E8] bg-[#F8FAFA] opacity-50'
+                        : 'cursor-pointer border-[#E2E7E8] bg-white has-[:checked]:border-[#05090D] has-[:checked]:bg-[#F8FEE6]'
                     }`}>
                       <input
                         type="radio"
@@ -3653,23 +3513,9 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                       </div>
                       {form.payment === 'tamara' ? (
                       <>
-                      <div className="ml-6 mt-1 md:ml-8">
-                        <p className="text-sm text-[#F75B94]">
-                          Pay <span className="text-base font-bold">{formatMoneyFixed(tamaraInstalment)}</span> today
-                        </p>
-                        <p className="text-xs text-gray-500">and the rest in 3 interest-free payments</p>
+                      <div className="mt-2 text-sm text-[#F75B94]">
+                        Pay <span className="font-bold">{formatMoneyFixed(tamaraInstalment)}</span> today, then 3 interest-free payments.
                       </div>
-                      {totalAfterWallet > 0 && (
-                        <div className="ml-6 mt-2 grid grid-cols-4 gap-1.5 md:ml-8 md:mt-3 md:gap-2">
-                          {['Today', 'In 1 month', 'In 2 months', 'In 3 months'].map((label) => (
-                            <div key={label} className="flex flex-col items-center bg-white border border-gray-200 rounded-md pt-2 pb-1 px-1 text-center">
-                              <span className="text-xs font-bold text-gray-900">{formatMoneyFixed(tamaraInstalment)}</span>
-                              <span className="text-[10px] text-gray-500 mt-0.5 leading-tight">{label}</span>
-                              <div className="mt-1.5 h-[3px] w-full rounded-full bg-gradient-to-r from-[#f075a3] to-[#fbb6ce]" />
-                            </div>
-                          ))}
-                        </div>
-                      )}
                       </>
                       ) : null}
                     </label>
@@ -3703,23 +3549,9 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                       </div>
                       {form.payment === 'tabby' ? (
                       <>
-                      <div className="ml-6 mt-1 md:ml-8">
-                        <p className="text-sm text-[#2E9E88]">
-                          Pay <span className="text-base font-bold">{formatMoneyFixed(tabbyInstalment)}</span> today
-                        </p>
-                        <p className="text-xs text-gray-500">and the rest in 3 interest-free payments</p>
+                      <div className="mt-2 text-sm text-[#2E9E88]">
+                        Pay <span className="font-bold">{formatMoneyFixed(tabbyInstalment)}</span> today, then 3 interest-free payments.
                       </div>
-                      {totalAfterWallet > 0 && (
-                        <div className="ml-6 mt-2 grid grid-cols-4 gap-1.5 md:ml-8 md:mt-3 md:gap-2">
-                          {['Today', 'In 1 month', 'In 2 months', 'In 3 months'].map((label) => (
-                            <div key={label} className="flex flex-col items-center bg-white border border-gray-200 rounded-md pt-2 pb-1 px-1 text-center">
-                              <span className="text-xs font-bold text-gray-900">{formatMoneyFixed(tabbyInstalment)}</span>
-                              <span className="text-[10px] text-gray-500 mt-0.5 leading-tight">{label}</span>
-                              <div className="mt-1.5 h-[3px] w-full rounded-full bg-gradient-to-r from-[#3DBEA3] to-[#a7e8de]" />
-                            </div>
-                          ))}
-                        </div>
-                      )}
                       </>
                       ) : null}
                       {form.payment === 'tabby' && (
@@ -3728,83 +3560,73 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                     </label>
                   );
                 })() : null}
-                <p className="flex items-center gap-1.5 px-0.5 pt-1 text-xs text-slate-500 md:hidden">
-                  <Lock size={13} strokeWidth={2} />
-                  {t('checkout.paymentEncrypted')}
-                </p>
               </div>
               )}
 
               {hasPersonalizedOfferItem && (
-                <div className="mb-4 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <div className="rounded-xl border border-[#E2E7E8] bg-[#F8FAFA] p-3 text-sm text-[#8D5900]">
                   COD is not available for personalized offer products. Please use online payment.
                 </div>
               )}
-              
-              {!user && !hasPersonalizedOfferItem && (
-                <div className="mt-4 mb-8 text-sm text-gray-600 bg-green-50 border border-green-200 rounded-lg p-3">
-                  <span className="font-semibold text-green-900">✓ Guest Checkout Available:</span> You can place COD orders without creating an account. Your order will be processed instantly!
-                </div>
-              )}
+              <button
+                type="submit"
+                onClick={handlePlaceOrderClick}
+                className={`hidden w-full items-center justify-center rounded-full py-3.5 text-base font-semibold transition md:flex ${placeOrderButtonColors}`}
+                disabled={isCheckoutSubmitDisabled}
+                aria-busy={placingOrder}
+              >
+                {placingOrder ? renderPlacingOrderLabel() : renderPlaceOrderButtonContent()}
+              </button>
             </form>
-          </div>
         </div>
         {/* Right column: discount input, order summary and place order button */}
-        <div className="flex h-fit min-w-0 flex-col border-t border-slate-200 bg-white px-4 pb-4 pt-4 sm:px-6 lg:rounded-xl lg:border-2 lg:border-slate-200 lg:p-8">
-          <div className="mb-4 pb-4 border-b border-slate-100">
-            <h2 className="text-lg font-bold text-slate-900">{t('checkout.orderSummary')}</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              {t('checkout.itemCount', { count: cartItemCount })} · {formatMoney(subtotal)}
-            </p>
+        <aside className="h-fit rounded-2xl bg-[#F8FAFA] p-4 lg:sticky lg:top-24">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="text-base font-bold text-[#05090D]">{t('checkout.orderSummary')}</h2>
+            <Link href="/cart" className="text-sm font-semibold text-[#05090D] underline">{isArabic ? 'تعديل السلة' : 'Edit cart'}</Link>
+          </div>
+          <div className="mb-4 space-y-3">
+            {cartArray.slice(0, 3).map((item) => (
+              <div key={item._cartKey || item._id} className="flex items-center gap-3">
+                <img src={item.image || item.images?.[0] || '/placeholder.png'} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-[#05090D]">{item.name}</p>
+                  <p className="text-xs text-[#5E6870]">Qty {item._displayQuantity ?? item.quantity}</p>
+                </div>
+                <p className="shrink-0 text-sm font-semibold text-[#05090D]">{item._isFreeGift ? 'FREE' : formatMoney(item._lineTotal ?? item._cartPrice ?? item.price ?? 0)}</p>
+              </div>
+            ))}
+            {cartArray.length > 3 ? (
+              <button type="button" onClick={() => setShowAllOrderItemsModal(true)} className="text-sm font-semibold text-[#05090D] underline">
+                +{cartArray.length - 3} more
+              </button>
+            ) : null}
           </div>
 
           {!appliedCoupon ? (
-            <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <div className="mb-2 flex items-center gap-2">
-                <Tag size={16} className="text-slate-500" />
-                <span className="text-sm font-semibold text-slate-800">{t('checkout.applyCoupon')}</span>
-              </div>
-              <form onSubmit={handleApplyCoupon} className="flex flex-col gap-2 min-[420px]:flex-row">
-                <input
-                  type="text"
-                  value={coupon}
-                  onChange={(e) => {
-                    setCoupon(e.target.value);
-                    if (couponError) setCouponError('');
-                  }}
-                  placeholder="Enter coupon code"
-                  className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
-                />
-                <button
-                  type="submit"
-                  disabled={couponLoading || !isCouponAllowedPayment(form.payment)}
-                  className="shrink-0 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {couponLoading ? '...' : 'Apply'}
-                </button>
-              </form>
-              {couponError ? (
-                <p className="mt-2 text-xs text-red-600">{couponError}</p>
-              ) : null}
-              {form.payment && !isCouponAllowedPayment(form.payment) ? (
-                <p className="mt-2 text-xs text-amber-700">
-                  Coupons are available for <strong>Card</strong> and <strong>Cash on Delivery</strong> only.
-                </p>
-              ) : !form.payment ? (
-                <p className="mt-2 text-xs text-amber-700">
-                  Select <strong>Card</strong> or <strong>Cash on Delivery</strong> to use a coupon.
-                </p>
-              ) : null}
-              {availableCoupons.length > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => setShowCouponModal(true)}
-                  className="mt-2 text-xs font-semibold text-orange-600 hover:text-orange-700"
-                >
-                  View {availableCoupons.length} available coupon{availableCoupons.length === 1 ? '' : 's'}
-                </button>
-              ) : null}
-            </div>
+            <form onSubmit={handleApplyCoupon} className="mb-4 flex gap-2">
+              <input
+                type="text"
+                value={coupon}
+                onChange={(e) => {
+                  setCoupon(e.target.value);
+                  if (couponError) setCouponError('');
+                }}
+                placeholder="Enter coupon"
+                className="min-w-0 flex-1 rounded-lg border border-[#E2E7E8] bg-white px-3 py-2 text-sm text-[#05090D] outline-none focus:border-[#05090D]"
+              />
+              <button
+                type="submit"
+                disabled={couponLoading || !isCouponAllowedPayment(form.payment)}
+                className="shrink-0 rounded-lg border border-[#E2E7E8] bg-white px-3 py-2 text-sm font-semibold text-[#05090D] disabled:opacity-50"
+              >
+                {couponLoading ? '...' : 'Apply'}
+              </button>
+            </form>
+          ) : null}
+          {couponError ? <p className="mb-3 text-xs text-[#B12F39]">{couponError}</p> : null}
+          {form.payment && !isCouponAllowedPayment(form.payment) ? (
+            <p className="mb-3 text-xs text-[#5E6870]">Coupons work with card or cash on delivery.</p>
           ) : null}
 
           {/* Price breakdown */}
@@ -3838,10 +3660,10 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                   {isFreeShippingCouponApplied && shipping > 0 ? (
                     <>
                       <span className="block text-xs text-slate-400 line-through">{formatMoney(shipping)}</span>
-                      <span className="font-semibold text-emerald-600">{t('cart.free')}</span>
+                    <span className="font-semibold text-[#217A4D]">{t('cart.free')}</span>
                     </>
                   ) : (
-                    <span className={`font-semibold ${effectiveShipping === 0 ? 'text-emerald-600' : 'text-slate-900'}`}>
+                    <span className={`font-semibold ${effectiveShipping === 0 ? 'text-[#217A4D]' : 'text-[#05090D]'}`}>
                       {effectiveShipping === 0 ? t('cart.free') : formatMoney(effectiveShipping)}
                     </span>
                   )}
@@ -3896,10 +3718,10 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
             </div>
           )}
 
-            <div className="mb-1 rounded-lg border border-emerald-200 bg-white px-3 py-3">
+            <div className="mb-1 rounded-xl bg-[#F8FAFA] px-3 py-3">
             <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-              <span className="text-base font-bold text-slate-900">{t('checkout.totalToPay')}</span>
-              <span className="text-[clamp(18px,4.5vw,24px)] font-bold tabular-nums text-slate-900">{formatMoney(totalAfterWallet)}</span>
+              <span className="text-base font-bold text-[#05090D]">{t('checkout.totalToPay')}</span>
+              <span className="text-[clamp(18px,4.5vw,24px)] font-bold tabular-nums text-[#05090D]">{formatMoney(totalAfterWallet)}</span>
             </div>
             <p className="mt-1 text-xs text-slate-500">{t('checkout.inclVat')}</p>
           </div>
@@ -3919,13 +3741,13 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
             type="submit"
             form="checkout-form"
             onClick={handlePlaceOrderClick}
-            className={`mt-4 hidden md:flex relative w-full items-center justify-center text-white py-3.5 rounded-lg text-base transition shadow-md hover:shadow-lg ${placeOrderButtonColors} ${placingOrder ? 'animate-bounce' : ''}`}
+            className="hidden"
             disabled={isCheckoutSubmitDisabled}
             aria-busy={placingOrder}
           >
             {placingOrder ? (
               <span className="inline-flex items-center gap-2">
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin h-5 w-5 text-[#05090D]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                 </svg>
@@ -3940,83 +3762,11 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
               </span>
             )}
           </button>
-          
-          {/* Safe & Secure Checkout */}
-          <div className="mt-6 border-t border-slate-200 pt-6">
-            <div className="flex items-center gap-2 mb-4">
-              <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <h3 className="font-semibold text-gray-900">{t('checkout.safeCheckout')}</h3>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="flex items-start gap-2">
-                <svg className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                <span className="text-xs text-gray-700">{t('checkout.sslEncrypted')}</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <svg className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                <span className="text-xs text-gray-700">{t('checkout.secureTransactions')}</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <svg className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                <span className="text-xs text-gray-700">{t('checkout.dataProtected')}</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <svg className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                <span className="text-xs text-gray-700">{t('checkout.easyReturns')}</span>
-              </div>
-            </div>
-            
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 mb-4">
-              <div className="flex items-start gap-2">
-                <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                </svg>
-                <div>
-                  <p className="text-sm font-semibold text-emerald-900">{t('checkout.protectPayment')}</p>
-                  <p className="text-xs text-emerald-800 mt-1">{t('checkout.protectPaymentDesc')}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="mb-3 text-xs text-gray-600">
-              <p>
-                {t('checkout.customerSupport', {
-                  phone: formatCustomerSupportPhoneDisplay(HAMODY_CUSTOMER_SUPPORT_TEL),
-                  email: HAMODY_SUPPORT_EMAIL,
-                })}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
-              
-              <span className="text-gray-300">•</span>
-              <a href="/terms-and-conditions" className="text-gray-600 hover:text-gray-900 hover:underline">{t('checkout.termsOfUse')}</a>
-              <span className="text-gray-300">•</span>
-              <a href="/terms-of-sale" className="text-gray-600 hover:text-gray-900 hover:underline">{t('checkout.termsOfSale')}</a>
-              <span className="text-gray-300">•</span>
-              <a href="/shipping-policy" className="text-gray-600 hover:text-gray-900 hover:underline">{t('checkout.shippingPolicy')}</a>
-              <span className="text-gray-300">•</span>
-              <a href="/return-policy" className="text-gray-600 hover:text-gray-900 hover:underline">{t('checkout.returnPolicy')}</a>
-              <span className="text-gray-300">•</span>
-              <a href="/privacy-policy" className="text-gray-600 hover:text-gray-900 hover:underline">{t('checkout.privacyPolicy')}</a>
-            </div>
-          </div>
-        </div>
+        </aside>
       </div>
 
       {/* Sticky Footer - Only Total and Place Order on Mobile */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white p-3 shadow-lg md:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#E2E7E8] bg-white p-3 md:hidden">
         <div className="mx-auto max-w-6xl">
           {sidebarPayError ? (
             <p
@@ -4034,14 +3784,14 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
             type="submit"
             form="checkout-form"
             onClick={handlePlaceOrderClick}
-            className={`relative w-full text-white py-4 rounded-lg text-base transition shadow-md hover:shadow-lg flex items-center justify-between px-6 ${mobilePlaceOrderButtonColors} ${placingOrder ? 'animate-bounce' : ''}`}
+            className={`relative flex w-full items-center justify-between rounded-full px-6 py-4 text-base font-semibold transition ${mobilePlaceOrderButtonColors} ${placingOrder ? 'animate-bounce' : ''}`}
             disabled={isCheckoutSubmitDisabled}
             aria-busy={placingOrder}
           >
             <span className="text-lg font-bold">{formatMoney(totalAfterWallet)}</span>
             {placingOrder ? (
               <span className="inline-flex items-center gap-2">
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin h-5 w-5 text-[#05090D]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                 </svg>
@@ -4059,6 +3809,8 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
             )}
           </button>
         </div>
+      </div>
+      </div>
       </div>
       </div>
 

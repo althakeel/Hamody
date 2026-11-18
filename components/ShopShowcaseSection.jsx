@@ -824,7 +824,7 @@ export default function ShopShowcaseSection({
     <div className={`${HOME_SECTION_CLASS} overflow-visible`} style={{ overflow: 'visible' }}>
       {fullWidthBanner || lowerFullWidthBanner ? (
         <div
-          className="relative mx-auto mb-3 w-full max-w-[1400px] px-4 pt-4 sm:px-6"
+          className="relative w-full"
           style={{ marginTop: fullWidthTopSpace }}
           onMouseEnter={closeCategoryFlyout}
         >
@@ -835,7 +835,7 @@ export default function ShopShowcaseSection({
           ) : null}
           {lowerFullWidthBanner ? (
             <div
-              className="mx-auto w-full overflow-hidden"
+              className="mx-auto w-full overflow-hidden px-4 sm:px-6"
               style={{
                 width: '100%',
                 maxWidth: 1400,

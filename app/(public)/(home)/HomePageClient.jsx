@@ -93,7 +93,7 @@ export default function HomePageClient({ initialData }) {
           ? 'تسوق المنحوتات التقليدية ومستلزمات التخييم في الإمارات'
           : 'Shop traditional sculptures and outdoor camping in the UAE'}
       </h1>
-      <div className={`${HOME_SECTION_STACK_CLASS} w-full min-w-0 max-lg:pb-0 lg:pb-8`}>
+      <div className={`${HOME_SECTION_STACK_CLASS} w-full min-w-0 pb-8`}>
         <ShopShowcaseSection
           initialShowcaseData={shopShowcase}
           initialStoreSettings={storeSettings}

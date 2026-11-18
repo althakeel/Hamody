@@ -126,12 +126,14 @@ function ShowcaseDeviceImages({
   natural = false,
   displayQuality = 72,
   keepOriginal = false,
+  intrinsicWidth,
+  intrinsicHeight,
 }) {
   const images = [
-    { key: 'mobile', src: sources.mobile, className: 'hidden max-md:block', width: widths.mobile, naturalWidth: 768, naturalHeight: 280 },
-    { key: 'tablet', src: sources.tablet, className: 'hidden md:max-lg:block', width: widths.tablet, naturalWidth: 1024, naturalHeight: 240 },
-    { key: 'desktop', src: sources.desktop, className: sources.wide ? 'hidden lg:max-[1400px]:block' : 'hidden lg:block', width: widths.desktop, naturalWidth: 1920, naturalHeight: 400 },
-    { key: 'wide', src: sources.wide, className: 'hidden min-[1401px]:block', width: widths.wide || 2560, naturalWidth: 1920, naturalHeight: 400 },
+    { key: 'mobile', src: sources.mobile, className: 'hidden max-md:block', width: widths.mobile, naturalWidth: intrinsicWidth || 768, naturalHeight: intrinsicHeight || 280 },
+    { key: 'tablet', src: sources.tablet, className: 'hidden md:max-lg:block', width: widths.tablet, naturalWidth: intrinsicWidth || 1024, naturalHeight: intrinsicHeight || 240 },
+    { key: 'desktop', src: sources.desktop, className: sources.wide ? 'hidden lg:max-[1400px]:block' : 'hidden lg:block', width: widths.desktop, naturalWidth: intrinsicWidth || 1920, naturalHeight: intrinsicHeight || 400 },
+    { key: 'wide', src: sources.wide, className: 'hidden min-[1401px]:block', width: widths.wide || 2560, naturalWidth: intrinsicWidth || 1920, naturalHeight: intrinsicHeight || 400 },
   ];
 
   return images.map((image) => {
@@ -151,7 +153,7 @@ function ShowcaseDeviceImages({
         onError={() => onError(image.src)}
         className={natural
           ? `pointer-events-none block h-auto w-full max-w-none ${image.className}`
-          : `pointer-events-none absolute inset-0 h-full w-full max-w-none object-center ${fit === 'contain' ? 'object-contain' : 'object-cover'} ${bleed ? 'scale-[1.03]' : ''} ${image.className}`}
+          : `pointer-events-none absolute inset-0 h-full w-full max-w-none object-center ${fit === 'contain' ? 'object-contain' : fit === 'fill' ? 'object-fill' : 'object-cover'} ${bleed ? 'scale-[1.03]' : ''} ${image.className}`}
       />
     );
   });
@@ -298,7 +300,7 @@ export default function ShowcaseLargeBannerSlider({
       <div className={`${bannerVariant === 'full' ? 'absolute inset-0 h-full w-full' : bannerVariant === 'lower' ? 'relative h-full w-full' : 'absolute inset-0'} overflow-hidden touch-pan-y`} dir="ltr" {...viewportHandlers}>
         <div
           ref={trackRef}
-          className="flex h-full min-h-full will-change-transform select-none"
+          className={`flex h-full min-h-full select-none ${bannerVariant === 'full' ? '' : 'will-change-transform'}`}
           dir="ltr"
           onTransitionEnd={handleTrackTransitionEnd}
           style={trackStyle}
@@ -309,6 +311,29 @@ export default function ShowcaseLargeBannerSlider({
               className="relative h-full min-h-full shrink-0 grow-0 overflow-hidden"
               style={{ width: `${slideWidthPercent}%` }}
             >
+              {isFullBleed ? (
+                <img
+                  src={slide.sources.wide || slide.sources.desktop}
+                  srcSet={[
+                    slide.sources.mobile && slide.sources.mobile !== (slide.sources.wide || slide.sources.desktop)
+                      ? `${slide.sources.mobile} 1024w`
+                      : '',
+                    slide.sources.wide || slide.sources.desktop
+                      ? `${slide.sources.wide || slide.sources.desktop} 3072w`
+                      : '',
+                  ].filter(Boolean).join(', ')}
+                  sizes="100vw"
+                  alt={slide.alt || fallback?.title || 'Showcase banner'}
+                  width={1024}
+                  height={304}
+                  loading={slideIndex === (visibleSlides.length > 1 ? 1 : 0) ? 'eager' : 'lazy'}
+                  fetchPriority={slideIndex === (visibleSlides.length > 1 ? 1 : 0) ? 'high' : 'auto'}
+                  decoding="async"
+                  draggable={false}
+                  onError={() => handleImageError(slide.sources.wide || slide.sources.desktop)}
+                  className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
+                />
+              ) : (
               <ShowcaseDeviceImages
                 sources={slide.sources}
                 alt={slide.alt || fallback?.title || 'Showcase banner'}
@@ -320,8 +345,9 @@ export default function ShowcaseLargeBannerSlider({
                 fit="cover"
                 natural={false}
                 displayQuality={displayQuality}
-                keepOriginal={isFullBleed}
+                keepOriginal={false}
               />
+              )}
             </div>
           ))}
         </div>

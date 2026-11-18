@@ -11,7 +11,7 @@ import { normalizeShowcaseLinkType } from '@/lib/showcaseBannerLinks'
 import { resolvePublicStorePreference } from '@/lib/storePreferencePublic'
 import { STOREFRONT_IN_STOCK_FILTER, STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility'
 
-const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v23'
+const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v32-banners'
 const SHOWCASE_CACHE_TTL = 180
 let showcaseInflight = null
 

@@ -33,9 +33,9 @@ export default function HomeCategorySections({ sections = [] }) {
         if (CAROUSEL_SECTION_SLUGS.has(String(section.slug || '').trim().toLowerCase())) {
           return (
             <section key={section._id || section.slug} className="w-full bg-[#EFFCC4]">
-              <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 sm:py-8">
+              <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6">
                 <SectionReveal>
-                  <div className="mb-4 flex items-center justify-between gap-3 sm:mb-5">
+                  <div className="mb-4 flex items-center justify-between gap-3">
                     <h2 className="text-lg font-bold uppercase tracking-wide text-black sm:text-2xl">
                       <Link href={href} className="hover:opacity-80">
                         {title}

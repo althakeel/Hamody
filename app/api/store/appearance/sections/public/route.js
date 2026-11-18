@@ -15,7 +15,7 @@ import { DEFAULT_HOME_WELCOME_POPUP, normalizeHomeWelcomePopup } from '@/lib/hom
 import { DEFAULT_FOOTER, normalizeFooter } from '@/lib/footerSettings'
 import { DEFAULT_TIME_BADGES, normalizeTimeBadges } from '@/lib/timeBadgeSettings'
 
-const APPEARANCE_CACHE_KEY = 'public:appearance-sections:v14'
+const APPEARANCE_CACHE_KEY = 'public:appearance-sections:v15'
 
 const DEFAULT_APPEARANCE = {
   categorySliders: { enabled: true, title: 'Featured Collections', description: 'Browse our curated collections' },
