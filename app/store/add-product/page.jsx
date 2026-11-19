@@ -28,6 +28,7 @@ import { canChangeProductPricing, explicitVariantStock, getMinPositiveVariantPri
 import { Trash2, X } from 'lucide-react';
 import { formatStorefrontMoney } from '@/lib/storefrontMarket';
 import { getProductImageAspectRatioClass } from '@/lib/productMedia';
+import { readableUploadUrl } from '@/lib/readableUploadUrl';
 import { compressImageForUpload, getUploadErrorMessage } from '@/lib/compressImageForUpload';
 import { uploadStoreImage } from '@/lib/uploadStoreImage';
 import APlusContentEditor from '@/components/store/APlusContentEditor';
@@ -2035,13 +2036,19 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
             if (typeof img === 'string') return !isVideoSource(img)
             return img.type !== 'video'
         })
-        .map(([slot, img]) => ({
+        .map(([slot, img]) => {
+            const rawPreview = img.preview || (typeof img === 'string' ? img : '')
+            const preview = typeof rawPreview === 'string' && !rawPreview.startsWith('blob:') && !rawPreview.startsWith('data:')
+                ? readableUploadUrl(rawPreview)
+                : rawPreview
+            return {
             slot,
-            preview: img.preview || img,
+            preview,
             persistentUrl: typeof img === 'string'
                 ? img
                 : String(img?.url || img?.persistentUrl || img?.preview || '').trim(),
-        }))
+            }
+        })
 
     const removeReview = (index) => {
         setProductInfo(prev => ({ ...prev, reviews: prev.reviews.filter((_, i) => i !== index) }))
@@ -3734,7 +3741,10 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                         {Object.keys(images).map((key) => {
                             const img = images[key]
                             const hasImage = img && (img.preview || typeof img === 'string')
-                            const mediaSrc = img?.preview || img
+                            const rawMediaSrc = img?.preview || (typeof img === 'string' ? img : '')
+                            const mediaSrc = typeof rawMediaSrc === 'string' && !rawMediaSrc.startsWith('blob:') && !rawMediaSrc.startsWith('data:')
+                                ? readableUploadUrl(rawMediaSrc)
+                                : rawMediaSrc
                             const isVideo = Boolean(hasImage && ((typeof img === 'string' && isVideoSource(img)) || img?.type === 'video' || isVideoSource(mediaSrc)))
                             const mediaAspectClass = getProductImageAspectRatioClass(productInfo.imageAspectRatio)
                             const isDragging = draggingMediaKey === key
@@ -4135,6 +4145,7 @@ export default function ProductForm({ product = null, onClose, onSubmitSuccess, 
                                           alt={`Variant ${idx + 1} preview`}
                                           width={64}
                                           height={64}
+                                          unoptimized
                                           className="h-full w-full object-cover"
                                         />
                                       </div>

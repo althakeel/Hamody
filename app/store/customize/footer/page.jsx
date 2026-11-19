@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import axios from 'axios'
-import { ChevronDown, ChevronUp, Loader2, Plus, Save, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Loader2, Plus, Save, Trash2, Upload } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/lib/useAuth'
 import { DEFAULT_FOOTER, DEFAULT_PAYMENT_MARKS, FOOTER_PAYMENT_METHOD_IDS, normalizeFooter } from '@/lib/footerSettings'
+import { readableUploadUrl } from '@/lib/readableUploadUrl'
+import { HAMODY_LOGO_PATH } from '@/lib/brandLogo'
 
 const inputClass = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900'
 const PAYMENT_LABELS = {
@@ -40,7 +42,15 @@ export default function FooterCustomizePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploadingPaymentId, setUploadingPaymentId] = useState('')
+  const [uploadingLogo, setUploadingLogo] = useState(false)
   const [form, setForm] = useState(DEFAULT_FOOTER)
+  const [footerLogo, setFooterLogo] = useState({
+    sameAsNavbar: true,
+    url: '',
+    navbarUrl: '',
+    width: 160,
+    height: 48,
+  })
 
   const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }))
 
@@ -49,11 +59,21 @@ export default function FooterCustomizePage() {
     const load = async () => {
       try {
         const token = await getToken()
-        const { data } = await axios.get('/api/store/appearance/sections', {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        const headers = { Authorization: `Bearer ${token}` }
+        const [{ data }, logoResponse] = await Promise.all([
+          axios.get('/api/store/appearance/sections', { headers }),
+          axios.get('/api/store/navbar-menu', { headers }).catch(() => ({ data: {} })),
+        ])
         if (!mounted) return
         setForm(normalizeFooter(data?.footer || DEFAULT_FOOTER))
+        const logo = logoResponse?.data || {}
+        setFooterLogo({
+          sameAsNavbar: logo.footerLogoSameAsNavbar !== false,
+          url: String(logo.footerLogoUrl || '').trim(),
+          navbarUrl: String(logo.logoUrl || '').trim(),
+          width: Number(logo.footerLogoWidth) > 0 ? Number(logo.footerLogoWidth) : 160,
+          height: Number(logo.footerLogoHeight) > 0 ? Number(logo.footerLogoHeight) : 48,
+        })
       } catch (error) {
         toast.error('Failed to load footer settings')
         console.error(error)
@@ -78,10 +98,17 @@ export default function FooterCustomizePage() {
         return
       }
       const token = await getToken()
+      const headers = { Authorization: `Bearer ${token}` }
       const footer = normalizeFooter(form)
-      await axios.post('/api/store/appearance/sections', { footer }, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      await axios.post('/api/store/appearance/sections', { footer }, { headers })
+      await axios.post('/api/store/navbar-menu', {
+        footerLogoOnly: true,
+        footerLogoSameAsNavbar: footerLogo.sameAsNavbar,
+        footerLogoUrl: footerLogo.sameAsNavbar ? '' : footerLogo.url,
+        footerLogoWidth: footerLogo.width,
+        footerLogoHeight: footerLogo.height,
+        clearFooterLogo: !footerLogo.sameAsNavbar && !footerLogo.url,
+      }, { headers })
       setForm(footer)
       toast.success('Footer saved')
     } catch (error) {
@@ -121,6 +148,37 @@ export default function FooterCustomizePage() {
       ...prev,
       paymentMethods: prev.paymentMethods.filter((item) => item.id !== id),
     }))
+  }
+
+  const uploadFooterLogo = async (file) => {
+    if (!file) return
+    const type = String(file.type || '').toLowerCase()
+    if (type !== 'image/png' && type !== 'image/webp') {
+      toast.error('Upload a PNG or WebP logo')
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be 2MB or smaller')
+      return
+    }
+    try {
+      setUploadingLogo(true)
+      const token = await getToken()
+      const formData = new FormData()
+      formData.append('image', file)
+      formData.append('type', 'footer-logo')
+      const { data } = await axios.post('/api/store/upload-image', formData, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const url = String(data?.url || '').trim()
+      if (!url) throw new Error('Upload returned no URL')
+      setFooterLogo((prev) => ({ ...prev, sameAsNavbar: false, url }))
+      toast.success('Logo uploaded. Save the footer to publish it.')
+    } catch (error) {
+      toast.error(error?.response?.data?.error || error?.message || 'Logo upload failed')
+    } finally {
+      setUploadingLogo(false)
+    }
   }
 
   const uploadPaymentImage = async (id, file) => {
@@ -192,7 +250,7 @@ export default function FooterCustomizePage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Footer</h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-500">
-            Edit the customer footer: description, contact, addresses, link columns, payment marks, and social links. The logo stays in Menu Management. Use {'{legalName}'} and {'{year}'} in the operated-by and copyright lines.
+            Edit the customer footer: logo, description, contact, addresses, link columns, payment marks, and social links. Use {'{legalName}'} and {'{year}'} in the operated-by and copyright lines.
           </p>
         </div>
         <button
@@ -205,6 +263,64 @@ export default function FooterCustomizePage() {
           Save footer
         </button>
       </div>
+
+      <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4">
+        <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Footer logo</h2>
+        <p className="text-xs leading-5 text-slate-500">
+          The footer background is black. Upload a light PNG or WebP with a transparent background. A black logo disappears on this background.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-[220px_minmax(0,1fr)]">
+          <div className="flex min-h-[96px] items-center justify-center rounded-xl bg-black p-4">
+            <img
+              src={readableUploadUrl(footerLogo.sameAsNavbar ? footerLogo.navbarUrl : footerLogo.url) || HAMODY_LOGO_PATH}
+              alt="Footer logo preview"
+              className="h-12 w-auto max-w-full object-contain"
+            />
+          </div>
+          <div className="space-y-3">
+            <p className="text-xs text-slate-500">
+              {footerLogo.sameAsNavbar
+                ? 'Using the navbar logo. Upload a light version if it disappears on the black preview.'
+                : footerLogo.url
+                  ? 'Custom footer logo is ready. Save the footer to publish it.'
+                  : 'No footer logo yet. The storefront falls back to the navbar logo.'}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                {uploadingLogo ? <Loader2 className="animate-spin" size={14} /> : <Upload size={14} />}
+                {uploadingLogo ? 'Uploading...' : 'Upload logo'}
+                <input
+                  type="file"
+                  accept="image/png,image/webp,.png,.webp"
+                  className="hidden"
+                  disabled={uploadingLogo}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    event.target.value = ''
+                    uploadFooterLogo(file)
+                  }}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => setFooterLogo((prev) => ({ ...prev, sameAsNavbar: true }))}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Use navbar logo
+              </button>
+              {!footerLogo.sameAsNavbar && footerLogo.url ? (
+                <button
+                  type="button"
+                  onClick={() => setFooterLogo((prev) => ({ ...prev, sameAsNavbar: false, url: '' }))}
+                  className="rounded-lg border border-rose-300 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                >
+                  Remove
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4">
         <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Brand text</h2>

@@ -8,6 +8,7 @@ import OffersNavLabel from '@/components/OffersNavLabel';
 import { filterParentCategories, getCategoryDisplayName, resolveStoreNavMenuItems } from '@/lib/categoryNavigation';
 import { DEFAULT_BNPL_TOP_BAR, resolveBnplPartners, resolveBnplTopBarMetrics } from '@/lib/bnplTopBar';
 import { HAMODY_LOGO_PATH } from '@/lib/brandLogo';
+import { readableUploadUrl } from '@/lib/readableUploadUrl';
 import {
   DEFAULT_OFFERS_NAV_LABEL,
   DEFAULT_OFFERS_NAV_STYLE,
@@ -91,7 +92,7 @@ export default function NavbarPreview({
   const bnplPartners = useMemo(() => resolveBnplPartners(bnplTopBar, 'en'), [bnplTopBar]);
   const bnplPreview = bnplPartners[0] || null;
   const bnplMetrics = useMemo(() => resolveBnplTopBarMetrics(bnplTopBar), [bnplTopBar]);
-  const resolvedLogoUrl = String(logoUrl || '').trim() || HAMODY_LOGO_PATH;
+  const resolvedLogoUrl = readableUploadUrl(logoUrl) || HAMODY_LOGO_PATH;
   const logoW = Number(logoWidth) > 0 ? Number(logoWidth) : 120;
   const logoH = Number(logoHeight) > 0 ? Number(logoHeight) : 40;
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(device === 'mobile');

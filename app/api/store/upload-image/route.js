@@ -27,7 +27,7 @@ async function maybeOptimizeBuffer(buffer, meta) {
 }
 
 function resolveUploadFolder(type = '') {
-  if (type === 'logo' || type === 'navbar-logo' || type === 'app-icon' || type === 'offers-nav' || type === 'footer-payment') return 'brands';
+  if (type === 'logo' || type === 'navbar-logo' || type === 'footer-logo' || type === 'app-icon' || type === 'offers-nav' || type === 'footer-payment') return 'brands';
   if (type === 'category') return 'categories';
   if (type === 'blog') return 'blogs';
   return 'products';
@@ -89,7 +89,7 @@ export async function POST(request) {
     let uploadName = image.name || (video ? 'upload.mp4' : 'upload.jpg');
 
     if (!video) {
-      const isLogoUpload = type === 'logo' || type === 'navbar-logo' || type === 'app-icon';
+      const isLogoUpload = type === 'logo' || type === 'navbar-logo' || type === 'footer-logo' || type === 'app-icon';
       const optimized = await maybeOptimizeBuffer(buffer, {
         contentType: image.type,
         fileName: image.name,

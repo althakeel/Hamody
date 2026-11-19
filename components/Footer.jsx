@@ -1,12 +1,12 @@
 "use client";
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 import { HOME_SECTION_INNER_CLASS } from '@/lib/storefrontCarousel';
 import { useAuth } from '@/lib/useAuth';
 import { auth } from '@/lib/firebase';
 import { HAMODY_LOGO_PATH } from '@/lib/brandLogo';
+import { readableUploadUrl } from '@/lib/readableUploadUrl';
 import {
     DEFAULT_FOOTER,
     applyFooterTokens,
@@ -33,6 +33,9 @@ function resolveFooterLogoFromAppearance(data = {}) {
     return {
         logoUrl,
         usingBrandMark,
+        sameAsNavbar,
+        customUrl: customFooterUrl,
+        navbarLogoUrl,
         logoWidth: usingBrandMark ? 132 : (Number(widthSource) > 0 ? Number(widthSource) : 132),
         logoHeight: usingBrandMark ? 34 : (Number(heightSource) > 0 ? Number(heightSource) : 34),
     };
@@ -46,6 +49,9 @@ const Footer = () => {
     const [footerLogo, setFooterLogo] = useState({
         logoUrl: '',
         usingBrandMark: true,
+        sameAsNavbar: true,
+        customUrl: '',
+        navbarLogoUrl: '',
         logoWidth: 132,
         logoHeight: 34,
     });
@@ -97,16 +103,22 @@ const Footer = () => {
 
         const handleNavbarAppearanceUpdate = (event) => {
             const detail = event?.detail || {};
-            setFooterLogo((prev) => resolveFooterLogoFromAppearance({
-                logoUrl: typeof detail.logoUrl === 'string' ? detail.logoUrl : prev.logoUrl,
-                logoWidth: typeof detail.logoWidth === 'number' ? detail.logoWidth : prev.logoWidth,
-                logoHeight: typeof detail.logoHeight === 'number' ? detail.logoHeight : prev.logoHeight,
-                footerLogoSameAsNavbar: detail.footerLogoSameAsNavbar,
-                footerLogoUrl: detail.footerLogoUrl,
-                footerLogoWidth: detail.footerLogoWidth,
-                footerLogoHeight: detail.footerLogoHeight,
-                resolvedFooterLogoUrl: detail.resolvedFooterLogoUrl,
-            }));
+            const hasFooterPatch = detail.footerLogoSameAsNavbar !== undefined
+                || detail.footerLogoUrl !== undefined
+                || detail.resolvedFooterLogoUrl !== undefined;
+            setFooterLogo((prev) => {
+                if (!hasFooterPatch && prev.sameAsNavbar === false) return prev;
+                return resolveFooterLogoFromAppearance({
+                    logoUrl: typeof detail.logoUrl === 'string' ? detail.logoUrl : prev.navbarLogoUrl,
+                    logoWidth: typeof detail.logoWidth === 'number' ? detail.logoWidth : prev.logoWidth,
+                    logoHeight: typeof detail.logoHeight === 'number' ? detail.logoHeight : prev.logoHeight,
+                    footerLogoSameAsNavbar: hasFooterPatch ? detail.footerLogoSameAsNavbar : prev.sameAsNavbar,
+                    footerLogoUrl: hasFooterPatch ? detail.footerLogoUrl : prev.customUrl,
+                    footerLogoWidth: hasFooterPatch ? detail.footerLogoWidth : prev.logoWidth,
+                    footerLogoHeight: hasFooterPatch ? detail.footerLogoHeight : prev.logoHeight,
+                    resolvedFooterLogoUrl: hasFooterPatch ? detail.resolvedFooterLogoUrl : '',
+                });
+            });
             setFooterLogoLoading(false);
         };
 
@@ -240,13 +252,10 @@ const Footer = () => {
                             />
                         ) : (
                             <Link href="/" className="mb-4 inline-flex items-center">
-                                <Image
-                                    src={footerLogo.usingBrandMark ? '/logo/hamody-lockup-light.png' : (footerLogo.logoUrl || HAMODY_LOGO_PATH)}
+                                <img
+                                    src={footerLogo.usingBrandMark ? '/logo/hamody-lockup-light.png' : (readableUploadUrl(footerLogo.logoUrl) || HAMODY_LOGO_PATH)}
                                     alt="Hamody logo"
-                                    width={1024}
-                                    height={387}
-                                    className="block h-auto w-[200px] max-w-full object-contain"
-                                    unoptimized
+                                    className="block h-12 w-auto max-w-[220px] object-contain"
                                 />
                             </Link>
                         )}

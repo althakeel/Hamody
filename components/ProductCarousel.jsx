@@ -432,7 +432,7 @@ export default function ProductCarousel({
     <div
       ref={rootRef}
       dir={carouselDir}
-      className={`relative w-full min-w-0 max-lg:overflow-visible lg:overflow-x-clip ${outsideArrows ? 'px-16' : ''} ${bleedClass} ${className}`.trim()}
+      className={`relative w-full min-w-0 max-lg:overflow-x-clip lg:overflow-x-clip ${outsideArrows ? 'lg:px-16' : ''} ${bleedClass} ${className}`.trim()}
       onMouseEnter={() => { isHoverPausedRef.current = true }}
       onMouseLeave={() => { isHoverPausedRef.current = false }}
     >
@@ -440,7 +440,7 @@ export default function ProductCarousel({
         <button
           type="button"
           onClick={scrollLeft}
-          className={`absolute top-[38%] z-10 -translate-y-1/2 rounded-full border border-gray-100 bg-white p-2 shadow-lg transition-all hover:bg-gray-50 active:scale-95 ${outsideArrows ? 'start-2' : 'start-1 lg:start-0'} ${arrowVisibilityClass}`}
+          className={`absolute top-[38%] z-10 -translate-y-1/2 rounded-full border border-gray-100 bg-white p-2 shadow-lg transition-all hover:bg-gray-50 active:scale-95 ${outsideArrows ? 'start-1 lg:start-2' : 'start-1 lg:start-0'} ${arrowVisibilityClass}`}
           aria-label="Scroll left"
         >
           <ChevronLeft size={18} className="text-gray-800" />
@@ -486,7 +486,7 @@ export default function ProductCarousel({
         <button
           type="button"
           onClick={scrollRight}
-          className={`absolute top-[38%] z-10 -translate-y-1/2 rounded-full border border-gray-100 bg-white p-2 shadow-lg transition-all hover:bg-gray-50 active:scale-95 ${outsideArrows ? 'end-2' : 'end-1 lg:end-0'} ${arrowVisibilityClass}`}
+          className={`absolute top-[38%] z-10 -translate-y-1/2 rounded-full border border-gray-100 bg-white p-2 shadow-lg transition-all hover:bg-gray-50 active:scale-95 ${outsideArrows ? 'end-1 lg:end-2' : 'end-1 lg:end-0'} ${arrowVisibilityClass}`}
           aria-label="Scroll right"
         >
           <ChevronRight size={18} className="text-gray-800" />

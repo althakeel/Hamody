@@ -7,7 +7,7 @@ import { sanitizeCategoryFields, sanitizeCategoryTree } from '@/lib/displayText'
 import { getPublishedCategoryProductCounts } from '@/lib/categoryPageData';
 import { categoryProductCount } from '@/lib/categoryProductStats';
 
-const CACHE_KEY = 'public:categories:tree:v9';
+const CACHE_KEY = 'public:categories:tree:v10';
 const HIDDEN_STOREFRONT_SLUGS = new Set(['home-living']);
 
 // GET - Fetch all categories (public endpoint)

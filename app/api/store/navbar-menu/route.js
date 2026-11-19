@@ -270,6 +270,39 @@ export async function POST(req) {
     await dbConnect();
 
     const body = await req.json();
+
+    if (body?.footerLogoOnly) {
+      const existing = await findSharedNavbarSettings(userId);
+      const sameAsNavbar = body.footerLogoSameAsNavbar !== false;
+      const clearFooterLogo = Boolean(body.clearFooterLogo);
+      const incomingFooterUrl = String(body.footerLogoUrl || '').trim();
+      const existingFooterUrl = String(existing?.footerLogoUrl || '').trim();
+      const nextFooterUrl = clearFooterLogo ? '' : (incomingFooterUrl || existingFooterUrl);
+      const width = Math.max(40, Math.min(400, Number.parseInt(String(body.footerLogoWidth ?? existing?.footerLogoWidth ?? 160), 10) || 160));
+      const height = Math.max(16, Math.min(160, Number.parseInt(String(body.footerLogoHeight ?? existing?.footerLogoHeight ?? 48), 10) || 48));
+
+      await NavbarMenuSettings.findOneAndUpdate(
+        { storeId: userId },
+        {
+          $set: {
+            storeId: userId,
+            footerLogoSameAsNavbar: sameAsNavbar,
+            footerLogoUrl: sameAsNavbar ? existingFooterUrl : nextFooterUrl,
+            footerLogoWidth: width,
+            footerLogoHeight: height,
+          },
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true },
+      );
+
+      const settings = await NavbarMenuSettings.findOne({ storeId: userId }).sort({ updatedAt: -1, _id: -1 }).lean();
+      const navbarLogoUrl = String(settings?.logoUrl || '').trim();
+      return NextResponse.json({
+        message: 'Footer logo updated',
+        data: pickFooterBranding(settings, navbarLogoUrl),
+      });
+    }
+
     const {
       enabled = true,
       items = [],

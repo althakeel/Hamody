@@ -130,7 +130,7 @@ export function ShowcaseImageSlot({ label, size, value, onUpload, onClear }) {
           Upload
           <input
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
             className="hidden"
             onChange={(event) => {
               onUpload(event.target.files?.[0] || null)
@@ -144,6 +144,7 @@ export function ShowcaseImageSlot({ label, size, value, onUpload, onClear }) {
           </button>
         ) : null}
       </div>
+      <p className="mt-1.5 text-[11px] text-slate-400">JPG, PNG, or WebP</p>
     </div>
   )
 }

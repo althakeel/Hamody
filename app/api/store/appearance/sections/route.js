@@ -329,6 +329,8 @@ export async function POST(request) {
     deleteCacheKey('public:appearance-sections:v12')
     deleteCacheKey('public:appearance-sections:v13')
     deleteCacheKey('public:appearance-sections:v14')
+    deleteCacheKey('public:appearance-sections:v15')
+    deleteCacheKey('public:appearance-sections:v16')
     invalidateCachePattern('public:appearance-sections')
     invalidateCachePattern('public:offers')
 

@@ -238,7 +238,7 @@ function DesignerSizeGuide({ sizes }) {
           </p>
           <ul className="mt-2 list-disc space-y-1 ps-4 text-xs text-slate-500">
             <li>Full screen on all monitors. Do not design for 1400 px inner width.</li>
-            <li>JPG or PNG, landscape. Optional 4K: 2560 × {desktop.height} px.</li>
+            <li>JPG, PNG, or WebP, landscape. Optional 4K: 2560 × {desktop.height} px.</li>
           </ul>
         </div>
       ) : null}
@@ -279,7 +279,7 @@ function ShowcaseImageSlot({ label, size, value, onUpload, onClear }) {
           Upload
           <input
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
             className="hidden"
             onChange={(event) => {
               onUpload(event.target.files?.[0] || null)
@@ -293,6 +293,7 @@ function ShowcaseImageSlot({ label, size, value, onUpload, onClear }) {
           </button>
         ) : null}
       </div>
+      <p className="mt-1.5 text-[11px] text-slate-400">JPG, PNG, or WebP</p>
     </div>
   )
 }
@@ -1349,6 +1350,13 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
     })
   }
 
+  const uploadErrorMessage = (error) => {
+    const data = error?.response?.data
+    if (typeof data?.error === 'string' && data.error.trim()) return data.error
+    if (typeof data?.message === 'string' && data.message.trim()) return data.message
+    return 'Failed to upload image'
+  }
+
   const uploadLargeBannerSlideField = async (itemsKey, index, field, file) => {
     if (!file) return
     try {
@@ -1362,7 +1370,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
       }))
       toast.success('Image added. Click Publish to storefront to save.')
     } catch (error) {
-      toast.error('Failed to upload image')
+      toast.error(uploadErrorMessage(error))
       console.error(error)
     }
   }
@@ -1387,7 +1395,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
       }))
       toast.success('Image added. Click Publish to storefront to save.')
     } catch (error) {
-      toast.error('Failed to upload image')
+      toast.error(uploadErrorMessage(error))
       console.error(error)
     }
   }

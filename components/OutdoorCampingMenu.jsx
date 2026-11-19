@@ -40,25 +40,6 @@ const OUTDOOR_CAMPING = {
   ],
 }
 
-const TRADITIONAL = {
-  title: 'Traditional',
-  titleAr: 'تقليدي',
-  slug: 'traditional',
-  groups: [
-    {
-      title: 'Tabletop Sculptures',
-      titleAr: 'منحوتات الطاولة',
-      slug: 'tabletop-sculptures',
-      children: [
-        { title: 'Angel Wings', titleAr: 'أجنحة الملاك', slug: 'angel-wings' },
-        { title: 'Apple Branch', titleAr: 'غصن التفاح', slug: 'apple-branch' },
-        { title: 'Arch Marble', titleAr: 'القوس الرخامي', slug: 'arch-marble' },
-        { title: 'Birds Branch', titleAr: 'طيور على غصن', slug: 'birds-branch' },
-      ],
-    },
-  ],
-}
-
 function withCategoryLinks(item) {
   return {
     ...item,
@@ -74,7 +55,7 @@ function withCategoryLinks(item) {
   }
 }
 
-const MENU_ITEMS = [TRADITIONAL, OUTDOOR_CAMPING].map(withCategoryLinks)
+const MENU_ITEMS = [OUTDOOR_CAMPING].map(withCategoryLinks)
 
 export default function OutdoorCampingMenu({ isArabic = false, onNavigate }) {
   const [activeIndex, setActiveIndex] = useState(0)

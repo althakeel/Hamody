@@ -23,6 +23,7 @@ import {
     resolveCategoryName,
 } from '@/lib/categoryLookup'
 import { getProductThumbnailUrl } from '@/lib/productMedia'
+import { readableUploadUrl } from '@/lib/readableUploadUrl'
 import { getProductDisplayPrice } from '@/lib/recommendedProductCatalog'
 import { readSellerCache } from '@/lib/storeDashboardCache'
 import { canBulkEditProducts, canChangeProductPricing } from '@/lib/productSaveGuards'
@@ -114,6 +115,15 @@ function ManageProductSelect({ wrapperClassName = '', className = '', ...props }
         </div>
     )
 }
+
+const ProductBulkImportPanel = nextDynamic(() => import('@/components/store/ProductBulkImportPanel'), {
+    ssr: false,
+    loading: () => (
+        <div className="rounded-xl border border-slate-200 bg-white px-6 py-8 text-sm font-medium text-slate-700">
+            Loading import...
+        </div>
+    ),
+})
 
 const ProductForm = nextDynamic(() => import('../add-product/page'), {
     ssr: false,
@@ -3277,10 +3287,11 @@ export default function StoreManageProducts() {
                                                     {selectedFbtProducts.map((item) => (
                                                         <div key={item._id} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
                                                             <Image
-                                                                src={item.images?.[0] || 'https://store1920-images.s3.ap-south-1.amazonaws.com/uploads/placeholder.png'}
+                                                                src={readableUploadUrl(item.images?.[0] || '') || 'https://store1920-images.s3.ap-south-1.amazonaws.com/uploads/placeholder.png'}
                                                                 alt={item.name}
                                                                 width={34}
                                                                 height={34}
+                                                                unoptimized
                                                                 className="rounded border border-slate-200 object-cover"
                                                             />
                                                             <div className="min-w-0 flex-1">
@@ -3336,10 +3347,11 @@ export default function StoreManageProducts() {
                                                                 className="flex w-full items-center gap-3 p-3 text-left hover:bg-slate-50"
                                                             >
                                                                 <Image
-                                                                    src={item.images?.[0] || 'https://store1920-images.s3.ap-south-1.amazonaws.com/uploads/placeholder.png'}
+                                                                    src={readableUploadUrl(item.images?.[0] || '') || 'https://store1920-images.s3.ap-south-1.amazonaws.com/uploads/placeholder.png'}
                                                                     alt={item.name}
                                                                     width={34}
                                                                     height={34}
+                                                                    unoptimized
                                                                     className="rounded border border-slate-200 object-cover"
                                                                 />
                                                                 <div className="min-w-0 flex-1">

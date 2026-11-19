@@ -14,6 +14,7 @@ import { signOut } from 'firebase/auth';
 import { clearServerCookies } from '@/lib/authClient';
 import { auth } from '@/lib/firebase';
 import { useStoreOrderNotifications } from './StoreOrderNotificationProvider';
+import { readableUploadUrl } from '@/lib/readableUploadUrl';
 
 const SELLER_LOGO_MAX_WIDTH = 140;
 const SELLER_LOGO_MAX_HEIGHT = 36;
@@ -142,7 +143,7 @@ const StoreNavbar = ({
             <Link href="/store" className="relative flex items-center">
                 {navbarLogo.url ? (
                   <img
-                    src={navbarLogo.url}
+                    src={readableUploadUrl(navbarLogo.url)}
                     alt={storeInfo?.name || 'Store Logo'}
                     width={navbarLogo.width}
                     height={navbarLogo.height}

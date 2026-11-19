@@ -5,6 +5,15 @@ import { optimizeUploadBuffer } from '@/lib/optimizeUploadBuffer';
 
 export const maxDuration = 300;
 
+function showcaseUploadName(name = '') {
+  const base = String(name || 'banner.jpg').split(/[/\\]/).pop() || 'banner.jpg';
+  const cleaned = base.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_') || 'banner.jpg';
+  const dot = cleaned.lastIndexOf('.');
+  const ext = dot > 0 ? cleaned.slice(dot).toLowerCase() : '.jpg';
+  const stem = (dot > 0 ? cleaned.slice(0, dot) : cleaned).slice(0, 40) || 'banner';
+  return `showcase_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${stem}${ext}`;
+}
+
 export const config = {
   api: {
     bodyParser: false,
@@ -63,7 +72,9 @@ export async function POST(request) {
       const uploadName = optimized.optimized && String(file.name || '').match(/\.(jpe?g|png|webp|avif|heic|heif|tiff?|bmp)$/i)
         ? String(file.name || 'upload').replace(/\.[^.]+$/, `.${optimizedExt}`)
         : file.name;
-      const fileName = `${filePrefix}_${Date.now()}_${Math.random().toString(36).substring(7)}_${uploadName}`;
+      const fileName = isShowcaseBannerUpload
+        ? showcaseUploadName(file.name)
+        : `${filePrefix}_${Date.now()}_${Math.random().toString(36).substring(7)}_${uploadName}`;
 
       if (isShowcaseBannerUpload) {
         const response = await uploadBannerToImageKit({

@@ -62,6 +62,7 @@ import {
 } from '@/lib/storeContact';
 import { DEFAULT_NAVBAR_LANGUAGE, normalizeNavbarLanguage } from '@/lib/storefrontMarket';
 import { HAMODY_LOGO_PATH } from '@/lib/brandLogo';
+import { readableUploadUrl } from '@/lib/readableUploadUrl';
 
 const NAVBAR_SELECTED_ADDRESS_KEY = 'navbarSelectedAddressId';
 const NAVBAR_APPEARANCE_CACHE_KEY = 'navbarAppearanceCache';
@@ -81,7 +82,7 @@ const getNavbarContainerStyle = (maxWidth = 1400) => ({
 });
 const NAVBAR_CONTAINER_CLASS = 'mx-auto w-full px-4 sm:px-6';
 
-const resolveNavbarLogoSrc = (logoUrl) => String(logoUrl || '').trim() || HAMODY_LOGO_PATH;
+const resolveNavbarLogoSrc = (logoUrl) => readableUploadUrl(logoUrl) || HAMODY_LOGO_PATH;
 
 function NavbarCartIcon({ size = 24, color, className = '' }) {
   const dimension = typeof size === 'number' ? `${size}px` : size;
@@ -107,6 +108,11 @@ const normalizeNavbarAppearance = (appearance = {}) => {
       logoWidth: Number(appearance.logoWidth) > 0 ? Number(appearance.logoWidth) : 120,
       logoHeight: Number(appearance.logoHeight) > 0 ? Number(appearance.logoHeight) : 40,
       backgroundColor: String(appearance.backgroundColor || '').trim(),
+      footerLogoSameAsNavbar: appearance.footerLogoSameAsNavbar !== false,
+      footerLogoUrl: String(appearance.footerLogoUrl || '').trim(),
+      footerLogoWidth: Number(appearance.footerLogoWidth) > 0 ? Number(appearance.footerLogoWidth) : 160,
+      footerLogoHeight: Number(appearance.footerLogoHeight) > 0 ? Number(appearance.footerLogoHeight) : 40,
+      resolvedFooterLogoUrl: String(appearance.resolvedFooterLogoUrl || '').trim(),
       ...normalizeNavbarLayout(appearance),
       layoutUpdatedAt: String(appearance.layoutUpdatedAt || appearance.updatedAt || ''),
     };
@@ -450,15 +456,13 @@ const Navbar = () => {
   }) => {
     if (navbarLogoSrc) {
       const image = (
-        <Image
+        <img
           src={navbarLogoSrc}
           alt={`${STOREFRONT_BRAND_NAME} logo`}
-          width={1024}
-          height={387}
           className={className}
           style={style}
-          priority={priority}
-          unoptimized
+          decoding="async"
+          fetchPriority={priority ? 'high' : 'auto'}
         />
       );
       if (!panel) return image;
@@ -1787,8 +1791,8 @@ const Navbar = () => {
             className="flex h-full flex-shrink-0 items-center gap-2 outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
           >
             {renderNavbarLogoImage({
-              className: 'block h-10 w-auto max-h-full object-contain',
-              style: { height: '40px', width: 'auto', imageRendering: '-webkit-optimize-contrast' },
+              className: 'block h-[52px] w-auto max-h-full object-contain',
+              style: { height: '52px', width: 'auto' },
               priority: true,
               panel: false,
             })}
@@ -2144,8 +2148,8 @@ const Navbar = () => {
               className="-ms-1 flex shrink-0 items-center outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
             >
               {renderNavbarLogoImage({
-                className: 'block h-auto w-[88px] max-w-full object-contain sm:w-[100px]',
-                style: { height: 'auto' },
+                className: 'block h-12 w-auto max-w-[160px] object-contain',
+                style: { height: '48px', width: 'auto' },
                 priority: true,
                 panel: false,
               })}
@@ -2295,10 +2299,10 @@ const Navbar = () => {
             >
               <div className="shrink-0 border-b border-slate-200 bg-white px-4 pb-3 pt-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <button type="button" onClick={handleLogoNavigation} className="flex min-w-0 max-w-[104px] items-center overflow-hidden outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0">
+                  <button type="button" onClick={handleLogoNavigation} className="flex min-w-0 items-center outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0">
                     {renderNavbarLogoImage({
-                      className: 'block h-auto w-[96px] max-w-full object-contain',
-                      style: { height: 'auto' },
+                      className: 'block h-12 w-auto max-w-[168px] object-contain',
+                      style: { height: '48px', width: 'auto' },
                     })}
                   </button>
                   <button

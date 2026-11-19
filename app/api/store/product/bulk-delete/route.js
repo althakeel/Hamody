@@ -50,13 +50,28 @@ export async function POST(request) {
       console.error('[url-redirects] product bulk delete', redirectError)
     }
 
+    let categoriesRemoved = 0
+    try {
+      const { removeCategoriesIfCatalogEmpty } = await import('@/lib/emptyCatalogCategories')
+      const cleared = await removeCategoriesIfCatalogEmpty(storeId)
+      categoriesRemoved = Number(cleared?.removed || 0)
+    } catch (categoryError) {
+      console.error('[categories] empty catalog bulk delete', categoryError)
+    }
+
     const { queueInventorySheetSync } = await import('@/lib/googleSheetsInventory')
     queueInventorySheetSync(storeId)
 
+    const deletedCount = Number(result?.deletedCount || 0)
+    const categoryNote = categoriesRemoved
+      ? ` Removed ${categoriesRemoved} categor${categoriesRemoved === 1 ? 'y' : 'ies'}.`
+      : ''
+
     return NextResponse.json({
       success: true,
-      deletedCount: Number(result?.deletedCount || 0),
-      message: `Deleted ${Number(result?.deletedCount || 0)} product(s) successfully.`,
+      deletedCount,
+      categoriesRemoved,
+      message: `Deleted ${deletedCount} product(s) successfully.${categoryNote}`,
     })
   } catch (error) {
     console.error('[store product bulk-delete POST] error:', error)

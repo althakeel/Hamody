@@ -9,6 +9,7 @@ import NavbarPreview from '@/components/store/NavbarPreview';
 import NavbarItemArrange from '@/components/store/NavbarItemArrange';
 import StoreDropdown from '@/components/store/StoreDropdown';
 import { HAMODY_LOGO_PATH } from '@/lib/brandLogo';
+import { readableUploadUrl } from '@/lib/readableUploadUrl';
 import {
   DEFAULT_CATEGORIES_BUTTON_STYLE,
   DEFAULT_NAVBAR_LAYOUT,
@@ -3242,7 +3243,7 @@ export default function MenuManagementPage() {
                   }}
                 >
                   <img
-                    src={String(navbarBranding.logoUrl || '').trim() || HAMODY_LOGO_PATH}
+                    src={readableUploadUrl(navbarBranding.logoUrl) || HAMODY_LOGO_PATH}
                     alt="Navbar logo preview"
                     className="max-h-16 max-w-full object-contain"
                   />

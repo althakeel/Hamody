@@ -10,7 +10,7 @@ import { getLocalizedCategoryName } from '@/lib/categoryLocalization';
 import { toPublicCategoryPath } from '@/lib/categorySlug';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 
-const HIDDEN_SLUGS = new Set(['home-living', 'home-decor']);
+const HIDDEN_SLUGS = new Set(['home-living']);
 
 function categoryImage(category, records) {
   const own = String(category?.image || '').trim();
@@ -149,12 +149,12 @@ export default function CategoryInterestSection() {
           ) : null}
         </div>
 
-        <div className="relative px-11 sm:px-12">
+        <div className="relative lg:px-12">
           {canScrollLeft ? (
             <button
               type="button"
               onClick={() => scrollByCard(-1)}
-              className="absolute start-0 top-[38%] z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#E2E7E8] bg-white text-[#05090D] shadow-md transition hover:bg-[#F8FAFA]"
+              className="absolute start-1 top-[38%] z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#E2E7E8] bg-white text-[#05090D] shadow-md transition hover:bg-[#F8FAFA] lg:start-0"
               aria-label={t('exploreInterests.scrollLeft')}
             >
               <ChevronLeft size={18} />
@@ -172,7 +172,7 @@ export default function CategoryInterestSection() {
                   key={card.id}
                   href={card.href}
                   data-explore-card
-                  className="w-[68%] shrink-0 overflow-hidden rounded-2xl border border-[#E2E7E8] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:w-[42%] md:w-[30%] lg:w-[calc((100%-64px)/5)]"
+                  className="w-[78%] shrink-0 overflow-hidden rounded-2xl border border-[#E2E7E8] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:w-[46%] md:w-[32%] lg:w-[calc((100%-4rem)/5)]"
                 >
                   <div className="relative aspect-[3/4] bg-[#F2F5F5]">
                     {card.image ? (
@@ -196,7 +196,7 @@ export default function CategoryInterestSection() {
               : Array.from({ length: 5 }).map((_, index) => (
                 <div
                   key={`explore-skeleton-${index}`}
-                  className="w-[68%] shrink-0 overflow-hidden rounded-2xl border border-[#E2E7E8] bg-white sm:w-[42%] md:w-[30%] lg:w-[calc((100%-64px)/5)]"
+                  className="w-[78%] shrink-0 overflow-hidden rounded-2xl border border-[#E2E7E8] bg-white sm:w-[46%] md:w-[32%] lg:w-[calc((100%-4rem)/5)]"
                 >
                   <div className="aspect-[3/4] animate-pulse bg-[#F2F5F5]" />
                   <div className="space-y-2 px-3 py-3">
@@ -211,7 +211,7 @@ export default function CategoryInterestSection() {
             <button
               type="button"
               onClick={() => scrollByCard(1)}
-              className="absolute end-0 top-[38%] z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#E2E7E8] bg-white text-[#05090D] shadow-md transition hover:bg-[#F8FAFA]"
+              className="absolute end-1 top-[38%] z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#E2E7E8] bg-white text-[#05090D] shadow-md transition hover:bg-[#F8FAFA] lg:end-0"
               aria-label={t('exploreInterests.scrollRight')}
             >
               <ChevronRight size={18} />

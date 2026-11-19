@@ -431,6 +431,12 @@ export async function POST(request) {
         await Store.findByIdAndUpdate(storeId, {
             $addToSet: { featuredProductIds: String(product._id) },
         });
+        try {
+            const { clearProductGone } = await import('@/lib/urlRedirects');
+            await clearProductGone(product.slug);
+        } catch (redirectError) {
+            console.error('[url-redirects] product create', redirectError);
+        }
         invalidateStorefrontProductCaches();
         const { scheduleProductVisualIndex } = await import('@/lib/productVisualIndex');
         const { default: ProductVisualIndex } = await import('@/models/ProductVisualIndex');
@@ -1135,6 +1141,12 @@ export async function DELETE(request) {
             await recordProductGone(removedSlug, 'Product deleted');
         } catch (redirectError) {
             console.error('[url-redirects] product delete', redirectError);
+        }
+        try {
+            const { removeCategoriesIfCatalogEmpty } = await import('@/lib/emptyCatalogCategories');
+            await removeCategoriesIfCatalogEmpty(storeId);
+        } catch (categoryError) {
+            console.error('[categories] empty catalog product delete', categoryError);
         }
         await Store.findByIdAndUpdate(storeId, {
             $pull: { featuredProductIds: productId },
