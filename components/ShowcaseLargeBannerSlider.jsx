@@ -278,6 +278,7 @@ export default function ShowcaseLargeBannerSlider({
   }
 
   const currentSlide = visibleSlides[activeDotIndex] || visibleSlides[0];
+  const fadeHero = isFullBleed && visibleSlides.length > 1;
   const linkProps = getShowcaseLinkProps(currentSlide, fallback?.href || '/shop');
   const BannerWrap = linkProps?.href ? Link : 'div';
 
@@ -298,9 +299,26 @@ export default function ShowcaseLargeBannerSlider({
       onDragStart={(event) => event.preventDefault()}
     >
       <div className={`${bannerVariant === 'full' ? 'absolute inset-0 h-full w-full' : bannerVariant === 'lower' ? 'relative h-full w-full' : 'absolute inset-0'} overflow-hidden touch-pan-y`} dir="ltr" {...viewportHandlers}>
+        {fadeHero ? (
+          <div className="pointer-events-none absolute inset-0">
+            {visibleSlides.map((slide, index) => (
+              <img
+                key={`fade-${slide.id || slide.sources?.desktop || index}`}
+                src={slide.sources.wide || slide.sources.desktop}
+                alt={index === activeDotIndex ? (slide.alt || fallback?.title || 'Showcase banner') : ''}
+                width={1024}
+                height={304}
+                draggable={false}
+                className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-[900ms] ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                  index === activeDotIndex ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+            ))}
+          </div>
+        ) : null}
         <div
           ref={trackRef}
-          className={`flex h-full min-h-full select-none ${bannerVariant === 'full' ? '' : 'will-change-transform'}`}
+          className={`flex h-full min-h-full select-none ${fadeHero ? 'opacity-0' : ''} ${bannerVariant === 'full' ? '' : 'will-change-transform'}`}
           dir="ltr"
           onTransitionEnd={handleTrackTransitionEnd}
           style={trackStyle}

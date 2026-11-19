@@ -23,11 +23,6 @@ import { getContentDirection } from '@/lib/storefrontLanguage'
 import { getLocalizedCategorySliderSideImage, getLocalizedCategorySliderSubtitle, getLocalizedCategorySliderTitle } from '@/lib/categorySliderCopy'
 import { capCarouselProducts } from '@/lib/categorySliderAutoSlide'
 
-const SECTION_CONTAIN_STYLE = {
-  contentVisibility: 'auto',
-  containIntrinsicSize: 'auto 320px',
-}
-
 const Section4 = ({ sections: initialSections = null, loading: loadingProp = false }) => {
   const shouldSelfFetch = initialSections == null
   const [sections, setSections] = useState(Array.isArray(initialSections) ? initialSections : [])
@@ -98,7 +93,7 @@ const Section4 = ({ sections: initialSections = null, loading: loadingProp = fal
 
           if (sectionIdx === 0) {
             return (
-              <div key={key} style={SECTION_CONTAIN_STYLE}>
+              <div key={key}>
                 {body}
               </div>
             )
@@ -111,7 +106,7 @@ const Section4 = ({ sections: initialSections = null, loading: loadingProp = fal
               minHeight={isBanner ? 140 : 280}
               fallback={<div style={{ minHeight: isBanner ? 140 : 280 }} aria-hidden />}
             >
-              <div style={SECTION_CONTAIN_STYLE}>{body}</div>
+              {body}
             </LazyMount>
           )
         })}

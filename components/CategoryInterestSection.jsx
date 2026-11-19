@@ -3,14 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
-import { HOME_SECTION_CLASS, HOME_SECTION_GRID_INNER_CLASS } from '@/lib/storefrontCarousel';
+import { HOME_SECTION_GRID_INNER_CLASS } from '@/lib/storefrontCarousel';
 import { cleanDisplayText } from '@/lib/displayText';
 import { getLocalizedCategoryName } from '@/lib/categoryLocalization';
 import { toPublicCategoryPath } from '@/lib/categorySlug';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 
 const HIDDEN_SLUGS = new Set(['home-living']);
+const SLIDE_SPEED_PX_PER_SEC = 42;
 
 function categoryImage(category, records) {
   const own = String(category?.image || '').trim();
@@ -34,15 +34,20 @@ function cardSubtitle(category, language, t) {
   return count > 0 ? t('category.productCount', { count }) : '';
 }
 
+function cardWidthFor(viewportWidth) {
+  if (viewportWidth >= 1024) return Math.max(180, (viewportWidth - 64) / 5.15);
+  if (viewportWidth >= 768) return Math.max(180, (viewportWidth - 48) / 3.2);
+  if (viewportWidth >= 640) return Math.max(168, (viewportWidth - 32) / 2.15);
+  return Math.max(220, viewportWidth * 0.72);
+}
+
 export default function CategoryInterestSection() {
   const { t, language, isArabic } = useStorefrontI18n();
-  const scrollRef = useRef(null);
+  const viewportRef = useRef(null);
+  const trackRef = useRef(null);
   const [records, setRecords] = useState([]);
-  const [manualCategoryIds, setManualCategoryIds] = useState([]);
   const [sectionEnabled, setSectionEnabled] = useState(true);
   const [ready, setReady] = useState(false);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -56,11 +61,6 @@ export default function CategoryInterestSection() {
         if (settingsResponse?.ok) {
           const settings = await settingsResponse.json();
           setSectionEnabled(typeof settings?.enabled === 'boolean' ? settings.enabled : true);
-          setManualCategoryIds(
-            Array.isArray(settings?.categoryIds)
-              ? settings.categoryIds.map((id) => String(id || '').trim()).filter(Boolean)
-              : [],
-          );
         }
         if (categoriesResponse?.ok) {
           const data = await categoriesResponse.json();
@@ -79,109 +79,132 @@ export default function CategoryInterestSection() {
   }, []);
 
   const cards = useMemo(() => {
-    const visible = records.filter((category) => {
+    const seen = new Set();
+    return records.flatMap((category) => {
       const slug = String(category?.slug || '').trim().toLowerCase();
-      if (!slug || HIDDEN_SLUGS.has(slug)) return false;
-      return Number(category?.productCount) > 0 || manualCategoryIds.includes(String(category?._id || ''));
+      const id = String(category?._id || slug);
+      if (!slug || !id || seen.has(id) || HIDDEN_SLUGS.has(slug)) return [];
+      seen.add(id);
+      const title = getLocalizedCategoryName(category, language);
+      if (!title) return [];
+      return [{
+        id,
+        href: toPublicCategoryPath(category.slug),
+        title,
+        subtitle: cardSubtitle(category, language, t),
+        image: categoryImage(category, records),
+      }];
     });
-    const byId = new Map(visible.map((category) => [String(category._id || ''), category]));
-    const chosen = manualCategoryIds.length
-      ? manualCategoryIds.map((id) => byId.get(String(id))).filter(Boolean)
-      : visible.filter((category) => categoryImage(category, records));
+  }, [language, records, t]);
 
-    return chosen.map((category) => ({
-      id: String(category._id || category.slug),
-      href: toPublicCategoryPath(category.slug),
-      title: getLocalizedCategoryName(category, language),
-      subtitle: cardSubtitle(category, language, t),
-      image: categoryImage(category, records),
-    })).filter((card) => card.title);
-  }, [language, manualCategoryIds, records, t]);
+  const loopCards = cards.length > 1 ? [...cards, ...cards] : cards;
 
   useEffect(() => {
-    const track = scrollRef.current;
-    if (!track) return undefined;
-    const update = () => {
-      const maxScroll = track.scrollWidth - track.clientWidth;
-      const left = Math.abs(track.scrollLeft);
-      setCanScrollLeft(left > 4);
-      setCanScrollRight(maxScroll - left > 4);
-    };
-    update();
-    track.addEventListener('scroll', update, { passive: true });
-    const observer = new ResizeObserver(update);
-    observer.observe(track);
-    return () => {
-      track.removeEventListener('scroll', update);
-      observer.disconnect();
-    };
-  }, [cards.length]);
+    const viewport = viewportRef.current;
+    const track = trackRef.current;
+    if (!viewport || !track || cards.length < 2) return undefined;
 
-  const scrollByCard = (direction) => {
-    const track = scrollRef.current;
-    if (!track) return;
-    const card = track.querySelector('[data-explore-card]');
-    const amount = (card?.getBoundingClientRect().width || 220) + 16;
-    const sign = isArabic ? -1 : 1;
-    track.scrollBy({ left: sign * direction * amount, behavior: 'smooth' });
-  };
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let frame = 0;
+    let last = 0;
+    let offset = 0;
+    let paused = reduceMotion;
+    let loopWidth = 0;
+
+    const measure = () => {
+      const width = cardWidthFor(viewport.clientWidth);
+      viewport.style.setProperty('--explore-card', `${Math.round(width)}px`);
+      const count = cards.length;
+      const children = track.children;
+      const styles = window.getComputedStyle(track);
+      const gap = parseFloat(styles.columnGap || styles.gap || '16') || 16;
+      let measured = 0;
+      for (let index = 0; index < count && index < children.length; index += 1) {
+        measured += children[index].getBoundingClientRect().width;
+        if (index < count - 1) measured += gap;
+      }
+      loopWidth = measured > 0 ? measured + gap : 0;
+    };
+
+    const tick = (now) => {
+      if (!last) last = now;
+      const dt = Math.min(48, now - last);
+      last = now;
+      if (!paused) {
+        if (loopWidth <= 8) measure();
+      }
+      if (!paused && loopWidth > 8) {
+        const delta = (SLIDE_SPEED_PX_PER_SEC * dt) / 1000;
+        offset += isArabic ? delta : -delta;
+        if (!isArabic && offset <= -loopWidth) offset += loopWidth;
+        if (isArabic && offset >= loopWidth) offset -= loopWidth;
+        track.style.transform = `translate3d(${offset}px, 0, 0)`;
+      }
+      frame = requestAnimationFrame(tick);
+    };
+
+    const pause = () => {
+      paused = true;
+    };
+    const resume = () => {
+      if (reduceMotion) return;
+      paused = false;
+      last = 0;
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(viewport);
+    viewport.addEventListener('pointerenter', pause);
+    viewport.addEventListener('pointerleave', resume);
+    viewport.addEventListener('pointerdown', pause);
+    viewport.addEventListener('pointerup', resume);
+    viewport.addEventListener('pointercancel', resume);
+    frame = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      viewport.removeEventListener('pointerenter', pause);
+      viewport.removeEventListener('pointerleave', resume);
+      viewport.removeEventListener('pointerdown', pause);
+      viewport.removeEventListener('pointerup', resume);
+      viewport.removeEventListener('pointercancel', resume);
+    };
+  }, [cards, isArabic, ready]);
 
   if (!sectionEnabled || (ready && cards.length === 0)) return null;
 
-  const EndChevrons = isArabic ? ChevronsLeft : ChevronsRight;
-
   return (
-    <section className={HOME_SECTION_CLASS}>
-      <div className={HOME_SECTION_GRID_INNER_CLASS}>
-        <div className="relative mb-5 flex items-center justify-center sm:mb-6">
-          <h2 className="text-center text-xl font-extrabold uppercase tracking-wide text-[#05090D] sm:text-2xl">
-            {t('exploreInterests.title')}
-          </h2>
-          {canScrollRight ? (
-            <button
-              type="button"
-              onClick={() => scrollByCard(1)}
-              className="absolute end-0 inline-flex items-center text-[#05090D] transition hover:opacity-70"
-              aria-label={t('exploreInterests.scrollRight')}
-            >
-              <EndChevrons size={22} strokeWidth={2.4} />
-            </button>
-          ) : null}
-        </div>
+    <section className="w-full min-w-0 overflow-x-clip">
+      <div className={`${HOME_SECTION_GRID_INNER_CLASS} rounded-2xl bg-[#C8F404] py-8`}>
+        <h2 className="mb-5 text-center text-xl font-extrabold uppercase tracking-wide text-[#05090D] sm:mb-6 sm:text-2xl">
+          {t('exploreInterests.title')}
+        </h2>
 
-        <div className="relative lg:px-12">
-          {canScrollLeft ? (
-            <button
-              type="button"
-              onClick={() => scrollByCard(-1)}
-              className="absolute start-1 top-[38%] z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#E2E7E8] bg-white text-[#05090D] shadow-md transition hover:bg-[#F8FAFA] lg:start-0"
-              aria-label={t('exploreInterests.scrollLeft')}
-            >
-              <ChevronLeft size={18} />
-            </button>
-          ) : null}
-
+        <div ref={viewportRef} className="overflow-hidden">
           <div
-            ref={scrollRef}
-            className="flex gap-4 overflow-x-auto scroll-smooth scrollbar-hide"
+            ref={trackRef}
+            className="flex w-max gap-4"
             dir={isArabic ? 'rtl' : 'ltr'}
           >
-            {ready
-              ? cards.map((card) => (
+            {(ready ? loopCards : Array.from({ length: 5 }, (_, index) => ({ id: `skeleton-${index}` }))).map((card, index) => (
+              ready ? (
                 <Link
-                  key={card.id}
+                  key={`${card.id}-${index}`}
                   href={card.href}
                   data-explore-card
-                  className="w-[78%] shrink-0 overflow-hidden rounded-2xl border border-[#E2E7E8] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:w-[46%] md:w-[32%] lg:w-[calc((100%-4rem)/5)]"
+                  style={{ width: 'var(--explore-card, 240px)' }}
+                  className="shrink-0 overflow-hidden rounded-2xl border border-[#E2E7E8] bg-white shadow-sm"
                 >
-                  <div className="relative aspect-[3/4] bg-[#F2F5F5]">
+                  <div className="relative aspect-[4/3] bg-[#F2F5F5]">
                     {card.image ? (
                       <Image
                         src={card.image}
                         alt=""
                         fill
-                        sizes="(min-width: 1024px) 18vw, 70vw"
-                        className="object-cover"
+                        sizes="(min-width: 1024px) 240px, 70vw"
+                        className="object-contain p-3"
                       />
                     ) : null}
                   </div>
@@ -192,31 +215,21 @@ export default function CategoryInterestSection() {
                     ) : null}
                   </div>
                 </Link>
-              ))
-              : Array.from({ length: 5 }).map((_, index) => (
+              ) : (
                 <div
-                  key={`explore-skeleton-${index}`}
-                  className="w-[78%] shrink-0 overflow-hidden rounded-2xl border border-[#E2E7E8] bg-white sm:w-[46%] md:w-[32%] lg:w-[calc((100%-4rem)/5)]"
+                  key={card.id}
+                  style={{ width: 'var(--explore-card, 240px)' }}
+                  className="shrink-0 overflow-hidden rounded-2xl border border-[#E2E7E8] bg-white"
                 >
-                  <div className="aspect-[3/4] animate-pulse bg-[#F2F5F5]" />
+                  <div className="aspect-[4/3] animate-pulse bg-[#F2F5F5]" />
                   <div className="space-y-2 px-3 py-3">
                     <div className="h-3 w-2/3 animate-pulse rounded bg-[#F2F5F5]" />
                     <div className="h-3 w-1/2 animate-pulse rounded bg-[#F2F5F5]" />
                   </div>
                 </div>
-              ))}
+              )
+            ))}
           </div>
-
-          {canScrollRight ? (
-            <button
-              type="button"
-              onClick={() => scrollByCard(1)}
-              className="absolute end-1 top-[38%] z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#E2E7E8] bg-white text-[#05090D] shadow-md transition hover:bg-[#F8FAFA] lg:end-0"
-              aria-label={t('exploreInterests.scrollRight')}
-            >
-              <ChevronRight size={18} />
-            </button>
-          ) : null}
         </div>
       </div>
     </section>

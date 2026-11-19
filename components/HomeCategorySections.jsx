@@ -8,6 +8,7 @@ import {
   HOME_SECTION_GRID_INNER_CLASS,
   HOME_SECTION_TITLE_CLASS,
   PRODUCT_CARD_GRID_CLASS_5,
+  homepageTwoRowItemClass,
 } from '@/lib/storefrontCarousel'
 import { getLocalizedCategoryName } from '@/lib/categoryLocalization'
 import { toPublicCategoryPath } from '@/lib/categorySlug'
@@ -76,7 +77,7 @@ export default function HomeCategorySections({ sections = [] }) {
               </SectionReveal>
               <div className={PRODUCT_CARD_GRID_CLASS_5}>
                 {section.products.map((product, index) => (
-                  <SectionReveal key={product._id || product.id || `${section.slug}-${index}`} className="h-full min-w-0" delay={(index % 5) * 60}>
+                  <SectionReveal key={product._id || product.id || `${section.slug}-${index}`} className={`h-full min-w-0 ${homepageTwoRowItemClass(index, 5)}`} delay={(index % 5) * 60}>
                     <ProductCard
                       product={product}
                       priorityImages={index < 2}

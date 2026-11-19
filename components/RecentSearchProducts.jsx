@@ -16,6 +16,7 @@ import {
   HOME_SECTION_HEADING_CLASS,
   HOME_SECTION_SUBTITLE_CLASS,
   HOME_SECTION_GRID_INNER_CLASS,
+  homepageTwoRowItemClass,
 } from '@/lib/storefrontCarousel';
 import { filterStorefrontInStockProducts, isStorefrontProductInStock } from '@/lib/productVisibility';
 
@@ -227,8 +228,10 @@ export default function RecentSearchProducts() {
         </div>
 
         <div className={HOME_PRODUCT_GRID_CLASS}>
-          {safeProducts.map((product) => (
-            <ProductCard key={product._id || product.id} product={product} />
+          {safeProducts.map((product, index) => (
+            <div key={product._id || product.id} className={homepageTwoRowItemClass(index, 6)}>
+              <ProductCard product={product} />
+            </div>
           ))}
         </div>
       </div>

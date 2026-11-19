@@ -264,10 +264,7 @@ const ProductCard = ({
 
     if (isCartHydrated && itemQuantity > 0) {
       return (
-        <div
-          className="inline-flex items-center justify-center gap-0.5 rounded-[10px] px-0.5 py-0.5 shadow-sm"
-          style={{ backgroundColor: '#C8F404' }}
-        >
+        <div className="inline-flex items-center justify-center gap-0.5 rounded-[10px] border border-black/10 bg-white px-0.5 py-0.5 text-black shadow-sm">
           <button
             type="button"
             onClick={(e) => {
@@ -282,12 +279,12 @@ const ProductCard = ({
               dispatch(removeFromCart({ productId: product._id }))
               dispatch(uploadCart({ getToken }))
             }}
-            className="inline-flex h-7 w-6 items-center justify-center rounded-sm text-[#05090D] transition hover:bg-black/10"
+            className="inline-flex h-7 w-6 items-center justify-center rounded-sm text-black transition hover:bg-black/5"
             title={itemQuantity === 1 ? 'Delete' : 'Decrease'}
           >
             {itemQuantity === 1 ? <Trash2 size={13} /> : <Minus size={13} />}
           </button>
-          <span className="min-w-[14px] text-center text-xs font-semibold text-[#05090D]">{itemQuantity}</span>
+          <span className="min-w-[14px] text-center text-xs font-semibold text-black">{itemQuantity}</span>
           <button
             type="button"
             onClick={(e) => {
@@ -308,7 +305,7 @@ const ProductCard = ({
               }))
               dispatch(uploadCart({ getToken }))
             }}
-            className="inline-flex h-7 w-6 items-center justify-center rounded-sm text-[#05090D] transition hover:bg-black/10"
+            className="inline-flex h-7 w-6 items-center justify-center rounded-sm text-black transition hover:bg-black/5"
             title="Add more"
           >
             <Plus size={13} />
@@ -321,7 +318,7 @@ const ProductCard = ({
       <button
         type="button"
         onClick={handleAddToCart}
-        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-black bg-white p-0 shadow-none outline-none ring-0 transition-opacity duration-200 hover:opacity-70 focus:outline-none focus-visible:outline-none active:scale-95"
+        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white p-0 shadow-none outline-none ring-0 transition-opacity duration-200 hover:opacity-70 focus:outline-none focus-visible:outline-none active:scale-95"
         aria-label={t('common.addToCart')}
       >
         <img
@@ -370,7 +367,7 @@ const ProductCard = ({
               src={cardPreview.imageSrc}
               alt={productName}
               fill
-              className="object-cover object-center scale-110"
+              className="object-cover object-center scale-110 transition-transform duration-[400ms] ease-out group-hover:scale-[1.18]"
               sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, 14vw"
               quality={priorityImages ? 70 : 55}
               priority={priorityImages}
@@ -399,7 +396,7 @@ const ProductCard = ({
           <video
             ref={cardPreview.type === 'delayed-video' ? cardVideoRef : undefined}
             src={cardPreview.videoSrc}
-            className="absolute inset-0 h-full w-full min-h-full min-w-full object-cover object-center scale-110"
+            className="absolute inset-0 h-full w-full min-h-full min-w-full object-cover object-center scale-110 transition-transform duration-[400ms] ease-out group-hover:scale-[1.18]"
             muted
             loop
             autoPlay
@@ -412,7 +409,7 @@ const ProductCard = ({
               src={primaryImage}
               alt={productName}
               fill
-              className={`object-cover object-center scale-110 ${hasSecondary ? 'transition-opacity duration-500' : ''} ${hasSecondary && hovered ? 'opacity-0' : 'opacity-100'}`}
+              className={`object-cover object-center scale-110 transition-[transform,opacity] duration-500 ease-out group-hover:scale-[1.18] ${hasSecondary && hovered ? 'opacity-0' : 'opacity-100'}`}
               sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, 14vw"
               quality={priorityImages ? 70 : 55}
               priority={priorityImages}
@@ -432,7 +429,7 @@ const ProductCard = ({
                 src={secondaryImage}
                 alt=""
                 fill
-                className="absolute inset-0 object-cover object-center scale-110"
+                className="absolute inset-0 object-cover object-center scale-110 transition-transform duration-[400ms] ease-out group-hover:scale-[1.18]"
                 sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, 14vw"
                 quality={55}
                 loading="lazy"
@@ -452,7 +449,7 @@ const ProductCard = ({
 
       </div>
 
-      <div className={`flex shrink-0 flex-col ${compactAll ? 'p-1.5' : compactLg ? 'p-2 sm:p-2.5 lg:p-1.5' : 'p-2 sm:p-2.5'}`}>
+      <div className={`flex shrink-0 flex-col bg-[#E2E7E8] ${compactAll ? 'p-1.5' : compactLg ? 'p-2 sm:p-2.5 lg:p-1.5' : 'p-2 sm:p-2.5'}`}>
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
             <h3 className={`overflow-hidden text-start font-semibold leading-tight text-slate-900 ${compactAll ? 'mb-1 text-[10px]' : compactLg ? 'mb-1 min-h-[2.5em] text-xs sm:text-sm lg:min-h-0 lg:text-[10px]' : 'mb-1 min-h-[2.5em] text-xs sm:text-sm'}`}>

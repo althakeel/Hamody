@@ -22,6 +22,7 @@ const SignInModal = dynamic(() => import('./SignInModal'), { ssr: false });
 const AddressModal = dynamic(() => import('./AddressModal'), { ssr: false });
 const ImageSearchModal = dynamic(() => import('./ImageSearchModal'), { ssr: false });
 import { clearCart, fetchCart, uploadCart } from '@/lib/features/cart/cartSlice';
+import usePruneMissingCartItems from '@/lib/usePruneMissingCartItems';
 import { fetchAddress, clearAddresses } from '@/lib/features/address/addressSlice';
 import {
   STOREFRONT_LANGUAGE_EVENT,
@@ -196,6 +197,7 @@ const Navbar = () => {
   const [wishlistCount, setWishlistCount] = useState(0);
   const addressList = useSelector((state) => state.address?.list || []);
   const cartItems = useSelector((state) => state.cart.cartItems || {});
+  usePruneMissingCartItems();
   const cartCount = useMemo(() => {
     return Object.values(cartItems || {}).reduce((acc, entry) => {
       const qty = typeof entry === 'number' ? entry : entry?.quantity || 0;

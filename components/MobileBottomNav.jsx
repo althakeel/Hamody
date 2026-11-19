@@ -230,7 +230,13 @@ export default function MobileBottomNav() {
   useEffect(() => { setHydrated(true) }, [])
 
   const pathname = usePathname()
-  const cartCount = useSelector((state) => state.cart.total)
+  const cartCount = useSelector((state) => {
+    const items = state.cart.cartItems || {}
+    return Object.values(items).reduce((sum, entry) => {
+      const qty = typeof entry === 'number' ? entry : Number(entry?.quantity) || 0
+      return sum + (qty > 0 ? qty : 0)
+    }, 0)
+  })
   const { user } = useAuth()
   const { t, language } = useStorefrontI18n()
   const brandColor = useBrandColor()

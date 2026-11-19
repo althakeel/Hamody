@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import ProductCard from '@/components/ProductCard'
-import { HOME_PRODUCT_GRID_CLASS, HOME_SECTION_CLASS, HOME_SECTION_GRID_INNER_CLASS, HOME_SECTION_TITLE_CLASS } from '@/lib/storefrontCarousel'
+import { HOME_PRODUCT_GRID_CLASS, HOME_SECTION_CLASS, HOME_SECTION_GRID_INNER_CLASS, HOME_SECTION_TITLE_CLASS, homepageTwoRowItemClass } from '@/lib/storefrontCarousel'
 import { localizeField } from '@/lib/storefrontLanguage'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
 import { findTopDealsSection, isTopDealsVisibleOnWebsite } from '@/lib/homeTopDeals'
@@ -129,7 +129,9 @@ export default function TopDeals({
         ) : (
           <div className={HOME_PRODUCT_GRID_CLASS}>
             {products.slice(0, 12).map((product, index) => (
-              <ProductCard key={product._id || product.id || index} product={product} priorityImages={index < 2} />
+              <div key={product._id || product.id || index} className={homepageTwoRowItemClass(index, 6)}>
+                <ProductCard product={product} priorityImages={index < 2} />
+              </div>
             ))}
           </div>
         )}

@@ -50,6 +50,7 @@ function EmptyCategoriesState({ t, isArabic }) {
 export default function CategoriesDirectoryView({
   parentCategories,
   childrenByParent,
+  productImagesById = {},
 }) {
   const { t, language, isArabic } = useStorefrontI18n();
 
@@ -71,22 +72,24 @@ export default function CategoriesDirectoryView({
             {t('categories.subtitle', { count: parentCategories.length })}
           </p>
 
-          <nav className="mt-6 grid max-w-3xl grid-cols-2 gap-4" aria-label={t('categories.title')}>
+          <nav className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" aria-label={t('categories.title')}>
             {parentCategories.map((parent) => {
               const label = getCategoryLabel(parent, language);
-              const image = findCategoryImage(parent, childrenByParent);
+              const image = findCategoryImage(parent, childrenByParent)
+                || productImagesById[String(parent._id)]
+                || '';
               return (
                 <CategoryHref
                   key={parent._id}
                   category={parent}
                   className="group overflow-hidden rounded-2xl border border-[#E2E7E8] bg-white transition hover:border-[#05090D]"
                 >
-                  <span className="block aspect-[4/3] overflow-hidden bg-[#F8FEE6]">
+                  <span className="isolate block aspect-[4/3] overflow-hidden bg-[#F8FEE6]">
                     {image ? (
                       <img
                         src={image}
                         alt=""
-                        className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                        className="h-full w-full object-contain p-4 mix-blend-darken transition duration-300 group-hover:scale-105"
                       />
                     ) : (
                       <span className="flex h-full items-center justify-center text-3xl font-semibold text-[#05090D]">

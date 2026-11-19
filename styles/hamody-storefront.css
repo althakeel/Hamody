@@ -242,7 +242,7 @@ html:not(:has([data-store-language-scope])) input[type="radio"] {
   @keyframes hm-section-in {
     from {
       opacity: 0;
-      transform: translateY(18px);
+      transform: translateY(12px);
     }
     to {
       opacity: 1;
@@ -251,7 +251,25 @@ html:not(:has([data-store-language-scope])) input[type="radio"] {
   }
 
   .hm-section-in {
-    animation: hm-section-in 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: hm-section-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes hm-promo-zoom {
+    0%, 24%, 100% { transform: scale(1); }
+    12% { transform: scale(1.12); }
+  }
+
+  .hm-promo-zoom {
+    animation: hm-promo-zoom 12s ease-in-out infinite;
+    transform-origin: center;
+  }
+
+  .hm-promo-row > :nth-child(2) .hm-promo-zoom { animation-delay: 3s; }
+  .hm-promo-row > :nth-child(3) .hm-promo-zoom { animation-delay: 6s; }
+  .hm-promo-row > :nth-child(4) .hm-promo-zoom { animation-delay: 9s; }
+
+  .hm-promo-row:hover .hm-promo-zoom {
+    animation-play-state: paused;
   }
 
   @keyframes hm-nav-shadow {
