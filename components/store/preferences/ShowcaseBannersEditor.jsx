@@ -1185,6 +1185,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
   const [openBottomText, setOpenBottomText] = useState(false)
   const [openFullWidthText, setOpenFullWidthText] = useState(false)
   const [openLowerFullWidthText, setOpenLowerFullWidthText] = useState(false)
+  const [uploadingGridIndex, setUploadingGridIndex] = useState(null)
   const [loadedShowcase, setLoadedShowcase] = useState({})
   const formRef = useRef(form)
   const loadedShowcaseRef = useRef(loadedShowcase)
@@ -1372,6 +1373,38 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
     } catch (error) {
       toast.error(uploadErrorMessage(error))
       console.error(error)
+    }
+  }
+
+  const patchProductBanner = (index, patch) => {
+    setForm((prev) => {
+      const productBanners = [...prev.productBanners]
+      while (productBanners.length <= index && productBanners.length < 4) {
+        productBanners.push(createBanner())
+      }
+      if (!productBanners[index]) return prev
+      productBanners[index] = { ...productBanners[index], ...patch }
+      return { ...prev, productBanners }
+    })
+  }
+
+  const uploadGridCardImage = async (index, file) => {
+    if (!file) return
+    try {
+      setUploadingGridIndex(index)
+      const token = await getToken()
+      const url = sanitizeImageUrl(await uploadImage(file, token))
+      patchProductBanner(index, {
+        image: url,
+        file: null,
+        previewUrl: url,
+      })
+      toast.success('Image added. Click Publish to storefront to save.')
+    } catch (error) {
+      toast.error(uploadErrorMessage(error))
+      console.error(error)
+    } finally {
+      setUploadingGridIndex(null)
     }
   }
 
@@ -1630,6 +1663,72 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
             </p>
           </>
         )}
+
+        <div className={`${embedded ? '' : 'mt-4'} rounded-2xl border border-slate-200 bg-white p-4 shadow-sm`}>
+          <h2 className="text-sm font-semibold text-slate-900">4-grid images</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            These four cards sit in a row on the homepage. Upload one image per card. Recommended size {PRODUCT_BANNER_SIZES.image.width} × {PRODUCT_BANNER_SIZES.image.height} px. Click Publish to storefront to update the store.
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
+            {PRODUCT_SLOT_LABELS.map((label, index) => {
+              const banner = form.productBanners[index]
+              const src = banner?.previewUrl || banner?.image || banner?.imageAr || ''
+              const isUploading = uploadingGridIndex === index
+              return (
+                <div key={label} className="flex min-w-0 flex-col rounded-xl border border-slate-200 bg-slate-50 p-2">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-slate-800">{label}</span>
+                    <span className="text-[11px] text-slate-400">{index + 1} of 4</span>
+                  </div>
+                  <div className="relative aspect-[1225/639] overflow-hidden rounded-lg border border-dashed border-slate-300 bg-white">
+                    {src ? (
+                      <Image src={src} alt={label} fill unoptimized className="object-cover" />
+                    ) : (
+                      <div className="flex h-full flex-col items-center justify-center gap-1 px-2 text-center text-[11px] text-slate-400">
+                        <Upload size={16} />
+                        No image
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 ${isUploading ? 'pointer-events-none opacity-60' : ''}`}>
+                      {isUploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                      {src ? 'Replace' : 'Add image'}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                        className="hidden"
+                        disabled={isUploading}
+                        onChange={(event) => {
+                          uploadGridCardImage(index, event.target.files?.[0] || null)
+                          event.target.value = ''
+                        }}
+                      />
+                    </label>
+                    {src ? (
+                      <button
+                        type="button"
+                        onClick={() => patchProductBanner(index, { image: '', previewUrl: '', file: null })}
+                        className="text-xs font-medium text-red-600 hover:underline"
+                      >
+                        Remove
+                      </button>
+                    ) : null}
+                  </div>
+                  <label className="mt-2 block">
+                    <span className="mb-1 block text-[11px] font-medium text-slate-500">Link</span>
+                    <input
+                      className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs"
+                      value={banner?.link || ''}
+                      onChange={(event) => patchProductBanner(index, { link: event.target.value, linkType: event.target.value.trim() ? 'custom' : 'none' })}
+                      placeholder="/shop or https://"
+                    />
+                  </label>
+                </div>
+              )
+            })}
+          </div>
+        </div>
 
         <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-sm font-semibold text-slate-900">Banner arrows</h2>
@@ -2811,7 +2910,7 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Product banner cards</h2>
             <p className="text-xs text-slate-500">
-              Up to 4 cards · remove empty slots · storefront auto-resizes to 1–4 columns
+              Extra options for the same four cards: Arabic and device images, title, button, and category or product links.
             </p>
           </div>
           <button

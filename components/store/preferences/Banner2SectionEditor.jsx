@@ -61,8 +61,31 @@ const createBannerSliderItem = (overrides = {}) => ({
   alt: overrides.alt || '',
 })
 
+const PLACEMENTS = [
+  {
+    id: 'below_small_banners',
+    label: 'Under the 4-grid cards',
+    hint: 'Full horizontal banner directly under the four cards.',
+  },
+  {
+    id: 'below_top_deals',
+    label: 'Below Top Deals',
+    hint: 'Sits under the Top Deals row.',
+  },
+  {
+    id: 'above_top_deals',
+    label: 'Above Top Deals',
+    hint: 'Sits just before Top Deals.',
+  },
+]
+
+const normalizePlacement = (value) => (
+  PLACEMENTS.some((placement) => placement.id === value) ? value : 'below_top_deals'
+)
+
 const DEFAULT_FORM = {
   enabled: true,
+  placement: 'below_top_deals',
   desktopInterval: 4000,
   mobileInterval: 3000,
   desktopHeight: 220,
@@ -108,6 +131,7 @@ export default function Banner2SectionEditor({ embedded = false }) {
           : true,
         desktopInterval: Number(res.data?.shopShowcase?.secondaryBannerSliderDesktopInterval || 4000),
         mobileInterval: Number(res.data?.shopShowcase?.secondaryBannerSliderMobileInterval || 3000),
+        placement: normalizePlacement(res.data?.shopShowcase?.secondaryBannerSliderPlacement),
         desktopHeight: Number(res.data?.shopShowcase?.secondaryBannerSliderDesktopHeight || 220),
         mobileHeight: Number(res.data?.shopShowcase?.secondaryBannerSliderMobileHeight || 120),
         items: Array.from({ length: Math.max(1, savedItems.length || 2) }, (_, index) => {
@@ -249,11 +273,11 @@ export default function Banner2SectionEditor({ embedded = false }) {
       const response = await axios.put('/api/store/preferences/shop-showcase', {
         ...loadedShowcase,
         secondaryBannerSliderEnabled: !!form.enabled,
+        secondaryBannerSliderPlacement: normalizePlacement(form.placement),
         secondaryBannerSliderDesktopInterval: Number(form.desktopInterval || 4000),
         secondaryBannerSliderMobileInterval: Number(form.mobileInterval || 3000),
         secondaryBannerSliderDesktopHeight: Number(form.desktopHeight || 220),
         secondaryBannerSliderMobileHeight: Number(form.mobileHeight || 120),
-        secondaryBannerSliderPlacement: 'below_top_deals',
         secondaryBannerSliderItems,
       }, {
         headers: { Authorization: `Bearer ${token}` },
@@ -321,7 +345,7 @@ export default function Banner2SectionEditor({ embedded = false }) {
           <div>
             <h2 className="text-base font-semibold text-slate-900">Banner slider</h2>
             <p className="mt-1 text-sm text-slate-600">
-              This section appears directly below Top Deals on the homepage. Each slide can have English and Arabic images for desktop, tablet, and mobile, plus a category, product, or custom link.
+              Each slide can have English and Arabic images for desktop, tablet, and mobile, plus a category, product, or custom link. Choose where the slider sits on the homepage.
             </p>
           </div>
           <label className="inline-flex cursor-pointer items-center gap-2">
@@ -333,6 +357,33 @@ export default function Banner2SectionEditor({ embedded = false }) {
             />
             <span className="text-sm font-medium text-slate-700">Enable Banner 2 Section</span>
           </label>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <h3 className="text-sm font-semibold text-slate-900">Slider position</h3>
+          <p className="mt-1 text-sm text-slate-600">
+            Under the 4-grid cards shows each slide as a full horizontal banner (1600 × 500 on desktop).
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            {PLACEMENTS.map((placement) => {
+              const selected = normalizePlacement(form.placement) === placement.id
+              return (
+                <button
+                  key={placement.id}
+                  type="button"
+                  onClick={() => setForm((prev) => ({ ...prev, placement: placement.id }))}
+                  className={`rounded-lg border px-3 py-3 text-left ${
+                    selected
+                      ? 'border-emerald-500 bg-white ring-1 ring-emerald-500'
+                      : 'border-slate-200 bg-white hover:border-slate-300'
+                  }`}
+                >
+                  <span className="block text-sm font-semibold text-slate-900">{placement.label}</span>
+                  <span className="mt-1 block text-xs text-slate-500">{placement.hint}</span>
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">

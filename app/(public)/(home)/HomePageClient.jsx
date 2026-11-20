@@ -105,9 +105,6 @@ export default function HomePageClient({ initialData }) {
           skipInitialFetch
         />
         <HomePromoRow />
-        {showSecondaryBannerAt('below_small_banners') ? (
-          <BannerSlider2 config={shopShowcaseConfig} />
-        ) : null}
         {showHeroCategories ? (
           <HomeCategories />
         ) : null}

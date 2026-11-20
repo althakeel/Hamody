@@ -401,7 +401,7 @@ export default function ShowcaseLargeBannerSlider({
       ) : null}
 
       {enabled && slideCount > 1 ? (
-        <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2" data-banner-ignore-drag>
+        <div className="absolute bottom-2.5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5" data-banner-ignore-drag>
           {visibleSlides.map((slide, dotIndex) => (
             <button
               key={`dot-${slide.id || dotIndex}`}
@@ -412,10 +412,10 @@ export default function ShowcaseLargeBannerSlider({
                 event.stopPropagation();
                 goToSlide(dotIndex);
               }}
-              className={`h-2.5 rounded-full transition-all duration-300 ease-out ${
+              className={`h-1.5 rounded-full transition-all duration-300 ease-out ${
                 activeDotIndex === dotIndex
-                  ? 'w-7 bg-white shadow-sm'
-                  : 'w-2.5 bg-white/45 hover:bg-white/75'
+                  ? 'w-4 bg-white shadow-sm'
+                  : 'w-1.5 bg-white/45 hover:bg-white/75'
               }`}
             />
           ))}

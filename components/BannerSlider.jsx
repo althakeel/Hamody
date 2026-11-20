@@ -30,7 +30,7 @@ const DEFAULT_HEIGHTS = {
   secondary: { desktop: 220, mobile: 120 },
 };
 
-const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, config: configProp = null }) => {
+const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, contained = false, config: configProp = null }) => {
   const [fetchedConfig, setFetchedConfig] = useState(null);
   const [fetchComplete, setFetchComplete] = useState(false);
   const [slideInterval, setSlideInterval] = useState(4000);
@@ -158,7 +158,9 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
   const defaultSpacing = '';
   const useMobileFullWidth = variant === 'secondary' || isFullWidth;
   const wrapperClassName = `banner-slider relative w-full bg-transparent rounded-none m-0 p-0 ${defaultSpacing} ${
-    isFullWidth
+    contained ? 'banner-slider--horizontal' : ''
+  } ${
+    contained || isFullWidth
       ? 'max-w-none px-0'
       : useMobileFullWidth
         ? 'max-w-none px-0 sm:max-w-[1400px] sm:mx-auto sm:px-6'
@@ -190,6 +192,18 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
           @media (min-width: 640px) {
             .banner-slider__slide {
               height: var(--banner-slider-desktop-height);
+            }
+          }
+
+          .banner-slider--horizontal .banner-slider__slide {
+            height: auto;
+            aspect-ratio: 750 / 420;
+          }
+
+          @media (min-width: 640px) {
+            .banner-slider--horizontal .banner-slider__slide {
+              height: auto;
+              aspect-ratio: 1600 / 500;
             }
           }
         `}</style>
@@ -228,7 +242,7 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
                     fill
                     sizes="100vw"
                     draggable={false}
-                    className="pointer-events-none object-cover object-center md:hidden"
+                    className={`pointer-events-none object-center md:hidden ${contained ? 'object-contain' : 'object-cover'}`}
                     priority={i <= 1}
                   />
                 ) : null}
@@ -239,7 +253,7 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
                     fill
                     sizes="(max-width: 1024px) 100vw, 1100px"
                     draggable={false}
-                    className="pointer-events-none hidden scale-[1.01] object-cover object-center md:block lg:hidden"
+                    className={`pointer-events-none hidden object-center md:block lg:hidden ${contained ? 'object-contain' : 'scale-[1.01] object-cover'}`}
                     priority={i <= 1}
                   />
                 ) : null}
@@ -250,7 +264,7 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
                     fill
                     sizes="(max-width: 1400px) 100vw, 1400px"
                     draggable={false}
-                    className="pointer-events-none hidden scale-[1.01] object-cover object-center lg:block"
+                    className={`pointer-events-none hidden object-center lg:block ${contained ? 'object-contain' : 'scale-[1.01] object-cover'}`}
                     priority={i <= 1}
                   />
                 ) : null}
@@ -261,15 +275,15 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
       </div>
 
       {slideCount > 1 ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-3 z-10 flex justify-center gap-2" data-banner-ignore-drag>
+        <div className="pointer-events-none absolute inset-x-0 bottom-2.5 z-10 flex justify-center gap-1.5" data-banner-ignore-drag>
           {banners.map((_, i) => (
             <button
               type="button"
               key={i}
               onClick={() => goToSlide(i)}
               aria-label={`Go to banner ${i + 1}`}
-              className={`pointer-events-auto h-2.5 rounded-full transition-all duration-300 ease-out ${
-                i === activeDotIndex ? 'w-7 bg-white shadow-sm' : 'w-2.5 bg-white/50 hover:bg-white/75'
+              className={`pointer-events-auto h-1.5 rounded-full transition-all duration-300 ease-out ${
+                i === activeDotIndex ? 'w-4 bg-white shadow-sm' : 'w-1.5 bg-white/50 hover:bg-white/75'
               }`}
             />
           ))}
@@ -284,6 +298,18 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
         @media (min-width: 640px) {
           .banner-slider__slide {
             height: var(--banner-slider-desktop-height);
+          }
+        }
+
+        .banner-slider--horizontal .banner-slider__slide {
+          height: auto;
+          aspect-ratio: 750 / 420;
+        }
+
+        @media (min-width: 640px) {
+          .banner-slider--horizontal .banner-slider__slide {
+            height: auto;
+            aspect-ratio: 1600 / 500;
           }
         }
       `}</style>

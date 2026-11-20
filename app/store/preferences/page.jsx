@@ -25,7 +25,7 @@ const TABS = [
   {
     id: 'banner2',
     label: 'Banner 2 Section',
-    description: 'Rotating banner slides below Top Deals on the homepage.',
+    description: 'Rotating banner slides under the 4-grid cards or around Top Deals.',
     icon: Rows3,
   },
 ]
