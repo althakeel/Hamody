@@ -33,6 +33,7 @@ export default function ProductCarousel({
   compactDesktopOnly = false,
   edgeBleed = true,
   arrowsOutside = false,
+  alwaysShowArrows = false,
   cardsPerRow = 6,
   autoSlide = false,
   autoSlideIntervalMs = DEFAULT_CATEGORY_SLIDER_AUTO_SLIDE_INTERVAL_MS,
@@ -436,7 +437,7 @@ export default function ProductCarousel({
       onMouseEnter={() => { isHoverPausedRef.current = true }}
       onMouseLeave={() => { isHoverPausedRef.current = false }}
     >
-      {arrowsVisible && canScrollLeft && !autoSlide ? (
+      {arrowsVisible && (canScrollLeft || alwaysShowArrows) && !autoSlide ? (
         <button
           type="button"
           onClick={scrollLeft}
@@ -482,7 +483,7 @@ export default function ProductCarousel({
         </div>
       )}
 
-      {arrowsVisible && canScrollRight && !autoSlide ? (
+      {arrowsVisible && (canScrollRight || alwaysShowArrows) && !autoSlide ? (
         <button
           type="button"
           onClick={scrollRight}

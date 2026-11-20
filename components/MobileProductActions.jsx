@@ -76,13 +76,13 @@ export default function MobileProductActions({
             aria-label={t('common.addToCart')}
           >
             <img
-              src="/icons/navbar-cart.png"
+              src="/icons/add-to-cart.png"
               alt=""
-              width={18}
-              height={18}
+              width={22}
+              height={22}
               draggable={false}
               aria-hidden="true"
-              className="h-[18px] w-[18px] select-none object-contain"
+              className="h-[22px] w-[22px] select-none object-contain"
             />
             {showQuantityBadge ? (
               <span className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#C8F404] px-1 text-[10px] font-bold leading-none text-[#05090D] shadow-sm">

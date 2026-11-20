@@ -87,6 +87,7 @@ export default function SafeNextImage({
   placeholder,
   blurDataURL,
   loader,
+  ref,
   ...rest
 }) {
   const resolvedSrc = resolveImageSrc(src);
@@ -112,6 +113,7 @@ export default function SafeNextImage({
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
+        ref={ref}
         src={renderedSrc}
         alt={alt}
         width={fill ? undefined : width}
@@ -127,6 +129,7 @@ export default function SafeNextImage({
 
   return (
     <Image
+      ref={ref}
       src={imageSrc}
       alt={alt}
       fill={fill}

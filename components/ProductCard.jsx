@@ -37,6 +37,64 @@ import TimeDeliveryBadge from '@/components/TimeDeliveryBadge'
 import { extractProductKarat } from '@/lib/productKarat'
 import { cardImageSrc } from '@/lib/cardImage'
 
+/** Crop collage photos that leave a white band under the main picture. */
+function collagePhotoCrop(img) {
+  if (!img?.naturalWidth || !img.naturalHeight) return null
+  const sample = 40
+  const canvas = document.createElement('canvas')
+  canvas.width = sample
+  canvas.height = sample
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })
+  if (!ctx) return null
+  try {
+    ctx.drawImage(img, 0, 0, sample, sample)
+  } catch {
+    return null
+  }
+  let pixels
+  try {
+    pixels = ctx.getImageData(0, 0, sample, sample).data
+  } catch {
+    return null
+  }
+  const white = new Array(sample)
+  for (let y = 0; y < sample; y += 1) {
+    let count = 0
+    for (let x = 0; x < sample; x += 1) {
+      const i = (y * sample + x) * 4
+      if (pixels[i] >= 242 && pixels[i + 1] >= 242 && pixels[i + 2] >= 242) count += 1
+    }
+    white[y] = count / sample
+  }
+  let y = 0
+  while (y < sample) {
+    if (white[y] < 0.9) {
+      y += 1
+      continue
+    }
+    const start = y
+    while (y < sample && white[y] >= 0.9) y += 1
+    const startFrac = start / sample
+    const band = (y - start) / sample
+    // A collage gap is a short, nearly pure white strip in the lower half,
+    // with the main photo above it and a darker thumbnail strip just below.
+    if (band < 0.06 || band > 0.15 || startFrac < 0.55 || startFrac > 0.78) continue
+    let sharp = 0
+    for (let row = y; row < Math.min(sample, y + 6); row += 1) {
+      if (white[row] < 0.5) sharp += 1
+    }
+    if (sharp < 4) continue
+    let above = 0
+    for (let row = 0; row < start; row += 1) {
+      if (white[row] < 0.5) above += 1
+    }
+    if (above / sample < 0.2) continue
+    const visible = Math.max(0.42, (start - 0.5) / sample)
+    return Math.min(1.9, Number((1 / visible).toFixed(3)))
+  }
+  return null
+}
+
 const parseAmount = (value) => {
   const num = Number(String(value ?? '').replace(/[^0-9.]/g, ''))
   return Number.isNaN(num) ? 0 : num
@@ -109,6 +167,7 @@ const ProductCard = ({
   const [hovered, setHovered] = useState(false)
   const [showCardVideo, setShowCardVideo] = useState(false)
   const [isCartHydrated, setIsCartHydrated] = useState(false)
+  const [photoScale, setPhotoScale] = useState(null)
   const cardVideoRef = useRef(null)
   const cardRef = useRef(null)
 
@@ -197,6 +256,31 @@ const ProductCard = ({
     secondaryRaw !== PLACEHOLDER &&
     secondaryRaw !== primaryRaw &&
     normalizeProductImages(product.images).length > 1
+
+  useEffect(() => {
+    const root = cardRef.current
+    const img = root?.querySelector?.('img')
+    if (!img) return undefined
+    const apply = () => {
+      const nextScale = collagePhotoCrop(img)
+      if (!nextScale) return
+      setPhotoScale((current) => (current === nextScale ? current : nextScale))
+    }
+    if (img.complete && img.naturalWidth) apply()
+    else img.addEventListener('load', apply)
+    return () => img.removeEventListener('load', apply)
+  }, [primaryImage])
+
+  const bindProductPhoto = (node) => {
+    if (!node) return
+    const apply = () => {
+      const nextScale = collagePhotoCrop(node)
+      if (!nextScale) return
+      setPhotoScale((current) => (current === nextScale ? current : nextScale))
+    }
+    if (node.complete && node.naturalWidth) apply()
+    else node.addEventListener('load', apply, { once: true })
+  }
 
   useEffect(() => {
     setShowCardVideo(false)
@@ -318,17 +402,17 @@ const ProductCard = ({
       <button
         type="button"
         onClick={handleAddToCart}
-        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white p-0 shadow-none outline-none ring-0 transition-opacity duration-200 hover:opacity-70 focus:outline-none focus-visible:outline-none active:scale-95"
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-transparent p-0 shadow-none outline-none ring-0 transition-opacity duration-200 hover:opacity-70 focus:outline-none focus-visible:outline-none active:scale-95"
         aria-label={t('common.addToCart')}
       >
         <img
-          src="/icons/navbar-cart.png"
+          src="/icons/add-shopping-cart.png"
           alt=""
-          width={16}
-          height={16}
+          width={32}
+          height={32}
           draggable={false}
           aria-hidden="true"
-          className="h-4 w-4 select-none object-contain"
+          className="h-8 w-8 select-none object-contain"
         />
       </button>
     )
@@ -364,10 +448,12 @@ const ProductCard = ({
         {cardPreview.type === 'delayed-video' && !showCardVideo ? (
           <>
             <Image
+              ref={bindProductPhoto}
               src={cardPreview.imageSrc}
               alt={productName}
               fill
-              className="object-cover object-center scale-110 transition-transform duration-[400ms] ease-out group-hover:scale-[1.18]"
+              style={photoScale ? { transform: `scale(${photoScale})`, transformOrigin: 'center top' } : undefined}
+              className={`object-cover object-top ${photoScale ? '' : 'scale-110'} transition-transform duration-[400ms] ease-out group-hover:scale-[1.18]`}
               sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, 14vw"
               quality={priorityImages ? 70 : 55}
               priority={priorityImages}
@@ -406,14 +492,21 @@ const ProductCard = ({
         ) : (
           <>
             <Image
+              ref={bindProductPhoto}
               src={primaryImage}
               alt={productName}
               fill
-              className={`object-cover object-center scale-110 transition-[transform,opacity] duration-500 ease-out group-hover:scale-[1.18] ${hasSecondary && hovered ? 'opacity-0' : 'opacity-100'}`}
+              className={`object-cover ${photoScale ? 'object-top' : 'object-center scale-110'} transition-[transform,opacity] duration-500 ease-out group-hover:scale-[1.18] ${hasSecondary && hovered ? 'opacity-0' : 'opacity-100'}`}
               sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, 14vw"
               quality={priorityImages ? 70 : 55}
               priority={priorityImages}
               loading={priorityImages ? undefined : 'lazy'}
+              style={photoScale ? { transform: `scale(${photoScale})`, transformOrigin: 'center top' } : undefined}
+              onLoad={(event) => {
+                const nextScale = collagePhotoCrop(event.currentTarget)
+                if (!nextScale) return
+                setPhotoScale((current) => (current === nextScale ? current : nextScale))
+              }}
               onError={(e) => {
                 const img = e.currentTarget
                 if (img.dataset.fallback === '1') {
@@ -496,12 +589,12 @@ const ProductCard = ({
           </div>
         </div>
 
-        <div className="mt-2 mb-1 flex min-w-0 max-w-full justify-start">
+        <div className="empty:hidden mt-2 mb-1 flex min-w-0 max-w-full justify-start">
           <TimeDeliveryBadge productId={product?._id} arabic={language === 'ar'} className="max-w-full" />
         </div>
 
-        {!compactAll ? (
-          <div className={`flex min-h-[14px] min-w-0 justify-start ${compactLg ? 'lg:hidden' : ''}`}>
+        {!compactAll && reviewCount > 0 ? (
+          <div className={`flex min-w-0 justify-start ${compactLg ? 'lg:hidden' : ''}`}>
             {reviewCount > 0 ? (
               <span dir="ltr" className="inline-flex items-center gap-1">
                 {[...Array(5)].map((_, i) => (

@@ -16,6 +16,7 @@ import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
 import SectionReveal from '@/components/SectionReveal'
 
 const CAROUSEL_SECTION_SLUGS = new Set(['outdoor-camping'])
+const ONE_ROW_SECTION_SLUGS = new Set(['camping-personal-care'])
 
 export default function HomeCategorySections({ sections = [] }) {
   const { language, t } = useStorefrontI18n()
@@ -31,7 +32,43 @@ export default function HomeCategorySections({ sections = [] }) {
         const title = getLocalizedCategoryName(section, language)
         if (!title) return null
         const href = toPublicCategoryPath(section.slug)
-        if (CAROUSEL_SECTION_SLUGS.has(String(section.slug || '').trim().toLowerCase())) {
+        const slug = String(section.slug || '').trim().toLowerCase()
+        if (ONE_ROW_SECTION_SLUGS.has(slug)) {
+          return (
+            <section key={section._id || section.slug} className="w-full min-w-0 overflow-x-clip bg-[linear-gradient(180deg,#FBFEF2_0%,#F6FED6_42%,#ECFEA8_100%)]">
+              <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6">
+                <SectionReveal>
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <h2 className="text-base font-semibold text-black sm:text-lg md:text-[28px]">
+                      <Link href={href} className="hover:opacity-80">
+                        {title}
+                      </Link>
+                    </h2>
+                    <Link
+                      href={href}
+                      className="inline-flex shrink-0 items-center rounded-full bg-[#C8F404] px-4 py-1.5 text-sm font-semibold text-[#05090D] transition hover:opacity-90"
+                    >
+                      {t('categories.seeAll')}
+                    </Link>
+                  </div>
+                </SectionReveal>
+                <SectionReveal className="w-full min-w-0" delay={90}>
+                  <ProductCarousel
+                    products={section.products}
+                    cardsPerRow={5}
+                    showArrows
+                    showMobileArrows
+                    arrowsOutside
+                    alwaysShowArrows
+                    edgeBleed={false}
+                    priorityCount={2}
+                  />
+                </SectionReveal>
+              </div>
+            </section>
+          )
+        }
+        if (CAROUSEL_SECTION_SLUGS.has(slug)) {
           return (
             <section key={section._id || section.slug} className="w-full bg-[#EFFCC4]">
               <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6">
