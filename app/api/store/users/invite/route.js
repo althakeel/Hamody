@@ -6,14 +6,13 @@ import StoreUser from '@/models/StoreUser';
 import { getAuth } from '@/lib/firebase-admin';
 import { randomBytes } from "crypto";
 import { sendMail } from '@/lib/email';
-import { buildCustomerSitePath, getCustomerSiteUrl } from '@/lib/appUrl';
 
 function buildInviteEmailHtml({ storeName, inviteUrl }) {
   return `
     <div style="font-family: Arial, sans-serif; max-width: 620px; width: 100%; margin: auto;">
       <h2 style="color: #ff6600;">HAMODY Store Invitation</h2>
       <p>Hello,</p>
-      <p><b>${storeName}</b> has invited you to join their store team on <a href="${getCustomerSiteUrl()}" style="color: #ff6600;">HAMODY</a>.</p>
+      <p><b>${storeName}</b> has invited you to join their store team on <a href="https://www.hamody.com" style="color: #ff6600;">HAMODY</a>.</p>
       <p style="margin: 24px 0;">
         <a href="${inviteUrl}" style="background: #ff6600; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Accept Invitation</a>
       </p>
@@ -55,7 +54,7 @@ export async function POST(request) {
     const inviteExpiry = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7);
     const sanitizedPermissions = permissions && typeof permissions === 'object' ? permissions : {};
     const isResend = existing && ['invited', 'pending'].includes(existing.status);
-    const inviteUrl = buildCustomerSitePath(`/store/invite/accept?token=${inviteToken}`);
+    const inviteUrl = `https://www.hamody.com/store/invite/accept?token=${inviteToken}`;
 
     if (existing) {
       await StoreUser.updateOne(
