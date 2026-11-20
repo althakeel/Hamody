@@ -10,7 +10,6 @@ import {
   STOREFRONT_LANGUAGE_COOKIE,
   detectLanguageFromAcceptLanguage,
 } from "@/lib/storefrontLanguage";
-import { getGtmNoscriptSrc } from "@/lib/gtm";
 import { META_PIXEL_ID, getMetaPixelNoscriptSrc } from "@/lib/metaPixelConfig";
 import OrganizationJsonLd from "@/components/OrganizationJsonLd";
 import { SITE_URL } from "@/lib/sitemapData";
@@ -143,7 +142,7 @@ export default async function RootLayout({ children }) {
         </div>
         <noscript
           dangerouslySetInnerHTML={{
-            __html: `<iframe src="${getGtmNoscriptSrc()}" height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager"></iframe><img height="1" width="1" style="display:none" src="${getMetaPixelNoscriptSrc(META_PIXEL_ID)}" alt="" />`,
+            __html: `<img height="1" width="1" style="display:none" src="${getMetaPixelNoscriptSrc(META_PIXEL_ID)}" alt="" />`,
           }}
         />
       </body>

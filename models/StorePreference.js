@@ -57,6 +57,15 @@ const defaultSecondaryBannerSliderItems = [
   { id: 'secondary-banner-slider-2', image: '', link: '/shop', alt: 'Lower Banner 2' }
 ]
 
+const FrontPromoCardSchema = new mongoose.Schema(
+  {
+    image: { type: String, trim: true, default: '' },
+    link: { type: String, trim: true, default: '' },
+    alt: { type: String, trim: true, default: '' },
+  },
+  { _id: false }
+)
+
 const defaultProductBanners = [
   { image: '', title: 'Product Title', subtitle: 'Order now', buttonText: 'Order now', link: '/shop' },
   { image: '', title: 'Product Title', subtitle: 'Order now', buttonText: 'Order now', link: '/shop' },
@@ -195,6 +204,10 @@ const StorePreferenceSchema = new mongoose.Schema(
         type: [ProductBannerSchema],
         default: defaultProductBanners
       },
+      frontPromoCards: {
+        type: [FrontPromoCardSchema],
+        default: [],
+      },
       bannerSliderEnabled: { type: Boolean, default: true },
       bannerSliderDesktopInterval: { type: Number, default: 4000 },
       bannerSliderMobileInterval: { type: Number, default: 3000 },
@@ -318,6 +331,13 @@ if (!StorePreferenceModel.schema.path('shopShowcase.productBanners')) {
   missingShopShowcasePaths.productBanners = {
     type: [ProductBannerSchema],
     default: defaultProductBanners
+  }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.frontPromoCards')) {
+  missingShopShowcasePaths.frontPromoCards = {
+    type: [FrontPromoCardSchema],
+    default: [],
   }
 }
 

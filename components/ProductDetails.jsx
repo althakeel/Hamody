@@ -3296,7 +3296,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                       src={mainImage || PLACEHOLDER_IMAGE}
                       alt={safeProductName}
                       sizes="(max-width: 1024px) 100vw, 50vw"
-                      imageClassName="object-cover object-center pointer-events-none"
+                      imageClassName="object-contain object-center bg-white pointer-events-none"
                       priority
                     />
                   )}
@@ -3413,7 +3413,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                             controls
                             playsInline
                             preload="metadata"
-                            className="absolute inset-0 h-full w-full object-cover"
+                            className="absolute inset-0 h-full w-full object-contain bg-white"
                           />
                         ) : (
                           <Image
@@ -3423,7 +3423,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                             unoptimized
                             sizes="100vw"
                             quality={75}
-                            className="object-cover"
+                            className="object-contain bg-white"
                             priority={index === 0}
                             draggable={false}
                             onError={(e) => { e.currentTarget.src = PLACEHOLDER_IMAGE; }}
@@ -3447,7 +3447,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                     src={mainImage || PLACEHOLDER_IMAGE}
                     alt={safeProductName}
                     sizes="100vw"
-                    imageClassName="object-cover"
+                    imageClassName="object-contain object-center bg-white"
                     priority
                   />
                 )}

@@ -8,6 +8,7 @@ import { getCachedData, setCachedData } from '@/lib/cache'
 import { applyLargeBannerSliderDefaults } from '@/lib/shopShowcaseLargeBanners'
 import { hasShowcaseBannerImage, serializeShowcaseImageFields } from '@/lib/showcaseBannerImages'
 import { normalizeShowcaseLinkType } from '@/lib/showcaseBannerLinks'
+import { DEFAULT_FRONT_PROMO_CARDS, normalizeFrontPromoCards } from '@/lib/frontPromoCards'
 import { resolvePublicStorePreference } from '@/lib/storePreferencePublic'
 import { STOREFRONT_IN_STOCK_FILTER, STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility'
 
@@ -106,6 +107,7 @@ const DEFAULT_SHOWCASE = {
     { image: '', title: 'Product Title', subtitle: 'Order now', buttonText: 'Order now', link: '/shop' },
     { image: '', title: 'Product Title', subtitle: 'Order now', buttonText: 'Order now', link: '/shop' },
   ],
+  frontPromoCards: DEFAULT_FRONT_PROMO_CARDS,
   bannerSliderEnabled: true,
   bannerSliderDesktopInterval: 4000,
   bannerSliderMobileInterval: 3000,
@@ -264,6 +266,7 @@ function normalize(data = {}) {
     lowerFullWidthBannerLink: (data.lowerFullWidthBannerLink || '').toString().trim(),
     ...applyLargeBannerSliderDefaults(data),
     productBanners: normalizeProductBanners(data.productBanners),
+    frontPromoCards: normalizeFrontPromoCards(data.frontPromoCards),
     mainBannerDesktopHeight: normalizeMainBannerHeight(data.mainBannerDesktopHeight, DEFAULT_SHOWCASE.mainBannerDesktopHeight),
     mainBannerMobileHeight: normalizeMainBannerHeight(data.mainBannerMobileHeight, DEFAULT_SHOWCASE.mainBannerMobileHeight),
     bannerSliderEnabled: typeof data.bannerSliderEnabled === 'boolean' ? data.bannerSliderEnabled : DEFAULT_SHOWCASE.bannerSliderEnabled,

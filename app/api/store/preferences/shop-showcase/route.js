@@ -9,6 +9,7 @@ import { HOMEPAGE_CACHE_KEY } from '@/lib/categorySliderCache'
 import { applyLargeBannerSliderDefaults, serializeLargeBannerSliderItems } from '@/lib/shopShowcaseLargeBanners'
 import { hasShowcaseBannerImage, serializeShowcaseImageFields } from '@/lib/showcaseBannerImages'
 import { normalizeShowcaseLinkType } from '@/lib/showcaseBannerLinks'
+import { DEFAULT_FRONT_PROMO_CARDS, normalizeFrontPromoCards } from '@/lib/frontPromoCards'
 
 function resolveStoreObjectId(storeId) {
   const value = String(storeId || '').trim()
@@ -124,6 +125,7 @@ const DEFAULT_SHOWCASE = {
     { image: '', title: 'Product Title', subtitle: 'Order now', buttonText: 'Order now', link: '/shop' },
     { image: '', title: 'Product Title', subtitle: 'Order now', buttonText: 'Order now', link: '/shop' },
   ],
+  frontPromoCards: DEFAULT_FRONT_PROMO_CARDS,
   bannerSliderEnabled: true,
   bannerSliderDesktopInterval: 4000,
   bannerSliderMobileInterval: 3000,
@@ -319,6 +321,7 @@ function normalizeShopShowcase(data = {}) {
     fullWidthBannerCtaTextColor: normalizeString(data.fullWidthBannerCtaTextColor, DEFAULT_SHOWCASE.fullWidthBannerCtaTextColor),
     ...applyLargeBannerSliderDefaults(data),
     productBanners: normalizeProductBanners(data.productBanners),
+    frontPromoCards: normalizeFrontPromoCards(data.frontPromoCards),
     bannerSliderEnabled: typeof data.bannerSliderEnabled === 'boolean' ? data.bannerSliderEnabled : DEFAULT_SHOWCASE.bannerSliderEnabled,
     bannerSliderDesktopInterval: Math.max(1500, Number(data.bannerSliderDesktopInterval) || DEFAULT_SHOWCASE.bannerSliderDesktopInterval),
     bannerSliderMobileInterval: Math.max(1500, Number(data.bannerSliderMobileInterval) || DEFAULT_SHOWCASE.bannerSliderMobileInterval),

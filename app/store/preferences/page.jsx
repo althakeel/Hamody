@@ -3,11 +3,12 @@
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import axios from 'axios'
-import { Images, LayoutTemplate, Loader2, Rows3, Save } from 'lucide-react'
+import { Images, LayoutTemplate, Loader2, Rows3, Save, GalleryHorizontal } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/lib/useAuth'
 import ShowcaseBannersEditor from '@/components/store/preferences/ShowcaseBannersEditor'
 import Banner2SectionEditor from '@/components/store/preferences/Banner2SectionEditor'
+import FrontPromoCardsEditor from '@/components/store/preferences/FrontPromoCardsEditor'
 
 const TABS = [
   {
@@ -21,6 +22,12 @@ const TABS = [
     label: 'Showcase 4-Grid Banners',
     description: 'Top/bottom banners and four product cards in the showcase strip.',
     icon: Images,
+  },
+  {
+    id: 'front',
+    label: 'Homepage front',
+    description: 'Upload the top banner slider and the four cards under it.',
+    icon: GalleryHorizontal,
   },
   {
     id: 'banner2',
@@ -115,11 +122,11 @@ function PreferencesContent() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Homepage Showcase Settings</h1>
           <p className="mt-2 text-sm text-slate-600">
-            Manage referral rewards, showcase banners, and the Banner 2 slider from one place.
+            Manage the homepage front, referral rewards, showcase banners, and the Banner 2 slider from one place.
           </p>
         </div>
 
-        <div className="mb-6 grid gap-3 sm:grid-cols-3">
+        <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {TABS.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
@@ -183,6 +190,7 @@ function PreferencesContent() {
         )}
 
         {activeTab === 'showcase' && <ShowcaseBannersEditor embedded />}
+        {activeTab === 'front' && <FrontPromoCardsEditor />}
         {activeTab === 'banner2' && <Banner2SectionEditor embedded />}
       </div>
     </div>

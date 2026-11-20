@@ -41,7 +41,7 @@ const designPages = [
   },
   {
     title: 'Banner section - Home',
-    description: 'Referral rewards, showcase 4-grid banners, and Banner 2 slider — all in one place.',
+    description: 'Top homepage banner, the four front cards, showcase banners, and Banner 2 slider.',
     href: '/store/preferences',
     icon: LayoutTemplate,
   },

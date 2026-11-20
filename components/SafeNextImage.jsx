@@ -97,13 +97,16 @@ export default function SafeNextImage({
     : shouldBypassNextImageOptimizer(imageSrc);
 
   if (bypass) {
+    const classFit = /\bobject-contain\b/.test(className || '')
+      ? 'contain'
+      : 'cover'
     const imgStyle = fill
       ? {
           position: 'absolute',
           inset: 0,
           width: '100%',
           height: '100%',
-          objectFit: 'cover',
+          objectFit: classFit,
           ...style,
         }
       : style;

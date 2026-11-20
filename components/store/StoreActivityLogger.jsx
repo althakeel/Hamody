@@ -20,12 +20,27 @@ function requestPath(url = '') {
   }
 }
 
-function readAuthHeader(headers) {
+function readHeader(headers, name) {
   if (!headers) return '';
   if (typeof headers.get === 'function') {
-    return headers.get('Authorization') || headers.get('authorization') || '';
+    return headers.get(name) || headers.get(name.toLowerCase()) || '';
   }
-  return headers.Authorization || headers.authorization || '';
+  const key = Object.keys(headers).find((entry) => entry.toLowerCase() === name.toLowerCase());
+  return key ? headers[key] : '';
+}
+
+function readAuthHeader(headers) {
+  return readHeader(headers, 'authorization');
+}
+
+function isNextRouterFetch(input, init) {
+  const headers = init?.headers || input?.headers;
+  if (readHeader(headers, 'rsc') || readHeader(headers, 'next-url') || readHeader(headers, 'next-router-state-tree')) {
+    return true;
+  }
+  const raw = typeof input === 'string' ? input : input?.url || input?.href || '';
+  const url = String(raw || '');
+  return url.includes('_rsc=') || url.includes('/_next/');
 }
 
 function readRequestPayload(data) {
@@ -86,21 +101,24 @@ export default function StoreActivityLogger() {
     const alreadyWrapped = Boolean(window.fetch?.__storeActivityWrapped);
     const originalFetch = alreadyWrapped ? null : window.fetch.bind(window);
     if (!alreadyWrapped) {
-      const wrappedFetch = async (input, init = {}) => {
-        const response = await originalFetch(input, init);
-        try {
-          const url = typeof input === 'string' ? input : input?.url;
-          logStoreChange({
-            method: String(init.method || input?.method || 'GET').toLowerCase(),
-            path: requestPath(url),
-            status: response.status,
-            authorization: readAuthHeader(init.headers || input?.headers),
-            payload: readRequestPayload(init.body),
-          });
-        } catch {
-          // Ignore logging failures.
-        }
-        return response;
+      const wrappedFetch = (input, init) => {
+        const request = init === undefined ? originalFetch(input) : originalFetch(input, init);
+        if (isNextRouterFetch(input, init)) return request;
+        return request.then((response) => {
+          try {
+            const url = typeof input === 'string' ? input : input?.url || input?.href;
+            logStoreChange({
+              method: String(init?.method || input?.method || 'GET').toLowerCase(),
+              path: requestPath(url),
+              status: response.status,
+              authorization: readAuthHeader(init?.headers || input?.headers),
+              payload: readRequestPayload(init?.body),
+            });
+          } catch {
+            // Ignore logging failures.
+          }
+          return response;
+        });
       };
       wrappedFetch.__storeActivityWrapped = true;
       window.fetch = wrappedFetch;

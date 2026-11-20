@@ -39,20 +39,50 @@ function normalizeProductId(productId) {
     return String(productId?._id || productId || '')
 }
 
-function flattenCategories(items = [], depth = 0, parentId = '') {
-    if (!Array.isArray(items)) return []
-
-    return items.flatMap((item) => {
+function flattenCategories(items = []) {
+    const byId = new Map()
+    for (const item of Array.isArray(items) ? items : []) {
         const id = String(item?._id || item?.id || '').trim()
-        const current = {
+        if (!id || byId.has(id)) continue
+        byId.set(id, {
             id,
             name: String(item?.name || '').trim(),
-            depth,
-            parentId: String(item?.parentId || parentId || ''),
+            parentId: String(item?.parentId || '').trim(),
+        })
+    }
+
+    const childrenByParent = new Map()
+    for (const category of byId.values()) {
+        const parentId = byId.has(category.parentId) ? category.parentId : ''
+        const list = childrenByParent.get(parentId) || []
+        list.push(category)
+        childrenByParent.set(parentId, list)
+    }
+
+    const ordered = []
+    const seen = new Set()
+    const walk = (parentId, depth) => {
+        for (const category of childrenByParent.get(parentId) || []) {
+            if (seen.has(category.id)) continue
+            seen.add(category.id)
+            ordered.push({
+                id: category.id,
+                name: category.name,
+                depth,
+                parentId,
+            })
+            walk(category.id, depth + 1)
         }
-        const children = flattenCategories(item?.children || [], depth + 1, id)
-        return id ? [current, ...children] : children
-    })
+    }
+
+    walk('', 0)
+    for (const category of byId.values()) {
+        if (seen.has(category.id)) continue
+        seen.add(category.id)
+        ordered.push({ id: category.id, name: category.name, depth: 0, parentId: '' })
+        walk(category.id, 1)
+    }
+    return ordered
 }
 
 function expandSelectedCategories(flatCategories = [], selectedIds = []) {

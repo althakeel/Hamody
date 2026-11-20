@@ -8,6 +8,7 @@ import axios from 'axios'
 import Loading from '@/components/Loading'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import { buildCustomerSitePath } from '@/lib/appUrl'
 import AddressModal from '@/components/AddressModal'
 import DashboardSidebar from '@/components/DashboardSidebar'
 
@@ -188,7 +189,7 @@ export default function DashboardProfilePage() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const link = `${window.location.origin}/?ref=${referralCode}`
+                                  const link = buildCustomerSitePath(`/?ref=${encodeURIComponent(referralCode)}`)
                                   const text = `Join and shop with my referral code ${referralCode}! ${link}`
                                   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
                                 }}
@@ -202,7 +203,7 @@ export default function DashboardProfilePage() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const link = `${window.location.origin}/?ref=${referralCode}`
+                                  const link = buildCustomerSitePath(`/?ref=${encodeURIComponent(referralCode)}`)
                                   const text = `Join and shop with my referral code ${referralCode}!`
                                   window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`, '_blank')
                                 }}
@@ -216,7 +217,7 @@ export default function DashboardProfilePage() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const link = `${window.location.origin}/?ref=${referralCode}`
+                                  const link = buildCustomerSitePath(`/?ref=${encodeURIComponent(referralCode)}`)
                                   const text = `Join and shop with my referral code ${referralCode}! ${link}`
                                   window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank')
                                 }}
@@ -229,7 +230,7 @@ export default function DashboardProfilePage() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const link = `${window.location.origin}/?ref=${referralCode}`
+                                  const link = buildCustomerSitePath(`/?ref=${encodeURIComponent(referralCode)}`)
                                   window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`, '_blank')
                                 }}
                                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white rounded-lg"
@@ -243,7 +244,7 @@ export default function DashboardProfilePage() {
                                 type="button"
                                 onClick={async () => {
                                   try {
-                                    const link = `${window.location.origin}/?ref=${referralCode}`
+                                    const link = buildCustomerSitePath(`/?ref=${encodeURIComponent(referralCode)}`)
                                     await navigator.clipboard.writeText(link)
                                     toast.success('Referral link copied')
                                   } catch {

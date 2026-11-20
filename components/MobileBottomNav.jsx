@@ -35,7 +35,8 @@ import {
 } from '@/lib/offersPageSettings'
 
 const DEFAULT_BRAND_COLOR = '#05090D'
-const INACTIVE_NAV_COLOR = '#94a3b8'
+const INACTIVE_NAV_COLOR = '#5E6870'
+const LIME = '#C8F404'
 const NAVBAR_APPEARANCE_CACHE_KEY = 'navbarAppearanceCache'
 const OFFERS_HREF = '/offers'
 const SHOP_HREF = '/shop'
@@ -100,15 +101,18 @@ function RegularNavItem({ item, pathname, brandColor, hydrated }) {
       aria-current={isActive ? 'page' : undefined}
     >
       <span
-        className={`flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-1.5 py-1 transition-all duration-200 active:scale-95 ${
+        className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-1 transition-all duration-200 active:scale-95 ${
           isActive ? '' : 'group-hover:opacity-80'
         }`}
       >
-        <span className="relative flex h-5 w-5 items-center justify-center">
+        <span
+          className="relative flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-200"
+          style={{ backgroundColor: isActive ? LIME : 'transparent' }}
+        >
           <Icon
             size={18}
-            strokeWidth={isActive ? 2.5 : 1.9}
-            color={iconColor}
+            strokeWidth={isActive ? 2.4 : 1.8}
+            color={isActive ? DEFAULT_BRAND_COLOR : iconColor}
             className="transition-colors duration-200"
           />
           {hydrated && item.badge > 0 && (
@@ -121,10 +125,10 @@ function RegularNavItem({ item, pathname, brandColor, hydrated }) {
           )}
         </span>
         <span
-          className={`max-w-[52px] truncate text-[9px] leading-none tracking-tight transition-colors duration-200 ${
+          className={`max-w-[64px] truncate text-[10px] leading-none tracking-tight transition-colors duration-200 ${
             isActive ? 'font-semibold' : 'font-medium'
           }`}
-          style={{ color: iconColor }}
+          style={{ color: isActive ? DEFAULT_BRAND_COLOR : iconColor }}
         >
           {item.label}
         </span>
@@ -153,34 +157,34 @@ function CenterTodayDealsItem({
   const showImage = settings?.mode === 'image' && Boolean(String(settings?.imageUrl || '').trim())
   const showCircleText = settings?.mode === 'text' && Boolean(String(settings?.circleText || '').trim())
   const hasGif = !showImage && !showCircleText && Boolean(String(gifUrl || '').trim())
-  const labelColor = isActive ? settings.labelActiveColor : settings.labelColor
-  const className = 'group relative -mt-4 flex min-w-0 flex-1 flex-col items-center justify-end pb-0.5'
+  const labelColor = isActive ? DEFAULT_BRAND_COLOR : INACTIVE_NAV_COLOR
+  const className = 'group relative flex min-w-0 flex-1 flex-col items-center justify-end pb-0.5'
   const circle = (
     <>
       <span
-        className={`relative flex h-[46px] w-[46px] items-center justify-center overflow-hidden rounded-full ring-[3px] ring-white active:scale-95 ${settings.animationClass || ''}`}
+        className={`relative -mt-3 flex h-11 w-11 items-center justify-center overflow-hidden rounded-full ring-[3px] ring-white active:scale-95 ${settings.animationClass || ''}`}
         style={{
-          background: showImage ? settings.backgroundColor : settings.background,
-          boxShadow: `0 4px 14px ${settings.shadow}`,
+          background: showImage ? '#ffffff' : LIME,
+          boxShadow: '0 6px 16px rgba(5, 9, 13, 0.12)',
         }}
       >
         {showImage ? (
           <img src={settings.imageUrl} alt="" className="h-full w-full object-cover" />
         ) : showCircleText ? (
-          <span className="max-w-[40px] truncate px-1 text-center text-[11px] font-extrabold leading-none text-white">
+          <span className="max-w-[36px] truncate px-1 text-center text-[11px] font-extrabold leading-none text-[#05090D]">
             {settings.circleText}
           </span>
         ) : hasGif ? (
           <img src={gifUrl} alt="" className="h-7 w-7 object-contain" />
         ) : (
-          <Percent size={21} color="#ffffff" strokeWidth={2.5} />
+          <Percent size={20} color={DEFAULT_BRAND_COLOR} strokeWidth={2.6} />
         )}
       </span>
       {line1 ? (
       <span className="mt-1 flex flex-col items-center leading-none">
         <span
-          className={`text-[8px] leading-tight transition-colors duration-200 ${
-            isActive ? 'font-bold' : 'font-semibold'
+          className={`text-[10px] leading-tight transition-colors duration-200 ${
+            isActive ? 'font-semibold' : 'font-medium'
           }`}
           style={{ color: labelColor }}
         >
@@ -188,8 +192,8 @@ function CenterTodayDealsItem({
         </span>
         {line2 ? (
           <span
-            className={`text-[8px] leading-tight transition-colors duration-200 ${
-              isActive ? 'font-bold' : 'font-semibold'
+            className={`text-[10px] leading-tight transition-colors duration-200 ${
+              isActive ? 'font-semibold' : 'font-medium'
             }`}
             style={{ color: labelColor }}
           >
@@ -391,8 +395,8 @@ export default function MobileBottomNav() {
             settings={bottomNav}
           />
         ) : (
-          <span className="relative -mt-4 flex min-w-0 flex-1 flex-col items-center justify-end pb-0.5" aria-hidden="true">
-            <span className="h-[46px] w-[46px] animate-pulse rounded-full bg-slate-200 ring-[3px] ring-white" />
+          <span className="relative flex min-w-0 flex-1 flex-col items-center justify-end pb-0.5" aria-hidden="true">
+            <span className="-mt-3 h-11 w-11 animate-pulse rounded-full bg-[#EFFCC4] ring-[3px] ring-white" />
             <span className="mt-1 h-2 w-8 animate-pulse rounded bg-slate-200" />
           </span>
         )}

@@ -223,6 +223,7 @@ const Navbar = () => {
   const [walletCoins, setWalletCoins] = useState(0);
   const storefrontWalletEnabled = isStorefrontWalletEnabled();
   const [searchFocused, setSearchFocused] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [searchSuggestionResults, setSearchSuggestionResults] = useState([]);
   const [searchSuggestionTotal, setSearchSuggestionTotal] = useState(0);
   const [searchSuggestionsLoading, setSearchSuggestionsLoading] = useState(false);
@@ -1401,6 +1402,7 @@ const Navbar = () => {
     const query = search.trim();
     if (!query) return;
     setSearchFocused(false);
+    setMobileSearchOpen(false);
     void recordStorefrontSearch(query, {
       source: 'navbar',
       userId: firebaseUser?.uid || '',
@@ -2158,60 +2160,76 @@ const Navbar = () => {
             </Link>
           </div>
 
-          <form onSubmit={handleSearch} className="relative z-[70] min-w-0 flex-1">
-            <div
-              className="relative flex h-9 min-w-0 items-center overflow-hidden pl-2.5 pr-1 shadow-[0_2px_10px_rgba(15,23,42,0.12)] sm:pl-3"
-              data-font={mobileSearchAppearance.fontId || 'inherit'}
-              style={mobileSearchAppearance.boxStyle}
-            >
-              <input
-                ref={mobileSearchInputRef}
-                type="search"
-                enterKeyHint="search"
-                placeholder={customSearchPlaceholder || searchPlaceholder || t('navbar.searchFragrances')}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onPaste={handleSearchImagePaste}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
-                className="min-w-0 flex-1 bg-transparent outline-none placeholder:opacity-50"
-                style={mobileSearchAppearance.inputStyle}
-              />
-              {search.trim() ? (
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-0.5">
+          {mobileSearchOpen ? (
+            <form onSubmit={handleSearch} className="relative z-[70] min-w-0 flex-1">
+              <div className="flex h-10 min-w-0 items-center gap-1 rounded-full border border-slate-200 bg-white pl-2 pr-1">
                 <button
                   type="button"
-                  onClick={() => setSearch('')}
-                  className="mr-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200/70"
-                  aria-label="Clear search"
+                  onClick={() => {
+                    setMobileSearchOpen(false)
+                    setSearchFocused(false)
+                  }}
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-700"
+                  aria-label="Close search"
                 >
-                  <X size={13} />
+                  <ArrowLeft size={18} />
                 </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => openImageSearch()}
-                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-black/5"
-                aria-label={t('navbar.imageSearch')}
-              >
-                <Camera size={15} />
-              </button>
-              <button
-                type="submit"
-                aria-label="Search"
-                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white transition hover:opacity-90"
-                style={{ backgroundColor: searchAccentColor }}
-              >
-                <Search size={14} strokeWidth={2.5} />
-              </button>
-            </div>
-
-            {renderSearchSuggestionsDropdown(
-              'absolute left-0 right-0 top-full z-[80] mt-2 max-h-80 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl',
-            )}
-          </form>
-
-          <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
-          {navActionsVisibility.phone ? (() => {
+                <input
+                  ref={mobileSearchInputRef}
+                  type="text"
+                  enterKeyHint="search"
+                  placeholder={customSearchPlaceholder || searchPlaceholder || t('navbar.searchFragrances')}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onPaste={handleSearchImagePaste}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+                  className="h-10 min-w-0 flex-1 appearance-none bg-transparent text-base leading-10 text-slate-900 outline-none placeholder:text-slate-400"
+                  style={{ colorScheme: 'light', WebkitAppearance: 'none' }}
+                />
+                {search.trim() ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearch('')}
+                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400"
+                    aria-label="Clear search"
+                  >
+                    <X size={14} />
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => openImageSearch()}
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-600"
+                  aria-label={t('navbar.imageSearch')}
+                >
+                  <Camera size={16} />
+                </button>
+                <button
+                  type="submit"
+                  aria-label="Search"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#05090D]"
+                  style={{ backgroundColor: '#C8F404' }}
+                >
+                  <Search size={16} strokeWidth={2.5} />
+                </button>
+              </div>
+              {renderSearchSuggestionsDropdown(
+                'absolute left-0 right-0 top-full z-[80] mt-2 max-h-80 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl',
+              )}
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setMobileSearchOpen(true)}
+              className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${mobileNavbarControlClass}`}
+              aria-label="Search"
+            >
+              <Search size={18} strokeWidth={2.2} />
+            </button>
+          )}
+          {navActionsVisibility.phone && !mobileSearchOpen ? (() => {
             const phone = resolveNavbarPhone(navbarPhone, storefrontLanguage);
             const mobilePhoneClass = mobileNavbarUsesBrandColor
               ? 'text-white hover:bg-white/12'

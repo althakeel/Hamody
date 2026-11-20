@@ -104,7 +104,7 @@ export default function HomePageClient({ initialData }) {
           initialStoreSettings={storeSettings}
           skipInitialFetch
         />
-        <HomePromoRow />
+        <HomePromoRow cards={shopShowcaseConfig?.frontPromoCards} />
         {showHeroCategories ? (
           <HomeCategories />
         ) : null}

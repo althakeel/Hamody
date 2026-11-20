@@ -6,7 +6,7 @@ import StoreUser from '@/models/StoreUser';
 import { getAuth } from '@/lib/firebase-admin';
 import { randomBytes } from "crypto";
 import { sendMail } from '@/lib/email';
-import { getAppBaseUrl, getCustomerSiteUrl } from '@/lib/appUrl';
+import { buildCustomerSitePath, getCustomerSiteUrl } from '@/lib/appUrl';
 
 function buildInviteEmailHtml({ storeName, inviteUrl }) {
   return `
@@ -55,7 +55,7 @@ export async function POST(request) {
     const inviteExpiry = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7);
     const sanitizedPermissions = permissions && typeof permissions === 'object' ? permissions : {};
     const isResend = existing && ['invited', 'pending'].includes(existing.status);
-    const inviteUrl = `${getAppBaseUrl()}/store/invite/accept?token=${inviteToken}`;
+    const inviteUrl = buildCustomerSitePath(`/store/invite/accept?token=${inviteToken}`);
 
     if (existing) {
       await StoreUser.updateOne(
