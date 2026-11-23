@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
-import Image from 'next/image'
+import SafeNextImage from '@/components/SafeNextImage'
 import Link from 'next/link'
 import ProductCarousel from '@/components/ProductCarousel'
 import LazyMount from '@/components/LazyMount'
@@ -237,7 +237,7 @@ const HorizontalSlider = ({ section, priority = false }) => {
     normalizeCategorySliderAutoSlide(section.autoSlide)
 
   const sideImageMedia = (
-    <Image
+    <SafeNextImage
       src={sideImage}
       alt={title || 'Featured collection'}
       fill

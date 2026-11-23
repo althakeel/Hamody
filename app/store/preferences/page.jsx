@@ -26,7 +26,7 @@ const TABS = [
   {
     id: 'front',
     label: 'Homepage front',
-    description: 'Upload the top banner slider and the four cards under it.',
+    description: 'Upload the wide banner slider at the top of the homepage.',
     icon: GalleryHorizontal,
   },
   {

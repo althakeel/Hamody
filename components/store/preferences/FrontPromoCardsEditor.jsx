@@ -6,7 +6,6 @@ import { Loader2, Plus, Save, Trash2, Upload } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/lib/useAuth'
 import { uploadStoreImage } from '@/lib/uploadStoreImage'
-import { normalizeFrontPromoCards } from '@/lib/frontPromoCards'
 
 const IMAGE_FIELDS = [
   'image',
@@ -55,7 +54,6 @@ export default function FrontPromoCardsEditor() {
   const [saving, setSaving] = useState(false)
   const [uploadingKey, setUploadingKey] = useState('')
   const [slides, setSlides] = useState([emptySlide(0)])
-  const [cards, setCards] = useState(() => normalizeFrontPromoCards())
 
   const loadData = useCallback(async () => {
     try {
@@ -76,7 +74,6 @@ export default function FrontPromoCardsEditor() {
         }, 0))
       }
       setSlides(savedSlides.length ? savedSlides : [emptySlide(0)])
-      setCards(normalizeFrontPromoCards(showcase.frontPromoCards))
     } catch (error) {
       toast.error('Failed to load homepage front')
       console.error(error)
@@ -92,12 +89,6 @@ export default function FrontPromoCardsEditor() {
   const updateSlide = (index, patch) => {
     setSlides((current) => current.map((slide, slideIndex) => (
       slideIndex === index ? { ...slide, ...patch } : slide
-    )))
-  }
-
-  const updateCard = (index, patch) => {
-    setCards((current) => current.map((card, cardIndex) => (
-      cardIndex === index ? { ...card, ...patch } : card
     )))
   }
 
@@ -146,7 +137,7 @@ export default function FrontPromoCardsEditor() {
           fullWidthBannerSliderItems: bannerSlides,
           fullWidthBannerImage: first ? previewUrl(first) : '',
           fullWidthBannerLink: first?.link || '/shop',
-          frontPromoCards: normalizeFrontPromoCards(cards),
+          frontPromoCards: [],
         },
         { headers: { Authorization: `Bearer ${token}` } }
       )
@@ -175,7 +166,7 @@ export default function FrontPromoCardsEditor() {
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-lg font-semibold text-slate-900">Homepage front</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Upload the top banner slider and the four cards under it. On a phone the cards show two at a time. Save after you upload.
+          Upload the wide images for the banner at the top of the homepage. Save after you upload.
         </p>
       </div>
 
@@ -257,64 +248,6 @@ export default function FrontPromoCardsEditor() {
           <Plus size={16} />
           Add slide
         </button>
-      </section>
-
-      <section className="space-y-4">
-        <div>
-          <h3 className="text-base font-semibold text-slate-900">Cards under the banner</h3>
-          <p className="mt-1 text-sm text-slate-600">Portrait images, about 819×1024. Four cards.</p>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          {cards.map((card, index) => {
-            const uploadKey = `card-${index}`
-            return (
-              <div key={`front-promo-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="mb-3 text-sm font-semibold text-slate-900">Card {index + 1}</div>
-                <div className="mb-3 overflow-hidden rounded-xl bg-slate-100">
-                  {card.image ? (
-                    <img src={card.image} alt={card.alt || `Card ${index + 1}`} className="aspect-[4/5] w-full object-cover" />
-                  ) : (
-                    <div className="flex aspect-[4/5] items-center justify-center text-sm text-slate-400">No image</div>
-                  )}
-                </div>
-                <label className="mb-3 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                  {uploadingKey === uploadKey ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-                  {uploadingKey === uploadKey ? 'Uploading…' : 'Upload image'}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    disabled={uploadingKey === uploadKey}
-                    onChange={(event) => {
-                      const file = event.target.files?.[0]
-                      event.target.value = ''
-                      uploadFile(uploadKey, file, (url) => updateCard(index, { image: url }))
-                    }}
-                  />
-                </label>
-                <label className="mb-3 block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Link</span>
-                  <input
-                    type="text"
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                    value={card.link}
-                    onChange={(event) => updateCard(index, { link: event.target.value })}
-                    placeholder="/category/camping"
-                  />
-                </label>
-                <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Image description</span>
-                  <input
-                    type="text"
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                    value={card.alt}
-                    onChange={(event) => updateCard(index, { alt: event.target.value })}
-                  />
-                </label>
-              </div>
-            )
-          })}
-        </div>
       </section>
 
       <button

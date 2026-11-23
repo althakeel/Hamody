@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { FiTrash2, FiPlus, FiEdit2, FiX, FiSearch, FiChevronUp, FiChevronDown } from 'react-icons/fi';
 import Loading from '@/components/Loading';
 import { compressImageForUpload } from '@/lib/compressImageForUpload';
+import { readableUploadUrl } from '@/lib/readableUploadUrl';
 import {
   CATEGORY_SLIDER_BACKGROUND_PRESETS,
   CATEGORY_SLIDER_AUTO_SLIDE_SPEED_PRESETS,
@@ -127,6 +128,52 @@ function emptySliderForm(sectionType = 'slider') {
 function appImageFrameStyle(ratio) {
   const parts = categorySliderMobileImageRatioParts(ratio);
   return { aspectRatio: `${parts.width} / ${parts.height}` };
+}
+
+function imageSource(value) {
+  const raw = String(value || '').trim();
+  if (!raw || raw === 'null' || raw === 'undefined' || raw === '[object Object]') return '';
+  const src = readableUploadUrl(raw);
+  if (!/^(https?:\/\/|blob:|data:image\/|\/)/i.test(src)) return '';
+  return src;
+}
+
+function ImageFieldPreview({ src, onRemove, removeLabel, className, style }) {
+  const url = imageSource(src);
+  const [broken, setBroken] = useState(false);
+  useEffect(() => {
+    setBroken(false);
+  }, [url]);
+  if (!url && !String(src || '').trim()) return null;
+
+  return (
+    <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
+      <div className="flex h-40 items-center justify-center overflow-hidden rounded-lg bg-slate-50">
+        {url && !broken ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={url}
+            src={url}
+            alt=""
+            onError={() => setBroken(true)}
+            className={className || 'max-h-40 max-w-full object-contain'}
+            style={style}
+          />
+        ) : (
+          <p className="px-3 text-center text-xs text-slate-500">
+            This image could not be shown. Remove it and upload it again.
+          </p>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="mt-2 w-full rounded-lg border border-red-200 bg-white py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
+      >
+        {removeLabel}
+      </button>
+    </div>
+  );
 }
 
 export default function CategorySliderPage() {
@@ -1042,21 +1089,11 @@ export default function CategorySliderPage() {
         <p className="mt-2 text-xs text-blue-600">Uploading…</p>
       ) : null}
       {formData[field] ? (
-        <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={formData[field]}
-            alt=""
-            className="mx-auto max-h-36 w-full rounded-lg object-contain"
-          />
-          <button
-            type="button"
-            onClick={() => setFormData((prev) => ({ ...prev, [field]: '' }))}
-            className="mt-2 w-full rounded-lg border border-red-200 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
-          >
-            Remove
-          </button>
-        </div>
+        <ImageFieldPreview
+          src={formData[field]}
+          removeLabel="Remove"
+          onRemove={() => setFormData((prev) => ({ ...prev, [field]: '' }))}
+        />
       ) : null}
     </div>
   );
@@ -1247,7 +1284,7 @@ export default function CategorySliderPage() {
                               <div className="flex items-center gap-2">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
-                                  src={bannerPreview}
+                                  src={imageSource(bannerPreview) || bannerPreview}
                                   alt=""
                                   className="h-12 w-28 rounded-lg border border-gray-200 object-cover"
                                 />
@@ -1260,44 +1297,44 @@ export default function CategorySliderPage() {
                           </div>
                         ) : (slider.sideImage || slider.sideImageAr || slider.mobileImage || slider.mobileImageAr) ? (
                           <div className="mb-2 flex items-center gap-3">
-                            {slider.sideImage ? (
+                            {imageSource(slider.sideImage) ? (
                               <div className="flex items-center gap-2">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
-                                  src={slider.sideImage}
+                                  src={imageSource(slider.sideImage)}
                                   alt=""
-                                  className="h-12 w-12 rounded-lg border border-gray-200 object-cover"
+                                  className="h-12 w-12 rounded-lg border border-gray-200 object-cover bg-slate-50"
                                 />
                                 <span className="text-xs text-gray-500">English</span>
                               </div>
                             ) : null}
-                            {slider.sideImageAr ? (
+                            {imageSource(slider.sideImageAr) ? (
                               <div className="flex items-center gap-2">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
-                                  src={slider.sideImageAr}
+                                  src={imageSource(slider.sideImageAr)}
                                   alt=""
-                                  className="h-12 w-12 rounded-lg border border-gray-200 object-cover"
+                                  className="h-12 w-12 rounded-lg border border-gray-200 object-cover bg-slate-50"
                                 />
                                 <span className="text-xs text-gray-500">Arabic</span>
                               </div>
                             ) : null}
-                            {slider.mobileImage ? (
+                            {imageSource(slider.mobileImage) ? (
                               <div className="flex items-center gap-2">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
-                                  src={slider.mobileImage}
+                                  src={imageSource(slider.mobileImage)}
                                   alt=""
                                   className="h-16 w-12 rounded-lg border border-gray-200 object-cover"
                                 />
                                 <span className="text-xs text-gray-500">App {normalizeCategorySliderMobileImageRatio(slider.mobileImageRatio)}</span>
                               </div>
                             ) : null}
-                            {slider.mobileImageAr ? (
+                            {imageSource(slider.mobileImageAr) ? (
                               <div className="flex items-center gap-2">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
-                                  src={slider.mobileImageAr}
+                                  src={imageSource(slider.mobileImageAr)}
                                   alt=""
                                   className="h-16 w-12 rounded-lg border border-gray-200 object-cover"
                                 />
@@ -1554,21 +1591,11 @@ export default function CategorySliderPage() {
                       <p className="mt-2 text-xs text-blue-600">Uploading English image...</p>
                     ) : null}
                     {formData.sideImage ? (
-                      <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={formData.sideImage}
-                          alt="English side image preview"
-                          className="mx-auto max-h-40 w-full rounded-lg object-contain"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setFormData((prev) => ({ ...prev, sideImage: '' }))}
-                          className="mt-2 w-full rounded-lg border border-red-200 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
-                        >
-                          Remove English image
-                        </button>
-                      </div>
+                      <ImageFieldPreview
+                        src={formData.sideImage}
+                        removeLabel="Remove English image"
+                        onRemove={() => setFormData((prev) => ({ ...prev, sideImage: '' }))}
+                      />
                     ) : null}
                   </div>
 
@@ -1594,21 +1621,11 @@ export default function CategorySliderPage() {
                       <p className="mt-2 text-xs text-blue-600">Uploading Arabic image...</p>
                     ) : null}
                     {formData.sideImageAr ? (
-                      <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={formData.sideImageAr}
-                          alt="Arabic side image preview"
-                          className="mx-auto max-h-40 w-full rounded-lg object-contain"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setFormData((prev) => ({ ...prev, sideImageAr: '' }))}
-                          className="mt-2 w-full rounded-lg border border-red-200 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
-                        >
-                          Remove Arabic image
-                        </button>
-                      </div>
+                      <ImageFieldPreview
+                        src={formData.sideImageAr}
+                        removeLabel="Remove Arabic image"
+                        onRemove={() => setFormData((prev) => ({ ...prev, sideImageAr: '' }))}
+                      />
                     ) : null}
                   </div>
 
@@ -1656,22 +1673,13 @@ export default function CategorySliderPage() {
                           <p className="mt-2 text-xs text-blue-600">Uploading app image...</p>
                         ) : null}
                         {formData.mobileImage ? (
-                          <div className="mt-3">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={formData.mobileImage}
-                              alt="English app image preview"
-                              className="w-28 rounded-lg border border-gray-200 object-cover"
-                              style={appImageFrameStyle(formData.mobileImageRatio)}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setFormData((prev) => ({ ...prev, mobileImage: '' }))}
-                              className="mt-2 w-full rounded-lg border border-red-200 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
-                            >
-                              Remove English app image
-                            </button>
-                          </div>
+                          <ImageFieldPreview
+                            src={formData.mobileImage}
+                            removeLabel="Remove English app image"
+                            className="h-full w-28 rounded-lg object-cover"
+                            style={appImageFrameStyle(formData.mobileImageRatio)}
+                            onRemove={() => setFormData((prev) => ({ ...prev, mobileImage: '' }))}
+                          />
                         ) : (
                           <div
                             className="mt-3 flex w-28 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white text-center text-[11px] text-slate-400"
@@ -1703,22 +1711,13 @@ export default function CategorySliderPage() {
                           <p className="mt-2 text-xs text-blue-600">Uploading Arabic app image...</p>
                         ) : null}
                         {formData.mobileImageAr ? (
-                          <div className="mt-3">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={formData.mobileImageAr}
-                              alt="Arabic app image preview"
-                              className="w-28 rounded-lg border border-gray-200 object-cover"
-                              style={appImageFrameStyle(formData.mobileImageRatio)}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setFormData((prev) => ({ ...prev, mobileImageAr: '' }))}
-                              className="mt-2 w-full rounded-lg border border-red-200 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
-                            >
-                              Remove Arabic app image
-                            </button>
-                          </div>
+                          <ImageFieldPreview
+                            src={formData.mobileImageAr}
+                            removeLabel="Remove Arabic app image"
+                            className="h-full w-28 rounded-lg object-cover"
+                            style={appImageFrameStyle(formData.mobileImageRatio)}
+                            onRemove={() => setFormData((prev) => ({ ...prev, mobileImageAr: '' }))}
+                          />
                         ) : (
                           <div
                             className="mt-3 flex w-28 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white text-center text-[11px] text-slate-400"
@@ -1916,15 +1915,36 @@ export default function CategorySliderPage() {
                         className="flex-1 rounded-lg border-2 border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                       />
                     </div>
-                    <div
-                      className="mt-3 rounded-lg border border-gray-200 px-4 py-3"
-                      style={{ backgroundColor: normalizeCategorySliderBackground(formData.backgroundColor) }}
-                    >
-                      <p className="text-sm font-semibold text-gray-900">Panel preview</p>
-                      <p className="text-xs text-gray-600">
-                        Saved color: {normalizeCategorySliderBackground(formData.backgroundColor)}
-                      </p>
-                    </div>
+                    {(() => {
+                      const panelColor = normalizeCategorySliderBackground(formData.backgroundColor);
+                      const panelImage = imageSource(formData.sideImage) || imageSource(formData.sideImageAr);
+                      const imageOnRight = normalizeCategorySliderSideImagePosition(formData.sideImagePosition) === 'right';
+                      return (
+                        <div className="mt-3 overflow-hidden rounded-xl border border-gray-200">
+                          <div className={`flex min-h-36 ${panelImage && imageOnRight ? 'flex-row-reverse' : ''}`}>
+                            {panelImage ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={panelImage}
+                                alt=""
+                                className="h-36 w-28 shrink-0 bg-slate-100 object-cover"
+                              />
+                            ) : null}
+                            <div
+                              className="flex min-w-0 flex-1 flex-col justify-center px-4 py-3"
+                              style={{ backgroundColor: panelColor }}
+                            >
+                              <p className="text-sm font-semibold text-gray-900">
+                                {String(formData.title || '').trim() || 'Panel preview'}
+                              </p>
+                              <p className="mt-1 text-xs text-gray-600">
+                                {String(formData.subtitle || '').trim() || `Saved color: ${panelColor}`}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div>

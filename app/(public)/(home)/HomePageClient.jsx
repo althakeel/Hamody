@@ -10,7 +10,7 @@ import { findTopDealsSection, isTopDealsVisibleOnWebsite } from '@/lib/homeTopDe
 import HeroBannerSlider from '@/components/HeroBannerSlider';
 import ShopShowcaseSection from '@/components/ShopShowcaseSection';
 import HomeCategorySections from '@/components/HomeCategorySections';
-import HomePromoRow from '@/components/HomePromoRow';
+import HomeCategoryStrip from '@/components/HomeCategoryStrip';
 import SectionReveal from '@/components/SectionReveal';
 import Section3 from '@/components/section3';
 import CategoryInterestSection from '@/components/CategoryInterestSection';
@@ -104,7 +104,7 @@ export default function HomePageClient({ initialData }) {
           initialStoreSettings={storeSettings}
           skipInitialFetch
         />
-        <HomePromoRow cards={shopShowcaseConfig?.frontPromoCards} />
+        <HomeCategoryStrip />
         {showHeroCategories ? (
           <HomeCategories />
         ) : null}
