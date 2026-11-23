@@ -11,10 +11,8 @@ import { getProductThumbnailUrl } from '@/lib/productMedia'
 import { PLACEHOLDER_IMAGE } from '@/lib/mediaUrls'
 import { decodeHtmlEntities } from '@/lib/displayText'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
-import { getLocalizedCategoryDescription, getLocalizedCategoryName } from '@/lib/categoryLocalization'
+import { getLocalizedCategoryName } from '@/lib/categoryLocalization'
 import { toPublicCategoryPath } from '@/lib/categorySlug'
-import { findCategoryInList } from '@/lib/categoryTreeUtils'
-import CategoryHeroCard from '@/components/category/CategoryHeroCard'
 import { rememberGa4Categories } from '@/lib/ga4CategoryLookup'
 import { pushGtmEvent } from '@/lib/pushGtmEcommerceEvent'
 import { GTM_EVENTS, gtmDedupeKey } from '@/lib/gtmEvents'
@@ -369,15 +367,6 @@ function ShopContent() {
         return t('shop.subtitleAll');
     }, [search, selectedCategories.length, pageTitle, t]);
 
-    const activeShopCategory = useMemo(() => {
-        if (search || selectedCategories.length !== 1) return null;
-        return findCategoryInList(categories, selectedCategories[0]);
-    }, [categories, search, selectedCategories]);
-
-    const shopCategoryDescription = activeShopCategory
-        ? getLocalizedCategoryDescription(activeShopCategory, language)
-        : { text: '', isRtl: false };
-
     const resetFilters = useCallback(() => {
         setSortBy('newest');
         setPriceFilter('all');
@@ -403,31 +392,14 @@ function ShopContent() {
     return (
         <div className="min-h-screen bg-white" dir={isArabic ? 'rtl' : 'ltr'}>
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-8">
-                {activeShopCategory ? (
-                    <CategoryHeroCard
-                        name={localizeCategoryName(activeShopCategory)}
-                        image={activeShopCategory.image}
-                        description={decodeHtmlEntities(shopCategoryDescription.text)}
-                        descriptionRtl={shopCategoryDescription.isRtl}
-                        stats={{
-                            productCount: totalProducts,
-                            fastDeliveryPercent: 0,
-                            averageRating: 0,
-                            reviewCount: 0,
-                        }}
-                        t={t}
-                        isArabic={isArabic}
-                    />
-                ) : (
-                    <div className={`mb-6 mt-6 ${isArabic ? 'text-right' : ''}`}>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                            {pageTitle}
-                        </h1>
-                        <p className="text-gray-600">
-                            {pageSubtitle}
-                        </p>
-                    </div>
-                )}
+                <div className={`mb-6 mt-6 ${isArabic ? 'text-right' : ''}`}>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                        {pageTitle}
+                    </h1>
+                    <p className="text-gray-600">
+                        {pageSubtitle}
+                    </p>
+                </div>
 
                 <>
                         <div className="lg:hidden mb-3">

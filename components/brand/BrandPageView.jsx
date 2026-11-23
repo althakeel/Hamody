@@ -3,10 +3,9 @@
 import Link from 'next/link';
 import { CreditCard, ShieldCheck, Truck, Wallet } from 'lucide-react';
 import CategoryBanner from '@/components/category/CategoryBanner';
-import CategoryHeroCard from '@/components/category/CategoryHeroCard';
 import CategoryProductsPanel from '@/components/category/CategoryProductsPanel';
 import { getCategoryBannerUrls } from '@/lib/categoryBanners';
-import { getLocalizedCategoryDescription, getLocalizedCategoryName } from '@/lib/categoryLocalization';
+import { getLocalizedCategoryName } from '@/lib/categoryLocalization';
 import { decodeHtmlEntities } from '@/lib/displayText';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 
@@ -14,12 +13,10 @@ export default function BrandPageView({
   brand,
   products = [],
   total = 0,
-  stats = {},
 }) {
   const { t, language } = useStorefrontI18n();
   const isArabic = language === 'ar';
   const name = decodeHtmlEntities(getLocalizedCategoryName(brand, language));
-  const localizedDescription = getLocalizedCategoryDescription(brand, language);
   const banners = getCategoryBannerUrls(brand, { isArabic });
   const slug = String(brand?.slug || '').trim();
 
@@ -40,16 +37,7 @@ export default function BrandPageView({
         />
       ) : null}
 
-      <CategoryHeroCard
-        name={name}
-        image={brand?.image || ''}
-        description={decodeHtmlEntities(localizedDescription.text)}
-        descriptionRtl={localizedDescription.isRtl}
-        stats={stats}
-        t={t}
-        isArabic={isArabic}
-        eyebrow={t('brand.label')}
-      />
+      <h1 className="mb-6 text-3xl font-bold text-[#05090D]">{name}</h1>
 
       {products.length > 0 || Number(total) > 0 ? (
         <CategoryProductsPanel

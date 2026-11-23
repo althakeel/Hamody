@@ -460,59 +460,60 @@ const ProductCard = ({
       </div>
 
       <div className={`flex shrink-0 flex-col bg-white ${compactAll ? 'p-1.5' : compactLg ? 'p-2 sm:p-2.5 lg:p-1.5' : 'p-2 sm:p-2.5'}`}>
-        <div className="flex items-center gap-2">
-          <div className="min-w-0 flex-1">
-            <h3 className={`overflow-hidden text-start font-semibold leading-tight text-slate-900 ${compactAll ? 'mb-1 text-[10px]' : compactLg ? 'mb-1 min-h-[2.5em] text-xs sm:text-sm lg:min-h-0 lg:text-[10px]' : 'mb-1 min-h-[2.5em] text-xs sm:text-sm'}`}>
-              <bdi
-                dir={getContentDirection(productName)}
-                className={`break-words ${compactAll ? 'line-clamp-1' : compactLg ? 'line-clamp-2 lg:line-clamp-1' : 'line-clamp-2'}`}
-              >
-                {productName}
-              </bdi>
-            </h3>
-
-            {karat ? (
-              <p className={`mb-1 text-start font-medium leading-none text-amber-800 ${compactAll ? 'text-[10px]' : compactLg ? 'text-[11px] lg:text-[10px]' : 'text-[11px] sm:text-xs'}`}>
-                {t('product.karatOnCard', { karat })}
-              </p>
-            ) : null}
-
-            {livePrice > 0 ? (
-              <div className="flex min-w-0 items-baseline justify-start">
-                <span dir="ltr" className="inline-flex min-w-0 flex-nowrap items-baseline gap-x-1.5">
-                  <span className={`inline-flex items-baseline gap-0.5 font-semibold leading-none text-slate-950 ${compactAll ? 'text-xs' : compactLg ? 'text-sm sm:text-base lg:text-xs' : 'text-sm sm:text-base'}`}>
-                    <CurrencySymbol currency={market.currency} />
-                    <span>{formatNumber(convertedPrice, language, { maximumFractionDigits: 0 })}</span>
-                  </span>
-                  {comparePrice > 0 ? (
-                    <StruckPrice className="gap-0.5 text-[10px] leading-none text-slate-400 sm:text-xs">
-                      <CurrencySymbol currency={market.currency} />
-                      <span>{formatNumber(convertedAED, language, { maximumFractionDigits: 0 })}</span>
-                    </StruckPrice>
-                  ) : null}
-                  {discount > 0 ? (
-                    <span className="whitespace-nowrap text-[10px] font-semibold leading-none text-[#B12F39]">
-                      {t('common.offPercent', {
-                        discount: formatNumber(discount, language, { maximumFractionDigits: 0 }),
-                      })}
-                    </span>
-                  ) : null}
-                </span>
-              </div>
-            ) : null}
-          </div>
-          <div className="flex shrink-0 flex-col items-center gap-1 self-center">
+        <div className="flex items-start gap-2">
+          <h3 className={`min-w-0 flex-1 overflow-hidden text-start font-semibold leading-tight text-slate-900 ${compactAll ? 'text-[10px]' : compactLg ? 'min-h-[2.5em] text-xs sm:text-sm lg:min-h-0 lg:text-[10px]' : 'min-h-[2.5em] text-xs sm:text-sm'}`}>
+            <bdi
+              dir={getContentDirection(productName)}
+              className={`break-words ${compactAll ? 'line-clamp-1' : compactLg ? 'line-clamp-2 lg:line-clamp-1' : 'line-clamp-2'}`}
+            >
+              {productName}
+            </bdi>
+          </h3>
+          <div className="flex shrink-0 justify-end">
             {renderCartControl()}
-            {product?.freeShippingEligible || product?.fastDelivery ? (
-              <FreeShipRotator
-                compact
-                labels={[
-                  ...(product?.freeShippingEligible ? [t('common.freeShip')] : []),
-                  ...(product?.fastDelivery ? [t('common.fastDelivery')] : []),
-                ]}
-              />
-            ) : null}
           </div>
+        </div>
+
+        {karat ? (
+          <p className={`mt-1 text-start font-medium leading-none text-amber-800 ${compactAll ? 'text-[10px]' : compactLg ? 'text-[11px] lg:text-[10px]' : 'text-[11px] sm:text-xs'}`}>
+            {t('product.karatOnCard', { karat })}
+          </p>
+        ) : null}
+
+        {livePrice > 0 ? (
+          <div className="mt-1 flex min-w-0 items-baseline justify-start">
+            <span dir="ltr" className="inline-flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+              <span className={`inline-flex items-baseline gap-0.5 font-semibold leading-none text-slate-950 ${compactAll ? 'text-xs' : compactLg ? 'text-sm sm:text-base lg:text-xs' : 'text-sm sm:text-base'}`}>
+                <CurrencySymbol currency={market.currency} />
+                <span>{formatNumber(convertedPrice, language, { maximumFractionDigits: 0 })}</span>
+              </span>
+              {comparePrice > 0 ? (
+                <StruckPrice className="gap-0.5 text-[10px] leading-none text-slate-400 sm:text-xs">
+                  <CurrencySymbol currency={market.currency} />
+                  <span>{formatNumber(convertedAED, language, { maximumFractionDigits: 0 })}</span>
+                </StruckPrice>
+              ) : null}
+              {discount > 0 ? (
+                <span className="whitespace-nowrap text-[10px] font-semibold leading-none text-[#B12F39]">
+                  {t('common.offPercent', {
+                    discount: formatNumber(discount, language, { maximumFractionDigits: 0 }),
+                  })}
+                </span>
+              ) : null}
+            </span>
+          </div>
+        ) : null}
+
+        <div className="mt-1.5 flex h-3.5 max-w-full items-center justify-end overflow-hidden">
+          {product?.freeShippingEligible || product?.fastDelivery ? (
+            <FreeShipRotator
+              compact
+              labels={[
+                ...(product?.freeShippingEligible ? [t('common.freeShip')] : []),
+                ...(product?.fastDelivery ? [t('common.fastDelivery')] : []),
+              ]}
+            />
+          ) : null}
         </div>
 
         <div className="empty:hidden mt-2 mb-1 flex min-w-0 max-w-full justify-start">

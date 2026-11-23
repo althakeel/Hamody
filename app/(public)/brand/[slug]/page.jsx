@@ -3,7 +3,6 @@ import BrandPageView from '@/components/brand/BrandPageView';
 import {
   brandPagePath,
   findPublicBrandPage,
-  getBrandHeaderStats,
   getBrandProducts,
   BRAND_PRODUCTS_PAGE_SIZE,
 } from '@/lib/brandPage';
@@ -35,10 +34,10 @@ export default async function BrandPublicPage({ params }) {
   const brand = await findPublicBrandPage(slug);
   if (!brand) notFound();
 
-  const [productResult, stats] = await Promise.all([
-    getBrandProducts(brand.name, { page: 1, limit: BRAND_PRODUCTS_PAGE_SIZE }),
-    getBrandHeaderStats(brand.name),
-  ]);
+  const productResult = await getBrandProducts(brand.name, {
+    page: 1,
+    limit: BRAND_PRODUCTS_PAGE_SIZE,
+  });
 
   return (
     <div className="flex flex-1 flex-col bg-white">
@@ -46,7 +45,6 @@ export default async function BrandPublicPage({ params }) {
         brand={JSON.parse(JSON.stringify(brand))}
         products={productResult.products || []}
         total={productResult.total || 0}
-        stats={stats}
       />
     </div>
   );

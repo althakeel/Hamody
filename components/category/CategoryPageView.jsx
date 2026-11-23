@@ -2,11 +2,10 @@
 
 import Link from 'next/link';
 import { decodeHtmlEntities } from '@/lib/displayText';
-import { getLocalizedCategoryDescription, getLocalizedCategoryName } from '@/lib/categoryLocalization';
+import { getLocalizedCategoryName } from '@/lib/categoryLocalization';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 import { resolveCategoryHref } from '@/lib/categoryTreeUtils';
 import CategoryProductsPanel from '@/components/category/CategoryProductsPanel';
-import CategoryHeroCard from '@/components/category/CategoryHeroCard';
 import CategoryBanner from '@/components/category/CategoryBanner';
 import { getCategoryBannerUrls } from '@/lib/categoryBanners';
 import { CreditCard, ShieldCheck, Truck, Wallet } from 'lucide-react';
@@ -22,13 +21,11 @@ export default function CategoryPageView({
   children = [],
   products = [],
   total = 0,
-  headerStats = null,
 }) {
   const { t, language } = useStorefrontI18n();
   const isArabic = language === 'ar';
 
   const categoryName = localizeCategoryRecord(category, language);
-  const localizedDescription = getLocalizedCategoryDescription(category, language);
   const showSubcategories = children.length > 0 && Number(category.level) < 3;
   const isL2WithL3Children = Number(category.level) === 2 && children.length > 0;
 
@@ -76,26 +73,8 @@ export default function CategoryPageView({
         />
       ) : null}
 
-      <CategoryHeroCard
-        name={categoryName}
-        image={category.image}
-        description={decodeHtmlEntities(localizedDescription.text)}
-        descriptionRtl={localizedDescription.isRtl}
-        stats={{
-          productCount: Number(total) || Number(headerStats?.productCount) || 0,
-          fastDeliveryPercent: Number(headerStats?.fastDeliveryPercent) || 0,
-          averageRating: Number(headerStats?.averageRating) || 0,
-          reviewCount: Number(headerStats?.reviewCount) || 0,
-        }}
-        t={t}
-        isArabic={isArabic}
-      />
-
       {showSubcategories && !isL2WithL3Children ? (
         <section className="mb-8" aria-label={t('category.browseSubcategories')}>
-          <h2 className={`text-lg font-semibold text-gray-900 mb-4 ${isArabic ? 'text-right' : ''}`}>
-            {t('category.browseSubcategories')}
-          </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
             {children.map((child) => {
               const href = resolveCategoryHref(chain, child);

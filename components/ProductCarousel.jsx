@@ -390,7 +390,7 @@ export default function ProductCarousel({
   if (!cappedProducts.length && !leading) return null
 
   const resolvedTransformTrackClassName = [
-    'flex w-full min-w-0 will-change-transform [backface-visibility:hidden]',
+    'flex w-full min-w-0 items-stretch will-change-transform [backface-visibility:hidden]',
     PRODUCT_CARD_CAROUSEL_GAP_CLASS,
     compactBottom ? 'pb-0' : 'pb-2',
   ].filter(Boolean).join(' ')

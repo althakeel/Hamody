@@ -3,7 +3,6 @@ import CategoryPageView from '@/components/category/CategoryPageView';
 import {
   resolveCategoryByPathSegments,
   getCategoryProducts,
-  getCategoryHeaderStats,
   getPublishedCategoryProductCounts,
   CATEGORY_PRODUCTS_PAGE_SIZE,
 } from '@/lib/categoryPageData';
@@ -51,13 +50,12 @@ export default async function CategoryPage({ params }) {
     redirect(buildCategoryUrl(chain));
   }
 
-  const [{ products, total }, headerStats, counts] = await Promise.all([
+  const [{ products, total }, counts] = await Promise.all([
     getCategoryProducts(category._id, {
       page: 1,
       limit: CATEGORY_PRODUCTS_PAGE_SIZE,
       allCategories: all,
     }),
-    getCategoryHeaderStats(category._id, { allCategories: all }),
     getPublishedCategoryProductCounts(),
   ]);
   const visibleChildren = (children || []).filter(
@@ -83,7 +81,6 @@ export default async function CategoryPage({ params }) {
         children={visibleChildren}
         products={products}
         total={total}
-        headerStats={headerStats}
       />
     </div>
   );
