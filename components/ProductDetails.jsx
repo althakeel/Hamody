@@ -268,7 +268,7 @@ const DEFAULT_BADGE_STYLES = [
   { label: 'Best Seller', backgroundColor: '#c45500', textColor: '#ffffff', borderRadius: 0 },
   { label: 'New Arrival', backgroundColor: '#0066c0', textColor: '#ffffff', borderRadius: 0 },
   { label: 'Limited Stock', backgroundColor: '#b12704', textColor: '#ffffff', borderRadius: 0 },
-  { label: 'Free Shipping', backgroundColor: '#007185', textColor: '#ffffff', borderRadius: 0 }
+  { label: 'Free Shipping', backgroundColor: '#C8F404', textColor: '#05090D', borderRadius: 0 }
 ];
 
 function EditableQuantityInput({ quantity, maxOrderQty, onCommit, onExceed, label, className = '' }) {
@@ -3195,7 +3195,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
       <div className="bg-white border-b border-gray-200">
         <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 py-1.5 lg:py-2">
           <nav className="flex items-center flex-wrap gap-x-1 gap-y-0.5 text-[11px] sm:text-xs text-gray-500 leading-tight" dir={isArabic ? 'rtl' : 'ltr'}>
-            <a href="/" className="hover:underline hover:text-gray-800 whitespace-nowrap">{t('common.home')}</a>
+            <Link href="/" className="hover:underline hover:text-gray-800 whitespace-nowrap">{t('common.home')}</Link>
             {(() => {
               const breadcrumbSep = isArabic ? '‹' : '›';
               const getCategoryLabel = (category) => (
@@ -3218,7 +3218,7 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                 return (
                   <>
                     <span className="text-gray-400">{breadcrumbSep}</span>
-                    <a href="/shop" className="hover:underline hover:text-gray-800">{t('common.products')}</a>
+                    <Link href="/shop" className="hover:underline hover:text-gray-800">{t('common.products')}</Link>
                   </>
                 );
               }
@@ -3621,9 +3621,9 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                       </span>
                     )}
                   </div>
-                  <div className="flex items-start gap-2 px-3 py-2.5">
-                    <Truck className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[#E52721]" strokeWidth={1.75} aria-hidden="true" />
-                    <span className="text-[12px] leading-snug text-[#1e293b]">{mobileDeliveryFeeLabel}</span>
+                  <div className={`flex items-start gap-2 px-3 py-2.5 ${qualifiesForFreeMobileDelivery ? 'bg-[#C8F404]' : ''}`}>
+                    <Truck className={`mt-0.5 h-[18px] w-[18px] shrink-0 ${qualifiesForFreeMobileDelivery ? 'text-[#05090D]' : 'text-[#E52721]'}`} strokeWidth={1.75} aria-hidden="true" />
+                    <span className={`text-[12px] leading-snug ${qualifiesForFreeMobileDelivery ? 'font-semibold text-[#05090D]' : 'text-[#1e293b]'}`}>{mobileDeliveryFeeLabel}</span>
                   </div>
                   <div className="flex items-start gap-2 px-3 py-2.5">
                     <svg className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[#E52721]" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24" aria-hidden="true">
@@ -3969,6 +3969,12 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                 <p className="text-[13px] text-gray-500">
                   <AedText>{formatMoney(convertedEffPrice, true)}</AedText> × {formatCount(pricingQuantity)}
                 </p>
+              ) : null}
+              {qualifiesForFreeMobileDelivery ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#C8F404] px-2.5 py-1 text-[12px] font-semibold leading-none text-[#05090D]">
+                  <Truck size={14} strokeWidth={2.25} aria-hidden="true" />
+                  {t('product.mobile.freeDeliveryFee')}
+                </span>
               ) : null}
             </div>
 

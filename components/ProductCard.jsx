@@ -34,6 +34,7 @@ import { STORE_CURRENCY } from '@/lib/storeCurrency'
 import { getProductPath } from '@/lib/productUrl'
 import CurrencySymbol, { StruckPrice } from '@/components/CurrencySymbol'
 import TimeDeliveryBadge from '@/components/TimeDeliveryBadge'
+import FreeShipRotator from '@/components/FreeShipRotator'
 import NewProductTagBadge from '@/components/NewProductTagBadge'
 import { extractProductKarat } from '@/lib/productKarat'
 import { cardImageSrc } from '@/lib/cardImage'
@@ -370,7 +371,7 @@ const ProductCard = ({
               fill
               className="object-contain object-center bg-white"
               sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, 14vw"
-              quality={priorityImages ? 70 : 55}
+              quality={priorityImages ? 70 : 65}
               priority={priorityImages}
               loading={priorityImages ? undefined : 'lazy'}
               onError={(e) => {
@@ -412,7 +413,7 @@ const ProductCard = ({
               fill
               className={`object-contain object-center bg-white transition-opacity duration-500 ease-out ${hasSecondary && hovered ? 'opacity-0' : 'opacity-100'}`}
               sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, 14vw"
-              quality={priorityImages ? 70 : 55}
+              quality={priorityImages ? 70 : 65}
               priority={priorityImages}
               loading={priorityImages ? undefined : 'lazy'}
               onError={(e) => {
@@ -432,7 +433,7 @@ const ProductCard = ({
                 fill
                 className="absolute inset-0 object-contain object-center bg-white"
                 sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, 14vw"
-                quality={55}
+                quality={65}
                 loading="lazy"
                 onError={(e) => {
                   const img = e.currentTarget
@@ -449,28 +450,16 @@ const ProductCard = ({
         )}
 
         <NewProductTagBadge product={product} size="card" />
-        {discount > 0 || product?.fastDelivery || product?.freeShippingEligible ? (
+        {discount > 0 ? (
           <span className="pointer-events-none absolute bottom-2 start-2 z-20 flex max-w-[calc(100%-1rem)] flex-col items-start gap-1">
-            {discount > 0 ? (
-              <span className="rounded-full bg-[#B12F39] px-2 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wide text-white">
-                {t('common.sale')}
-              </span>
-            ) : null}
-            {product?.fastDelivery ? (
-              <span className="rounded-full bg-[#C8F404] px-2 py-0.5 text-[10px] font-bold leading-none text-[#05090D]">
-                {t('common.fastDelivery')}
-              </span>
-            ) : null}
-            {product?.freeShippingEligible ? (
-              <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold leading-none text-[#05090D] ring-1 ring-[#E2E7E8]">
-                {t('common.freeShip')}
-              </span>
-            ) : null}
+            <span className="rounded-full bg-[#B12F39] px-2 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wide text-white">
+              {t('common.sale')}
+            </span>
           </span>
         ) : null}
       </div>
 
-      <div className={`flex shrink-0 flex-col bg-[#E2E7E8] ${compactAll ? 'p-1.5' : compactLg ? 'p-2 sm:p-2.5 lg:p-1.5' : 'p-2 sm:p-2.5'}`}>
+      <div className={`flex shrink-0 flex-col bg-white ${compactAll ? 'p-1.5' : compactLg ? 'p-2 sm:p-2.5 lg:p-1.5' : 'p-2 sm:p-2.5'}`}>
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
             <h3 className={`overflow-hidden text-start font-semibold leading-tight text-slate-900 ${compactAll ? 'mb-1 text-[10px]' : compactLg ? 'mb-1 min-h-[2.5em] text-xs sm:text-sm lg:min-h-0 lg:text-[10px]' : 'mb-1 min-h-[2.5em] text-xs sm:text-sm'}`}>
@@ -489,8 +478,8 @@ const ProductCard = ({
             ) : null}
 
             {livePrice > 0 ? (
-              <div className="flex min-w-0 flex-wrap items-baseline justify-start gap-x-1.5 gap-y-0.5">
-                <span dir="ltr" className="inline-flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+              <div className="flex min-w-0 items-baseline justify-start">
+                <span dir="ltr" className="inline-flex min-w-0 flex-nowrap items-baseline gap-x-1.5">
                   <span className={`inline-flex items-baseline gap-0.5 font-semibold leading-none text-slate-950 ${compactAll ? 'text-xs' : compactLg ? 'text-sm sm:text-base lg:text-xs' : 'text-sm sm:text-base'}`}>
                     <CurrencySymbol currency={market.currency} />
                     <span>{formatNumber(convertedPrice, language, { maximumFractionDigits: 0 })}</span>
@@ -501,19 +490,28 @@ const ProductCard = ({
                       <span>{formatNumber(convertedAED, language, { maximumFractionDigits: 0 })}</span>
                     </StruckPrice>
                   ) : null}
+                  {discount > 0 ? (
+                    <span className="whitespace-nowrap text-[10px] font-semibold leading-none text-[#B12F39]">
+                      {t('common.offPercent', {
+                        discount: formatNumber(discount, language, { maximumFractionDigits: 0 }),
+                      })}
+                    </span>
+                  ) : null}
                 </span>
-                {discount > 0 ? (
-                  <span className="text-[10px] font-semibold leading-none text-[#B12F39] sm:text-xs">
-                    {t('common.offPercent', {
-                      discount: formatNumber(discount, language, { maximumFractionDigits: 0 }),
-                    })}
-                  </span>
-                ) : null}
               </div>
             ) : null}
           </div>
-          <div className="shrink-0 self-center">
+          <div className="flex shrink-0 flex-col items-center gap-1 self-center">
             {renderCartControl()}
+            {product?.freeShippingEligible || product?.fastDelivery ? (
+              <FreeShipRotator
+                compact
+                labels={[
+                  ...(product?.freeShippingEligible ? [t('common.freeShip')] : []),
+                  ...(product?.fastDelivery ? [t('common.fastDelivery')] : []),
+                ]}
+              />
+            ) : null}
           </div>
         </div>
 

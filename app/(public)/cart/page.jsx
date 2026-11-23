@@ -4,6 +4,7 @@
 import { useDispatch, useSelector, useStore } from "react-redux";
 import { useEffect, useRef, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import axios from "axios";
 import CartLineItem from "@/components/CartLineItem";
 import CartSummaryBox, { CartSummaryActions } from "@/components/CartSummaryBox";
@@ -631,9 +632,9 @@ function CartContent() {
                             </div>
                             <h2 className="text-2xl font-bold text-gray-900 mb-2">Your cart is empty</h2>
                             <p className="text-gray-500 mb-6">Add some products to get started</p>
-                            <a href="/" className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors">
+                            <Link href="/" className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors">
                                 Continue Shopping
-                            </a>
+                            </Link>
                         </div>
                     </div>
                 )}

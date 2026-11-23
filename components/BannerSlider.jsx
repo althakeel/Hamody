@@ -275,7 +275,7 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
       </div>
 
       {slideCount > 1 ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-2.5 z-10 flex justify-center gap-1.5" data-banner-ignore-drag>
+        <div className="pointer-events-none absolute inset-x-0 bottom-1 z-10 flex justify-center gap-1.5" data-banner-ignore-drag>
           {banners.map((_, i) => (
             <button
               type="button"

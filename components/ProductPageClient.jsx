@@ -69,7 +69,6 @@ class ProductDetailsErrorBoundary extends Component {
           detail={message}
           onRetry={() => {
             this.setState({ error: null, generation: Date.now() });
-            window.location.reload();
           }}
         />
       );

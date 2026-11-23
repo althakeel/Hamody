@@ -34,6 +34,7 @@ export default function ProductCarousel({
   edgeBleed = true,
   arrowsOutside = false,
   alwaysShowArrows = false,
+  arrowVariant = 'default',
   cardsPerRow = 6,
   autoSlide = false,
   autoSlideIntervalMs = DEFAULT_CATEGORY_SLIDER_AUTO_SLIDE_INTERVAL_MS,
@@ -407,6 +408,12 @@ export default function ProductCarousel({
   const arrowsVisible = showArrows || showMobileArrows
   const arrowVisibilityClass = getArrowVisibilityClass({ showArrows, showMobileArrows })
   const outsideArrows = arrowsOutside && arrowsVisible && !autoSlide
+  const namshiArrows = arrowVariant === 'namshi' && arrowsVisible
+  const arrowButtonClass = (side, enabled) => (
+    namshiArrows
+      ? `absolute top-[37%] z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-slate-900 shadow-[0_4px_14px_rgba(15,23,42,0.18)] transition hover:bg-white active:scale-95 ${side === 'start' ? 'start-0' : 'end-0'} ${enabled ? '' : 'pointer-events-none opacity-40'} ${arrowVisibilityClass}`
+      : `absolute top-[38%] z-10 -translate-y-1/2 rounded-full border border-gray-100 bg-white p-2 shadow-lg transition-all hover:bg-gray-50 active:scale-95 ${outsideArrows ? (side === 'start' ? 'start-1 lg:start-2' : 'end-1 lg:end-2') : (side === 'start' ? 'start-1 lg:start-0' : 'end-1 lg:end-0')} ${arrowVisibilityClass}`
+  )
   const bleedClass = edgeBleed ? MOBILE_CAROUSEL_BLEED_CLASS : ''
   const cardClassName = cardWidthVariant === 'categorySlider'
     ? getCategorySliderProductCardClass(cardsPerRow)
@@ -433,7 +440,7 @@ export default function ProductCarousel({
     <div
       ref={rootRef}
       dir={carouselDir}
-      className={`relative w-full min-w-0 max-lg:overflow-x-clip lg:overflow-x-clip ${outsideArrows ? 'lg:px-16' : ''} ${bleedClass} ${className}`.trim()}
+      className={`relative w-full min-w-0 max-lg:overflow-x-clip lg:overflow-x-clip ${outsideArrows ? 'lg:px-16' : ''} ${namshiArrows ? 'px-[3.25rem]' : ''} ${bleedClass} ${className}`.trim()}
       onMouseEnter={() => { isHoverPausedRef.current = true }}
       onMouseLeave={() => { isHoverPausedRef.current = false }}
     >
@@ -441,10 +448,11 @@ export default function ProductCarousel({
         <button
           type="button"
           onClick={scrollLeft}
-          className={`absolute top-[38%] z-10 -translate-y-1/2 rounded-full border border-gray-100 bg-white p-2 shadow-lg transition-all hover:bg-gray-50 active:scale-95 ${outsideArrows ? 'start-1 lg:start-2' : 'start-1 lg:start-0'} ${arrowVisibilityClass}`}
+          className={arrowButtonClass('start', canScrollLeft)}
           aria-label="Scroll left"
+          aria-disabled={!canScrollLeft}
         >
-          <ChevronLeft size={18} className="text-gray-800" />
+          <ChevronLeft size={namshiArrows ? 20 : 18} className={namshiArrows ? 'text-slate-900' : 'text-gray-800'} />
         </button>
       ) : null}
 
@@ -487,10 +495,11 @@ export default function ProductCarousel({
         <button
           type="button"
           onClick={scrollRight}
-          className={`absolute top-[38%] z-10 -translate-y-1/2 rounded-full border border-gray-100 bg-white p-2 shadow-lg transition-all hover:bg-gray-50 active:scale-95 ${outsideArrows ? 'end-1 lg:end-2' : 'end-1 lg:end-0'} ${arrowVisibilityClass}`}
+          className={arrowButtonClass('end', canScrollRight)}
           aria-label="Scroll right"
+          aria-disabled={!canScrollRight}
         >
-          <ChevronRight size={18} className="text-gray-800" />
+          <ChevronRight size={namshiArrows ? 20 : 18} className={namshiArrows ? 'text-slate-900' : 'text-gray-800'} />
         </button>
       ) : null}
     </div>

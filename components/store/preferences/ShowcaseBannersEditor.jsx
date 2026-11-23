@@ -265,10 +265,11 @@ function ShowcaseImageSlot({ label, size, value, onUpload, onClear }) {
         ) : null}
       </div>
       <div
-        className="relative mb-2 h-24 overflow-hidden rounded-md border border-dashed border-slate-300 bg-slate-50"
+        className="relative mb-2 overflow-hidden rounded-md border border-dashed border-slate-300 bg-slate-50"
+        style={width && height ? { aspectRatio: `${width} / ${height}` } : { height: 96 }}
       >
         {value ? (
-          <Image src={value} alt={label} fill unoptimized className="object-cover" />
+          <img src={value} alt={label} className="h-full w-full object-contain" />
         ) : (
           <div className="flex h-full items-center justify-center text-[11px] text-slate-400">No image</div>
         )}
@@ -1355,6 +1356,8 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
     const data = error?.response?.data
     if (typeof data?.error === 'string' && data.error.trim()) return data.error
     if (typeof data?.message === 'string' && data.message.trim()) return data.message
+    const message = String(error?.message || '').trim()
+    if (message && !/^Request failed with status code/i.test(message)) return message
     return 'Failed to upload image'
   }
 

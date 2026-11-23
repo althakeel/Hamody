@@ -401,7 +401,7 @@ export default function ShowcaseLargeBannerSlider({
       ) : null}
 
       {enabled && slideCount > 1 ? (
-        <div className="absolute bottom-2.5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5" data-banner-ignore-drag>
+        <div className="absolute bottom-1 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5" data-banner-ignore-drag>
           {visibleSlides.map((slide, dotIndex) => (
             <button
               key={`dot-${slide.id || dotIndex}`}

@@ -20,7 +20,6 @@ import {
   defaultNavbarItemAlign,
   defaultNavbarItemOrder,
   getNavbarCategoriesButtonAppearance,
-  getNavbarSearchAppearance,
   normalizeNavbarBottomBorder,
   normalizeNavbarItemOrder,
   normalizeNavbarLayout,
@@ -86,40 +85,27 @@ import {
   X,
 } from 'lucide-react';
 
+const CURRENT_NAVBAR_SEARCH_PLACEHOLDER = 'Search for a product';
+
+function currentNavbarBackground(color) {
+  const value = String(color || '').trim().toLowerCase();
+  if (!value || value === '#8f3404' || value === '#9f4b1d') return '#ffffff';
+  return String(color).trim();
+}
+
 function SearchFieldPreview({
-  searchStyle,
-  placeholder = 'Search products...',
-  maxWidth = 600,
-  backgroundColor = '#8f3404',
+  placeholder = CURRENT_NAVBAR_SEARCH_PLACEHOLDER,
 }) {
-  const appearance = getNavbarSearchAppearance({ searchStyle }, 'desktop');
   return (
-    <div
-      className="rounded-xl px-3 py-3 sm:px-4"
-      style={{ backgroundColor: backgroundColor || '#111827' }}
-    >
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-white/70">
+    <div className="rounded-xl border border-neutral-200 bg-white px-3 py-3 sm:px-4">
+      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
         Live search preview
       </p>
-      <div className="flex w-full min-w-0 items-center">
-        <div className="min-w-0 flex-1 basis-0">
-          <div className="w-full" style={{ maxWidth: Number(maxWidth) || 600 }}>
-            <div
-              className="flex h-[44px] w-full min-w-0 items-center overflow-hidden px-3 shadow-sm"
-              data-font={appearance.fontId || 'inherit'}
-              style={appearance.boxStyle}
-            >
-              <span className="min-w-0 flex-1 truncate opacity-70" style={appearance.inputStyle}>
-                {placeholder}
-              </span>
-              <Search
-                size={15}
-                className="ms-2 shrink-0"
-                style={{ color: appearance.textColor || '#64748b' }}
-              />
-            </div>
-          </div>
-        </div>
+      <div className="flex h-10 w-full min-w-0 items-center rounded-md bg-[#F2F5F5] px-3">
+        <Search size={16} strokeWidth={2} className="shrink-0 text-slate-500" />
+        <span className="min-w-0 flex-1 truncate px-2 text-sm text-slate-500">
+          {placeholder || CURRENT_NAVBAR_SEARCH_PLACEHOLDER}
+        </span>
       </div>
     </div>
   );
@@ -596,7 +582,7 @@ const defaultNavbarBranding = {
   logoUrl: '',
   logoWidth: 120,
   logoHeight: 40,
-  backgroundColor: '',
+  backgroundColor: '#ffffff',
 };
 
 const SHOW_MANUAL_NAV_EDITOR = false;
@@ -823,7 +809,7 @@ export default function MenuManagementPage() {
   const [productOptions, setProductOptions] = useState([]);
   const [productBrandNames, setProductBrandNames] = useState([]);
   const [activePanel, setActivePanel] = useState('settings');
-  const [settingsSection, setSettingsSection] = useState('topbar');
+  const [settingsSection, setSettingsSection] = useState('logo');
   const [uploadingMegaImageKey, setUploadingMegaImageKey] = useState('');
   const [uploadingNavbarLogo, setUploadingNavbarLogo] = useState(false);
   const [uploadingLanguageIcon, setUploadingLanguageIcon] = useState(false);
@@ -1055,7 +1041,7 @@ export default function MenuManagementPage() {
           logoUrl: String(brandingData?.logoUrl || '').trim(),
           logoWidth: Number.isFinite(Number(brandingData?.logoWidth)) ? Number(brandingData.logoWidth) : defaultNavbarBranding.logoWidth,
           logoHeight: Number.isFinite(Number(brandingData?.logoHeight)) ? Number(brandingData.logoHeight) : defaultNavbarBranding.logoHeight,
-          backgroundColor: String(brandingData?.backgroundColor || defaultNavbarBranding.backgroundColor),
+          backgroundColor: currentNavbarBackground(brandingData?.backgroundColor || defaultNavbarBranding.backgroundColor),
         });
         setPendingClearLogo(false);
         setLegacyNavbarItems(Array.isArray(brandingData?.items) ? brandingData.items : []);
@@ -2307,7 +2293,7 @@ export default function MenuManagementPage() {
                 <p className="mt-1 text-[11px] font-normal normal-case tracking-normal text-slate-400">
                   {previewDevice === 'mobile'
                     ? 'Phone navbar and side menu. Edits stay on this page until you click Save settings.'
-                    : 'Same layout as the website. Click Save settings to update the live store.'}
+                    : 'White navbar: Home, All Products, Collections, Contact Us, search, language, Profile, Wishlist, and Cart.'}
                 </p>
               </div>
               <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
@@ -2353,7 +2339,7 @@ export default function MenuManagementPage() {
                 navbarPhone={form.navbarPhone}
                 navbarLanguage={form.navbarLanguage}
                 userName={user?.displayName || user?.email?.split('@')[0] || 'hamody'}
-                searchPlaceholder={navbarLayout.searchPlaceholder || 'Wireless Headphones'}
+                searchPlaceholder={navbarLayout.searchPlaceholder || CURRENT_NAVBAR_SEARCH_PLACEHOLDER}
                 extraButtons={navbarLayout.extraButtons}
                 searchMaxWidth={navbarLayout.searchMaxWidth}
                 searchAlign={navbarLayout.searchAlign}
@@ -2514,12 +2500,9 @@ export default function MenuManagementPage() {
 
           <div className="flex flex-wrap gap-2">
             {[
-              { id: 'topbar', label: 'Top bar' },
-              { id: 'layout', label: 'Layout' },
-              { id: 'logo', label: 'Logo & color' },
+              { id: 'logo', label: 'Logo' },
               { id: 'search', label: 'Search' },
-              { id: 'categories', label: 'Categories' },
-              { id: 'buttons', label: 'Extra buttons' },
+              { id: 'actions', label: 'Actions' },
             ].map((section) => (
               <button
                 key={section.id}
@@ -2535,6 +2518,47 @@ export default function MenuManagementPage() {
               </button>
             ))}
           </div>
+
+          {settingsSection === 'actions' ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+            <h2 className="text-sm font-semibold text-slate-900">Navbar actions</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Language, Wishlist, and Cart sit on the right of the white navbar, with the icon above the label. Profile stays on the bar.
+            </p>
+            <div className="mt-4 grid gap-2 sm:grid-cols-3">
+              {[
+                { key: 'language', label: 'Language', icon: Languages },
+                { key: 'wishlist', label: 'Wishlist', icon: Heart },
+                { key: 'cart', label: 'Cart', icon: ShoppingCart },
+              ].map(({ key, label, icon: Icon }) => {
+                const checked = form.navActionsVisibility[key] !== false;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => {
+                      setForm((prev) => ({
+                        ...prev,
+                        navActionsVisibility: {
+                          ...prev.navActionsVisibility,
+                          [key]: prev.navActionsVisibility[key] === false,
+                        },
+                      }));
+                    }}
+                    className={`rounded-xl border p-3 text-left transition ${
+                      checked
+                        ? 'border-indigo-300 bg-indigo-50 ring-2 ring-indigo-200'
+                        : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <Icon size={16} className={checked ? 'text-indigo-600' : 'text-slate-400'} />
+                    <p className="mt-2 text-sm font-semibold text-slate-900">{label}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          ) : null}
 
           {settingsSection === 'topbar' ? (
           <div className="space-y-5">
@@ -3224,11 +3248,10 @@ export default function MenuManagementPage() {
             <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
               <div className="mb-4 flex items-center gap-2">
                 <Palette size={16} className="text-indigo-600" />
-                <h2 className="text-sm font-semibold text-slate-900">Logo and navbar color</h2>
+                <h2 className="text-sm font-semibold text-slate-900">Logo</h2>
               </div>
               <p className="mb-4 text-xs text-slate-500">
-                Upload a PNG or WebP with a transparent background. Transparent areas show the navbar color
-                (not black). Avoid JPEG for logos — JPEG fills empty areas with black.
+                The navbar background is white. Upload a PNG or WebP with a transparent background so the logo sits on that white bar.
               </p>
 
               <div className="grid gap-4 lg:grid-cols-[180px_minmax(0,1fr)]">
@@ -3311,21 +3334,22 @@ export default function MenuManagementPage() {
                   </div>
 
                   <label className="block space-y-1">
-                    <span className="text-xs font-medium text-slate-600">Main navbar color</span>
+                    <span className="text-xs font-medium text-slate-600">Navbar background</span>
                     <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-2 py-1.5">
                       <input
                         type="color"
-                        value={navbarBranding.backgroundColor}
+                        value={currentNavbarBackground(navbarBranding.backgroundColor)}
                         onChange={(e) => setNavbarBranding((prev) => ({ ...prev, backgroundColor: e.target.value }))}
                         className="h-8 w-10 cursor-pointer rounded border-0 bg-transparent p-0"
                       />
                       <input
                         type="text"
-                        value={navbarBranding.backgroundColor}
+                        value={currentNavbarBackground(navbarBranding.backgroundColor)}
                         onChange={(e) => setNavbarBranding((prev) => ({ ...prev, backgroundColor: e.target.value }))}
                         className="w-full border-0 bg-transparent text-sm text-slate-700 outline-none"
                       />
                     </div>
+                    <span className="text-[11px] text-slate-500">White, matching the live store navbar.</span>
                   </label>
                 </div>
               </div>
@@ -3701,12 +3725,12 @@ export default function MenuManagementPage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
             <h2 className="text-sm font-semibold text-slate-900">Search</h2>
             <p className="mt-1 text-xs text-slate-500">
-              Align, width, placeholder, and space after the logo.
+              Gray search field on the white navbar. The icon sits on the left.
             </p>
             <div className="sticky top-3 z-20 mt-4 rounded-xl bg-white/95 pb-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] backdrop-blur-sm">
               <SearchFieldPreview
                 searchStyle={navbarLayout.searchStyle}
-                placeholder={navbarLayout.searchPlaceholder || 'Wireless Headphones'}
+                placeholder={navbarLayout.searchPlaceholder || CURRENT_NAVBAR_SEARCH_PLACEHOLDER}
                 maxWidth={navbarLayout.searchMaxWidth}
                 backgroundColor={navbarBranding.backgroundColor || defaultNavbarBranding.backgroundColor}
               />
@@ -3718,7 +3742,7 @@ export default function MenuManagementPage() {
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                   value={navbarLayout.searchPlaceholder}
                   onChange={(event) => setNavbarLayout((prev) => ({ ...prev, searchPlaceholder: event.target.value }))}
-                  placeholder="Wireless Headphones"
+                  placeholder="Search for a product"
                 />
               </label>
               <label className="block space-y-1">
@@ -3746,7 +3770,7 @@ export default function MenuManagementPage() {
             <ExtraButtonStyleEditor
               style={navbarLayout.searchStyle}
               fallbackStyle={DEFAULT_SEARCH_STYLE}
-              previewLabel={navbarLayout.searchPlaceholder || 'Wireless Headphones'}
+              previewLabel={navbarLayout.searchPlaceholder || CURRENT_NAVBAR_SEARCH_PLACEHOLDER}
               hideAnimation
               hideWidth
               previewKind="search"
@@ -3907,7 +3931,7 @@ export default function MenuManagementPage() {
               navbarPhone={form.navbarPhone}
               navbarLanguage={form.navbarLanguage}
               userName={user?.displayName || user?.email?.split('@')[0] || 'Hamody'}
-              searchPlaceholder={navbarLayout.searchPlaceholder || 'Coffee Maker'}
+              searchPlaceholder={navbarLayout.searchPlaceholder || CURRENT_NAVBAR_SEARCH_PLACEHOLDER}
               extraButtons={navbarLayout.extraButtons}
               searchMaxWidth={navbarLayout.searchMaxWidth}
               searchAlign={navbarLayout.searchAlign}

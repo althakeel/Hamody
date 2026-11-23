@@ -215,7 +215,7 @@ export default function Banner2SectionEditor({ embedded = false }) {
       updateItem(index, field, url)
       toast.success('Image uploaded')
     } catch (error) {
-      toast.error('Banner upload failed')
+      toast.error(error?.message || 'Banner upload failed')
       console.error(error)
     }
   }

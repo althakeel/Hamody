@@ -1068,3 +1068,15 @@ body::-webkit-scrollbar-thumb:hover {
 .blog-content th > :last-child {
     margin-bottom: 0;
 }
+
+@keyframes free-ship-rotate {
+    0%, 25% { transform: translateY(0); }
+    50%, 75% { transform: translateY(calc(var(--free-ship-frame) * -1)); }
+    100% { transform: translateY(calc(var(--free-ship-frame) * -2)); }
+}
+
+@keyframes free-ship-rotate-dupe {
+    0%, 25% { transform: translateY(calc(var(--free-ship-frame) * 2)); }
+    50%, 75% { transform: translateY(var(--free-ship-frame)); }
+    100% { transform: translateY(0); }
+}

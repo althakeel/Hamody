@@ -77,12 +77,33 @@ export async function POST(request) {
         : `${filePrefix}_${Date.now()}_${Math.random().toString(36).substring(7)}_${uploadName}`;
 
       if (isShowcaseBannerUpload) {
-        const response = await uploadBannerToImageKit({
-          buffer: uploadBuffer,
-          fileName,
-          folder: 'store/showcase-banners',
-        });
-        uploadedUrls.push(response.url);
+        let bannerUrl = '';
+        try {
+          const response = await uploadBannerToImageKit({
+            buffer: uploadBuffer,
+            fileName,
+            folder: '/store/showcase-banners',
+            contentType: file.type || optimized.contentType || undefined,
+          });
+          bannerUrl = String(response?.url || '').trim();
+        } catch (imageKitError) {
+          console.warn('[upload] ImageKit banner upload failed, using S3:', imageKitError?.message || imageKitError);
+        }
+
+        if (!bannerUrl) {
+          const result = await uploadToS3({
+            buffer: uploadBuffer,
+            fileName,
+            folder: 'uploads',
+            contentType: file.type || optimized.contentType || undefined,
+          });
+          bannerUrl = result.url;
+        }
+
+        if (!bannerUrl) {
+          throw new Error('Upload finished without an image URL');
+        }
+        uploadedUrls.push(bannerUrl);
         continue;
       }
 
@@ -102,8 +123,12 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error('File upload error:', error);
+    const message = String(error?.message || '');
+    const tooLarge = /entity too large|request body exceeded|formdata|413/i.test(message);
     return Response.json({
-      error: error.message || 'Failed to upload files',
-    }, { status: 500 });
+      error: tooLarge
+        ? 'This image is too large to upload. Use a JPG, PNG, or WebP under 20 MB.'
+        : (message || 'Failed to upload files'),
+    }, { status: tooLarge ? 413 : 500 });
   }
 }

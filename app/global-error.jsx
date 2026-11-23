@@ -10,10 +10,10 @@ export default function GlobalError({ error, reset }) {
   );
 
   useLayoutEffect(() => {
-    if (isDomError) {
-      reloadOnceForDomRace();
+    if (isDomError && !reloadOnceForDomRace()) {
+      reset();
     }
-  }, [isDomError]);
+  }, [isDomError, reset]);
 
   if (isDomError) {
     return (

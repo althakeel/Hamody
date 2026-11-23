@@ -41,8 +41,14 @@ const imagekit = {
     const rawFile = normalizedOptions.file;
 
     if (Buffer.isBuffer(rawFile) || rawFile instanceof Uint8Array) {
-      normalizedOptions.file = await toFile(rawFile, normalizedOptions.fileName || 'upload-file');
+      const mimeType = String(normalizedOptions.contentType || '').trim();
+      normalizedOptions.file = await toFile(
+        rawFile,
+        normalizedOptions.fileName || 'upload-file',
+        mimeType ? { type: mimeType } : undefined,
+      );
     }
+    delete normalizedOptions.contentType;
 
     return ensureImageKit().files.upload(normalizedOptions, ...rest);
   },

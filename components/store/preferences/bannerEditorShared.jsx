@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import Image from 'next/image'
 import { Check, ChevronDown, Search, Upload } from 'lucide-react'
 import {
   createShowcaseLinkFromChoice,
@@ -116,10 +115,11 @@ export function ShowcaseImageSlot({ label, size, value, onUpload, onClear }) {
         ) : null}
       </div>
       <div
-        className="relative mb-2 h-24 overflow-hidden rounded-md border border-dashed border-slate-300 bg-slate-50"
+        className="relative mb-2 overflow-hidden rounded-md border border-dashed border-slate-300 bg-slate-50"
+        style={width && height ? { aspectRatio: `${width} / ${height}` } : { height: 96 }}
       >
         {value ? (
-          <Image src={value} alt={label} fill unoptimized className="object-cover" />
+          <img src={value} alt={label} className="h-full w-full object-contain" />
         ) : (
           <div className="flex h-full items-center justify-center text-[11px] text-slate-400">No image</div>
         )}
