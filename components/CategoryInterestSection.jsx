@@ -2,107 +2,129 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { HOME_SECTION_GRID_INNER_CLASS } from '@/lib/storefrontCarousel';
-import { cleanDisplayText } from '@/lib/displayText';
-import { getLocalizedCategoryName } from '@/lib/categoryLocalization';
-import { toPublicCategoryPath } from '@/lib/categorySlug';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 
-const HIDDEN_SLUGS = new Set(['home-living']);
-const SLIDE_SPEED_PX_PER_SEC = 42;
+const SCROLL_SPEED = 42;
+const LOGO_SLOT_CLASS = 'flex h-10 w-[140px] shrink-0 items-center justify-center';
 
-function categoryImage(category, records) {
-  const own = String(category?.image || '').trim();
-  if (own) return own;
-  const id = String(category?._id || '');
-  const child = records.find(
-    (item) => String(item?.parentId || '') === id && String(item?.image || '').trim(),
+function BrandLogo({ src }) {
+  const [frame, setFrame] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.onload = () => {
+      const natural = { src, width: image.naturalWidth || 1, height: image.naturalHeight || 1 };
+      try {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d', { willReadFrequently: true });
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        context.drawImage(image, 0, 0);
+        const { data, width, height } = context.getImageData(0, 0, canvas.width, canvas.height);
+        let minX = width;
+        let minY = height;
+        let maxX = 0;
+        let maxY = 0;
+        for (let y = 0; y < height; y += 1) {
+          for (let x = 0; x < width; x += 1) {
+            const index = (y * width + x) * 4;
+            if (data[index + 3] < 16) continue;
+            if (data[index] < 18 && data[index + 1] < 18 && data[index + 2] < 18) continue;
+            if (x < minX) minX = x;
+            if (y < minY) minY = y;
+            if (x > maxX) maxX = x;
+            if (y > maxY) maxY = y;
+          }
+        }
+        if (maxX < minX || maxY < minY) {
+          if (!cancelled) setFrame(natural);
+          return;
+        }
+        const pad = 4;
+        const sx = Math.max(0, minX - pad);
+        const sy = Math.max(0, minY - pad);
+        const sw = Math.min(width - sx, maxX - minX + 1 + pad * 2);
+        const sh = Math.min(height - sy, maxY - minY + 1 + pad * 2);
+        const cropped = document.createElement('canvas');
+        cropped.width = sw;
+        cropped.height = sh;
+        cropped.getContext('2d').drawImage(canvas, sx, sy, sw, sh, 0, 0, sw, sh);
+        if (!cancelled) setFrame({ src: cropped.toDataURL('image/png'), width: sw, height: sh });
+      } catch {
+        if (!cancelled) setFrame(natural);
+      }
+    };
+    image.onerror = () => {
+      if (!cancelled) setFrame({ src, width: 1, height: 1 });
+    };
+    image.src = /^https?:\/\//i.test(src)
+      ? `/api/public/brand-logo?src=${encodeURIComponent(src)}`
+      : src;
+    return () => {
+      cancelled = true;
+    };
+  }, [src]);
+
+  return (
+    <img
+      src={frame?.src || src}
+      alt=""
+      className="max-h-full max-w-full object-contain"
+    />
   );
-  return child ? String(child.image).trim() : '';
-}
-
-function cardSubtitle(category, language, t) {
-  const description = cleanDisplayText(
-    language === 'ar' ? category?.descriptionAr || category?.description : category?.description,
-  );
-  if (description) {
-    const sentence = description.split(/(?<=[.!?])\s/)[0].trim();
-    return sentence.length > 88 ? `${sentence.slice(0, 85).trim()}…` : sentence;
-  }
-  const count = Number(category?.productCount) || 0;
-  return count > 0 ? t('category.productCount', { count }) : '';
-}
-
-function cardWidthFor(viewportWidth) {
-  if (viewportWidth >= 1024) return Math.max(180, (viewportWidth - 64) / 5.15);
-  if (viewportWidth >= 768) return Math.max(180, (viewportWidth - 48) / 3.2);
-  if (viewportWidth >= 640) return Math.max(168, (viewportWidth - 32) / 2.15);
-  return Math.max(220, viewportWidth * 0.72);
 }
 
 export default function CategoryInterestSection() {
   const { t, language, isArabic } = useStorefrontI18n();
   const viewportRef = useRef(null);
   const trackRef = useRef(null);
-  const [records, setRecords] = useState([]);
-  const [sectionEnabled, setSectionEnabled] = useState(true);
+  const [brands, setBrands] = useState([]);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let active = true;
-    const load = async () => {
-      try {
-        const [settingsResponse, categoriesResponse] = await Promise.all([
-          fetch('/api/store/explore-interests/public').catch(() => null),
-          fetch('/api/categories'),
-        ]);
+    fetch('/api/public/brands')
+      .then((response) => (response.ok ? response.json() : { brands: [] }))
+      .then((data) => {
         if (!active) return;
-        if (settingsResponse?.ok) {
-          const settings = await settingsResponse.json();
-          setSectionEnabled(typeof settings?.enabled === 'boolean' ? settings.enabled : true);
-        }
-        if (categoriesResponse?.ok) {
-          const data = await categoriesResponse.json();
-          setRecords(Array.isArray(data?.categories) ? data.categories : []);
-        }
-      } catch {
-        if (active) setRecords([]);
-      } finally {
+        setBrands(Array.isArray(data?.brands) ? data.brands : []);
+      })
+      .catch(() => {
+        if (active) setBrands([]);
+      })
+      .finally(() => {
         if (active) setReady(true);
-      }
-    };
-    load();
+      });
     return () => {
       active = false;
     };
   }, []);
 
   const cards = useMemo(() => {
-    const seen = new Set();
-    return records.flatMap((category) => {
-      const slug = String(category?.slug || '').trim().toLowerCase();
-      const id = String(category?._id || slug);
-      if (!slug || !id || seen.has(id) || HIDDEN_SLUGS.has(slug)) return [];
-      seen.add(id);
-      const title = getLocalizedCategoryName(category, language);
-      if (!title) return [];
+    return brands.flatMap((brand) => {
+      const image = String(brand?.image || '').trim();
+      const href = String(brand?.path || '').trim();
+      const title = String(language === 'ar' ? brand?.nameAr || brand?.name : brand?.name || '').trim();
+      if (!image || !href || !title) return [];
       return [{
-        id,
-        href: toPublicCategoryPath(category.slug),
+        id: String(brand.id || brand.slug || title),
+        href,
         title,
-        subtitle: cardSubtitle(category, language, t),
-        image: categoryImage(category, records),
+        image,
       }];
     });
-  }, [language, records, t]);
+  }, [brands, language]);
 
-  const loopCards = cards.length > 1 ? [...cards, ...cards] : cards;
+  const looping = cards.length > 1;
+  const loopCards = looping ? [...cards, ...cards] : cards;
 
   useEffect(() => {
     const viewport = viewportRef.current;
     const track = trackRef.current;
-    if (!viewport || !track || cards.length < 2) return undefined;
+    if (!viewport || !track || !looping) return undefined;
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let frame = 0;
@@ -112,15 +134,11 @@ export default function CategoryInterestSection() {
     let loopWidth = 0;
 
     const measure = () => {
-      const width = cardWidthFor(viewport.clientWidth);
-      viewport.style.setProperty('--explore-card', `${Math.round(width)}px`);
-      const count = cards.length;
-      const children = track.children;
-      const styles = window.getComputedStyle(track);
-      const gap = parseFloat(styles.columnGap || styles.gap || '16') || 16;
+      const gap = parseFloat(window.getComputedStyle(track).columnGap || '12') || 12;
       let measured = 0;
-      for (let index = 0; index < count && index < children.length; index += 1) {
-        measured += children[index].getBoundingClientRect().width;
+      const count = cards.length;
+      for (let index = 0; index < count && index < track.children.length; index += 1) {
+        measured += track.children[index].getBoundingClientRect().width;
         if (index < count - 1) measured += gap;
       }
       loopWidth = measured > 0 ? measured + gap : 0;
@@ -128,13 +146,11 @@ export default function CategoryInterestSection() {
 
     const tick = (now) => {
       if (!last) last = now;
-      const dt = Math.min(48, now - last);
+      const dt = Math.min(32, now - last);
       last = now;
-      if (!paused) {
-        if (loopWidth <= 8) measure();
-      }
+      if (loopWidth <= 8) measure();
       if (!paused && loopWidth > 8) {
-        const delta = (SLIDE_SPEED_PX_PER_SEC * dt) / 1000;
+        const delta = (SCROLL_SPEED * dt) / 1000;
         offset += isArabic ? delta : -delta;
         if (!isArabic && offset <= -loopWidth) offset += loopWidth;
         if (isArabic && offset >= loopWidth) offset -= loopWidth;
@@ -155,11 +171,9 @@ export default function CategoryInterestSection() {
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(viewport);
+    observer.observe(track);
     viewport.addEventListener('pointerenter', pause);
     viewport.addEventListener('pointerleave', resume);
-    viewport.addEventListener('pointerdown', pause);
-    viewport.addEventListener('pointerup', resume);
-    viewport.addEventListener('pointercancel', resume);
     frame = requestAnimationFrame(tick);
 
     return () => {
@@ -167,66 +181,40 @@ export default function CategoryInterestSection() {
       observer.disconnect();
       viewport.removeEventListener('pointerenter', pause);
       viewport.removeEventListener('pointerleave', resume);
-      viewport.removeEventListener('pointerdown', pause);
-      viewport.removeEventListener('pointerup', resume);
-      viewport.removeEventListener('pointercancel', resume);
+      track.style.transform = '';
     };
-  }, [cards, isArabic, ready]);
+  }, [cards.length, isArabic, looping, ready]);
 
-  if (!sectionEnabled || (ready && cards.length === 0)) return null;
+  if (ready && cards.length === 0) return null;
 
   return (
-    <section className="w-full min-w-0 overflow-x-clip">
-      <div className={`${HOME_SECTION_GRID_INNER_CLASS} rounded-2xl bg-[#C8F404] py-8`}>
-        <h2 className="mb-5 text-center text-xl font-extrabold uppercase tracking-wide text-[#05090D] sm:mb-6 sm:text-2xl">
-          {t('exploreInterests.title')}
+    <section className="w-full min-w-0 overflow-x-clip" aria-label={t('topBrands.title')}>
+      <div className={HOME_SECTION_GRID_INNER_CLASS}>
+        <h2 className="mb-2 text-base font-bold text-[#111111]">
+          {t('topBrands.title')}
         </h2>
 
         <div ref={viewportRef} className="overflow-hidden">
           <div
             ref={trackRef}
-            className="flex w-max gap-4"
+            className="flex w-max items-center gap-8"
             dir={isArabic ? 'rtl' : 'ltr'}
           >
-            {(ready ? loopCards : Array.from({ length: 5 }, (_, index) => ({ id: `skeleton-${index}` }))).map((card, index) => (
+            {(ready ? loopCards : Array.from({ length: 8 }, (_, item) => ({ id: `skeleton-${item}` }))).map((card, index) => (
               ready ? (
                 <Link
                   key={`${card.id}-${index}`}
                   href={card.href}
-                  data-explore-card
-                  style={{ width: 'var(--explore-card, 240px)' }}
-                  className="shrink-0 overflow-hidden rounded-2xl border border-[#E2E7E8] bg-white shadow-sm"
+                  aria-label={card.title}
+                  className={LOGO_SLOT_CLASS}
                 >
-                  <div className="relative aspect-[4/3] bg-[#F2F5F5]">
-                    {card.image ? (
-                      <Image
-                        src={card.image}
-                        alt=""
-                        fill
-                        sizes="(min-width: 1024px) 240px, 70vw"
-                        className="object-contain p-3"
-                      />
-                    ) : null}
-                  </div>
-                  <div className="px-3 py-3">
-                    <p className="line-clamp-1 text-sm font-bold text-[#05090D]">{card.title}</p>
-                    {card.subtitle ? (
-                      <p className="mt-1 line-clamp-2 text-xs leading-4 text-[#5E6870]">{card.subtitle}</p>
-                    ) : null}
-                  </div>
+                  <BrandLogo src={card.image} />
                 </Link>
               ) : (
                 <div
                   key={card.id}
-                  style={{ width: 'var(--explore-card, 240px)' }}
-                  className="shrink-0 overflow-hidden rounded-2xl border border-[#E2E7E8] bg-white"
-                >
-                  <div className="aspect-[4/3] animate-pulse bg-[#F2F5F5]" />
-                  <div className="space-y-2 px-3 py-3">
-                    <div className="h-3 w-2/3 animate-pulse rounded bg-[#F2F5F5]" />
-                    <div className="h-3 w-1/2 animate-pulse rounded bg-[#F2F5F5]" />
-                  </div>
-                </div>
+                  className="h-10 w-[140px] shrink-0 animate-pulse rounded-lg bg-slate-100"
+                />
               )
             ))}
           </div>

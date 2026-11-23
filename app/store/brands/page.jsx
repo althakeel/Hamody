@@ -8,6 +8,7 @@ import { FiEdit2, FiExternalLink, FiSearch, FiTag, FiX } from 'react-icons/fi';
 import { MdAutoAwesome } from 'react-icons/md';
 import { useAuth } from '@/lib/useAuth';
 import Loading from '@/components/Loading';
+import { readableUploadUrl } from '@/lib/readableUploadUrl';
 
 const BANNER_FIELDS = [
   { key: 'bannerEn', label: 'Desktop banner (English)', hint: '1440×320. Shown on desktop English pages.', rtl: false },
@@ -621,7 +622,7 @@ export default function StoreBrandsPage() {
                     {brand.page?.image ? (
                       <div className="flex items-center gap-2">
                         <img
-                          src={brand.page.image}
+                          src={readableUploadUrl(brand.page.image)}
                           alt=""
                           className="h-10 w-10 rounded-lg border border-slate-200 bg-white object-contain"
                         />
@@ -790,7 +791,7 @@ export default function StoreBrandsPage() {
                   className="block w-full text-sm text-slate-600"
                 />
                 {imagePreview ? (
-                  <img src={imagePreview} alt="" className="mt-2 h-20 w-20 rounded-lg border border-slate-200 object-contain" />
+                  <img src={readableUploadUrl(imagePreview)} alt="" className="mt-2 h-20 w-20 rounded-lg border border-slate-200 object-contain" />
                 ) : null}
                 {imageFile ? (
                   <p className="mt-2 text-xs font-medium text-teal-700">This logo is saved when you click Save brand page.</p>
@@ -856,7 +857,7 @@ export default function StoreBrandsPage() {
                           className="block w-full text-sm text-slate-600"
                         />
                         {preview ? (
-                          <img src={preview} alt="" className="mt-2 h-24 w-full rounded-lg border border-slate-200 object-contain" dir={field.rtl ? 'rtl' : 'ltr'} />
+                          <img src={readableUploadUrl(preview)} alt="" className="mt-2 h-24 w-full rounded-lg border border-slate-200 object-contain" dir={field.rtl ? 'rtl' : 'ltr'} />
                         ) : null}
                       </div>
                     );
