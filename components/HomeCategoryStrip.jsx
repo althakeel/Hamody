@@ -70,7 +70,10 @@ export default function HomeCategoryStrip() {
 
   const maxIndex = Math.max(0, cards.length - perView);
   const safeIndex = Math.min(index, maxIndex);
-  const step = `calc((100cqw - 0.75rem * ${perView - 1}) / ${perView} + 0.75rem)`;
+  const cardWidth = `calc((100cqw - 0.75rem * ${perView - 1}) / ${perView})`;
+  const step = `calc(${cardWidth} + 0.75rem)`;
+  // Reference tiles are wider than tall, about 6:5, so the photo area is shorter than a square.
+  const imageCenter = `calc((${cardWidth}) * 5 / 12)`;
 
   const slide = (direction) => {
     setIndex((current) => {
@@ -94,9 +97,9 @@ export default function HomeCategoryStrip() {
                 key={card.id}
                 href={card.href}
                 className="group flex shrink-0 cursor-pointer flex-col items-center"
-                style={{ width: `calc((100cqw - 0.75rem * ${perView - 1}) / ${perView})` }}
+                style={{ width: cardWidth }}
               >
-                <span className="flex aspect-square w-full items-center justify-center overflow-hidden bg-[#F3EEE6]">
+                <span className="flex aspect-[6/5] w-full items-center justify-center overflow-hidden rounded-2xl bg-[#F3EEE6]">
                   <img
                     src={card.image}
                     alt=""
@@ -118,7 +121,7 @@ export default function HomeCategoryStrip() {
           onClick={() => slide(isArabic ? 1 : -1)}
           disabled={safeIndex <= 0}
           className={`absolute start-0 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-neutral-200 bg-white text-slate-900 shadow-[0_2px_8px_rgba(15,23,42,0.12)] ${safeIndex > 0 ? '' : 'pointer-events-none opacity-40'}`}
-          style={{ top: `calc(((100cqw - 0.75rem * ${perView - 1}) / ${perView}) / 2)` }}
+          style={{ top: imageCenter }}
         >
           <ChevronLeft size={18} className="rtl:rotate-180" />
         </button>
@@ -128,7 +131,7 @@ export default function HomeCategoryStrip() {
           onClick={() => slide(isArabic ? -1 : 1)}
           disabled={safeIndex >= maxIndex}
           className={`absolute end-0 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-neutral-200 bg-white text-slate-900 shadow-[0_2px_8px_rgba(15,23,42,0.12)] ${safeIndex < maxIndex ? '' : 'pointer-events-none opacity-40'}`}
-          style={{ top: `calc(((100cqw - 0.75rem * ${perView - 1}) / ${perView}) / 2)` }}
+          style={{ top: imageCenter }}
         >
           <ChevronRight size={18} className="rtl:rotate-180" />
         </button>

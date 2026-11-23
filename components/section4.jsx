@@ -29,35 +29,20 @@ const Section4 = ({ sections: initialSections = null, loading: loadingProp = fal
   const [loading, setLoading] = useState(loadingProp || shouldSelfFetch)
 
   useEffect(() => {
-    if (Array.isArray(initialSections) && initialSections.length > 0) {
-      setSections(initialSections)
-      setLoading(false)
-      return undefined
-    }
-
-    if (initialSections !== null && initialSections !== undefined) {
-      return undefined
-    }
-
     let cancelled = false
 
-    const loadSections = () => {
-      fetch('/api/public/featured-sections')
-        .then((response) => (response.ok ? response.json() : { sections: [] }))
-        .then((data) => {
-          if (!cancelled) {
-            setSections(Array.isArray(data?.sections) ? data.sections : [])
-          }
-        })
-        .catch(() => {
-          if (!cancelled) setSections([])
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false)
-        })
-    }
-
-    loadSections()
+    fetch('/api/public/featured-sections')
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return
+        setSections(Array.isArray(data.sections) ? data.sections : [])
+      })
+      .catch(() => {
+        if (!cancelled && !Array.isArray(initialSections)) setSections([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
 
     return () => {
       cancelled = true
@@ -241,7 +226,7 @@ const HorizontalSlider = ({ section, priority = false }) => {
       src={sideImage}
       alt={title || 'Featured collection'}
       fill
-      className="object-cover"
+      className="object-contain"
       sizes="(max-width: 1023px) 100vw, (min-width: 1536px) 320px, (min-width: 1280px) 280px, 240px"
       priority={false}
     />
@@ -311,7 +296,7 @@ const HorizontalSlider = ({ section, priority = false }) => {
           <SkeletonLoader hasSideImage={hasSideImage} cardsPerRow={cardsPerRow} />
         </div>
       ) : (
-        <div className={hasSideImage ? 'min-h-0 min-w-0 max-lg:overflow-visible lg:flex-1 lg:w-full lg:overflow-hidden lg:flex lg:items-end' : 'min-w-0 max-lg:overflow-visible'}>
+        <div className="min-w-0 w-full overflow-hidden">
           <ProductCarousel
             products={sectionProducts}
             priorityCount={priority ? (hasSideImage ? 4 : 3) : 0}
@@ -319,13 +304,10 @@ const HorizontalSlider = ({ section, priority = false }) => {
             cardWidthVariant="categorySlider"
             autoSlide={shouldAutoSlide}
             autoSlideIntervalMs={normalizeCategorySliderAutoSlideInterval(section.autoSlideIntervalMs)}
-            compact={hasSideImage}
-            compactDesktopOnly={hasSideImage}
-            compactBottom={hasSideImage}
             showArrows={!shouldAutoSlide}
             showMobileArrows={!shouldAutoSlide}
-            edgeBleed
-            className="w-full min-w-0 lg:overflow-hidden"
+            edgeBleed={!hasSideImage}
+            className="w-full min-w-0"
           />
         </div>
       )}
@@ -333,7 +315,7 @@ const HorizontalSlider = ({ section, priority = false }) => {
   )
 
   return (
-    <div className="w-full min-w-0 max-w-full lg:overflow-hidden">
+    <div className="w-full min-w-0 max-w-full">
       <div className={hasSideImage ? CATEGORY_SLIDER_LAYOUT_CLASS : ''}>
         {imageFirst ? sideImageBlock : null}
         {sliderPanel}

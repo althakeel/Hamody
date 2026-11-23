@@ -1919,29 +1919,29 @@ export default function CategorySliderPage() {
                       const panelColor = normalizeCategorySliderBackground(formData.backgroundColor);
                       const panelImage = imageSource(formData.sideImage) || imageSource(formData.sideImageAr);
                       const imageOnRight = normalizeCategorySliderSideImagePosition(formData.sideImagePosition) === 'right';
+                      const previewImage = panelImage ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={panelImage}
+                          alt=""
+                          className="h-40 w-40 shrink-0 rounded-2xl bg-slate-100 object-contain"
+                        />
+                      ) : null;
                       return (
-                        <div className="mt-3 overflow-hidden rounded-xl border border-gray-200">
-                          <div className={`flex min-h-36 ${panelImage && imageOnRight ? 'flex-row-reverse' : ''}`}>
-                            {panelImage ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={panelImage}
-                                alt=""
-                                className="h-36 w-28 shrink-0 bg-slate-100 object-cover"
-                              />
-                            ) : null}
-                            <div
-                              className="flex min-w-0 flex-1 flex-col justify-center px-4 py-3"
-                              style={{ backgroundColor: panelColor }}
-                            >
-                              <p className="text-sm font-semibold text-gray-900">
-                                {String(formData.title || '').trim() || 'Panel preview'}
-                              </p>
-                              <p className="mt-1 text-xs text-gray-600">
-                                {String(formData.subtitle || '').trim() || `Saved color: ${panelColor}`}
-                              </p>
-                            </div>
+                        <div className="mt-3 flex items-stretch gap-3">
+                          {imageOnRight ? null : previewImage}
+                          <div
+                            className="flex min-h-40 min-w-0 flex-1 flex-col justify-center rounded-2xl px-4 py-3"
+                            style={{ backgroundColor: panelColor }}
+                          >
+                            <p className="text-sm font-semibold text-gray-900">
+                              {String(formData.title || '').trim() || 'Panel preview'}
+                            </p>
+                            <p className="mt-1 text-xs text-gray-600">
+                              {String(formData.subtitle || '').trim() || `Saved color: ${panelColor}`}
+                            </p>
                           </div>
+                          {imageOnRight ? previewImage : null}
                         </div>
                       );
                     })()}
