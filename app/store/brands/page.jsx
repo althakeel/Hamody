@@ -442,7 +442,7 @@ export default function StoreBrandsPage() {
             Store <span className="font-medium text-slate-800">Brands</span>
           </h1>
           <p className="mt-1 text-sm text-slate-600">
-            Each brand has its own page at /brand/name. That is separate from the Brands category.
+            A logo saved here is the Top Brands row on the homepage. Brands without a logo stay off that row.
           </p>
         </div>
         <Link
@@ -627,11 +627,10 @@ export default function StoreBrandsPage() {
                           className="h-10 w-10 rounded-lg border border-slate-200 bg-white object-contain"
                         />
                         <p className="text-[11px] leading-snug text-slate-500">
+                          Shown in Top Brands
                           {brand.page.imageUpdatedAt
-                            ? `Logo updated ${formatLogoUpdated(brand.page.imageUpdatedAt)}`
-                            : brand.page.updatedAt
-                              ? `Last saved ${formatLogoUpdated(brand.page.updatedAt)}`
-                              : 'Logo set'}
+                            ? ` · Logo updated ${formatLogoUpdated(brand.page.imageUpdatedAt)}`
+                            : ''}
                         </p>
                       </div>
                     ) : (

@@ -2,11 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { HOME_SECTION_GRID_INNER_CLASS } from '@/lib/storefrontCarousel';
+import { HOME_SECTION_BLOCK_HEADING_CLASS, HOME_SECTION_GRID_INNER_CLASS } from '@/lib/storefrontCarousel';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 
-const SCROLL_SPEED = 42;
-const LOGO_SLOT_CLASS = 'flex h-10 w-[140px] shrink-0 items-center justify-center';
+const LOGO_HEIGHT = 52;
 
 function BrandLogo({ src }) {
   const [frame, setFrame] = useState(null);
@@ -24,6 +23,14 @@ function BrandLogo({ src }) {
         canvas.height = image.naturalHeight;
         context.drawImage(image, 0, 0);
         const { data, width, height } = context.getImageData(0, 0, canvas.width, canvas.height);
+        let hasColor = false;
+        for (let index = 0; index < data.length; index += 4) {
+          if (data[index + 3] < 16) continue;
+          if (data[index] < 245 || data[index + 1] < 245 || data[index + 2] < 245) {
+            hasColor = true;
+            break;
+          }
+        }
         let minX = width;
         let minY = height;
         let maxX = 0;
@@ -32,7 +39,7 @@ function BrandLogo({ src }) {
           for (let x = 0; x < width; x += 1) {
             const index = (y * width + x) * 4;
             if (data[index + 3] < 16) continue;
-            if (data[index] < 18 && data[index + 1] < 18 && data[index + 2] < 18) continue;
+            if (hasColor && data[index] > 245 && data[index + 1] > 245 && data[index + 2] > 245) continue;
             if (x < minX) minX = x;
             if (y < minY) minY = y;
             if (x > maxX) maxX = x;
@@ -68,11 +75,16 @@ function BrandLogo({ src }) {
     };
   }, [src]);
 
+  const width = frame
+    ? Math.min(168, Math.max(48, Math.round((frame.width / frame.height) * LOGO_HEIGHT)))
+    : 120;
+
   return (
     <img
       src={frame?.src || src}
       alt=""
-      className="max-h-full max-w-full object-contain"
+      style={{ height: LOGO_HEIGHT, width }}
+      className="block object-contain"
     />
   );
 }
@@ -118,104 +130,65 @@ export default function CategoryInterestSection() {
     });
   }, [brands, language]);
 
-  const looping = cards.length > 1;
-  const loopCards = looping ? [...cards, ...cards] : cards;
-
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    const track = trackRef.current;
-    if (!viewport || !track || !looping) return undefined;
-
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let frame = 0;
-    let last = 0;
-    let offset = 0;
-    let paused = reduceMotion;
-    let loopWidth = 0;
-
-    const measure = () => {
-      const gap = parseFloat(window.getComputedStyle(track).columnGap || '12') || 12;
-      let measured = 0;
-      const count = cards.length;
-      for (let index = 0; index < count && index < track.children.length; index += 1) {
-        measured += track.children[index].getBoundingClientRect().width;
-        if (index < count - 1) measured += gap;
-      }
-      loopWidth = measured > 0 ? measured + gap : 0;
-    };
-
-    const tick = (now) => {
-      if (!last) last = now;
-      const dt = Math.min(32, now - last);
-      last = now;
-      if (loopWidth <= 8) measure();
-      if (!paused && loopWidth > 8) {
-        const delta = (SCROLL_SPEED * dt) / 1000;
-        offset += isArabic ? delta : -delta;
-        if (!isArabic && offset <= -loopWidth) offset += loopWidth;
-        if (isArabic && offset >= loopWidth) offset -= loopWidth;
-        track.style.transform = `translate3d(${offset}px, 0, 0)`;
-      }
-      frame = requestAnimationFrame(tick);
-    };
-
-    const pause = () => {
-      paused = true;
-    };
-    const resume = () => {
-      if (reduceMotion) return;
-      paused = false;
-      last = 0;
-    };
-
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(viewport);
-    observer.observe(track);
-    viewport.addEventListener('pointerenter', pause);
-    viewport.addEventListener('pointerleave', resume);
-    frame = requestAnimationFrame(tick);
-
-    return () => {
-      cancelAnimationFrame(frame);
-      observer.disconnect();
-      viewport.removeEventListener('pointerenter', pause);
-      viewport.removeEventListener('pointerleave', resume);
-      track.style.transform = '';
-    };
-  }, [cards.length, isArabic, looping, ready]);
+  const marqueeDuration = `${Math.max(36, cards.length * 3.5)}s`;
 
   if (ready && cards.length === 0) return null;
 
   return (
     <section className="w-full min-w-0 overflow-x-clip" aria-label={t('topBrands.title')}>
       <div className={HOME_SECTION_GRID_INNER_CLASS}>
-        <h2 className="mb-2 text-base font-bold text-[#111111]">
+        <h2 className={`${HOME_SECTION_BLOCK_HEADING_CLASS} mb-5`}>
           {t('topBrands.title')}
         </h2>
 
-        <div ref={viewportRef} className="overflow-hidden">
+        <style>{`
+          @keyframes hamody-brand-marquee {
+            from { transform: translate3d(0, 0, 0); }
+            to { transform: translate3d(-50%, 0, 0); }
+          }
+          .hamody-brand-marquee {
+            animation: hamody-brand-marquee var(--brand-marquee-duration, 42s) linear infinite;
+          }
+          .hamody-brand-marquee-rtl {
+            animation: hamody-brand-marquee var(--brand-marquee-duration, 42s) linear infinite reverse;
+          }
+          .hamody-brand-marquee:hover,
+          .hamody-brand-marquee-rtl:hover {
+            animation-play-state: paused;
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .hamody-brand-marquee,
+            .hamody-brand-marquee-rtl { animation: none; }
+          }
+        `}</style>
+        <div ref={viewportRef} className="relative overflow-hidden">
+          <div className="pointer-events-none absolute inset-y-0 start-0 z-10 w-12 bg-gradient-to-r from-white to-transparent rtl:bg-gradient-to-l sm:w-16" />
+          <div className="pointer-events-none absolute inset-y-0 end-0 z-10 w-12 bg-gradient-to-l from-white to-transparent rtl:bg-gradient-to-r sm:w-16" />
           <div
             ref={trackRef}
-            className="flex w-max items-center gap-8"
-            dir={isArabic ? 'rtl' : 'ltr'}
+            className={`flex w-max items-center ${isArabic ? 'hamody-brand-marquee-rtl' : 'hamody-brand-marquee'}`}
+            style={{ '--brand-marquee-duration': marqueeDuration }}
           >
-            {(ready ? loopCards : Array.from({ length: 8 }, (_, item) => ({ id: `skeleton-${item}` }))).map((card, index) => (
-              ready ? (
-                <Link
-                  key={`${card.id}-${index}`}
-                  href={card.href}
-                  aria-label={card.title}
-                  className={LOGO_SLOT_CLASS}
-                >
-                  <BrandLogo src={card.image} />
-                </Link>
-              ) : (
-                <div
-                  key={card.id}
-                  className="h-10 w-[140px] shrink-0 animate-pulse rounded-lg bg-slate-100"
-                />
-              )
+            {(ready ? [0, 1] : [0]).map((copy) => (
+              <div key={copy} className="flex items-center gap-12 pe-12" dir={isArabic ? 'rtl' : 'ltr'}>
+                {(ready ? cards : Array.from({ length: 8 }, (_, item) => ({ id: `skeleton-${item}` }))).map((card) => (
+                  ready ? (
+                    <Link
+                      key={`${copy}-${card.id}`}
+                      href={card.href}
+                      aria-label={card.title}
+                      className="flex h-[52px] shrink-0 items-center opacity-90 transition-opacity duration-300 hover:opacity-100"
+                    >
+                      <BrandLogo src={card.image} />
+                    </Link>
+                  ) : (
+                    <div
+                      key={card.id}
+                      className="h-[52px] w-24 shrink-0 animate-pulse rounded-md bg-slate-100"
+                    />
+                  )
+                ))}
+              </div>
             ))}
           </div>
         </div>
