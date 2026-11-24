@@ -33,6 +33,10 @@ const imageRemotePatterns = [
     { protocol: 'http', hostname: '**.viphomegallery.ae', pathname: '/**' },
     { protocol: 'https', hostname: 'viphomegallery.ae', pathname: '/**' },
     { protocol: 'http', hostname: 'viphomegallery.ae', pathname: '/**' },
+    // Imported Al Ghafa product photos. next/image rejects any host that is not listed,
+    // including when the image is marked unoptimized.
+    { protocol: 'https', hostname: 'www.alghafaa.com', pathname: '/**' },
+    { protocol: 'https', hostname: 'alghafaa.com', pathname: '/**' },
 ];
 
 try {

@@ -69,7 +69,10 @@ export async function PUT(req, { params }) {
       return NextResponse.json({ error: 'Category name is required' }, { status: 400 });
     }
 
-    const slug = buildSlug(cleanedName);
+    const requestedSlug = body?.slug !== undefined
+      ? buildSlug(body.slug)
+      : '';
+    const slug = requestedSlug || buildSlug(cleanedName);
     if (slug !== existingCategory.slug) {
       const duplicateCategory = await Category.findOne({
         slug,
@@ -100,6 +103,9 @@ export async function PUT(req, { params }) {
           ? cleanDisplayText(body.descriptionAr || '')
           : (existingCategory.descriptionAr || ''),
         image: body?.image !== undefined ? (body.image || null) : (existingCategory.image || null),
+        url: body?.url !== undefined
+          ? String(body.url || '').trim()
+          : (existingCategory.url || ''),
         bannerEn: body?.bannerEn !== undefined
           ? String(body.bannerEn || '').trim()
           : (existingCategory.bannerEn || ''),

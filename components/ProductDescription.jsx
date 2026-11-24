@@ -1,6 +1,6 @@
 'use client'
 import { ArrowRight, ChevronDown, ChevronUp, StarIcon } from "lucide-react"
-import Image from "next/image"
+import Image from "@/components/SafeNextImage"
 import Link from "next/link"
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"

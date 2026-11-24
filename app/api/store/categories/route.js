@@ -122,14 +122,20 @@ export async function POST(req) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { name, nameAr, description, descriptionAr, image, bannerEn, bannerAr, bannerTabletEn, bannerTabletAr, bannerMobileEn, bannerMobileAr, parentId, metaTitle, metaDescription } = await req.json();
+        const { name, nameAr, description, descriptionAr, image, bannerEn, bannerAr, bannerTabletEn, bannerTabletAr, bannerMobileEn, bannerMobileAr, parentId, metaTitle, metaDescription, slug: requestedSlug, url } = await req.json();
         const cleanedName = sanitizeCategoryFields({ name }).name;
         if (!cleanedName) {
             return NextResponse.json({ error: "Category name is required" }, { status: 400 });
         }
 
-        // Generate slug from name
-        const slug = cleanedName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const buildSlug = (value = '') => String(value || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)/g, '');
+        const slug = buildSlug(requestedSlug) || buildSlug(cleanedName);
+        if (!slug) {
+            return NextResponse.json({ error: "Category name is required" }, { status: 400 });
+        }
 
         // Check if slug already exists
         const existingCategory = await Category.findOne({ slug }).lean();
@@ -146,6 +152,7 @@ export async function POST(req) {
             description: cleanDisplayText(description || '') || null,
             descriptionAr: cleanDisplayText(descriptionAr || ''),
             image: image || null,
+            url: String(url || '').trim(),
             bannerEn: String(bannerEn || '').trim() || '',
             bannerAr: String(bannerAr || '').trim() || '',
             bannerTabletEn: String(bannerTabletEn || '').trim() || '',

@@ -1,6 +1,6 @@
 'use client'
 
-import Image from 'next/image'
+import Image from '@/components/SafeNextImage'
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 

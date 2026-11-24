@@ -14,7 +14,9 @@ const HIDDEN_STOREFRONT_SLUGS = new Set(['home-living']);
 export async function GET(req) {
     try {
         const language = resolveStorefrontLanguage(req);
-        const cached = getCachedData(`${CACHE_KEY}:${language}`);
+        const includeHidden = new URL(req.url).searchParams.get('includeHidden') === '1';
+        const cacheKey = `${CACHE_KEY}:${language}${includeHidden ? ':all' : ''}`;
+        const cached = getCachedData(cacheKey);
         if (cached) {
             return NextResponse.json(cached, {
                 status: 200,
@@ -72,11 +74,13 @@ export async function GET(req) {
 
         const localizeCategoryNode = (category) => sanitizeCategoryFields(category);
 
-        const hiddenRootIds = new Set(
-            allCategories
-                .filter((category) => HIDDEN_STOREFRONT_SLUGS.has(String(category.slug || '').trim().toLowerCase()))
-                .map((category) => String(category._id)),
-        );
+        const hiddenRootIds = includeHidden
+            ? new Set()
+            : new Set(
+                allCategories
+                    .filter((category) => HIDDEN_STOREFRONT_SLUGS.has(String(category.slug || '').trim().toLowerCase()))
+                    .map((category) => String(category._id)),
+            );
         const visibleCategories = allCategories.filter((category) => !hiddenRootIds.has(String(category._id)));
 
         const categoriesWithChildren = visibleCategories.map((category) => {
@@ -97,7 +101,7 @@ export async function GET(req) {
         });
 
         const payload = { categories: sanitizeCategoryTree(categoriesWithChildren) };
-        setCachedData(`${CACHE_KEY}:${language}`, payload, 300);
+        setCachedData(cacheKey, payload, 300);
 
         return NextResponse.json(payload, {
             status: 200,

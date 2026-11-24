@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import Image from 'next/image';
+import Image from '@/components/SafeNextImage';
 import { useRouter } from 'next/navigation';
 import { isFullWidthBannerActive } from '@/lib/shopShowcaseLargeBanners';
 const DEFAULT_DESKTOP_HEIGHT = 320;

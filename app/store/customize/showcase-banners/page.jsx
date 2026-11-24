@@ -8,7 +8,7 @@ export default function ShowcaseBannersRedirectPage() {
   const router = useRouter()
 
   useEffect(() => {
-    router.replace('/store/preferences?tab=showcase')
+    router.replace('/store/preferences')
   }, [router])
 
   return (

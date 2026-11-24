@@ -41,7 +41,7 @@ const designPages = [
   },
   {
     title: 'Banner section - Home',
-    description: 'Top homepage banner, the four front cards, showcase banners, and Banner 2 slider.',
+    description: 'Homepage front banner, referral rewards, and Banner 2 slider.',
     href: '/store/preferences',
     icon: LayoutTemplate,
   },

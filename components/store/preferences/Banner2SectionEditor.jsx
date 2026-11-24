@@ -64,8 +64,8 @@ const createBannerSliderItem = (overrides = {}) => ({
 const PLACEMENTS = [
   {
     id: 'below_small_banners',
-    label: 'Under the 4-grid cards',
-    hint: 'Full horizontal banner directly under the four cards.',
+    label: 'Under the showcase',
+    hint: 'Full horizontal banner directly under the showcase.',
   },
   {
     id: 'below_top_deals',
@@ -362,7 +362,7 @@ export default function Banner2SectionEditor({ embedded = false }) {
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
           <h3 className="text-sm font-semibold text-slate-900">Slider position</h3>
           <p className="mt-1 text-sm text-slate-600">
-            Under the 4-grid cards shows each slide as a full horizontal banner (1600 × 500 on desktop).
+            Under the showcase shows each slide as a full horizontal banner (1600 × 500 on desktop).
           </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
             {PLACEMENTS.map((placement) => {

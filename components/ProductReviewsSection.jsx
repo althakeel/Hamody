@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Image from 'next/image';
+import Image from '@/components/SafeNextImage';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import axios from 'axios';

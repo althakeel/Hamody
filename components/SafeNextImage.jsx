@@ -21,6 +21,8 @@ const OPTIMIZED_HOSTS = [
 
 const DIRECT_IMG_HOSTS = [
   'hamody-images.s3.ap-south-1.amazonaws.com',
+  'www.alghafaa.com',
+  'alghafaa.com',
 ];
 
 /** Resolve next/image StaticImport objects to a usable URL string. */

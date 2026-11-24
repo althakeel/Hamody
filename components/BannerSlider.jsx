@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
+import Image from "@/components/SafeNextImage";
 import { useRouter } from "next/navigation";
 import { useInfiniteBannerCarousel } from '@/lib/useInfiniteBannerCarousel';
 import { hasShowcaseBannerImage, pickShowcaseBannerSources } from '@/lib/showcaseBannerImages';

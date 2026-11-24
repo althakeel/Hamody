@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
+import Image from "@/components/SafeNextImage";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { HOME_SECTION_CLASS } from '@/lib/storefrontCarousel';
@@ -229,7 +229,6 @@ export default function HomeCategories() {
                       const fallback = e.target.nextElementSibling;
                       if (fallback) fallback.style.display = 'flex';
                     }}
-                    unoptimized={false}
                   />
                   {/* Gradient fallback shown on image error */}
                   <div style={{ display: 'none' }} className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${getCategoryGradient(cat.name)} text-white text-2xl font-bold`}>

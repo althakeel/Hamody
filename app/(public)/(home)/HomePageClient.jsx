@@ -9,8 +9,8 @@ import { findTopDealsSection, isTopDealsVisibleOnWebsite } from '@/lib/homeTopDe
 
 import HeroBannerSlider from '@/components/HeroBannerSlider';
 import ShopShowcaseSection from '@/components/ShopShowcaseSection';
+import FeaturedProductsSection from '@/components/LatestProducts';
 import HomeCategorySections from '@/components/HomeCategorySections';
-import HomeCategoryStrip from '@/components/HomeCategoryStrip';
 import SectionReveal from '@/components/SectionReveal';
 import Section3 from '@/components/section3';
 import CategoryInterestSection from '@/components/CategoryInterestSection';
@@ -46,6 +46,8 @@ export default function HomePageClient({ initialData }) {
     homeSections = [],
     featuredSections = [],
     featuredSectionsCount = 0,
+    featuredProducts = { products: [] },
+    appearance = {},
     topDealsProducts = [],
     storeSettings = {},
     homeCategorySections = [],
@@ -104,7 +106,16 @@ export default function HomePageClient({ initialData }) {
           initialStoreSettings={storeSettings}
           skipInitialFetch
         />
-        <HomeCategoryStrip />
+        <SectionReveal>
+          <FeaturedProductsSection
+            initialProducts={featuredProducts?.products || []}
+            initialLayout={appearance?.homeMenuCategories}
+            sectionTitle={featuredProducts?.sectionTitle || ''}
+            sectionTitleAr={featuredProducts?.sectionTitleAr || ''}
+            sectionDescription={featuredProducts?.sectionDescription || ''}
+            sectionDescriptionAr={featuredProducts?.sectionDescriptionAr || ''}
+          />
+        </SectionReveal>
         {showHeroCategories ? (
           <HomeCategories />
         ) : null}

@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import Image from '@/components/SafeNextImage';
 import { useRouter } from 'next/navigation';
 import { hasShowcaseBannerImage, pickShowcaseBannerSources } from '@/lib/showcaseBannerImages';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';

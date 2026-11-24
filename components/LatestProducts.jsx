@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import axios from 'axios'
 import ProductCard from '@/components/ProductCard'
 import ProductCarousel from '@/components/ProductCarousel'
-import { HOME_SECTION_CLASS, PRODUCT_CARD_CELL_CLASS } from '@/lib/storefrontCarousel'
+import { HOME_SECTION_CLASS, HOME_SECTION_TITLE_CLASS, PRODUCT_CARD_CELL_CLASS } from '@/lib/storefrontCarousel'
+import { localizeField } from '@/lib/storefrontLanguage'
 import { useAuth } from '@/lib/useAuth'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
 import { filterStorefrontInStockProducts } from '@/lib/productVisibility'
@@ -33,11 +34,21 @@ function normalizeLayoutStyle(style) {
 const BestSelling = ({
   initialProducts = null,
   initialLayout = null,
+  sectionTitle = '',
+  sectionTitleAr = '',
+  sectionDescription = '',
+  sectionDescriptionAr = '',
 }) => {
   // Homepage SSR already applies published/in-stock filters — trust that list.
   const hasInitialProducts = Array.isArray(initialProducts) && initialProducts.length > 0
   const { getToken, user, loading: authLoading } = useAuth()
-  const { t } = useStorefrontI18n()
+  const { language } = useStorefrontI18n()
+  const [sectionCopy, setSectionCopy] = useState({
+    sectionTitle,
+    sectionTitleAr,
+    sectionDescription,
+    sectionDescriptionAr,
+  })
   const [featuredProducts, setFeaturedProducts] = useState(hasInitialProducts ? initialProducts : [])
   const [isLoading, setIsLoading] = useState(!hasInitialProducts)
   const [error, setError] = useState(null)
@@ -111,6 +122,13 @@ const BestSelling = ({
           itemsPerRow: clampItemsPerRow(homeMenu.itemsPerRow, prev.itemsPerRow),
           rows: clampRows(homeMenu.rows, prev.rows),
         }))
+
+        setSectionCopy({
+          sectionTitle: featuredData?.sectionTitle || '',
+          sectionTitleAr: featuredData?.sectionTitleAr || '',
+          sectionDescription: featuredData?.sectionDescription || '',
+          sectionDescriptionAr: featuredData?.sectionDescriptionAr || '',
+        })
 
         const resolvedProducts = filterStorefrontInStockProducts(
           (Array.isArray(featuredData.products) ? featuredData.products : [])
@@ -245,9 +263,21 @@ const BestSelling = ({
   }, [fetchFeaturedAndSectionText])
 
   const visibleProducts = featuredProducts.slice(0, visibleCount)
+  const displayTitle = localizeField(sectionCopy, 'sectionTitle', language)
+  const displayDescription = localizeField(sectionCopy, 'sectionDescription', language)
+
+  if (!isLoading && !error && featuredProducts.length === 0) return null
 
   return (
-    <div className={`${HOME_SECTION_CLASS} relative z-10 mx-auto w-full max-w-[1400px] px-4 sm:px-6`}>
+    <section aria-label={displayTitle || 'Featured products'} className={`${HOME_SECTION_CLASS} relative z-10 mx-auto w-full max-w-[1400px] px-4 sm:px-6`}>
+      {displayTitle || displayDescription ? (
+        <div className="mb-4">
+          {displayTitle ? (
+            <h2 className={`${HOME_SECTION_TITLE_CLASS} ${displayDescription ? '!mb-1' : ''}`}>{displayTitle}</h2>
+          ) : null}
+          {displayDescription ? <p className="mt-1 text-sm text-slate-500">{displayDescription}</p> : null}
+        </div>
+      ) : null}
       {isCarousel ? (
         <div>
           {isLoading && featuredProducts.length === 0 ? (
@@ -307,14 +337,10 @@ const BestSelling = ({
         }
       `}</style>
 
-      {!isLoading && !error && featuredProducts.length === 0 && (
-        <div className="mt-6 text-center text-sm text-gray-500">{t('featured.empty')}</div>
-      )}
-
       {error && (
         <div className="mt-6 text-center text-sm text-red-500">{error}</div>
       )}
-    </div>
+    </section>
   )
 }
 

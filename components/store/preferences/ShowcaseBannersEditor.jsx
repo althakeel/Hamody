@@ -174,15 +174,6 @@ function getLowerFullWidthBannerSizes(height = LOWER_FULL_WIDTH_BANNER_HEIGHT_DE
   }
 }
 
-const PRODUCT_BANNER_SIZES = {
-  image: { width: 1225, height: 639 },
-  tabletImage: { width: 800, height: 418 },
-  mobileImage: { width: 640, height: 334 },
-  imageAr: { width: 1225, height: 639 },
-  tabletImageAr: { width: 800, height: 418 },
-  mobileImageAr: { width: 640, height: 334 },
-}
-
 function gcd(first, second) {
   return second ? gcd(second, first % second) : first
 }
@@ -966,8 +957,6 @@ const DEFAULT_FORM = {
   ],
 }
 
-const PRODUCT_SLOT_LABELS = ['Card 1', 'Card 2', 'Card 3', 'Card 4']
-
 function mapSliderItemsForEditor(showcase, itemsKey, legacyImageKey, legacyLinkKey, prefix, defaultAlt) {
   return normalizeLargeBannerSliderItemsForEditor(
     showcase?.[itemsKey],
@@ -1180,13 +1169,11 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
   const [openFullWidthSlideId, setOpenFullWidthSlideId] = useState(null)
   const [openLowerFullWidthSlideId, setOpenLowerFullWidthSlideId] = useState(null)
   const [openLowerFullWidthStyle, setOpenLowerFullWidthStyle] = useState(false)
-  const [openProductIndex, setOpenProductIndex] = useState(null)
   const [openLayoutGuide, setOpenLayoutGuide] = useState(false)
   const [openTopText, setOpenTopText] = useState(false)
   const [openBottomText, setOpenBottomText] = useState(false)
   const [openFullWidthText, setOpenFullWidthText] = useState(false)
   const [openLowerFullWidthText, setOpenLowerFullWidthText] = useState(false)
-  const [uploadingGridIndex, setUploadingGridIndex] = useState(null)
   const [loadedShowcase, setLoadedShowcase] = useState({})
   const formRef = useRef(form)
   const loadedShowcaseRef = useRef(loadedShowcase)
@@ -1269,51 +1256,6 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
     }
   }, [])
 
-  const updateBanner = (index, key, value) => {
-    setForm((prev) => ({
-      ...prev,
-      productBanners: prev.productBanners.map((banner, bannerIndex) => (
-        bannerIndex === index ? { ...banner, [key]: value } : banner
-      ))
-    }))
-  }
-
-  const addProductBanner = () => {
-    setForm((prev) => {
-      if (prev.productBanners.length >= 4) return prev
-      return {
-        ...prev,
-        productBanners: [...prev.productBanners, createBanner()],
-      }
-    })
-  }
-
-  const removeProductBanner = (index) => {
-    setForm((prev) => {
-      if (prev.productBanners.length <= 1) {
-        return {
-          ...prev,
-          productBanners: [createBanner()],
-        }
-      }
-      return {
-        ...prev,
-        productBanners: prev.productBanners.filter((_, bannerIndex) => bannerIndex !== index),
-      }
-    })
-  }
-
-  const moveProductBanner = (index, direction) => {
-    setForm((prev) => {
-      const items = [...prev.productBanners]
-      const targetIndex = index + direction
-      if (targetIndex < 0 || targetIndex >= items.length) return prev
-      const [item] = items.splice(index, 1)
-      items.splice(targetIndex, 0, item)
-      return { ...prev, productBanners: items }
-    })
-  }
-
   const updateLargeBannerSlide = (itemsKey, index, key, value) => {
     setForm((prev) => ({
       ...prev,
@@ -1370,63 +1312,6 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
         ...prev,
         [itemsKey]: prev[itemsKey].map((slide, slideIndex) => (
           slideIndex === index ? { ...slide, [field]: url, file: null } : slide
-        )),
-      }))
-      toast.success('Image added. Click Publish to storefront to save.')
-    } catch (error) {
-      toast.error(uploadErrorMessage(error))
-      console.error(error)
-    }
-  }
-
-  const patchProductBanner = (index, patch) => {
-    setForm((prev) => {
-      const productBanners = [...prev.productBanners]
-      while (productBanners.length <= index && productBanners.length < 4) {
-        productBanners.push(createBanner())
-      }
-      if (!productBanners[index]) return prev
-      productBanners[index] = { ...productBanners[index], ...patch }
-      return { ...prev, productBanners }
-    })
-  }
-
-  const uploadGridCardImage = async (index, file) => {
-    if (!file) return
-    try {
-      setUploadingGridIndex(index)
-      const token = await getToken()
-      const url = sanitizeImageUrl(await uploadImage(file, token))
-      patchProductBanner(index, {
-        image: url,
-        file: null,
-        previewUrl: url,
-      })
-      toast.success('Image added. Click Publish to storefront to save.')
-    } catch (error) {
-      toast.error(uploadErrorMessage(error))
-      console.error(error)
-    } finally {
-      setUploadingGridIndex(null)
-    }
-  }
-
-  const uploadProductBannerField = async (index, field, file) => {
-    if (!file) return
-    try {
-      const token = await getToken()
-      const url = sanitizeImageUrl(await uploadImage(file, token))
-      setForm((prev) => ({
-        ...prev,
-        productBanners: prev.productBanners.map((banner, bannerIndex) => (
-          bannerIndex === index
-            ? {
-                ...banner,
-                [field]: url,
-                file: field === 'image' ? null : banner.file,
-                previewUrl: field === 'image' ? url : banner.previewUrl,
-              }
-            : banner
         )),
       }))
       toast.success('Image added. Click Publish to storefront to save.')
@@ -1660,80 +1545,14 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
       <div className={embedded ? '' : 'mb-6'}>
         {!embedded && (
           <>
-            <h1 className="text-3xl font-bold text-slate-900">Showcase 4-Grid Banners</h1>
+            <h1 className="text-3xl font-bold text-slate-900">Showcase banners</h1>
             <p className="mt-2 text-sm text-slate-600">
-              Upload images and edit the four product banners shown under the main showcase.
+              Upload images and edit the banners shown in the homepage showcase.
             </p>
           </>
         )}
 
         <div className={`${embedded ? '' : 'mt-4'} rounded-2xl border border-slate-200 bg-white p-4 shadow-sm`}>
-          <h2 className="text-sm font-semibold text-slate-900">4-grid images</h2>
-          <p className="mt-1 text-xs text-slate-500">
-            These four cards sit in a row on the homepage. Upload one image per card. Recommended size {PRODUCT_BANNER_SIZES.image.width} × {PRODUCT_BANNER_SIZES.image.height} px. Click Publish to storefront to update the store.
-          </p>
-          <div className="mt-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
-            {PRODUCT_SLOT_LABELS.map((label, index) => {
-              const banner = form.productBanners[index]
-              const src = banner?.previewUrl || banner?.image || banner?.imageAr || ''
-              const isUploading = uploadingGridIndex === index
-              return (
-                <div key={label} className="flex min-w-0 flex-col rounded-xl border border-slate-200 bg-slate-50 p-2">
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-slate-800">{label}</span>
-                    <span className="text-[11px] text-slate-400">{index + 1} of 4</span>
-                  </div>
-                  <div className="relative aspect-[1225/639] overflow-hidden rounded-lg border border-dashed border-slate-300 bg-white">
-                    {src ? (
-                      <Image src={src} alt={label} fill unoptimized className="object-cover" />
-                    ) : (
-                      <div className="flex h-full flex-col items-center justify-center gap-1 px-2 text-center text-[11px] text-slate-400">
-                        <Upload size={16} />
-                        No image
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 ${isUploading ? 'pointer-events-none opacity-60' : ''}`}>
-                      {isUploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
-                      {src ? 'Replace' : 'Add image'}
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
-                        className="hidden"
-                        disabled={isUploading}
-                        onChange={(event) => {
-                          uploadGridCardImage(index, event.target.files?.[0] || null)
-                          event.target.value = ''
-                        }}
-                      />
-                    </label>
-                    {src ? (
-                      <button
-                        type="button"
-                        onClick={() => patchProductBanner(index, { image: '', previewUrl: '', file: null })}
-                        className="text-xs font-medium text-red-600 hover:underline"
-                      >
-                        Remove
-                      </button>
-                    ) : null}
-                  </div>
-                  <label className="mt-2 block">
-                    <span className="mb-1 block text-[11px] font-medium text-slate-500">Link</span>
-                    <input
-                      className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs"
-                      value={banner?.link || ''}
-                      onChange={(event) => patchProductBanner(index, { link: event.target.value, linkType: event.target.value.trim() ? 'custom' : 'none' })}
-                      placeholder="/shop or https://"
-                    />
-                  </label>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-sm font-semibold text-slate-900">Banner arrows</h2>
           <p className="mt-1 text-xs text-slate-500">
             These arrows sit on the left and right of the homepage banner when it has more than one slide. Click Publish to update the store.
@@ -2023,38 +1842,6 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
               </div>
               ) : null}
 
-              <div className={`grid gap-2 ${(() => {
-                const count = form.productBanners.filter((banner) => banner.previewUrl || hasShowcaseBannerImage(banner)).length || form.productBanners.length
-                if (count <= 1) return 'grid-cols-1'
-                if (count === 2) return 'grid-cols-2'
-                if (count === 3) return 'grid-cols-3'
-                return 'grid-cols-2 sm:grid-cols-4'
-              })()}`}>
-                {form.productBanners.map((banner, index) => (
-                  <div key={`layout-slot-${index}`} className="rounded-xl border border-slate-200 bg-slate-50 p-2">
-                    <div className="relative overflow-hidden rounded-lg border border-slate-200 bg-slate-900">
-                      <div className="relative aspect-[1225/639] w-full">
-                        {banner.previewUrl || banner.image || banner.imageAr ? (
-                          <Image
-                            src={banner.previewUrl || banner.image || banner.imageAr}
-                            alt={`${PRODUCT_SLOT_LABELS[index] || `Card ${index + 1}`} preview`}
-                            fill
-                            unoptimized
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full items-center justify-center text-xs text-slate-300">
-                            {PRODUCT_SLOT_LABELS[index] || `Card ${index + 1}`}
-                          </div>
-                        )}
-                        <span className="absolute left-1.5 top-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                          {PRODUCT_SLOT_LABELS[index] || `Card ${index + 1}`} · 1225 × 639 · {formatImageRatio(1225, 639)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </AccordionRow>
@@ -2906,119 +2693,6 @@ export default function ShowcaseBannersEditor({ embedded = false }) {
             ) : null}
           </div>
         </div>
-      </div>
-
-      <div className="grid items-start gap-4 lg:grid-cols-2">
-        <div className="lg:col-span-2 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Product banner cards</h2>
-            <p className="text-xs text-slate-500">
-              Extra options for the same four cards: Arabic and device images, title, button, and category or product links.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={addProductBanner}
-            disabled={form.productBanners.length >= 4}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Plus size={16} />
-            Add banner card
-          </button>
-        </div>
-        {form.productBanners.map((banner, index) => (
-          <AccordionRow
-            key={`product-banner-${index}`}
-            title={`Banner ${index + 1}`}
-            summary={`${PRODUCT_SLOT_LABELS[index] || `Card ${index + 1}`} · 1225 × 639 px · ratio ${formatImageRatio(1225, 639)} · click to ${openProductIndex === index ? 'hide' : 'edit'}`}
-            open={openProductIndex === index}
-            onToggle={() => setOpenProductIndex((current) => (current === index ? null : index))}
-            className="shadow-sm"
-            actions={(
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => moveProductBanner(index, -1)}
-                  disabled={index === 0}
-                  title="Move left (earlier)"
-                  className="inline-flex items-center rounded-lg border border-slate-300 p-1.5 text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <ChevronUp size={16} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => moveProductBanner(index, 1)}
-                  disabled={index === form.productBanners.length - 1}
-                  title="Move right (later)"
-                  className="inline-flex items-center rounded-lg border border-slate-300 p-1.5 text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <ChevronDown size={16} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => removeProductBanner(index)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
-                >
-                  <Trash2 size={14} />
-                  Remove
-                </button>
-              </div>
-            )}
-          >
-            <p className="mb-3 text-xs font-medium text-slate-500">
-              Cards without any image are hidden on the storefront. Desktop width 1225 px · height 639 px · ratio {formatImageRatio(1225, 639)}.
-            </p>
-
-            <div className="mb-4">
-              <ShowcaseLocaleImageGroups
-                item={banner}
-                recommendedSizes={PRODUCT_BANNER_SIZES}
-                onUpload={(field, file) => uploadProductBannerField(index, field, file)}
-                onChange={(field, value) => updateBanner(index, field, value)}
-              />
-            </div>
-
-            <div className="grid gap-3">
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Title</span>
-                <input
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2"
-                  value={banner.title}
-                  onChange={(event) => updateBanner(index, 'title', event.target.value)}
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Subtitle</span>
-                <input
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2"
-                  value={banner.subtitle}
-                  onChange={(event) => updateBanner(index, 'subtitle', event.target.value)}
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Button text</span>
-                <input
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2"
-                  value={banner.buttonText}
-                  onChange={(event) => updateBanner(index, 'buttonText', event.target.value)}
-                />
-              </label>
-
-              <ShowcaseLinkAccordion
-                link={banner.link}
-                linkType={banner.linkType}
-                targetBlank={banner.targetBlank}
-                categories={categoryOptions}
-                products={productOptions}
-                onLinkChange={(value) => updateBanner(index, 'link', value)}
-                onLinkTypeChange={(value) => updateBanner(index, 'linkType', value)}
-                onTargetBlankChange={(value) => updateBanner(index, 'targetBlank', value)}
-              />
-            </div>
-          </AccordionRow>
-        ))}
       </div>
 
       <div className="mt-6 flex flex-col items-end gap-2">

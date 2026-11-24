@@ -9,7 +9,7 @@ import {
   enrichNavItemWithCategoryChildren,
   findCategoryForNavItem,
 } from '@/lib/categoryNavigation'
-import ShowcaseProductBanners from './ShowcaseProductBanners'
+import HomeCategoryStrip from './HomeCategoryStrip'
 import ShowcaseLargeBannerSlider from './ShowcaseLargeBannerSlider'
 import BannerSlider from './BannerSlider'
 import { hasShowcaseBannerImage } from '@/lib/showcaseBannerImages'
@@ -233,12 +233,6 @@ function ShopShowcaseSkeleton() {
               <div className="h-5 w-56 rounded-[2px] bg-white/65" />
             </div>
           </div>
-        </div>
-
-        <div className="hidden lg:col-span-2 lg:row-start-2 lg:grid grid-cols-4 gap-2">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="aspect-[1225/639] animate-pulse rounded-[2px] border border-slate-200 bg-slate-100" />
-          ))}
         </div>
       </div>
     </section>
@@ -1105,10 +1099,13 @@ export default function ShopShowcaseSection({
           </div>
         ) : null}
 
-        {/* 4-grid product/banner section below main banners */}
-        <div className={hideCategorySidebar ? '' : bannerBlocks.length ? 'lg:col-span-2 lg:row-start-2' : 'lg:col-start-2 lg:row-start-1'} onMouseEnter={closeCategoryFlyout}>
-          <ShowcaseProductBanners banners={data.config?.productBanners} />
+        <div
+          className={hideCategorySidebar ? 'mt-6' : bannerBlocks.length ? 'mt-6 lg:col-span-2 lg:row-start-2' : 'lg:col-start-2 lg:row-start-1'}
+          onMouseEnter={closeCategoryFlyout}
+        >
+          <HomeCategoryStrip embedded />
         </div>
+
         {config?.secondaryBannerSliderEnabled !== false
           && config?.secondaryBannerSliderPlacement === 'below_small_banners'
           && (config?.secondaryBannerSliderItems || []).some((item) => hasShowcaseBannerImage(item)) ? (

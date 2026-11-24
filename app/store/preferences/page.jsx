@@ -3,12 +3,13 @@
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import axios from 'axios'
-import { Images, LayoutTemplate, Loader2, Rows3, Save, GalleryHorizontal } from 'lucide-react'
+import { Images, LayoutGrid, LayoutTemplate, Loader2, Rows3, Save, GalleryHorizontal } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/lib/useAuth'
 import ShowcaseBannersEditor from '@/components/store/preferences/ShowcaseBannersEditor'
 import Banner2SectionEditor from '@/components/store/preferences/Banner2SectionEditor'
 import FrontPromoCardsEditor from '@/components/store/preferences/FrontPromoCardsEditor'
+import CategorySliderImagesEditor from '@/components/store/preferences/CategorySliderImagesEditor'
 
 const TABS = [
   {
@@ -19,8 +20,8 @@ const TABS = [
   },
   {
     id: 'showcase',
-    label: 'Showcase 4-Grid Banners',
-    description: 'Top/bottom banners and four product cards in the showcase strip.',
+    label: 'Showcase banners',
+    description: 'Top, bottom, and full-width banners in the showcase strip.',
     icon: Images,
   },
   {
@@ -30,9 +31,15 @@ const TABS = [
     icon: GalleryHorizontal,
   },
   {
+    id: 'categories',
+    label: 'Category slider',
+    description: '127×110 category cards with an 80×80 image. Every category is listed, and you can add more.',
+    icon: LayoutGrid,
+  },
+  {
     id: 'banner2',
     label: 'Banner 2 Section',
-    description: 'Rotating banner slides under the 4-grid cards or around Top Deals.',
+    description: 'Rotating banner slides under the showcase or around Top Deals.',
     icon: Rows3,
   },
 ]
@@ -122,11 +129,11 @@ function PreferencesContent() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Homepage Showcase Settings</h1>
           <p className="mt-2 text-sm text-slate-600">
-            Manage the homepage front, referral rewards, showcase banners, and the Banner 2 slider from one place.
+            Manage the homepage front, referral rewards, showcase banners, category slider images, and the Banner 2 slider from one place.
           </p>
         </div>
 
-        <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {TABS.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
@@ -190,6 +197,7 @@ function PreferencesContent() {
         )}
 
         {activeTab === 'showcase' && <ShowcaseBannersEditor embedded />}
+        {activeTab === 'categories' && <CategorySliderImagesEditor />}
         {activeTab === 'front' && <FrontPromoCardsEditor />}
         {activeTab === 'banner2' && <Banner2SectionEditor embedded />}
       </div>
