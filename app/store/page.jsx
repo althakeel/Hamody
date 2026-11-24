@@ -22,7 +22,12 @@ const StoreLiveAnalytics = dynamic(() => import('@/components/store/StoreLiveAna
 
 const ContactMessagesSeller = dynamic(() => import('./ContactMessagesSeller.jsx'), {
   ssr: false,
-  loading: () => null,
+  loading: () => (
+    <div className="mt-6 space-y-3" aria-hidden="true">
+      <div className="h-6 w-40 animate-pulse rounded bg-slate-200" />
+      <div className="h-24 animate-pulse rounded-xl border border-slate-200 bg-slate-100" />
+    </div>
+  ),
 });
 
 export default function Dashboard() {

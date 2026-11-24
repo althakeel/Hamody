@@ -6,37 +6,43 @@ import { HOME_SECTION_STACK_CLASS } from '@/lib/storefrontCarousel';
 import { hasShowcaseBannerImage } from '@/lib/showcaseBannerImages';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 import { findTopDealsSection, isTopDealsVisibleOnWebsite } from '@/lib/homeTopDeals';
+import {
+  HomeBannerSkeleton,
+  HomeCategoryRowSkeleton,
+  HomeCategorySlidersSkeleton,
+  HomeProductCarouselSkeleton,
+  HomeProductGridSkeleton,
+} from '@/components/home/HomeSectionSkeletons';
 
 import HeroBannerSlider from '@/components/HeroBannerSlider';
 import ShopShowcaseSection from '@/components/ShopShowcaseSection';
 import FeaturedProductsSection from '@/components/LatestProducts';
-import HomeCategorySections from '@/components/HomeCategorySections';
 import SectionReveal from '@/components/SectionReveal';
 import Section3 from '@/components/section3';
 import CategoryInterestSection from '@/components/CategoryInterestSection';
 const Section4 = dynamic(() => import('@/components/section4'), {
   ssr: false,
-  loading: () => null,
+  loading: () => <HomeCategorySlidersSkeleton />,
 });
 const BannerSlider = dynamic(() => import('@/components/BannerSlider'), {
   ssr: false,
-  loading: () => null,
+  loading: () => <HomeBannerSkeleton />,
 });
 const BannerSlider2 = dynamic(() => import('@/components/BannerSlider2'), {
   ssr: false,
-  loading: () => null,
+  loading: () => <HomeBannerSkeleton />,
 });
 const HomeCategories = dynamic(() => import('@/components/HomeCategories'), {
   ssr: false,
-  loading: () => null,
+  loading: () => <HomeCategoryRowSkeleton />,
 });
 const RecentSearchProducts = dynamic(() => import('@/components/RecentSearchProducts'), {
   ssr: false,
-  loading: () => null,
+  loading: () => <HomeProductGridSkeleton count={5} />,
 });
 const RecommendedProducts = dynamic(() => import('@/components/RecommendedProducts'), {
   ssr: false,
-  loading: () => null,
+  loading: () => <HomeProductCarouselSkeleton count={5} />,
 });
 
 export default function HomePageClient({ initialData }) {
@@ -50,7 +56,6 @@ export default function HomePageClient({ initialData }) {
     appearance = {},
     topDealsProducts = [],
     storeSettings = {},
-    homeCategorySections = [],
   } = initialData || {};
 
   const shopShowcaseConfig = shopShowcase?.config || null;
@@ -108,7 +113,6 @@ export default function HomePageClient({ initialData }) {
           <HomeCategories />
         ) : null}
 
-        <HomeCategorySections sections={homeCategorySections} />
         {showPrimaryBanner ? (
           <BannerSlider config={shopShowcaseConfig} />
         ) : null}

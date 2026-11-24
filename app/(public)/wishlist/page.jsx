@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { addToCart } from "@/lib/features/cart/cartSlice";
+import { CatalogGridSkeleton } from '@/components/home/HomeSectionSkeletons';
 import { openAddToCartPopup } from "@/lib/addToCartPopup";
 import { trackProductAddToCart } from '@/lib/ecommerceTracking';
 import { STORE_CURRENCY } from '@/lib/storeCurrency';
@@ -406,10 +407,8 @@ function WishlistAuthed() {
     return (
       <>
         <PageTitle title="My Wishlist" />
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-10">
-          <div className="flex items-center justify-center py-16">
-            <div className="h-10 w-10 rounded-full border-4 border-[#E2E7E8] border-t-[#05090D] animate-spin" />
-          </div>
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6">
+          <CatalogGridSkeleton count={8} />
         </div>
       </>
     );

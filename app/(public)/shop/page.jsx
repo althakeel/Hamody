@@ -2,6 +2,7 @@
 import { Suspense, useMemo, useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link"
 import ProductCard from "@/components/ProductCard"
+import { CatalogGridSkeleton } from '@/components/home/HomeSectionSkeletons'
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from '@/lib/useAuth'
 import axios from 'axios'
@@ -637,10 +638,7 @@ function ShopContent() {
                                     )}
                                 </div>
                                 {productsLoading ? (
-                                    <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
-                                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500 mb-4"></div>
-                                        <p className="text-gray-500 text-lg">{t('shop.loadingProducts')}</p>
-                                    </div>
+                                    <CatalogGridSkeleton count={10} />
                                 ) : products.length === 0 ? (
                                     <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
                                         <p className="text-gray-500 text-lg mb-2">{t('shop.noProductsFound')}</p>
@@ -679,9 +677,8 @@ function ShopContent() {
 }
 
 export default function Shop() {
-  const { t } = useStorefrontI18n();
   return (
-    <Suspense fallback={<div>{t('shop.loadingShop')}</div>}>
+    <Suspense fallback={<CatalogGridSkeleton count={10} />}>
       <ShopContent />
     </Suspense>
   );

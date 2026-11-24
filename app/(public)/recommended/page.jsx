@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, SlidersHorizontal, X } from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
+import { CatalogGridSkeleton } from '@/components/home/HomeSectionSkeletons';
 import { decodeHtmlEntities } from '@/lib/displayText';
 import { getLocalizedCategoryName } from '@/lib/categoryLocalization';
 import { getProductPath } from '@/lib/productUrl';
@@ -507,10 +508,7 @@ function RecommendedContent() {
             </div>
 
             {loading ? (
-              <div className="rounded-lg border border-gray-200 bg-white py-16 text-center">
-                <div className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-orange-500" />
-                <p className="text-lg text-gray-500">{t('recommended.loading')}</p>
-              </div>
+              <CatalogGridSkeleton count={10} />
             ) : pageProducts.length === 0 ? (
               <div className="rounded-lg border border-gray-200 bg-white py-16 text-center">
                 <p className="mb-2 text-lg text-gray-500">
@@ -571,10 +569,8 @@ function RecommendedContent() {
 }
 
 export default function RecommendedPage() {
-  const { t } = useStorefrontI18n();
-
   return (
-    <Suspense fallback={<div className="p-8 text-center text-gray-500">{t('recommended.loadingPage')}</div>}>
+    <Suspense fallback={<CatalogGridSkeleton count={10} />}>
       <RecommendedContent />
     </Suspense>
   );

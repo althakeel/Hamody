@@ -144,8 +144,10 @@ export default function UnsubscribePage() {
     <main className="min-h-[70vh] bg-gradient-to-b from-slate-50 to-teal-50/40 px-4 py-14 sm:py-20">
       <Suspense
         fallback={
-          <div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
-            Loading…
+          <div className="mx-auto max-w-lg animate-pulse rounded-2xl border border-slate-200 bg-white p-8">
+            <div className="mx-auto h-6 w-40 rounded bg-slate-200" />
+            <div className="mx-auto mt-3 h-4 w-64 rounded bg-slate-100" />
+            <div className="mt-6 h-11 rounded-lg bg-slate-100" />
           </div>
         }
       >

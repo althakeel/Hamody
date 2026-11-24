@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import ProductCard from '@/components/ProductCard'
-import { getCarouselProductCardClass, getCategorySliderProductCardClass, MOBILE_CAROUSEL_BLEED_CLASS, PRODUCT_CARD_CAROUSEL_GAP_CLASS } from '@/lib/storefrontCarousel'
+import { getCarouselProductCardClass, getCategorySliderProductCardClass, getHomeSectionProductCardClass, MOBILE_CAROUSEL_BLEED_CLASS, PRODUCT_CARD_CAROUSEL_GAP_CLASS } from '@/lib/storefrontCarousel'
 import { useHorizontalCarouselDrag } from '@/lib/useHorizontalCarouselDrag'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
 import { DEFAULT_CATEGORY_SLIDER_AUTO_SLIDE_INTERVAL_MS } from '@/lib/categorySliderTheme'
@@ -35,6 +35,7 @@ export default function ProductCarousel({
   arrowsOutside = false,
   alwaysShowArrows = false,
   arrowVariant = 'default',
+  flush = false,
   cardsPerRow = 6,
   autoSlide = false,
   autoSlideIntervalMs = DEFAULT_CATEGORY_SLIDER_AUTO_SLIDE_INTERVAL_MS,
@@ -411,13 +412,15 @@ export default function ProductCarousel({
   const namshiArrows = arrowVariant === 'namshi' && arrowsVisible
   const arrowButtonClass = (side, enabled) => (
     namshiArrows
-      ? `absolute top-[37%] z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-slate-900 shadow-[0_4px_14px_rgba(15,23,42,0.18)] transition hover:bg-white active:scale-95 ${side === 'start' ? 'start-0' : 'end-0'} ${enabled ? '' : 'pointer-events-none opacity-40'} ${arrowVisibilityClass}`
+      ? `absolute top-[37%] z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white text-slate-900 shadow-[0_4px_14px_rgba(15,23,42,0.18)] transition hover:bg-white active:scale-95 sm:h-10 sm:w-10 ${side === 'start' ? 'start-0' : 'end-0'} ${enabled ? '' : 'pointer-events-none opacity-40'} ${arrowVisibilityClass}`
       : `absolute top-[38%] z-10 -translate-y-1/2 rounded-full border border-gray-100 bg-white p-2 shadow-lg transition-all hover:bg-gray-50 active:scale-95 ${outsideArrows ? (side === 'start' ? 'start-1 lg:start-2' : 'end-1 lg:end-2') : (side === 'start' ? 'start-1 lg:start-0' : 'end-1 lg:end-0')} ${arrowVisibilityClass}`
   )
   const bleedClass = edgeBleed ? MOBILE_CAROUSEL_BLEED_CLASS : ''
   const cardClassName = cardWidthVariant === 'categorySlider'
     ? getCategorySliderProductCardClass(cardsPerRow)
-    : getCarouselProductCardClass(cardsPerRow)
+    : cardWidthVariant === 'homeSection'
+      ? getHomeSectionProductCardClass()
+      : getCarouselProductCardClass(cardsPerRow)
 
   const baseTrackClassName = [
     compactBottom ? trackClassName.replace(' pb-2', ' pb-0') : trackClassName,
@@ -440,7 +443,7 @@ export default function ProductCarousel({
     <div
       ref={rootRef}
       dir={carouselDir}
-      className={`relative w-full min-w-0 max-lg:overflow-x-clip lg:overflow-x-clip ${outsideArrows ? 'lg:px-16' : ''} ${namshiArrows ? 'px-[3.25rem]' : ''} ${bleedClass} ${className}`.trim()}
+      className={`relative w-full min-w-0 max-lg:overflow-x-clip lg:overflow-x-clip ${outsideArrows && !flush ? 'lg:px-16' : ''} ${namshiArrows && !flush ? 'px-[3.25rem]' : ''} ${bleedClass} ${className}`.trim()}
       onMouseEnter={() => { isHoverPausedRef.current = true }}
       onMouseLeave={() => { isHoverPausedRef.current = false }}
     >
@@ -452,7 +455,7 @@ export default function ProductCarousel({
           aria-label="Scroll left"
           aria-disabled={!canScrollLeft}
         >
-          <ChevronLeft size={namshiArrows ? 20 : 18} className={namshiArrows ? 'text-slate-900' : 'text-gray-800'} />
+          <ChevronLeft size={namshiArrows ? 16 : 18} className={namshiArrows ? 'text-slate-900' : 'text-gray-800'} />
         </button>
       ) : null}
 
@@ -499,7 +502,7 @@ export default function ProductCarousel({
           aria-label="Scroll right"
           aria-disabled={!canScrollRight}
         >
-          <ChevronRight size={namshiArrows ? 20 : 18} className={namshiArrows ? 'text-slate-900' : 'text-gray-800'} />
+          <ChevronRight size={namshiArrows ? 16 : 18} className={namshiArrows ? 'text-slate-900' : 'text-gray-800'} />
         </button>
       ) : null}
     </div>

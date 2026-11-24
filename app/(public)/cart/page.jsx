@@ -11,7 +11,7 @@ import CartSummaryBox, { CartSummaryActions } from "@/components/CartSummaryBox"
 import CartRemoveConfirm from "@/components/CartRemoveConfirm";
 import ProductCard from "@/components/ProductCard";
 import { isStorefrontProductInStock } from "@/lib/productVisibility";
-import Loading from "@/components/Loading";
+import { CartPageSkeleton } from '@/components/home/HomeSectionSkeletons';
 import {
     clearCart,
     clearCartClearedLocally,
@@ -39,7 +39,7 @@ export const dynamic = "force-dynamic";
 
 export default function Cart() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<CartPageSkeleton />}>
             <CartContent />
         </Suspense>
     );
@@ -537,7 +537,7 @@ function CartContent() {
     }, [productsLoaded, inStockCartArray, totalPrice]);
 
     if (restoringCart) {
-        return <Loading />;
+        return <CartPageSkeleton />;
     }
 
     return (
@@ -549,7 +549,7 @@ function CartContent() {
                     </div>
                 )}
                 {!productsLoaded ? (
-                    <div className="py-16 text-center text-slate-400">Loading cart…</div>
+                    <CartPageSkeleton />
                 ) : cartArray.length > 0 ? (
                     <>
                         <div className="mb-6">

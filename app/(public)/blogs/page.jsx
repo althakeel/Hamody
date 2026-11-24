@@ -5,6 +5,7 @@ import Link from 'next/link'
 import PolicyPageLayout from '@/components/PolicyPageLayout'
 import BlogSidebar from '@/components/BlogSidebar'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
+import { BlogListSkeleton } from '@/components/home/HomeSectionSkeletons'
 
 export default function BlogsPage() {
   const { isArabic } = useStorefrontI18n()
@@ -126,7 +127,7 @@ export default function BlogsPage() {
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
         <div>
           {loading ? (
-            <p className="text-sm text-gray-500">{isArabic ? 'جاري التحميل…' : 'Loading…'}</p>
+            <BlogListSkeleton />
           ) : blogs.length === 0 ? (
             <div className="rounded-xl border border-gray-200 p-8 text-center text-gray-500">
               {isArabic ? 'لا توجد مقالات بعد.' : 'No blog posts yet.'}

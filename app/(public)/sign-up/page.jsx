@@ -4,8 +4,13 @@ import SignUpClient from './SignUpClient'
 export default function SignUpPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div>Loading...</div>
+      <div className="min-h-screen bg-gray-50 px-4 py-16">
+        <div className="mx-auto max-w-md animate-pulse space-y-4 rounded-2xl border border-slate-200 bg-white p-8">
+          <div className="mx-auto h-8 w-40 rounded bg-slate-200" />
+          <div className="h-11 rounded-lg bg-slate-100" />
+          <div className="h-11 rounded-lg bg-slate-100" />
+          <div className="h-11 rounded-lg bg-slate-200" />
+        </div>
       </div>
     }>
       <SignUpClient />

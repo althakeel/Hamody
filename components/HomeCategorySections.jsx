@@ -29,8 +29,8 @@ export default function HomeCategorySections({ sections = [] }) {
           <section key={section._id || section.slug} className={HOME_SECTION_CLASS}>
             <div className={HOME_SECTION_GRID_INNER_CLASS}>
               <SectionReveal>
-                <div className={`mb-4 flex items-center justify-between gap-3 ${hasMoreThanShown ? 'px-[3.25rem]' : ''}`}>
-                  <h2 className="text-base font-semibold text-black sm:text-lg md:text-[28px]">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h2 className="min-w-0 text-base font-semibold text-black sm:text-lg md:text-2xl xl:text-[28px]">
                     <Link href={href} className="hover:opacity-80">
                       {title}
                     </Link>
@@ -49,10 +49,12 @@ export default function HomeCategorySections({ sections = [] }) {
                 <ProductCarousel
                   products={section.products}
                   cardsPerRow={5}
+                  cardWidthVariant="homeSection"
                   showArrows={hasMoreThanShown}
                   showMobileArrows={hasMoreThanShown}
                   alwaysShowArrows={hasMoreThanShown}
                   arrowVariant={hasMoreThanShown ? 'namshi' : 'default'}
+                  flush
                   edgeBleed={false}
                   priorityCount={2}
                 />

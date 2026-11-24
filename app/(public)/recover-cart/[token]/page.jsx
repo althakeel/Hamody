@@ -8,7 +8,7 @@ import Image from '@/components/SafeNextImage';
 import { useDispatch } from 'react-redux';
 import { clearCart, setCartEntry } from '@/lib/features/cart/cartSlice';
 import { formatVariantOptionsLabel } from '@/lib/productVariantOptions';
-import Loading from '@/components/Loading';
+import { CartPageSkeleton } from '@/components/home/HomeSectionSkeletons';
 import { Gift, ImageIcon, ShoppingCart, Tag } from 'lucide-react';
 
 function formatMoney(amount, currency = 'AED') {
@@ -99,7 +99,7 @@ export default function RecoverCartPage() {
     }
   };
 
-  if (loading) return <Loading />;
+  if (loading) return <CartPageSkeleton />;
 
   if (error || !offer?.cart) {
     return (

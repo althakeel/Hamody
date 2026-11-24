@@ -7,6 +7,7 @@ import axios from 'axios';
 import ProductCard from '@/components/ProductCard';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
+import { CatalogGridSkeleton } from '@/components/home/HomeSectionSkeletons';
 import { fetchProducts } from '@/lib/features/product/productSlice';
 
 export default function RecentlyViewedPage() {
@@ -115,10 +116,7 @@ export default function RecentlyViewedPage() {
 
         {/* Products Grid */}
         {loading ? (
-          <div className="text-center py-16">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500 mb-4"></div>
-            <p className="text-gray-500">Loading your history...</p>
-          </div>
+          <CatalogGridSkeleton count={8} />
         ) : recentProducts.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
             <p className="text-gray-500 text-lg mb-2">No recently viewed products</p>

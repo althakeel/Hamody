@@ -110,7 +110,7 @@ export async function GET(request) {
             ? Math.floor(Date.now() / (manualRotateHours * 60 * 60 * 1000))
             : 0
         const cacheKey = isPublicRequest
-            ? `public:featured-products:api:v9:${includeProducts}:${FEATURED_PRODUCT_MAX}:${manualRotateHours}:${rotateWindow}`
+            ? `public:featured-products:api:v13:${includeProducts}:${FEATURED_PRODUCT_MAX}:${manualRotateHours}:${rotateWindow}`
             : null
         if (cacheKey) {
             const cached = getCachedData(cacheKey)
@@ -183,7 +183,7 @@ export async function GET(request) {
         const resolvedProductIds = products.map((product) => normalizeId(product?._id || product?.id)).filter(Boolean)
 
         const payload = {
-            productIds: resolvedProductIds,
+            productIds: isPublicRequest ? resolvedProductIds : productIds,
             sourceMode,
             categoryIds,
             tags,
@@ -200,7 +200,7 @@ export async function GET(request) {
         console.error('Error fetching featured products:', error)
         return createFeaturedResponse({
             ...DEFAULT_FEATURED_RESPONSE,
-            products: []
+            products: [],
         })
     }
 }

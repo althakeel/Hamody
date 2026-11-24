@@ -12,6 +12,7 @@ import { getProductPath } from '@/lib/productUrl';
 import { getProductThumbnailUrl } from '@/lib/productMedia';
 import { getLocalizedProductName } from '@/lib/displayText';
 import ProductCard from '@/components/ProductCard';
+import { CatalogGridSkeleton } from '@/components/home/HomeSectionSkeletons';
 import ImageSearchDisclaimer from '@/components/ImageSearchDisclaimer';
 import { sortOutOfStockLast } from '@/lib/productVisibility';
 
@@ -198,9 +199,7 @@ function SearchResultsInner() {
           </button>
 
           {loading ? (
-            <div className="flex justify-center py-20">
-              <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-slate-800" />
-            </div>
+            <CatalogGridSkeleton count={8} />
           ) : (
             <div className="grid items-start gap-6 lg:grid-cols-[224px_minmax(0,1fr)]">
               <aside className="lg:sticky lg:top-24">
@@ -363,9 +362,7 @@ function SearchResultsInner() {
         </div>
 
         {loading && (
-          <div className="flex items-center justify-center py-20">
-            <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600" />
-          </div>
+          <CatalogGridSkeleton count={10} />
         )}
 
         {!loading && error && (
@@ -393,7 +390,7 @@ function SearchResultsInner() {
 
 export default function SearchResults() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50" />}>
+    <Suspense fallback={<CatalogGridSkeleton count={10} />}>
       <SearchResultsInner />
     </Suspense>
   );

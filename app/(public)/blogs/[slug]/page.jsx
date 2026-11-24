@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation'
 import PolicyPageLayout from '@/components/PolicyPageLayout'
 import BlogSidebar from '@/components/BlogSidebar'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
+import { BlogArticleSkeleton } from '@/components/home/HomeSectionSkeletons'
 
 export default function BlogPostPage() {
   const { isArabic } = useStorefrontI18n()
@@ -62,7 +63,7 @@ export default function BlogPostPage() {
       </Link>
 
       {loading ? (
-        <p className="text-sm text-gray-500">{isArabic ? 'جاري التحميل…' : 'Loading…'}</p>
+        <BlogArticleSkeleton />
       ) : notFound || !blog ? (
         <div className="rounded-xl border border-gray-200 p-8 text-center text-gray-500">
           {isArabic ? 'المقال غير موجود.' : 'Blog post not found.'}

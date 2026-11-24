@@ -154,17 +154,13 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
   const desktopHeight = Math.min(600, Math.max(80, Number(showcaseConfig?.[fieldMap.desktopHeight]) || defaultHeights.desktop));
   const mobileHeight = Math.min(600, Math.max(80, Number(showcaseConfig?.[fieldMap.mobileHeight]) || defaultHeights.mobile));
   const isFullWidth = fullWidth;
-
   const defaultSpacing = '';
-  const useMobileFullWidth = variant === 'secondary' || isFullWidth;
   const wrapperClassName = `banner-slider relative w-full bg-transparent rounded-none m-0 p-0 ${defaultSpacing} ${
     contained ? 'banner-slider--horizontal' : ''
   } ${
-    contained || isFullWidth
+        contained || isFullWidth
       ? 'max-w-none px-0'
-      : useMobileFullWidth
-        ? 'max-w-none px-0 sm:max-w-[1400px] sm:mx-auto sm:px-6'
-        : 'max-w-[1400px] mx-auto px-4 sm:px-6'
+      : 'max-w-[1400px] mx-auto px-4 sm:px-6'
   } ${className}`.trim();
 
   const viewportClassName = `banner-slider__viewport relative w-full overflow-hidden border-0 outline-none isolate touch-pan-y ${cursorClass}`.trim();

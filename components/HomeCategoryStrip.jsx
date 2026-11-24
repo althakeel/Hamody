@@ -7,6 +7,7 @@ import { getLocalizedCategoryName } from '@/lib/categoryLocalization';
 import { toPublicCategoryPath } from '@/lib/categorySlug';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 import { readableUploadUrl } from '@/lib/readableUploadUrl';
+import { HomeCategoryStripSkeleton } from '@/components/home/HomeSectionSkeletons';
 
 const CARD_WIDTH = 127;
 const CARD_HEIGHT = 110;
@@ -19,10 +20,9 @@ const PHONE_PER_VIEW = 5;
 function readStripLayout(width, count) {
   const total = Math.max(1, count || 1);
   const compact = width > 0 && width < PHONE_MAX_WIDTH;
-  const perView = compact
-    ? Math.min(PHONE_PER_VIEW, total)
-    : Math.max(1, Math.min(Math.floor((width + CARD_GAP) / (CARD_WIDTH + CARD_GAP)) || 1, total));
-  const cardWidth = compact
+  const desktopFit = Math.max(1, Math.min(Math.floor((width + CARD_GAP) / (CARD_WIDTH + CARD_GAP)) || 1, total));
+  const perView = compact ? Math.min(PHONE_PER_VIEW, total) : desktopFit;
+  const cardWidth = width > 0
     ? Math.max(1, (width - CARD_GAP * (perView - 1)) / perView)
     : CARD_WIDTH;
   const scale = cardWidth / CARD_WIDTH;
@@ -55,6 +55,7 @@ export default function HomeCategoryStrip({ embedded = false }) {
   const { language, isArabic } = useStorefrontI18n();
   const viewportRef = useRef(null);
   const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [layout, setLayout] = useState(() => readStripLayout(PHONE_MAX_WIDTH, PHONE_PER_VIEW));
   const [index, setIndex] = useState(0);
 
@@ -68,6 +69,9 @@ export default function HomeCategoryStrip({ embedded = false }) {
       })
       .catch(() => {
         if (active) setCategories([]);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
       });
     return () => {
       active = false;
@@ -114,13 +118,14 @@ export default function HomeCategoryStrip({ embedded = false }) {
     });
   };
 
+  if (loading) return <HomeCategoryStripSkeleton embedded={embedded} />;
   if (!cards.length) return null;
 
   const canSlide = maxIndex > 0;
 
   return (
     <section aria-label="Categories" className={embedded ? 'w-full min-w-0' : 'mx-auto w-full max-w-[1400px] px-4 sm:px-6'}>
-      <div className={`relative ${layout.compact || !canSlide ? '' : 'px-12'}`}>
+      <div className="relative">
         <div ref={viewportRef} className="overflow-hidden">
           <div
             className="flex transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"

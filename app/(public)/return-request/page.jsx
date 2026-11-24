@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Upload, X, RefreshCw, Undo2, StarIcon } from 'lucide-react';
-import Loading from '@/components/Loading';
+import { OrderListSkeleton } from '@/components/home/HomeSectionSkeletons';
 import PageTitle from '@/components/PageTitle';
 import { useAuth } from '@/lib/useAuth';
 import { getOrderLineItemDisplayName, getOrderLineProduct } from '@/lib/orderDisplay';
@@ -241,7 +241,7 @@ function ReturnRequestForm() {
         }
     };
 
-    if (!isLoaded || loading) return <Loading />;
+    if (!isLoaded || loading) return <OrderListSkeleton />;
 
     if (submitted) {
         return (
@@ -666,7 +666,7 @@ function ReturnRequestForm() {
 
 export default function ReturnRequestPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<OrderListSkeleton />}>
             <ReturnRequestForm />
         </Suspense>
     );

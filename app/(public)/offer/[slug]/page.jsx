@@ -4,6 +4,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import toast from "react-hot-toast";
 import ProductDetails from "@/components/ProductDetails";
+import ProductPageSkeleton from '@/components/ProductPageSkeleton';
 import ProductDescription from "@/components/ProductDescription";
 import CountdownTimer from "@/components/CountdownTimer";
 import { Sparkles, Gift, Tag, AlertCircle, X } from "lucide-react";
@@ -217,14 +218,7 @@ export default function SpecialOfferBySlugPage() {
     : `Hi ${customerDisplayName}! 🎁 Exclusive limited-time offer for you.`;
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your exclusive offer...</p>
-        </div>
-      </div>
-    );
+    return <ProductPageSkeleton />;
   }
 
   if (error || !offer || !product) {
