@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { FEATURED_PRODUCT_MAX } from '@/lib/featuredProductLimit'
+import { useAuth } from '@/lib/useAuth'
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
 import Image from 'next/image'
