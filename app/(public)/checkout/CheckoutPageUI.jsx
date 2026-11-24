@@ -225,7 +225,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
   const tabbyMerchantCode = process.env.NEXT_PUBLIC_TABBY_MERCHANT_CODE || process.env.TABBY_MERCHANT_CODE || 'HAMODY';
   const formatMoneyPlain = (amount) => {
     const converted = Number(convertPrice(Number(amount || 0)) || 0);
-    return `${market.currency} ${converted.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    return `${market.currency} ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
   const formatMoneyFixedPlain = (amount) => {
     const converted = Number(convertPrice(Number(amount || 0)) || 0);

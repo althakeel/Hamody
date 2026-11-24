@@ -42,7 +42,7 @@ export default function CampaignSaleProductCard({
   const dispatch = useDispatch();
   const pathname = usePathname();
   const { getToken } = useAuth();
-  const { convertPrice, formatNumber } = useStorefrontMarket();
+  const { convertPrice, formatDisplay } = useStorefrontMarket();
   const { t, language } = useStorefrontI18n();
   const cartItems = useSelector((state) => state.cart.cartItems);
   const [hovered, setHovered] = useState(false);
@@ -167,12 +167,12 @@ export default function CampaignSaleProductCard({
         <div className="mt-auto flex items-end justify-between gap-2 pt-1">
           <div className="min-w-0">
             <p className="text-sm font-semibold tabular-nums text-zinc-900 sm:text-base">
-              <CurrencySymbol /> {formatNumber(convertPrice(livePrice))}
+              <CurrencySymbol /> {formatDisplay(convertPrice(livePrice), language)}
             </p>
             {comparePrice > 0 ? (
               <p className="text-[10px] text-zinc-400 line-through sm:text-xs">
                 <StruckPrice>
-                  <CurrencySymbol /> {formatNumber(convertPrice(comparePrice))}
+                  <CurrencySymbol /> {formatDisplay(convertPrice(comparePrice), language)}
                 </StruckPrice>
               </p>
             ) : null}

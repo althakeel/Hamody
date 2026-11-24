@@ -122,12 +122,12 @@ function WishlistItemRow({
           <div className="mt-3 flex flex-wrap items-end gap-x-3 gap-y-2">
             <span className="inline-flex items-baseline gap-1 text-2xl font-bold text-slate-900 sm:text-3xl">
               <CurrencySymbol currency={market.currency} />
-              {Math.round(convertedPrice).toLocaleString()}
+              {convertedPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
             {product.AED ? (
               <span className="inline-flex items-baseline gap-1 text-sm text-slate-400 line-through">
                 <CurrencySymbol currency={market.currency} />
-                {Math.round(convertedAED).toLocaleString()}
+                {convertedAED.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             ) : null}
             {discount > 0 ? (

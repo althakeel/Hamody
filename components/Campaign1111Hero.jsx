@@ -61,7 +61,7 @@ export default function Campaign1111Hero({
   isArabic = false,
 }) {
   const { language } = useStorefrontI18n();
-  const { convertPrice, formatNumber } = useStorefrontMarket();
+  const { convertPrice, formatDisplay } = useStorefrontMarket();
   const list = useMemo(
     () => (Array.isArray(products) ? products.filter((item) => item?.slug && item?.name) : []),
     [products],
@@ -163,7 +163,7 @@ export default function Campaign1111Hero({
                       </p>
                       {price > 0 ? (
                         <p className="mt-auto text-sm font-semibold text-zinc-900">
-                          <CurrencySymbol /> {formatNumber(convertPrice(price))}
+                          <CurrencySymbol /> {formatDisplay(convertPrice(price))}
                         </p>
                       ) : null}
                     </div>

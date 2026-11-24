@@ -54,10 +54,14 @@ function categoryHref(category) {
 export default function HomeCategoryStrip({ embedded = false }) {
   const { language, isArabic } = useStorefrontI18n();
   const viewportRef = useRef(null);
+  const dragRef = useRef(null);
+  const suppressClickRef = useRef(false);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [layout, setLayout] = useState(() => readStripLayout(PHONE_MAX_WIDTH, PHONE_PER_VIEW));
   const [index, setIndex] = useState(0);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [animate, setAnimate] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -108,14 +112,80 @@ export default function HomeCategoryStrip({ embedded = false }) {
 
   const maxIndex = Math.max(0, cards.length - layout.perView);
   const safeIndex = Math.min(index, maxIndex);
-  const step = `${layout.cardWidth + CARD_GAP}px`;
+  const stepPx = layout.cardWidth + CARD_GAP;
+  const maxOffset = maxIndex * stepPx;
+  const offsetPx = Math.min(maxOffset, Math.max(0, safeIndex * stepPx + dragOffset));
   const imageCenter = `${layout.cardHeight / 2}px`;
 
   const slide = (direction) => {
-    setIndex((current) => {
-      const next = Math.min(maxIndex, Math.max(0, current + direction));
-      return next;
+    setAnimate(true);
+    setDragOffset(0);
+    setIndex((current) => Math.min(maxIndex, Math.max(0, current + direction)));
+  };
+
+  const finishDrag = (pointerId) => {
+    const drag = dragRef.current;
+    if (!drag || (pointerId != null && drag.pointerId !== pointerId)) return;
+    dragRef.current = null;
+    if (!drag.dragging) {
+      setAnimate(true);
+      setDragOffset(0);
+      return;
+    }
+    suppressClickRef.current = true;
+    window.setTimeout(() => {
+      suppressClickRef.current = false;
+    }, 160);
+    const currentOffset = Math.min(maxOffset, Math.max(0, safeIndex * stepPx + drag.offset));
+    const nextIndex = Math.min(maxIndex, Math.max(0, Math.round(currentOffset / stepPx)));
+    setIndex(nextIndex);
+    setDragOffset(currentOffset - nextIndex * stepPx);
+    setAnimate(false);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        setAnimate(true);
+        setDragOffset(0);
+      });
     });
+  };
+
+  const handlePointerDown = (event) => {
+    if (event.button != null && event.button !== 0) return;
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      origin: offsetPx,
+      offset: dragOffset,
+      dragging: false,
+    };
+  };
+
+  const handlePointerMove = (event) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const walkX = event.clientX - drag.startX;
+    const walkY = event.clientY - drag.startY;
+    if (!drag.dragging) {
+      if (Math.abs(walkX) < 6 && Math.abs(walkY) < 6) return;
+      if (Math.abs(walkY) > Math.abs(walkX)) {
+        dragRef.current = null;
+        return;
+      }
+      drag.dragging = true;
+      setAnimate(false);
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+    }
+    const delta = isArabic ? walkX : -walkX;
+    const nextOffset = Math.min(maxOffset, Math.max(0, drag.origin + delta));
+    drag.offset = nextOffset - safeIndex * stepPx;
+    setDragOffset(drag.offset);
+  };
+
+  const handleCardClick = (event) => {
+    if (!suppressClickRef.current) return;
+    event.preventDefault();
+    event.stopPropagation();
   };
 
   if (loading) return <HomeCategoryStripSkeleton embedded={embedded} />;
@@ -128,13 +198,24 @@ export default function HomeCategoryStrip({ embedded = false }) {
       <div className="relative">
         <div ref={viewportRef} className="overflow-hidden">
           <div
-            className="flex transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
-            style={{ gap: CARD_GAP, transform: `translateX(calc(${isArabic ? safeIndex : -safeIndex} * ${step}))` }}
+            className={`flex touch-pan-y ${dragRef.current?.dragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={(event) => finishDrag(event.pointerId)}
+            onPointerCancel={(event) => finishDrag(event.pointerId)}
+            style={{
+              gap: CARD_GAP,
+              transform: `translate3d(${isArabic ? offsetPx : -offsetPx}px, 0, 0)`,
+              transition: animate ? 'transform 650ms cubic-bezier(0.22, 1, 0.36, 1)' : 'none',
+              willChange: 'transform',
+            }}
           >
             {cards.map((card) => (
               <Link
                 key={card.id}
                 href={card.href}
+                onClick={handleCardClick}
+                draggable={false}
                 className="group flex shrink-0 cursor-pointer flex-col items-center"
                 style={{ width: layout.cardWidth, height: layout.itemHeight }}
               >
@@ -146,7 +227,8 @@ export default function HomeCategoryStrip({ embedded = false }) {
                     <img
                       src={card.image}
                       alt=""
-                      className="object-contain transition duration-300 group-hover:scale-[1.04]"
+                      draggable={false}
+                      className="pointer-events-none object-contain transition duration-300 group-hover:scale-[1.04]"
                       style={{ width: layout.imageSize, height: layout.imageSize }}
                     />
                   ) : (

@@ -8,24 +8,24 @@ function FreeShipLine({ label, iconSize, textClass, frame }) {
       className={`inline-flex items-center justify-center whitespace-nowrap ${textClass}`}
       style={{ height: frame }}
     >
-      <Truck size={iconSize} strokeWidth={2.25} aria-hidden="true" className="shrink-0" />
-      <span className="truncate">{label}</span>
+      <Truck size={iconSize} strokeWidth={2.4} aria-hidden="true" className="shrink-0" />
+      <span>{label}</span>
     </span>
   );
 }
 
 export default function FreeShipRotator({ label, labels, compact = false }) {
   const lines = (labels?.length ? labels : [label]).filter(Boolean);
-  const frame = compact ? 14 : 22;
-  const iconSize = compact ? 10 : 14;
-  const textClass = compact ? 'gap-0.5 px-1 text-[9px]' : 'gap-1.5 px-2.5 text-[12px]';
+  const frame = compact ? 18 : 22;
+  const iconSize = compact ? 11 : 14;
+  const textClass = compact ? 'gap-1 px-1.5 text-[11px]' : 'gap-1.5 px-2 text-[12px]';
   const line = (text, key) => (
     <FreeShipLine key={key} label={text} iconSize={iconSize} textClass={textClass} frame={frame} />
   );
 
   if (lines.length < 2) {
     return (
-      <span className={`inline-flex shrink-0 items-center rounded-full bg-[#C8F404] font-semibold leading-none text-[#05090D] ${compact ? 'max-w-[6.5rem]' : ''}`}>
+      <span className="inline-flex shrink-0 items-center rounded-none bg-[#C8F404] text-[11px] font-bold leading-none tracking-tight text-[#111111] antialiased">
         {line(lines[0], 'static')}
       </span>
     );
@@ -33,7 +33,7 @@ export default function FreeShipRotator({ label, labels, compact = false }) {
 
   return (
     <span
-      className={`relative inline-flex shrink-0 overflow-hidden rounded-full bg-[#C8F404] font-semibold leading-none text-[#05090D] ${compact ? 'max-w-[6.5rem]' : 'max-w-full'}`}
+      className="relative inline-flex shrink-0 overflow-hidden rounded-none bg-[#C8F404] text-[11px] font-bold leading-none tracking-tight text-[#111111] antialiased"
       style={{ height: frame, minHeight: frame, maxHeight: frame }}
     >
       <span className="invisible grid" aria-hidden="true">

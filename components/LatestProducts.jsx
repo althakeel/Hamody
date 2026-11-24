@@ -9,23 +9,8 @@ import { HomeProductCardSkeleton } from '@/components/home/HomeSectionSkeletons'
 import { localizeField } from '@/lib/storefrontLanguage'
 import { useAuth } from '@/lib/useAuth'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
-import { FEATURED_PRODUCT_MAX } from '@/lib/featuredProductLimit'
+import { FEATURED_PRODUCT_MAX, clampFeaturedColumns, clampFeaturedRows, featuredVisibleCount } from '@/lib/featuredProductLimit'
 import { filterStorefrontInStockProducts } from '@/lib/productVisibility'
-
-const DEFAULT_ITEMS_PER_ROW = 5
-const DEFAULT_ROWS = 2
-
-function clampItemsPerRow(value, fallback = DEFAULT_ITEMS_PER_ROW) {
-  const n = Number(value)
-  if (!Number.isFinite(n)) return fallback
-  return Math.max(1, Math.min(10, Math.round(n)))
-}
-
-function clampRows(value, fallback = DEFAULT_ROWS) {
-  const n = Number(value)
-  if (!Number.isFinite(n)) return fallback
-  return Math.max(1, Math.min(6, Math.round(n)))
-}
 
 function normalizeLayoutStyle(style) {
   if (style === 'carousel' || style === 'horizontal') return 'carousel'
@@ -58,8 +43,8 @@ const BestSelling = ({
     const homeMenu = initialLayout || {}
     return {
       style: normalizeLayoutStyle(homeMenu.style),
-      itemsPerRow: clampItemsPerRow(homeMenu.itemsPerRow, DEFAULT_ITEMS_PER_ROW),
-      rows: clampRows(homeMenu.rows, DEFAULT_ROWS),
+      itemsPerRow: clampFeaturedColumns(homeMenu.itemsPerRow),
+      rows: clampFeaturedRows(homeMenu.rows),
     }
   })
   const fetchControllerRef = useRef(null)
@@ -116,8 +101,11 @@ const BestSelling = ({
         const homeMenu = appearanceData?.homeMenuCategories || {}
         setLayoutSettings((prev) => ({
           style: normalizeLayoutStyle(homeMenu.style) || prev.style,
-          itemsPerRow: clampItemsPerRow(homeMenu.itemsPerRow, prev.itemsPerRow),
-          rows: clampRows(homeMenu.rows, prev.rows),
+          itemsPerRow: clampFeaturedColumns(
+            featuredData?.columns ?? homeMenu.itemsPerRow,
+            prev.itemsPerRow,
+          ),
+          rows: clampFeaturedRows(featuredData?.rows ?? homeMenu.rows, prev.rows),
         }))
 
         setSectionCopy({
@@ -224,8 +212,8 @@ const BestSelling = ({
       if (nextLayout && typeof nextLayout === 'object') {
         setLayoutSettings((prev) => ({
           style: normalizeLayoutStyle(nextLayout.style) || prev.style,
-          itemsPerRow: clampItemsPerRow(nextLayout.itemsPerRow, prev.itemsPerRow),
-          rows: clampRows(nextLayout.rows, prev.rows),
+          itemsPerRow: clampFeaturedColumns(nextLayout.itemsPerRow, prev.itemsPerRow),
+          rows: clampFeaturedRows(nextLayout.rows, prev.rows),
         }))
       }
     }
@@ -262,8 +250,11 @@ const BestSelling = ({
     }
   }, [fetchFeaturedAndSectionText])
 
-  const visibleProducts = featuredProducts.slice(0, FEATURED_PRODUCT_MAX)
-  const desktopColumns = clampItemsPerRow(layoutSettings.itemsPerRow)
+  const visibleProducts = featuredProducts.slice(
+    0,
+    featuredVisibleCount(layoutSettings.itemsPerRow, layoutSettings.rows),
+  )
+  const desktopColumns = clampFeaturedColumns(layoutSettings.itemsPerRow)
   const filledColumns = Math.min(
     desktopColumns,
     Math.max(1, visibleProducts.length || desktopColumns),
@@ -295,7 +286,7 @@ const BestSelling = ({
             <ProductCarousel
               products={visibleProducts}
               priorityCount={2}
-              cardsPerRow={clampItemsPerRow(layoutSettings.itemsPerRow)}
+              cardsPerRow={clampFeaturedColumns(layoutSettings.itemsPerRow)}
               showArrows
               showMobileArrows
               edgeBleed={false}
@@ -304,7 +295,7 @@ const BestSelling = ({
         </div>
       ) : (
         <div
-          className="featured-products-grid grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3"
+          className="featured-products-grid grid items-stretch gap-3"
           style={{ '--desktop-cols': String(filledColumns) }}
         >
           {isLoading && featuredProducts.length === 0
@@ -318,14 +309,22 @@ const BestSelling = ({
       )}
 
       <style jsx>{`
+        .featured-products-grid {
+          grid-template-columns: repeat(${Math.min(2, filledColumns)}, minmax(0, 1fr));
+        }
+        @media (min-width: 640px) {
+          .featured-products-grid {
+            grid-template-columns: repeat(${Math.min(3, filledColumns)}, minmax(0, 1fr));
+          }
+        }
         @media (min-width: 1024px) {
           .featured-products-grid {
-            grid-template-columns: repeat(${Math.min(filledColumns, 4)}, minmax(0, 1fr)) !important;
+            grid-template-columns: repeat(${Math.min(4, filledColumns)}, minmax(0, 1fr));
           }
         }
         @media (min-width: 1280px) {
           .featured-products-grid {
-            grid-template-columns: repeat(var(--desktop-cols), minmax(0, 1fr)) !important;
+            grid-template-columns: repeat(var(--desktop-cols), minmax(0, 1fr));
           }
         }
       `}</style>

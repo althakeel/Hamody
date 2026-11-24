@@ -26,7 +26,7 @@ function RotatingGlassCard({
   isArabic,
 }) {
   const { language } = useStorefrontI18n();
-  const { convertPrice, formatNumber } = useStorefrontMarket();
+  const { convertPrice, formatDisplay } = useStorefrontMarket();
   if (!product) {
     return (
       <div className={`relative flex h-[260px] w-[160px] items-center justify-center rounded-[28px] border border-white/50 ${opacityClass} shadow-2xl backdrop-blur-md sm:h-[320px] sm:w-[200px] ${offsetClass}`}>
@@ -62,7 +62,7 @@ function RotatingGlassCard({
           <p className="mt-1 line-clamp-2 text-sm font-semibold text-white">{name}</p>
           {price > 0 ? (
             <p className="mt-2 text-sm font-bold text-white">
-              <CurrencySymbol /> {formatNumber(convertPrice(price))}
+              <CurrencySymbol /> {formatDisplay(convertPrice(price))}
             </p>
           ) : null}
         </div>

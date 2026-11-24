@@ -291,19 +291,7 @@ function ShopContent() {
     }, [products, productsLoading]);
 
     const getProductPrice = useCallback((product) => {
-        if (!product) return 0;
-        const basePrice = Number(product.price || 0);
-
-        if (Array.isArray(product.variants) && product.variants.length > 0) {
-            const variantPrices = product.variants
-                .map((variant) => Number(variant?.price || variant?.salePrice || 0))
-                .filter((value) => Number.isFinite(value) && value > 0);
-
-            if (variantPrices.length > 0) {
-                return Math.min(...variantPrices);
-            }
-        }
-
+        const basePrice = Number(product?.price || 0);
         return Number.isFinite(basePrice) ? basePrice : 0;
     }, []);
 
@@ -606,7 +594,7 @@ function ShopContent() {
                                             ) : null}
                                             <div className={`absolute inset-x-0 bottom-0 p-2.5 bg-gradient-to-t from-black/70 to-transparent ${isArabic ? 'text-right' : ''}`}>
                                                 <div className="inline-flex items-center px-2 py-1 rounded-sm bg-white text-gray-900 text-sm font-bold shadow-sm">
-                                                    AED{getProductPrice(fastSellingProduct).toLocaleString(locale)}
+                                                    AED{getProductPrice(fastSellingProduct).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                 </div>
                                             </div>
                                         </div>

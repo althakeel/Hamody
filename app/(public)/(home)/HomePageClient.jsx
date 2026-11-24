@@ -102,12 +102,19 @@ export default function HomePageClient({ initialData }) {
         <SectionReveal>
           <FeaturedProductsSection
             initialProducts={featuredProducts?.products || []}
-            initialLayout={appearance?.homeMenuCategories}
+            initialLayout={{
+              ...(appearance?.homeMenuCategories || {}),
+              itemsPerRow: featuredProducts?.columns || appearance?.homeMenuCategories?.itemsPerRow,
+              rows: featuredProducts?.rows || appearance?.homeMenuCategories?.rows,
+            }}
             sectionTitle={featuredProducts?.sectionTitle || ''}
             sectionTitleAr={featuredProducts?.sectionTitleAr || ''}
             sectionDescription={featuredProducts?.sectionDescription || ''}
             sectionDescriptionAr={featuredProducts?.sectionDescriptionAr || ''}
           />
+        </SectionReveal>
+        <SectionReveal>
+          <CategoryInterestSection />
         </SectionReveal>
         {showHeroCategories ? (
           <HomeCategories />
@@ -138,9 +145,6 @@ export default function HomePageClient({ initialData }) {
           <BannerSlider2 config={shopShowcaseConfig} />
         ) : null}
 
-        <SectionReveal>
-          <CategoryInterestSection />
-        </SectionReveal>
         <SectionReveal>
           <RecentSearchProducts />
         </SectionReveal>

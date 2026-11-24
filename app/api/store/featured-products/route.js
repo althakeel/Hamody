@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import { getCachedData, setCachedData, invalidateStorefrontProductCaches } from '@/lib/cache'
 import { buildFeaturedProductsListQuery, FEATURED_PRODUCT_MAX, isManualFeaturedSelection, manualFeaturedWindow, normalizeManualRotateHours, resolvePublicFeaturedStore } from '@/lib/featuredProducts'
+import { clampFeaturedColumns, clampFeaturedRows, featuredVisibleCount } from '@/lib/featuredProductLimit'
 import { getAuth } from '@/lib/firebase-admin'
 import authSeller from '@/middlewares/authSeller'
 import Store from '@/models/Store'
@@ -14,6 +15,9 @@ const DEFAULT_FEATURED_RESPONSE = {
     sourceMode: 'manual',
     categoryIds: [],
     tags: [],
+    excludedProductIds: [],
+    columns: 5,
+    rows: 2,
     sectionTitle: 'Craziest sale of the year!',
     sectionDescription: "Grab the best deals before they're gone!",
     sectionTitleAr: '',
@@ -101,6 +105,10 @@ export async function GET(request) {
         const productIds = normalizeList(store?.featuredProductIds)
         const categoryIds = normalizeList(store?.featuredProductsCategoryIds)
         const tags = normalizeList(store?.featuredProductsTags)
+        const excludedProductIds = normalizeList(store?.featuredExcludedProductIds)
+        const columns = clampFeaturedColumns(store?.featuredColumns)
+        const rows = clampFeaturedRows(store?.featuredRows)
+        const visibleCount = featuredVisibleCount(columns, rows)
         const sectionTitle = store?.featuredSectionTitle || 'Craziest sale of the year!'
         const sectionDescription = store?.featuredSectionDescription || "Grab the best deals before they're gone!"
         const sectionTitleAr = store?.featuredSectionTitleAr || ''
@@ -110,7 +118,7 @@ export async function GET(request) {
             ? Math.floor(Date.now() / (manualRotateHours * 60 * 60 * 1000))
             : 0
         const cacheKey = isPublicRequest
-            ? `public:featured-products:api:v13:${includeProducts}:${FEATURED_PRODUCT_MAX}:${manualRotateHours}:${rotateWindow}`
+            ? `public:featured-products:api:v14:${includeProducts}:${visibleCount}:${columns}:${rows}:${excludedProductIds.join(',')}:${manualRotateHours}:${rotateWindow}`
             : null
         if (cacheKey) {
             const cached = getCachedData(cacheKey)
@@ -140,11 +148,13 @@ export async function GET(request) {
                 categoryIds,
                 tags,
                 storeId: store?._id,
+                excludedProductIds,
             })
 
             const productsRaw = await Product.find(query)
                 .sort(sort)
                 .select(buildProductProjection)
+                .limit(visibleCount)
                 .lean()
 
             return productsRaw
@@ -156,6 +166,9 @@ export async function GET(request) {
                 sourceMode,
                 categoryIds,
                 tags,
+                excludedProductIds,
+                columns,
+                rows,
                 sectionTitle,
                 sectionDescription,
                 sectionTitleAr,
@@ -174,10 +187,10 @@ export async function GET(request) {
         if (isManualFeaturedSelection(sourceMode, productIds)) {
             products = manualFeaturedWindow(products, {
                 rotateHours: manualRotateHours,
-                slotCount: FEATURED_PRODUCT_MAX,
+                slotCount: visibleCount,
             }).products
         }
-        products = products.slice(0, FEATURED_PRODUCT_MAX)
+        products = products.slice(0, visibleCount)
         products = await attachProductRatings(products)
 
         const resolvedProductIds = products.map((product) => normalizeId(product?._id || product?.id)).filter(Boolean)
@@ -187,6 +200,9 @@ export async function GET(request) {
             sourceMode,
             categoryIds,
             tags,
+            excludedProductIds,
+            columns,
+            rows,
             sectionTitle,
             sectionDescription,
             sectionTitleAr,
@@ -217,7 +233,7 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Store not found for user' }, { status: 404 })
         }
 
-        const { productIds, sourceMode, categoryIds, tags, sectionTitle, sectionDescription, sectionTitleAr, sectionDescriptionAr, manualRotateHours } = await request.json()
+        const { productIds, sourceMode, categoryIds, tags, excludedProductIds, columns, rows, sectionTitle, sectionDescription, sectionTitleAr, sectionDescriptionAr, manualRotateHours } = await request.json()
 
         // Validate productIds is an array
         if (!Array.isArray(productIds)) {
@@ -237,6 +253,9 @@ export async function POST(request) {
                 featuredProductsSource: normalizedSourceMode,
                 featuredProductsCategoryIds: normalizedCategoryIds,
                 featuredProductsTags: normalizedTags,
+                featuredExcludedProductIds: normalizeList(excludedProductIds),
+                featuredColumns: clampFeaturedColumns(columns),
+                featuredRows: clampFeaturedRows(rows),
                 ...(manualRotateHours !== undefined
                     ? { featuredManualRotateHours: normalizeManualRotateHours(manualRotateHours) }
                     : {}),
@@ -256,6 +275,9 @@ export async function POST(request) {
             sourceMode: updatedStore.featuredProductsSource,
             categoryIds: updatedStore.featuredProductsCategoryIds || [],
             tags: updatedStore.featuredProductsTags || [],
+            excludedProductIds: updatedStore.featuredExcludedProductIds || [],
+            columns: clampFeaturedColumns(updatedStore.featuredColumns),
+            rows: clampFeaturedRows(updatedStore.featuredRows),
             sectionTitle: updatedStore.featuredSectionTitle,
             sectionDescription: updatedStore.featuredSectionDescription,
             sectionTitleAr: updatedStore.featuredSectionTitleAr || '',

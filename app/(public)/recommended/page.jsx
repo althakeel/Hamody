@@ -475,7 +475,7 @@ function RecommendedContent() {
                     ) : null}
                     <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2.5 ${isArabic ? 'text-right' : ''}`}>
                       <div className="inline-flex items-center rounded-sm bg-white px-2 py-1 text-sm font-bold text-gray-900 shadow-sm">
-                        AED{getProductDisplayPrice(fastSellingProduct).toLocaleString(locale)}
+                        AED{Number(fastSellingProduct.price || getProductDisplayPrice(fastSellingProduct) || 0).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                     </div>
                   </div>

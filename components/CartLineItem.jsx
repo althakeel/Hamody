@@ -26,7 +26,7 @@ function getItemSubtitle(item) {
 function formatMoney(currency, amount) {
   return (
     <AedText currency={currency}>
-      {`${currency} ${Number(amount || 0).toLocaleString()}`}
+      {`${currency} ${Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
     </AedText>
   );
 }

@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useState } from 'react'
 import SafeNextImage from '@/components/SafeNextImage'
 import Link from 'next/link'
 import ProductCarousel from '@/components/ProductCarousel'
-import LazyMount from '@/components/LazyMount'
 import {
   CATEGORY_SLIDER_SIDE_IMAGE_CLASS,
   CATEGORY_SLIDER_LAYOUT_CLASS,
@@ -69,30 +68,16 @@ const Section4 = ({ sections: initialSections = null, loading: loadingProp = fal
         {sections.map((section, sectionIdx) => {
           const isBanner = String(section?.sectionType || '').toLowerCase() === 'banner'
           const key = section._id || section.id || sectionIdx
-          // First section mounts immediately; the rest wait until near the viewport.
           const body = isBanner ? (
             <CategorySliderBanner section={section} />
           ) : (
             <HorizontalSlider section={section} priority={sectionIdx === 0} />
           )
 
-          if (sectionIdx === 0) {
-            return (
-              <div key={key}>
-                {body}
-              </div>
-            )
-          }
-
           return (
-            <LazyMount
-              key={key}
-              rootMargin="220px 0px"
-              minHeight={isBanner ? 140 : 280}
-              fallback={<div style={{ minHeight: isBanner ? 140 : 280 }} aria-hidden />}
-            >
+            <div key={key}>
               {body}
-            </LazyMount>
+            </div>
           )
         })}
       </div>
@@ -136,21 +121,21 @@ const HorizontalSlider = ({ section, priority = false }) => {
     () => capCarouselProducts(resolveSectionProducts(section)),
     [section.products, section.showOutOfStock],
   )
-  const [sectionProducts, setSectionProducts] = useState(embeddedProducts)
-  const catalogAlreadyResolved = Array.isArray(section?.products)
-  const [loading, setLoading] = useState(
-    () => !catalogAlreadyResolved && embeddedProducts.length === 0 && Array.isArray(section.productIds) && section.productIds.length > 0
-  )
   const cappedProductIds = useMemo(() => {
     const ids = Array.isArray(section.productIds)
       ? section.productIds.map((id) => String(id || '').trim()).filter(Boolean)
       : []
     return ids.slice(0, 12)
   }, [section.productIds])
+  const hasResolvedCatalog = Array.isArray(section?.products) && (section.products.length > 0 || cappedProductIds.length === 0)
+  const [sectionProducts, setSectionProducts] = useState(embeddedProducts)
+  const [loading, setLoading] = useState(
+    () => !hasResolvedCatalog && embeddedProducts.length === 0 && cappedProductIds.length > 0
+  )
   const productIdsKey = useMemo(() => cappedProductIds.join(','), [cappedProductIds])
 
   useEffect(() => {
-    if (catalogAlreadyResolved || embeddedProducts.length > 0) {
+    if (hasResolvedCatalog || embeddedProducts.length > 0) {
       setSectionProducts(embeddedProducts)
       setLoading(false)
       return undefined
@@ -202,7 +187,7 @@ const HorizontalSlider = ({ section, priority = false }) => {
     return () => {
       cancelled = true
     }
-  }, [catalogAlreadyResolved, cappedProductIds, embeddedProducts, productIdsKey, section.showOutOfStock])
+  }, [hasResolvedCatalog, cappedProductIds, embeddedProducts, productIdsKey, section.showOutOfStock])
 
   if (sectionProducts.length === 0 && !loading) return null
 

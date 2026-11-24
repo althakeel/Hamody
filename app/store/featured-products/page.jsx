@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { FEATURED_PRODUCT_MAX } from '@/lib/featuredProductLimit'
+import { FEATURED_PRODUCT_MAX, clampFeaturedColumns, clampFeaturedRows, featuredVisibleCount } from '@/lib/featuredProductLimit'
 import { useAuth } from '@/lib/useAuth'
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
@@ -166,6 +166,10 @@ export default function FeaturedProducts() {
     const [sourceMode, setSourceMode] = useState('manual')
     const [selectedCategoryIds, setSelectedCategoryIds] = useState([])
     const [selectedTags, setSelectedTags] = useState([])
+    const [excludedProductIds, setExcludedProductIds] = useState([])
+    const [removalSelection, setRemovalSelection] = useState([])
+    const [columns, setColumns] = useState(5)
+    const [rows, setRows] = useState(2)
     const [tagInput, setTagInput] = useState('')
     const [sectionTitle, setSectionTitle] = useState('Craziest sale of the year!')
     const [sectionDescription, setSectionDescription] = useState("Grab the best deals before they're gone!")
@@ -303,6 +307,9 @@ export default function FeaturedProducts() {
             setSourceMode(savedData.sourceMode || 'manual')
             setSelectedCategoryIds(savedData.categoryIds || [])
             setSelectedTags(Array.isArray(savedData.tags) ? savedData.tags.map((tag) => String(tag || '').trim()).filter(Boolean) : [])
+            setExcludedProductIds((savedData.excludedProductIds || []).map(normalizeProductId).filter(Boolean))
+            setColumns(clampFeaturedColumns(savedData.columns))
+            setRows(clampFeaturedRows(savedData.rows))
             if (savedData.sectionTitle) setSectionTitle(savedData.sectionTitle)
             if (savedData.sectionDescription) setSectionDescription(savedData.sectionDescription)
             setSectionTitleAr(savedData.sectionTitleAr || '')
@@ -586,6 +593,9 @@ export default function FeaturedProducts() {
                     sourceMode,
                     categoryIds: selectedCategoryIds,
                     tags: normalizedTags,
+                    excludedProductIds,
+                    columns: clampFeaturedColumns(columns),
+                    rows: clampFeaturedRows(rows),
                     sectionTitle,
                     sectionDescription,
                     sectionTitleAr,
@@ -615,9 +625,40 @@ export default function FeaturedProducts() {
                 ? `${selectedTags.length} tags`
                 : 'Auto from latest'
 
-    const previewItems = sourceMode === 'manual'
+    const visibleCount = featuredVisibleCount(columns, rows)
+    const excludedIdSet = useMemo(
+        () => new Set(excludedProductIds.map(normalizeProductId)),
+        [excludedProductIds]
+    )
+    const removalIdSet = useMemo(
+        () => new Set(removalSelection.map(normalizeProductId)),
+        [removalSelection]
+    )
+
+    const toggleRemovalSelection = (productId) => {
+        const id = normalizeProductId(productId)
+        if (!id || excludedIdSet.has(id)) return
+        setRemovalSelection((prev) => (
+            prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+        ))
+    }
+
+    const removeProducts = (ids) => {
+        const nextIds = ids.map(normalizeProductId).filter(Boolean)
+        if (!nextIds.length) return
+        setExcludedProductIds((prev) => [...new Set([...prev, ...nextIds])])
+        setRemovalSelection((prev) => prev.filter((id) => !nextIds.includes(id)))
+    }
+
+    const restoreProduct = (productId) => {
+        const id = normalizeProductId(productId)
+        setExcludedProductIds((prev) => prev.filter((item) => item !== id))
+    }
+
+    const previewItems = (sourceMode === 'manual'
         ? previewProducts
-        : products.slice(0, 5)
+        : products.filter((product) => !excludedIdSet.has(normalizeProductId(product)))
+    ).slice(0, visibleCount)
 
     if (loading) {
         return <PageSkeleton />
@@ -684,8 +725,11 @@ export default function FeaturedProducts() {
                                     <p dir="rtl" lang="ar" className="mt-1 text-lg font-bold leading-tight">{sectionTitleAr || 'عنوان القسم'}</p>
                                     <p dir="rtl" lang="ar" className="mt-1 text-sm text-white/70">{sectionDescriptionAr || 'وصف القسم'}</p>
                                 </div>
-                                <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
-                                    {(previewItems.length ? previewItems : [1, 2, 3, 4, 5]).map((item, index) => (
+                                <div
+                                    className="mt-4 grid gap-2"
+                                    style={{ gridTemplateColumns: `repeat(${Math.min(columns, 5)}, minmax(0, 1fr))` }}
+                                >
+                                    {(previewItems.length ? previewItems.slice(0, columns) : Array.from({ length: columns })).map((item, index) => (
                                         <div
                                             key={typeof item === 'object' ? normalizeProductId(item) : index}
                                             className="flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/20"
@@ -699,7 +743,8 @@ export default function FeaturedProducts() {
                                     ))}
                                 </div>
                                 <p className="mt-3 text-[11px] text-white/50">
-                                    {sourceMode === 'manual' ? 'Manual selection' : sourceMode} · {sourceSummary}
+                                    {columns} columns × {rows} rows · {visibleCount} products
+                                    {excludedProductIds.length ? ` · ${excludedProductIds.length} removed` : ''}
                                 </p>
                             </div>
                         </div>
@@ -879,13 +924,47 @@ export default function FeaturedProducts() {
 
                             {sourceMode === 'latest' && (
                                 <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-900">
-                                    Newest products appear automatically. Manual selection is ignored.
+                                    Newest products appear automatically. Select any you want to remove from the homepage.
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    <div className="min-w-0">
+                    <div className="min-w-0 space-y-4">
+                        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                                <div>
+                                    <h2 className="text-sm font-semibold text-slate-900">Homepage grid</h2>
+                                    <p className="mt-1 text-xs text-slate-500">
+                                        {columns} columns × {rows} rows shows {visibleCount} products. Maximum {FEATURED_PRODUCT_MAX}.
+                                    </p>
+                                </div>
+                                <div className="flex flex-wrap gap-3">
+                                    <label className="text-xs font-medium text-slate-600">
+                                        Columns
+                                        <input
+                                            type="number"
+                                            min={2}
+                                            max={6}
+                                            value={columns}
+                                            onChange={(event) => setColumns(clampFeaturedColumns(event.target.value))}
+                                            className="mt-1 block w-24 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                                        />
+                                    </label>
+                                    <label className="text-xs font-medium text-slate-600">
+                                        Rows
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            max={4}
+                                            value={rows}
+                                            onChange={(event) => setRows(clampFeaturedRows(event.target.value))}
+                                            className="mt-1 block w-24 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                                        />
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
                         {sourceMode === 'manual' ? (
                             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
                                 <div className="border-b border-slate-100 px-4 py-4 sm:px-6">
@@ -1105,18 +1184,40 @@ export default function FeaturedProducts() {
                         ) : (
                             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
                                 <div className="border-b border-slate-100 px-4 py-4 sm:px-6">
-                                    <h2 className="text-base font-semibold text-slate-900">
-                                        {sourceMode === 'category' && 'Products in these categories'}
-                                        {sourceMode === 'tag' && 'Products with these tags'}
-                                        {sourceMode === 'latest' && 'Newest products'}
-                                    </h2>
-                                    <p className="text-xs text-slate-500">
-                                        {sourceMode === 'category' && !selectedCategoryIds.length
-                                            ? 'Select one or more categories on the left.'
-                                            : sourceMode === 'tag' && !selectedTags.length
-                                                ? 'Add one or more tags on the left.'
-                                                : `${pagination.total} products will appear in this section.`}
-                                    </p>
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div>
+                                            <h2 className="text-base font-semibold text-slate-900">
+                                                {sourceMode === 'category' && 'Products in these categories'}
+                                                {sourceMode === 'tag' && 'Products with these tags'}
+                                                {sourceMode === 'latest' && 'Newest products'}
+                                            </h2>
+                                            <p className="text-xs text-slate-500">
+                                                {sourceMode === 'category' && !selectedCategoryIds.length
+                                                    ? 'Select one or more categories on the left.'
+                                                    : sourceMode === 'tag' && !selectedTags.length
+                                                        ? 'Add one or more tags on the left.'
+                                                        : 'Select products, then remove the ones that should stay off the homepage.'}
+                                            </p>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => removeProducts(removalSelection)}
+                                                disabled={!removalSelection.length}
+                                                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                                            >
+                                                Remove selected{removalSelection.length ? ` (${removalSelection.length})` : ''}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setExcludedProductIds([])}
+                                                disabled={!excludedProductIds.length}
+                                                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                                            >
+                                                Restore removed{excludedProductIds.length ? ` (${excludedProductIds.length})` : ''}
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="p-4 sm:p-6">
                                     {productsLoading ? (
@@ -1136,20 +1237,71 @@ export default function FeaturedProducts() {
                                         </div>
                                     ) : (
                                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-                                            {products.map((product) => (
-                                                <div key={normalizeProductId(product)} className="rounded-2xl border border-slate-200 bg-white p-3">
-                                                    <div className="mb-3 flex justify-center">
-                                                        <ProductThumb product={product} size={88} />
-                                                    </div>
-                                                    <p className="line-clamp-2 text-xs font-semibold leading-snug text-slate-800">{product.name}</p>
-                                                    <div className="mt-2 flex items-center justify-between gap-1">
-                                                        <span className="text-sm font-bold text-slate-900">{currency}{Number(product.price || 0).toFixed(0)}</span>
-                                                        <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${product.inStock ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
-                                                            {product.inStock ? 'In stock' : 'Out'}
+                                            {products.map((product) => {
+                                                const productId = normalizeProductId(product)
+                                                const isRemoved = excludedIdSet.has(productId)
+                                                const isPicked = removalIdSet.has(productId)
+                                                return (
+                                                    <div
+                                                        key={productId}
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        onClick={() => (isRemoved ? restoreProduct(productId) : toggleRemovalSelection(productId))}
+                                                        onKeyDown={(event) => {
+                                                            if (event.target !== event.currentTarget) return
+                                                            if (event.key === 'Enter' || event.key === ' ') {
+                                                                event.preventDefault()
+                                                                if (isRemoved) restoreProduct(productId)
+                                                                else toggleRemovalSelection(productId)
+                                                            }
+                                                        }}
+                                                        className={`group relative cursor-pointer rounded-2xl border p-3 text-left transition ${
+                                                            isRemoved
+                                                                ? 'border-rose-200 bg-rose-50/70 opacity-70'
+                                                                : isPicked
+                                                                    ? 'border-emerald-400 bg-emerald-50/60 ring-2 ring-emerald-200'
+                                                                    : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                                                        }`}
+                                                    >
+                                                        <span className={`absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border transition ${
+                                                            isRemoved || isPicked
+                                                                ? 'border-emerald-500 bg-emerald-500 text-white'
+                                                                : 'border-slate-300 bg-white text-transparent group-hover:border-slate-400'
+                                                        }`}>
+                                                            <Check size={12} />
                                                         </span>
+                                                        {!isRemoved ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={(event) => {
+                                                                    event.stopPropagation()
+                                                                    removeProducts([productId])
+                                                                }}
+                                                                className="absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-rose-200 hover:text-rose-600"
+                                                                aria-label={`Remove ${product.name || 'product'}`}
+                                                            >
+                                                                <X size={12} />
+                                                            </button>
+                                                        ) : null}
+                                                        <div className="mb-3 flex justify-center">
+                                                            <ProductThumb product={product} size={88} />
+                                                        </div>
+                                                        <p className="line-clamp-2 text-xs font-semibold leading-snug text-slate-800">{product.name}</p>
+                                                        <div className="mt-2 flex items-center justify-between gap-1">
+                                                            <span className="text-sm font-bold text-slate-900">{currency}{Number(product.price || 0).toFixed(0)}</span>
+                                                            <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                                                                isRemoved
+                                                                    ? 'bg-rose-100 text-rose-700'
+                                                                    : product.inStock
+                                                                        ? 'bg-emerald-50 text-emerald-700'
+                                                                        : 'bg-red-50 text-red-600'
+                                                            }`}>
+                                                                {isRemoved ? 'Removed' : product.inStock ? 'In stock' : 'Out'}
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                )
+                                            })}
                                         </div>
                                     )}
                                 </div>

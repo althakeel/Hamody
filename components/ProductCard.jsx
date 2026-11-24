@@ -97,7 +97,7 @@ const ProductCard = ({
   const dispatch = useDispatch()
   const pathname = usePathname()
   const { getToken } = useAuth()
-  const { market, convertPrice, formatNumber } = useStorefrontMarket()
+  const { market, convertPrice, formatNumber, formatDisplay } = useStorefrontMarket()
   const { t, language } = useStorefrontI18n()
   const productId = String(product._id || '')
   // Subscribe only to this product's qty so cart updates don't re-render every card.
@@ -485,12 +485,12 @@ const ProductCard = ({
             <span dir="ltr" className="inline-flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
               <span className={`inline-flex items-baseline gap-0.5 font-semibold leading-none text-slate-950 ${compactAll ? 'text-xs' : compactLg ? 'text-sm sm:text-base lg:text-xs' : 'text-sm sm:text-base'}`}>
                 <CurrencySymbol currency={market.currency} />
-                <span>{formatNumber(convertedPrice, language, { maximumFractionDigits: 0 })}</span>
+                <span>{formatDisplay(convertedPrice, language)}</span>
               </span>
               {comparePrice > 0 ? (
                 <StruckPrice className="gap-0.5 text-[10px] leading-none text-slate-400 sm:text-xs">
                   <CurrencySymbol currency={market.currency} />
-                  <span>{formatNumber(convertedAED, language, { maximumFractionDigits: 0 })}</span>
+                  <span>{formatDisplay(convertedAED, language)}</span>
                 </StruckPrice>
               ) : null}
               {discount > 0 ? (
@@ -504,7 +504,7 @@ const ProductCard = ({
           </div>
         ) : null}
 
-        <div className="mt-1.5 flex h-3.5 max-w-full items-center justify-end overflow-hidden">
+        <div className="mt-1.5 flex h-[18px] max-w-full items-center justify-end overflow-hidden">
           {product?.freeShippingEligible || product?.fastDelivery ? (
             <FreeShipRotator
               compact
