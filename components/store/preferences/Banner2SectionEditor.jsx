@@ -345,7 +345,7 @@ export default function Banner2SectionEditor({ embedded = false }) {
           <div>
             <h2 className="text-base font-semibold text-slate-900">Banner slider</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Each slide can have English and Arabic images for desktop, tablet, and mobile, plus a category, product, or custom link. Choose where the slider sits on the homepage.
+              Each slide can have English and Arabic images for desktop, tablet, and mobile, plus a category, product, or custom link. The slider appears on the homepage after the featured sections.
             </p>
           </div>
           <label className="inline-flex cursor-pointer items-center gap-2">
@@ -362,28 +362,8 @@ export default function Banner2SectionEditor({ embedded = false }) {
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
           <h3 className="text-sm font-semibold text-slate-900">Slider position</h3>
           <p className="mt-1 text-sm text-slate-600">
-            Under the showcase shows each slide as a full horizontal banner (1600 × 500 on desktop).
+            Shown on the homepage after the featured sections. Desktop slides are 1600 × 500.
           </p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            {PLACEMENTS.map((placement) => {
-              const selected = normalizePlacement(form.placement) === placement.id
-              return (
-                <button
-                  key={placement.id}
-                  type="button"
-                  onClick={() => setForm((prev) => ({ ...prev, placement: placement.id }))}
-                  className={`rounded-lg border px-3 py-3 text-left ${
-                    selected
-                      ? 'border-emerald-500 bg-white ring-1 ring-emerald-500'
-                      : 'border-slate-200 bg-white hover:border-slate-300'
-                  }`}
-                >
-                  <span className="block text-sm font-semibold text-slate-900">{placement.label}</span>
-                  <span className="mt-1 block text-xs text-slate-500">{placement.hint}</span>
-                </button>
-              )
-            })}
-          </div>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">

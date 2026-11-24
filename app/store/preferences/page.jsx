@@ -39,7 +39,7 @@ const TABS = [
   {
     id: 'banner2',
     label: 'Banner 2 Section',
-    description: 'Rotating banner slides under the showcase or around Top Deals.',
+    description: 'Rotating banner slides after the featured sections.',
     icon: Rows3,
   },
 ]

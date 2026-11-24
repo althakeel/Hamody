@@ -65,22 +65,10 @@ export default function HomePageClient({ initialData }) {
     [homeSections]
   );
 
-  const secondaryBannerSliderPlacement = useMemo(() => {
-    const configured = shopShowcaseConfig?.secondaryBannerSliderPlacement;
-    return configured === 'below_top_deals' || configured === 'below_small_banners'
-      ? configured
-      : 'above_top_deals';
+  const showBanner2 = useMemo(() => {
+    if (!shopShowcaseConfig || shopShowcaseConfig.secondaryBannerSliderEnabled === false) return false;
+    return (shopShowcaseConfig.secondaryBannerSliderItems || []).some((item) => hasShowcaseBannerImage(item));
   }, [shopShowcaseConfig]);
-
-  const secondaryBannerSlides = useMemo(() => {
-    if (!shopShowcaseConfig) return [];
-    return (shopShowcaseConfig.secondaryBannerSliderItems || []).filter((item) => hasShowcaseBannerImage(item));
-  }, [shopShowcaseConfig]);
-
-  const showSecondaryBannerAt = (placement) =>
-    secondaryBannerSliderPlacement === placement &&
-    shopShowcaseConfig?.secondaryBannerSliderEnabled !== false &&
-    secondaryBannerSlides.length > 0;
 
   const showPrimaryBanner =
     featuredSectionsCount === 0 &&
@@ -124,9 +112,6 @@ export default function HomePageClient({ initialData }) {
         {showPrimaryBanner ? (
           <BannerSlider config={shopShowcaseConfig} />
         ) : null}
-        {showSecondaryBannerAt('above_top_deals') ? (
-          <BannerSlider2 config={shopShowcaseConfig} />
-        ) : null}
 
         {showTopDeals ? (
           <SectionReveal>
@@ -139,14 +124,14 @@ export default function HomePageClient({ initialData }) {
           </SectionReveal>
         ) : null}
 
-        {showSecondaryBannerAt('below_top_deals') ? (
-          <BannerSlider2 config={shopShowcaseConfig} />
-        ) : null}
-
         {featuredSectionsCount > 0 ? (
           <SectionReveal>
             <Section4 sections={featuredSections} loading={false} />
           </SectionReveal>
+        ) : null}
+
+        {showBanner2 ? (
+          <BannerSlider2 config={shopShowcaseConfig} />
         ) : null}
 
         <SectionReveal>

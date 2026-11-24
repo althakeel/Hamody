@@ -11,8 +11,6 @@ import {
 } from '@/lib/categoryNavigation'
 import HomeCategoryStrip from './HomeCategoryStrip'
 import ShowcaseLargeBannerSlider from './ShowcaseLargeBannerSlider'
-import BannerSlider from './BannerSlider'
-import { hasShowcaseBannerImage } from '@/lib/showcaseBannerImages'
 import { HOME_SECTION_CLASS } from '@/lib/storefrontCarousel'
 import { getLargeBannerSlides, isFullWidthBannerActive, normalizeFullWidthBannerHeight, normalizeLowerFullWidthBannerHeight, normalizeLowerFullWidthBannerRadius, normalizeLowerFullWidthBannerBorderWidth, normalizeLowerFullWidthBannerBorderColor, normalizeFullWidthBannerGap, normalizeFullWidthBannerTopSpace } from '@/lib/shopShowcaseLargeBanners'
 import { cleanDisplayText } from '@/lib/displayText'
@@ -1105,14 +1103,6 @@ export default function ShopShowcaseSection({
         >
           <HomeCategoryStrip embedded />
         </div>
-
-        {config?.secondaryBannerSliderEnabled !== false
-          && config?.secondaryBannerSliderPlacement === 'below_small_banners'
-          && (config?.secondaryBannerSliderItems || []).some((item) => hasShowcaseBannerImage(item)) ? (
-          <div className={`mt-3 ${hideCategorySidebar ? '' : 'lg:col-span-2'}`} onMouseEnter={closeCategoryFlyout}>
-            <BannerSlider variant="secondary" contained config={config} />
-          </div>
-        ) : null}
       </div>
       </section>
     </div>
