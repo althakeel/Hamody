@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import { getCachedData, setCachedData, invalidateStorefrontProductCaches } from '@/lib/cache'
-import { buildFeaturedProductsListQuery, isManualFeaturedSelection, manualFeaturedWindow, normalizeManualRotateHours, resolvePublicFeaturedStore } from '@/lib/featuredProducts'
+import { buildFeaturedProductsListQuery, FEATURED_PRODUCT_MAX, isManualFeaturedSelection, manualFeaturedWindow, normalizeManualRotateHours, resolvePublicFeaturedStore } from '@/lib/featuredProducts'
 import { getAuth } from '@/lib/firebase-admin'
 import authSeller from '@/middlewares/authSeller'
 import Store from '@/models/Store'
@@ -110,7 +110,7 @@ export async function GET(request) {
             ? Math.floor(Date.now() / (manualRotateHours * 60 * 60 * 1000))
             : 0
         const cacheKey = isPublicRequest
-            ? `public:featured-products:api:v8:${includeProducts}:${limit}:${manualRotateHours}:${rotateWindow}`
+            ? `public:featured-products:api:v9:${includeProducts}:${FEATURED_PRODUCT_MAX}:${manualRotateHours}:${rotateWindow}`
             : null
         if (cacheKey) {
             const cached = getCachedData(cacheKey)
@@ -172,14 +172,12 @@ export async function GET(request) {
         }
 
         if (isManualFeaturedSelection(sourceMode, productIds)) {
-            const slotCount = limit > 0 ? limit : 10
             products = manualFeaturedWindow(products, {
                 rotateHours: manualRotateHours,
-                slotCount,
+                slotCount: FEATURED_PRODUCT_MAX,
             }).products
-        } else if (limit > 0) {
-            products = products.slice(0, limit)
         }
+        products = products.slice(0, FEATURED_PRODUCT_MAX)
         products = await attachProductRatings(products)
 
         const resolvedProductIds = products.map((product) => normalizeId(product?._id || product?.id)).filter(Boolean)
@@ -227,6 +225,7 @@ export async function POST(request) {
         }
 
         const normalizedSourceMode = normalizeMode(sourceMode)
+        const normalizedProductIds = normalizeList(productIds).slice(0, FEATURED_PRODUCT_MAX)
         const normalizedCategoryIds = normalizeList(categoryIds)
         const normalizedTags = normalizeList(tags)
 
@@ -234,7 +233,7 @@ export async function POST(request) {
         const updatedStore = await Store.findByIdAndUpdate(
             storeId,
             {
-                featuredProductIds: productIds,
+                featuredProductIds: normalizedProductIds,
                 featuredProductsSource: normalizedSourceMode,
                 featuredProductsCategoryIds: normalizedCategoryIds,
                 featuredProductsTags: normalizedTags,

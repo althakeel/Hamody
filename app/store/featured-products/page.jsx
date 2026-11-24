@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { useAuth } from '@/lib/useAuth'
+import { FEATURED_PRODUCT_MAX } from '@/lib/featuredProductLimit'
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
 import Image from 'next/image'
@@ -111,7 +111,7 @@ function expandSelectedCategories(flatCategories = [], selectedIds = []) {
 function buildPreviewFromSelection(selectedIds, productPool = []) {
     const poolMap = new Map(productPool.map((product) => [normalizeProductId(product), product]))
     return selectedIds
-        .slice(0, 5)
+        .slice(0, FEATURED_PRODUCT_MAX)
         .map((id) => poolMap.get(normalizeProductId(id)))
         .filter(Boolean)
 }
@@ -192,7 +192,7 @@ export default function FeaturedProducts() {
     }, [])
 
     const fetchPreviewProducts = useCallback(async (productIds = [], productPool = []) => {
-        const ids = productIds.slice(0, 5).map(normalizeProductId).filter(Boolean)
+        const ids = productIds.slice(0, FEATURED_PRODUCT_MAX).map(normalizeProductId).filter(Boolean)
         if (!ids.length) {
             setPreviewProducts([])
             return
@@ -298,7 +298,7 @@ export default function FeaturedProducts() {
             const initialSelected = (savedData.productIds || []).map(normalizeProductId)
 
             setCategories(flattenCategories(categoriesResponse.data?.categories || []))
-            setSelectedProducts(initialSelected)
+            setSelectedProducts(initialSelected.slice(0, FEATURED_PRODUCT_MAX))
             setSourceMode(savedData.sourceMode || 'manual')
             setSelectedCategoryIds(savedData.categoryIds || [])
             setSelectedTags(Array.isArray(savedData.tags) ? savedData.tags.map((tag) => String(tag || '').trim()).filter(Boolean) : [])
@@ -414,16 +414,38 @@ export default function FeaturedProducts() {
         if (product) {
             previewCacheRef.current.set(id, product)
         }
-        setSelectedProducts((prev) => (
-            prev.includes(id)
-                ? prev.filter((existingId) => existingId !== id)
-                : [...prev, id]
-        ))
+        setSelectedProducts((prev) => {
+            if (prev.includes(id)) return prev.filter((existingId) => existingId !== id)
+            if (prev.length >= FEATURED_PRODUCT_MAX) {
+                toast.error(`You can feature up to ${FEATURED_PRODUCT_MAX} products`)
+                return prev
+            }
+            return [...prev, id]
+        })
+    }
+
+    const addProductIds = (ids) => {
+        setSelectedProducts((prev) => {
+            const next = [...prev]
+            let reachedMax = false
+            for (const rawId of ids) {
+                const id = normalizeProductId(rawId)
+                if (!id || next.includes(id)) continue
+                if (next.length >= FEATURED_PRODUCT_MAX) {
+                    reachedMax = true
+                    break
+                }
+                next.push(id)
+            }
+            if (reachedMax) {
+                toast.error(`You can feature up to ${FEATURED_PRODUCT_MAX} products`)
+            }
+            return next
+        })
     }
 
     const selectCurrentPage = () => {
-        const pageIds = products.map((product) => normalizeProductId(product))
-        setSelectedProducts((prev) => Array.from(new Set([...prev, ...pageIds])))
+        addProductIds(products.map((product) => normalizeProductId(product)))
     }
 
     const selectAllProducts = async () => {
@@ -437,8 +459,18 @@ export default function FeaturedProducts() {
                 },
                 headers: { Authorization: `Bearer ${token}` },
             })
-            setSelectedProducts((prev) => Array.from(new Set([...prev, ...(data.productIds || [])])))
-            toast.success(`Selected ${data.total || 0} product(s)`)
+            const incoming = data.productIds || []
+            setSelectedProducts((prev) => {
+                const next = [...prev]
+                for (const rawId of incoming) {
+                    const id = normalizeProductId(rawId)
+                    if (!id || next.includes(id)) continue
+                    if (next.length >= FEATURED_PRODUCT_MAX) break
+                    next.push(id)
+                }
+                return next
+            })
+            toast.success(`Selected up to ${FEATURED_PRODUCT_MAX} products`)
         } catch {
             toast.error('Failed to select all products')
         } finally {
@@ -549,7 +581,7 @@ export default function FeaturedProducts() {
             const token = await getToken()
             await axios.post('/api/store/featured-products',
                 {
-                    productIds: selectedProducts,
+                    productIds: selectedProducts.slice(0, FEATURED_PRODUCT_MAX),
                     sourceMode,
                     categoryIds: selectedCategoryIds,
                     tags: normalizedTags,
@@ -860,7 +892,7 @@ export default function FeaturedProducts() {
                                         <div>
                                             <h2 className="text-base font-semibold text-slate-900">Select products</h2>
                                                 <p className="text-xs text-slate-500">
-                                                {selectedProducts.length} selected · {pagination.total} total products. Number 1 is shown first.
+                                                {selectedProducts.length} of {FEATURED_PRODUCT_MAX} selected · {pagination.total} total products. Number 1 is shown first.
                                             </p>
                                         </div>
                                         <div className="flex flex-wrap gap-2">

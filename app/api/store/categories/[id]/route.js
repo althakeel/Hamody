@@ -180,18 +180,25 @@ export async function DELETE(req, { params }) {
       return NextResponse.json({ error: 'Category not found' }, { status: 404 });
     }
 
-    const children = await Category.find({ parentId: category._id }).lean();
+    const children = await Category.find({ parentId: category._id }).select('name').lean();
     if (children.length > 0) {
       return NextResponse.json({
-        error: 'Cannot delete category with subcategories. Please delete subcategories first.',
-      }, { status: 400 });
+        error: 'Delete the subcategories first, then delete this category.',
+        subcategoryCount: children.length,
+        subcategoryNames: children.map((child) => child.name).filter(Boolean),
+      }, { status: 409 });
     }
 
+    const allCategories = await Category.find({}).select('_id parentId name slug url').lean();
     await Category.findByIdAndDelete(category._id);
     invalidateCategoryCaches();
     try {
-      const { redirectRetiredCategory } = await import('@/lib/urlRedirects');
-      await redirectRetiredCategory(category);
+      const { redirectRetiredCategories } = await import('@/lib/urlRedirects');
+      await redirectRetiredCategories(
+        [category],
+        new Set([String(category._id)]),
+        allCategories,
+      );
     } catch (error) {
       console.error('[url-redirects] category delete', error);
     }

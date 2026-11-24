@@ -39,17 +39,6 @@ function getCategoryDepth(categoryId, categoryById) {
   return depth;
 }
 
-function collectDescendantIds(categoryId, childrenByParent, collected = new Set()) {
-  const children = childrenByParent.get(String(categoryId)) || [];
-  for (const child of children) {
-    const childId = String(child._id);
-    if (collected.has(childId)) continue;
-    collected.add(childId);
-    collectDescendantIds(childId, childrenByParent, collected);
-  }
-  return collected;
-}
-
 export async function POST(request) {
   try {
     const auth = await verifyStoreSeller(request);
@@ -79,9 +68,6 @@ export async function POST(request) {
       const categoryId = String(rawId || '').trim();
       if (!categoryId) continue;
       idsToDelete.add(categoryId);
-      for (const descendantId of collectDescendantIds(categoryId, childrenByParent)) {
-        idsToDelete.add(descendantId);
-      }
     }
 
     const sortedIds = [...idsToDelete].sort(
@@ -101,12 +87,13 @@ export async function POST(request) {
       }
 
       const children = childrenByParent.get(categoryId) || [];
-      const remainingChildren = children.filter((child) => !idsToDelete.has(String(child._id)));
-      if (remainingChildren.length > 0) {
+      if (children.length > 0) {
         failed.push({
           id: categoryId,
           name: category.name,
-          error: 'Cannot delete category with subcategories. Include nested categories in the selection.',
+          error: 'Delete the subcategories first, then delete this category.',
+          subcategoryCount: children.length,
+          subcategoryNames: children.map((child) => child.name).filter(Boolean),
         });
         continue;
       }

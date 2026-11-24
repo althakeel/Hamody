@@ -511,6 +511,75 @@ function flattenHierarchicalCategories(categories = [], depth = 0) {
   });
 }
 
+function indexCategoryNodes(categories = [], byId = new Map()) {
+  for (const category of categories) {
+    byId.set(String(category._id), category);
+    if (Array.isArray(category.children) && category.children.length) {
+      indexCategoryNodes(category.children, byId);
+    }
+  }
+  return byId;
+}
+
+function collectNestedCategories(category) {
+  const nested = [];
+  const walk = (node) => {
+    for (const child of node?.children || []) {
+      nested.push(child);
+      walk(child);
+    }
+  };
+  walk(category);
+  return nested;
+}
+
+function DeleteSubcategoriesReminder({ reminder, onClose }) {
+  if (!reminder) return null;
+
+  const names = Array.isArray(reminder.names) ? reminder.names.filter(Boolean) : [];
+  const visibleNames = names.slice(0, 8);
+  const hiddenCount = Math.max(0, names.length - visibleNames.length);
+
+  return (
+    <div className="fixed inset-0 z-[1200] flex items-end justify-center p-3 sm:items-center sm:p-6">
+      <button
+        type="button"
+        className="absolute inset-0 bg-slate-900/50"
+        aria-label="Close reminder"
+        onClick={onClose}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-subcategories-title"
+        className="relative w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl sm:p-6"
+      >
+        <h3 id="delete-subcategories-title" className="text-lg font-semibold text-slate-900">
+          Delete the subcategories first
+        </h3>
+        <p className="mt-2 text-sm leading-6 text-slate-600">{reminder.message}</p>
+        {visibleNames.length ? (
+          <ul className="mt-4 max-h-48 space-y-1 overflow-y-auto rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            {visibleNames.map((name, index) => (
+              <li key={`${name}-${index}`}>{name}</li>
+            ))}
+            {hiddenCount > 0 ? <li>and {hiddenCount} more</li> : null}
+          </ul>
+        ) : null}
+        <div className="mt-5 flex justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+          >
+            Got it
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function getCategoryLevelMeta(depth = 0) {
   if (depth === 0) {
     return {
@@ -570,6 +639,7 @@ export default function StoreCategoryMenu() {
   const [uploading, setUploading] = useState(false);
   const [importingCategories, setImportingCategories] = useState(false);
   const [deletingSelected, setDeletingSelected] = useState(false);
+  const [deleteReminder, setDeleteReminder] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
   const categoryImportInputRef = useRef(null);
@@ -1313,19 +1383,39 @@ export default function StoreCategoryMenu() {
     }
   };
 
-  const handleDelete = async (categoryId) => {
-    if (!confirm('Are you sure you want to delete this category?')) return;
+  const handleDelete = async (category) => {
+    const categoryById = indexCategoryNodes(categories);
+    const source = categoryById.get(String(category._id)) || category;
+    const nested = collectNestedCategories(source);
+    if (nested.length > 0) {
+      const count = nested.length;
+      setDeleteReminder({
+        message: `${category.name} still has ${count} nested categor${count === 1 ? 'y' : 'ies'}. Delete those before deleting this category.`,
+        names: nested.map((item) => item.name),
+      });
+      return;
+    }
+
+    if (!confirm(`Delete ${category.name}?`)) return;
 
     try {
       const token = await getToken();
-      await axios.delete(`/api/store/categories/${categoryId}`, {
+      await axios.delete(`/api/store/categories/${category._id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       await fetchCategories();
       toast.success('Category deleted');
       notifyStorefrontMenuUpdated();
     } catch (error) {
-      toast.error(error?.response?.data?.error || 'Failed to delete category');
+      const data = error?.response?.data;
+      if (data?.subcategoryCount) {
+        setDeleteReminder({
+          message: `${category.name} still has subcategories. Delete those before deleting this category.`,
+          names: data.subcategoryNames || [],
+        });
+        return;
+      }
+      toast.error(data?.error || 'Failed to delete category');
     }
   };
 
@@ -1402,7 +1492,33 @@ export default function StoreCategoryMenu() {
       return;
     }
 
-    if (!confirm(`Delete ${selectedCategoryIds.length} selected categor${selectedCategoryIds.length === 1 ? 'y' : 'ies'}? Nested categories under a selected parent will be deleted too.`)) {
+    const selectedSet = new Set(selectedCategoryIds.map(String));
+    const categoryById = indexCategoryNodes(categories);
+    const blocked = [];
+    selectedCategoryIds.forEach((id) => {
+      const category = categoryById.get(String(id));
+      if (!category) return;
+      const missing = collectNestedCategories(category).filter((child) => !selectedSet.has(String(child._id)));
+      if (!missing.length) return;
+      blocked.push({
+        name: category.name,
+        names: missing.map((child) => child.name),
+      });
+    });
+
+    if (blocked.length) {
+      const lead = blocked[0];
+      const extraParents = blocked.length - 1;
+      setDeleteReminder({
+        message: extraParents > 0
+          ? `${lead.name} and ${extraParents} other selected categor${extraParents === 1 ? 'y' : 'ies'} still have nested categories that are not selected. Delete those subcategories first.`
+          : `${lead.name} still has nested categories that are not selected. Delete those subcategories first.`,
+        names: [...new Set(blocked.flatMap((item) => item.names))],
+      });
+      return;
+    }
+
+    if (!confirm(`Delete ${selectedCategoryIds.length} selected categor${selectedCategoryIds.length === 1 ? 'y' : 'ies'}?`)) {
       return;
     }
 
@@ -1429,7 +1545,15 @@ export default function StoreCategoryMenu() {
       }
 
       if (failed.length) {
-        toast.error(`${failed[0].name}: ${failed[0].error}`);
+        const blockedFailures = failed.filter((item) => item.subcategoryCount);
+        if (blockedFailures.length) {
+          setDeleteReminder({
+            message: `${blockedFailures[0].name} still has subcategories. Delete those before deleting this category.`,
+            names: [...new Set(blockedFailures.flatMap((item) => item.subcategoryNames || []))],
+          });
+        } else {
+          toast.error(`${failed[0].name}: ${failed[0].error}`);
+        }
       }
     } catch (error) {
       toast.error(error?.response?.data?.error || 'Failed to delete selected categories');
@@ -1455,7 +1579,23 @@ export default function StoreCategoryMenu() {
     if (!query) return flatCategories;
 
     const byId = new Map(flatCategories.map((category) => [String(category._id), category]));
+    const childrenByParent = new Map();
+    flatCategories.forEach((category) => {
+      const parentId = String(category.parentId || '');
+      if (!parentId) return;
+      const children = childrenByParent.get(parentId) || [];
+      children.push(String(category._id));
+      childrenByParent.set(parentId, children);
+    });
+
     const matchedIds = new Set();
+    const addDescendants = (categoryId) => {
+      for (const childId of childrenByParent.get(String(categoryId)) || []) {
+        if (matchedIds.has(childId)) continue;
+        matchedIds.add(childId);
+        addDescendants(childId);
+      }
+    };
 
     flatCategories.forEach((category) => {
       const matches = category.name.toLowerCase().includes(query)
@@ -1464,7 +1604,9 @@ export default function StoreCategoryMenu() {
 
       if (!matches) return;
 
-      matchedIds.add(String(category._id));
+      const categoryId = String(category._id);
+      matchedIds.add(categoryId);
+      addDescendants(categoryId);
 
       let parentId = category.parentId;
       while (parentId) {
@@ -1768,7 +1910,7 @@ export default function StoreCategoryMenu() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDelete(String(category._id))}
+                    onClick={() => handleDelete(category)}
                     className="rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 sm:px-3 sm:py-2 sm:text-sm"
                   >
                     <span className="flex items-center gap-1.5">
@@ -1817,6 +1959,10 @@ export default function StoreCategoryMenu() {
 
   return (
     <div className="min-h-0 w-full bg-white px-3 py-3 sm:px-4 sm:py-4 md:px-5 lg:px-6">
+      <DeleteSubcategoriesReminder
+        reminder={deleteReminder}
+        onClose={() => setDeleteReminder(null)}
+      />
       <div className="mx-auto w-full max-w-7xl">
         {/* Header Section */}
         <div className="mb-4 sm:mb-5">
