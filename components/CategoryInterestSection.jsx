@@ -8,181 +8,18 @@ import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 const LOGO_SIZE = 80;
 const LOGO_GAP = 24;
 
-function plateColor(red, green, blue) {
-  const luminance = (red * 0.2126) + (green * 0.7152) + (blue * 0.0722);
-  if (luminance > 170) return '#FFFFFF';
-  if (luminance < 55) return '#111111';
-  return `rgb(${red}, ${green}, ${blue})`;
-}
-
 function BrandLogo({ src, onEmpty }) {
-  const [frame, setFrame] = useState(null);
-  const onEmptyRef = useRef(onEmpty);
-  onEmptyRef.current = onEmpty;
-
-  useEffect(() => {
-    let cancelled = false;
-      const image = new Image();
-      image.crossOrigin = 'anonymous';
-      image.onload = () => {
-        try {
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d', { willReadFrequently: true });
-        const width = image.naturalWidth || 1;
-        const height = image.naturalHeight || 1;
-        canvas.width = width;
-        canvas.height = height;
-        context.drawImage(image, 0, 0);
-        const { data } = context.getImageData(0, 0, width, height);
-        const pixel = (x, y) => {
-          const index = (y * width + x) * 4;
-          return [data[index], data[index + 1], data[index + 2], data[index + 3]];
-        };
-        const corners = [
-          pixel(0, 0),
-          pixel(width - 1, 0),
-          pixel(0, height - 1),
-          pixel(width - 1, height - 1),
-        ].filter((entry) => entry[3] > 20);
-        const transparentPlate = corners.length < 3;
-        const mat = corners.length
-          ? corners
-            .reduce((sum, entry) => [sum[0] + entry[0], sum[1] + entry[1], sum[2] + entry[2]], [0, 0, 0])
-            .map((value) => Math.round(value / corners.length))
-          : null;
-        const matchesPlate = (red, green, blue) => (
-          mat
-          && Math.abs(red - mat[0]) + Math.abs(green - mat[1]) + Math.abs(blue - mat[2]) < 54
-        );
-        let minX = width;
-        let minY = height;
-        let maxX = 0;
-        let maxY = 0;
-        let lightMinX = width;
-        let lightMinY = height;
-        let lightMaxX = 0;
-        let lightMaxY = 0;
-        let luminanceTotal = 0;
-        let inkCount = 0;
-        let lightCount = 0;
-        for (let y = 0; y < height; y += 1) {
-          for (let x = 0; x < width; x += 1) {
-            const index = (y * width + x) * 4;
-            if (data[index + 3] < 20) continue;
-            const luminance = (data[index] * 0.2126) + (data[index + 1] * 0.7152) + (data[index + 2] * 0.0722);
-            const isPlate = !transparentPlate && matchesPlate(data[index], data[index + 1], data[index + 2]);
-            if (isPlate) continue;
-            const isLight = luminance > 232;
-            if (isLight) {
-              lightCount += 1;
-              if (x < lightMinX) lightMinX = x;
-              if (y < lightMinY) lightMinY = y;
-              if (x > lightMaxX) lightMaxX = x;
-              if (y > lightMaxY) lightMaxY = y;
-              continue;
-            }
-            luminanceTotal += luminance;
-            inkCount += 1;
-            if (x < minX) minX = x;
-            if (y < minY) minY = y;
-            if (x > maxX) maxX = x;
-            if (y > maxY) maxY = y;
-          }
-        }
-        const hasInk = inkCount > 24 && maxX >= minX && maxY >= minY;
-        const hasLightMark = !hasInk && lightCount > 24 && lightMaxX >= lightMinX && lightMaxY >= lightMinY;
-        if (!hasInk && !hasLightMark) {
-          if (!cancelled) onEmptyRef.current?.();
-          return;
-        }
-        if (!hasInk) {
-          minX = lightMinX;
-          minY = lightMinY;
-          maxX = lightMaxX;
-          maxY = lightMaxY;
-        } else {
-          const isInkPixel = (x, y) => {
-            const index = (y * width + x) * 4;
-            if (data[index + 3] < 20) return false;
-            const luminance = (data[index] * 0.2126) + (data[index + 1] * 0.7152) + (data[index + 2] * 0.0722);
-            return luminance <= 232;
-          };
-          const edgeHasInk = (axis, at) => {
-            let hits = 0;
-            let total = 0;
-            if (axis === 'x') {
-              for (let x = minX; x <= maxX; x += 2) {
-                total += 1;
-                if (isInkPixel(x, at)) hits += 1;
-              }
-            } else {
-              for (let y = minY; y <= maxY; y += 2) {
-                total += 1;
-                if (isInkPixel(at, y)) hits += 1;
-              }
-            }
-            return total > 0 && hits / total >= 0.04;
-          };
-          let guard = 0;
-          while (guard < 80 && maxX - minX > 12 && maxY - minY > 12) {
-            const shrinkTop = !edgeHasInk('x', minY);
-            const shrinkBottom = !edgeHasInk('x', maxY);
-            const shrinkLeft = !edgeHasInk('y', minX);
-            const shrinkRight = !edgeHasInk('y', maxX);
-            if (!shrinkTop && !shrinkBottom && !shrinkLeft && !shrinkRight) break;
-            if (shrinkTop) minY += 2;
-            if (shrinkBottom) maxY -= 2;
-            if (shrinkLeft) minX += 2;
-            if (shrinkRight) maxX -= 2;
-            guard += 1;
-          }
-        }
-        const averageLuminance = hasInk ? luminanceTotal / inkCount : 255;
-        const background = hasLightMark || averageLuminance > 165
-          ? '#111111'
-          : (transparentPlate ? '#FFFFFF' : plateColor(mat[0], mat[1], mat[2]));
-        const pad = 2;
-        const sx = Math.max(0, minX - pad);
-        const sy = Math.max(0, minY - pad);
-        const sw = Math.min(width - sx, maxX - minX + 1 + pad * 2);
-        const sh = Math.min(height - sy, maxY - minY + 1 + pad * 2);
-        const cropped = document.createElement('canvas');
-        cropped.width = sw;
-        cropped.height = sh;
-        cropped.getContext('2d').drawImage(canvas, sx, sy, sw, sh, 0, 0, sw, sh);
-        if (!cancelled) setFrame({ src: cropped.toDataURL('image/png'), background });
-      } catch {
-        if (!cancelled) onEmptyRef.current?.();
-      }
-    };
-    image.onerror = () => {
-      if (!cancelled) onEmptyRef.current?.();
-    };
-    image.src = /^https?:\/\//i.test(src)
-      ? `/api/public/brand-logo?src=${encodeURIComponent(src)}`
-      : src;
-    return () => {
-      cancelled = true;
-    };
-  }, [src]);
-
-  const background = frame?.background || '#FFFFFF';
-
   return (
     <span
-      className="flex shrink-0 items-center justify-center overflow-hidden rounded-full"
-      style={{
-        width: LOGO_SIZE,
-        height: LOGO_SIZE,
-        backgroundColor: background,
-        border: background === '#FFFFFF' ? '1px solid #E6E8EC' : '1px solid transparent',
-      }}
+      className="flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#E6E8EC] bg-white"
+      style={{ width: LOGO_SIZE, height: LOGO_SIZE }}
     >
       <img
-        src={frame?.src || src}
+        src={src}
         alt=""
         draggable={false}
         className="h-full w-full object-contain"
+        onError={() => onEmpty?.()}
       />
     </span>
   );

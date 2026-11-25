@@ -163,6 +163,12 @@ export async function POST(req) {
         });
 
         invalidateCategoryCaches();
+        try {
+            const { clearActiveCategoryRedirects } = await import('@/lib/urlRedirects');
+            await clearActiveCategoryRedirects(category.toObject());
+        } catch (error) {
+            console.error('[url-redirects] new category', error);
+        }
 
         // Populate parent and children
         const parent = category.parentId ? await Category.findById(category.parentId).lean() : null;

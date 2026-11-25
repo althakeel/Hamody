@@ -124,7 +124,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('File upload error:', error);
     const message = String(error?.message || '');
-    const tooLarge = /entity too large|request body exceeded|formdata|413/i.test(message);
+    const tooLarge = /entity too large|request body exceeded|413/i.test(message);
     return Response.json({
       error: tooLarge
         ? 'This image is too large to upload. Use a JPG, PNG, or WebP under 20 MB.'

@@ -142,13 +142,14 @@ export async function PUT(req, { params }) {
 
     invalidateCategoryCaches();
 
-    if (slug !== existingCategory.slug) {
-      try {
-        const { redirectRetiredCategory } = await import('@/lib/urlRedirects');
+    try {
+      const { clearActiveCategoryRedirects, redirectRetiredCategory } = await import('@/lib/urlRedirects');
+      if (slug !== existingCategory.slug) {
         await redirectRetiredCategory(existingCategory);
-      } catch (error) {
-        console.error('[url-redirects] category slug', error);
       }
+      await clearActiveCategoryRedirects(category);
+    } catch (error) {
+      console.error('[url-redirects] category slug', error);
     }
 
     const parent = category.parentId ? await Category.findById(category.parentId).lean() : null;
