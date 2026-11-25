@@ -6,7 +6,8 @@ import { stripImageKitTransforms } from '@/lib/imageKitDelivery';
 import HomePageClient from './HomePageClient';
 import HomeLoading from './loading';
 
-export const revalidate = 180;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 export const metadata = HOME_PAGE_METADATA;
 
 async function HomeContent() {

@@ -199,7 +199,7 @@ export default function CategoryInterestSection() {
 
   useEffect(() => {
     let active = true;
-    fetch('/api/public/brands')
+    fetch(`/api/public/brands?fresh=${Date.now()}`, { cache: 'no-store' })
       .then((response) => (response.ok ? response.json() : { brands: [] }))
       .then((data) => {
         if (!active) return;

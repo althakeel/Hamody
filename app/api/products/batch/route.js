@@ -5,6 +5,7 @@ import { getProductThumbnailUrl } from "@/lib/productMedia";
 import { PLACEHOLDER_IMAGE } from "@/lib/mediaUrls";
 import { isProductPublished } from '@/lib/productVisibility';
 import { attachProductRatings } from '@/lib/attachProductRatings';
+import { fillMissingProductArabicNames } from '@/lib/fillProductArabicNames';
 
 function hasDisplayableImage(product) {
   const thumbnail = getProductThumbnailUrl(product, { fallback: PLACEHOLDER_IMAGE });
@@ -39,6 +40,12 @@ export async function POST(req) {
             .select('name nameAr slug price mrp AED images externalImages brand brandAr category categories inStock stockQuantity fastDelivery freeShippingEligible useProductsPath imageAspectRatio imageBadgeIds shortDescription shortDescriptionAr shortDescription2 sku hasVariants variants allowReturn allowReplacement published createdAt legacySourceId specTableRows')
             .lean();
 
+        try {
+            await fillMissingProductArabicNames(products);
+        } catch (error) {
+            console.error('[products/batch] Arabic names', error?.message || error);
+        }
+
         const productMap = new Map(products.map((product) => [String(product._id), product]));
         const orderedProducts = await attachProductRatings(
           validProductIds
@@ -50,7 +57,7 @@ export async function POST(req) {
 
         return NextResponse.json({ products: orderedProducts }, {
             headers: {
-                'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
+                'Cache-Control': 'private, no-store, no-cache, must-revalidate, max-age=0',
             },
         });
     } catch (error) {

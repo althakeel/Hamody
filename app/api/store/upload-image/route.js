@@ -57,14 +57,16 @@ export async function POST(request) {
 
     const idToken = authHeader.replace('Bearer ', '');
     let userId = null;
+    let userEmail = '';
     try {
       const decodedToken = await getAuth().verifyIdToken(idToken);
       userId = decodedToken.uid;
+      userEmail = String(decodedToken.email || '').trim().toLowerCase();
     } catch {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const storeId = await authSeller(userId);
+    const storeId = await authSeller(userId, userEmail);
     if (!storeId) {
       return Response.json({ error: 'Store not approved or not found' }, { status: 403 });
     }
@@ -89,7 +91,7 @@ export async function POST(request) {
     let uploadName = image.name || (video ? 'upload.mp4' : 'upload.jpg');
 
     if (!video) {
-      const isLogoUpload = type === 'logo' || type === 'navbar-logo' || type === 'footer-logo' || type === 'app-icon';
+      const isLogoUpload = type === 'logo' || type === 'navbar-logo' || type === 'footer-logo' || type === 'footer-payment' || type === 'app-icon';
       const optimized = await maybeOptimizeBuffer(buffer, {
         contentType: image.type,
         fileName: image.name,

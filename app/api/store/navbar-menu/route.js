@@ -116,7 +116,7 @@ export async function GET(req) {
     if (token) {
       try {
         const decoded = await getAuth().verifyIdToken(token);
-        const ownerId = await resolveStorefrontOwnerId(decoded.uid);
+        const ownerId = await resolveStorefrontOwnerId(decoded.uid, decoded.email);
         const shared = await findSharedNavbarSettings(ownerId);
         const settingsDocs = shared ? [shared] : [];
 
@@ -231,7 +231,7 @@ export async function GET(req) {
       {
         status: 200,
         headers: {
-          'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600',
+          'Cache-Control': 'no-store',
         },
       }
     );
@@ -265,7 +265,7 @@ export async function POST(req) {
     }
 
     const decoded = await getAuth().verifyIdToken(token);
-    const userId = await resolveStorefrontOwnerId(decoded.uid);
+    const userId = await resolveStorefrontOwnerId(decoded.uid, decoded.email);
 
     await dbConnect();
 

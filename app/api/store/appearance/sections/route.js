@@ -114,14 +114,17 @@ function normalizePageSeo(pageSeo = {}) {
   return normalized
 }
 
-async function getUserIdFromRequest(request) {
+async function getSellerIdentity(request) {
   const authHeader = request.headers.get('authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) return null
 
   const idToken = authHeader.split(' ')[1]
   try {
     const decoded = await getAuth().verifyIdToken(idToken)
-    return decoded.uid
+    return {
+      uid: decoded.uid,
+      email: String(decoded.email || '').trim().toLowerCase(),
+    }
   } catch {
     return null
   }
@@ -260,10 +263,10 @@ function normalizeAppearance(data = {}) {
 
 export async function GET(request) {
   try {
-    const userId = await getUserIdFromRequest(request)
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const seller = await getSellerIdentity(request)
+    if (!seller?.uid) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const storeId = await authSeller(userId)
+    const storeId = await authSeller(seller.uid, seller.email)
     if (!storeId) return NextResponse.json({ error: 'Not authorized' }, { status: 401 })
 
     await connectDB()
@@ -282,10 +285,10 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const userId = await getUserIdFromRequest(request)
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const seller = await getSellerIdentity(request)
+    if (!seller?.uid) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const storeId = await authSeller(userId)
+    const storeId = await authSeller(seller.uid, seller.email)
     if (!storeId) return NextResponse.json({ error: 'Not authorized' }, { status: 401 })
 
     const body = await request.json()

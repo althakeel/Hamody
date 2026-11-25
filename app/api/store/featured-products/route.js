@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import { getCachedData, setCachedData, invalidateStorefrontProductCaches } from '@/lib/cache'
+import { invalidateCategorySliderCaches } from '@/lib/categorySliderCache'
 import { buildFeaturedProductsListQuery, FEATURED_PRODUCT_MAX, isManualFeaturedSelection, manualFeaturedWindow, normalizeManualRotateHours, resolvePublicFeaturedStore } from '@/lib/featuredProducts'
 import { clampFeaturedColumns, clampFeaturedRows, featuredVisibleCount } from '@/lib/featuredProductLimit'
 import { getAuth } from '@/lib/firebase-admin'
@@ -24,11 +25,9 @@ const DEFAULT_FEATURED_RESPONSE = {
     sectionDescriptionAr: '',
 }
 
-function createFeaturedResponse(payload, cacheable = false) {
+function createFeaturedResponse(payload) {
     return NextResponse.json(payload, {
-        headers: cacheable
-            ? { 'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300' }
-            : { 'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0' }
+        headers: { 'Cache-Control': 'private, no-store, no-cache, must-revalidate, max-age=0' },
     })
 }
 
@@ -55,14 +54,15 @@ const normalizeId = (value) => {
 
 const buildProductProjection = '_id name nameAr slug price mrp AED images category categories tags inStock stockQuantity published createdAt'
 
-async function getUserIdFromAuthHeader(request) {
+async function getSellerFromAuthHeader(request) {
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) return null
 
     const idToken = authHeader.split('Bearer ')[1]
     try {
         const decodedToken = await getAuth().verifyIdToken(idToken)
-        return decodedToken.uid || null
+        if (!decodedToken?.uid) return null
+        return { uid: decodedToken.uid, email: decodedToken.email || '' }
     } catch {
         return null
     }
@@ -77,18 +77,18 @@ export async function GET(request) {
         const limit = Number(searchParams.get('limit') || 0)
 
         // If authenticated, always return the caller's own store data.
-        let userId = null
+        let seller = null
         try {
-            userId = await getUserIdFromAuthHeader(request)
+            seller = await getSellerFromAuthHeader(request)
         } catch (authError) {
             console.warn('[featured-products GET] auth lookup failed, falling back to public data:', authError?.message || authError)
         }
 
-        const isPublicRequest = !userId
+        const isPublicRequest = !seller?.uid
         let store = null
-        if (userId) {
+        if (seller?.uid) {
             try {
-                const storeId = await authSeller(userId)
+                const storeId = await authSeller(seller.uid, seller.email)
                 if (storeId) {
                     store = await Store.findById(storeId).lean()
                 }
@@ -175,7 +175,7 @@ export async function GET(request) {
                 sectionDescriptionAr,
                 manualRotateHours,
             }
-            if (cacheKey) setCachedData(cacheKey, payload, 120)
+            if (cacheKey) setCachedData(cacheKey, payload, 15)
             return createFeaturedResponse(payload, isPublicRequest)
         }
 
@@ -210,8 +210,8 @@ export async function GET(request) {
             manualRotateHours,
             products
         }
-        if (cacheKey) setCachedData(cacheKey, payload, 120)
-        return createFeaturedResponse(payload, isPublicRequest)
+        if (cacheKey) setCachedData(cacheKey, payload, 15)
+        return createFeaturedResponse(payload)
     } catch (error) {
         console.error('Error fetching featured products:', error)
         return createFeaturedResponse({
@@ -225,10 +225,10 @@ export async function POST(request) {
     try {
         await connectDB()
 
-        const userId = await getUserIdFromAuthHeader(request)
-        if (!userId) return NextResponse.json({ error: 'Not authorized' }, { status: 401 })
+        const seller = await getSellerFromAuthHeader(request)
+        if (!seller?.uid) return NextResponse.json({ error: 'Not authorized' }, { status: 401 })
 
-        const storeId = await authSeller(userId)
+        const storeId = await authSeller(seller.uid, seller.email)
         if (!storeId) {
             return NextResponse.json({ error: 'Store not found for user' }, { status: 404 })
         }
@@ -268,6 +268,7 @@ export async function POST(request) {
         )
 
         invalidateStorefrontProductCaches()
+        invalidateCategorySliderCaches()
 
         return NextResponse.json({ 
             message: 'Featured products updated successfully',

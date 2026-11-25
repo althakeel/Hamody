@@ -7,7 +7,6 @@ import ProductCarousel from '@/components/ProductCarousel'
 import { HOME_SECTION_CLASS, HOME_SECTION_TITLE_CLASS, getHomeSectionProductCardClass } from '@/lib/storefrontCarousel'
 import { HomeProductCardSkeleton } from '@/components/home/HomeSectionSkeletons'
 import { localizeField } from '@/lib/storefrontLanguage'
-import { useAuth } from '@/lib/useAuth'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
 import { FEATURED_PRODUCT_MAX, clampFeaturedColumns, clampFeaturedRows, featuredVisibleCount } from '@/lib/featuredProductLimit'
 import { filterStorefrontInStockProducts } from '@/lib/productVisibility'
@@ -28,7 +27,6 @@ const BestSelling = ({
 }) => {
   // Homepage SSR already applies published/in-stock filters — trust that list.
   const hasInitialProducts = Array.isArray(initialProducts) && initialProducts.length > 0
-  const { getToken, user, loading: authLoading } = useAuth()
   const { language } = useStorefrontI18n()
   const [sectionCopy, setSectionCopy] = useState({
     sectionTitle,
@@ -50,7 +48,6 @@ const BestSelling = ({
   const fetchControllerRef = useRef(null)
   const retryTimerRef = useRef(null)
   const featuredProductsLengthRef = useRef(hasInitialProducts ? initialProducts.length : 0)
-  const skipInitialFetchRef = useRef(hasInitialProducts)
   const isCarousel = layoutSettings.style === 'carousel'
 
   const fetchFeaturedAndSectionText = useCallback(async () => {
@@ -65,35 +62,20 @@ const BestSelling = ({
         }
         setError(null)
 
-        let headers = undefined
-        try {
-          const token = await getToken()
-          if (token) {
-            headers = { Authorization: `Bearer ${token}` }
-          }
-        } catch {
-          // Public users won't have a token; continue without auth header.
-        }
-
-        const appearanceRequest = headers
-          ? axios.get('/api/store/appearance/sections', {
-              headers,
-              signal: controller.signal,
-              timeout: 10000
-            })
-          : axios.get('/api/store/appearance/sections/public', {
-              signal: controller.signal,
-              timeout: 10000
-            })
-
+        const noStore = { 'Cache-Control': 'no-cache', Pragma: 'no-cache' }
         const [{ data: featuredData }, { data: appearanceData }] = await Promise.all([
           axios.get('/api/store/featured-products', {
-            params: { includeProducts: true, limit: FEATURED_PRODUCT_MAX },
-            headers,
+            params: { includeProducts: true, limit: FEATURED_PRODUCT_MAX, fresh: Date.now() },
+            headers: noStore,
             signal: controller.signal,
             timeout: 15000
           }),
-          appearanceRequest.catch(() => ({ data: {} }))
+          axios.get('/api/store/appearance/sections/public', {
+            params: { fresh: Date.now() },
+            headers: noStore,
+            signal: controller.signal,
+            timeout: 10000
+          }).catch(() => ({ data: {} }))
         ])
 
         if (controller.signal.aborted) return
@@ -173,7 +155,7 @@ const BestSelling = ({
           }
         }
       }
-    }, [getToken])
+    }, [])
 
   useEffect(() => {
     return () => {
@@ -183,26 +165,9 @@ const BestSelling = ({
   }, [])
 
   useEffect(() => {
-    if (skipInitialFetchRef.current) {
-      skipInitialFetchRef.current = false
-      // SSR already provided featured products — skip the mount refetch.
-      return
-    }
-    if (hasInitialProducts) return
-    // Public featured list is backend-filtered; do not wait on Firebase auth.
-    if (authLoading) return
+    // Always refresh. The first HTML can be a cached English copy.
     fetchFeaturedAndSectionText()
-  }, [fetchFeaturedAndSectionText, user?.uid, authLoading, hasInitialProducts])
-
-  // If SSR had no products and auth stays busy, still load the public list.
-  useEffect(() => {
-    if (hasInitialProducts || featuredProducts.length > 0) return undefined
-    if (!authLoading) return undefined
-    const timer = window.setTimeout(() => {
-      fetchFeaturedAndSectionText()
-    }, 800)
-    return () => window.clearTimeout(timer)
-  }, [authLoading, fetchFeaturedAndSectionText, featuredProducts.length, hasInitialProducts])
+  }, [fetchFeaturedAndSectionText])
 
   useEffect(() => {
     if (typeof window === 'undefined') return

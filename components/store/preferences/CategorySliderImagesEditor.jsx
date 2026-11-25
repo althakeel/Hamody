@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import axios from 'axios'
-import { Loader2, Plus, Save, Upload } from 'lucide-react'
+import { Languages, Loader2, Plus, Save, Upload } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/lib/useAuth'
 import { readableUploadUrl } from '@/lib/readableUploadUrl'
@@ -43,6 +43,8 @@ export default function CategorySliderImagesEditor() {
   const [drafts, setDrafts] = useState({})
   const [files, setFiles] = useState({})
   const [savingId, setSavingId] = useState('')
+  const [translatingId, setTranslatingId] = useState('')
+  const [translatingAll, setTranslatingAll] = useState(false)
   const [adding, setAdding] = useState(false)
   const [creating, setCreating] = useState(false)
   const [newDraft, setNewDraft] = useState({ name: '', nameAr: '', path: '' })
@@ -105,6 +107,114 @@ export default function CategorySliderImagesEditor() {
       return next
     })
   }, [cards])
+
+  const requestArabicName = async (text, slug) => {
+    const english = String(text || '').trim()
+    if (!english) {
+      toast.error('Enter the English category name first')
+      return ''
+    }
+    const token = await getToken()
+    const { data } = await axios.post('/api/store/categories/translate-arabic', {
+      text: english,
+      slug,
+      kind: 'name',
+    }, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+    const translated = String(data?.nameAr || data?.descriptionAr || '').trim()
+    if (!translated) {
+      toast.error('Could not translate the category name')
+    }
+    return translated
+  }
+
+  const translateCard = async (card) => {
+    const draft = drafts[card.id] || card
+    try {
+      setTranslatingId(card.id)
+      const translated = await requestArabicName(draft.name, card.slug)
+      if (!translated) return
+      patchDraft(card.id, { nameAr: translated })
+      toast.success('Arabic name filled')
+    } catch (error) {
+      toast.error(error?.response?.data?.error || 'Failed to translate the category name')
+    } finally {
+      setTranslatingId('')
+    }
+  }
+
+  const translateNewCategory = async () => {
+    try {
+      setTranslatingId('new')
+      const translated = await requestArabicName(newDraft.name, '')
+      if (!translated) return
+      setNewDraft((current) => ({ ...current, nameAr: translated }))
+      toast.success('Arabic name filled')
+    } catch (error) {
+      toast.error(error?.response?.data?.error || 'Failed to translate the category name')
+    } finally {
+      setTranslatingId('')
+    }
+  }
+
+  const translateEmptyArabic = async () => {
+    const pending = cards.filter((card) => {
+      const draft = drafts[card.id] || card
+      return String(draft.name || '').trim() && !String(draft.nameAr || '').trim()
+    })
+    if (!pending.length) {
+      toast.success('Arabic names are already filled')
+      return
+    }
+
+    try {
+      setTranslatingAll(true)
+      const token = await getToken()
+      const headers = token ? { Authorization: `Bearer ${token}` } : {}
+      const { data } = await axios.post('/api/store/categories/translate-arabic', {
+        kind: 'name',
+        items: pending.map((card) => ({
+          id: card.id,
+          text: String((drafts[card.id] || card).name || '').trim(),
+          slug: card.slug,
+        })),
+      }, { headers })
+
+      const byId = new Map((Array.isArray(data?.items) ? data.items : []).map((item) => [
+        String(item.id),
+        String(item.nameAr || '').trim(),
+      ]))
+      let saved = 0
+      for (const card of pending) {
+        const nameAr = byId.get(card.id)
+        if (!nameAr) continue
+        const draft = drafts[card.id] || card
+        await axios.put(`/api/store/categories/${card.id}`, {
+          name: String(draft.name || card.name).trim(),
+          nameAr,
+          slug: card.slug,
+        }, { headers })
+        saved += 1
+        setCategories((current) => current.map((category) => (
+          String(category._id) === card.id ? { ...category, nameAr } : category
+        )))
+        setDrafts((current) => ({
+          ...current,
+          [card.id]: { ...(current[card.id] || card), nameAr },
+        }))
+      }
+      if (!saved) {
+        toast.error('Could not translate the category names')
+        return
+      }
+      toast.success(saved === 1 ? 'Filled 1 Arabic name' : `Filled ${saved} Arabic names`)
+    } catch (error) {
+      toast.error(error?.response?.data?.error || 'Failed to translate the category names')
+    } finally {
+      setTranslatingAll(false)
+    }
+  }
 
   const patchDraft = (id, patch) => {
     setDrafts((current) => ({
@@ -289,14 +399,25 @@ export default function CategorySliderImagesEditor() {
             Every top-level category from the store appears here and on the homepage. Each card is 127×110 with an 80×80 image. Edit the image, name, and path, then save. A category path looks like /category/electronics. You can also use /shop or a full https:// link.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setAdding((open) => !open)}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
-        >
-          <Plus size={12} />
-          Add category
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={translateEmptyArabic}
+            disabled={translatingAll || creating || Boolean(savingId)}
+            className="inline-flex items-center gap-1.5 rounded-md bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700 disabled:opacity-60"
+          >
+            {translatingAll ? <Loader2 size={12} className="animate-spin" /> : <Languages size={12} />}
+            {translatingAll ? 'Translating...' : 'Translate Arabic'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setAdding((open) => !open)}
+            className="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
+          >
+            <Plus size={12} />
+            Add category
+          </button>
+        </div>
       </div>
       {adding ? (
         <div className="mt-4 grid gap-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 sm:grid-cols-[112px_minmax(0,1fr)]">
@@ -339,7 +460,18 @@ export default function CategorySliderImagesEditor() {
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-xs font-medium text-slate-600">Arabic name</span>
+              <span className="mb-1 flex items-center justify-between gap-2 text-xs font-medium text-slate-600">
+                Arabic name
+                <button
+                  type="button"
+                  onClick={translateNewCategory}
+                  disabled={creating || translatingAll || translatingId === 'new' || !newDraft.name.trim()}
+                  className="inline-flex items-center gap-1 rounded-md bg-violet-600 px-2 py-0.5 text-[11px] font-semibold text-white hover:bg-violet-700 disabled:opacity-60"
+                >
+                  {translatingId === 'new' ? <Loader2 size={11} className="animate-spin" /> : <Languages size={11} />}
+                  Translate
+                </button>
+              </span>
               <input
                 dir="rtl"
                 className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm"
@@ -426,7 +558,18 @@ export default function CategorySliderImagesEditor() {
                     />
                   </label>
                   <label className="block">
-                    <span className="mb-1 block text-xs font-medium text-slate-600">Arabic name</span>
+                    <span className="mb-1 flex items-center justify-between gap-2 text-xs font-medium text-slate-600">
+                      Arabic name
+                      <button
+                        type="button"
+                        onClick={() => translateCard(card)}
+                        disabled={busy || translatingAll || translatingId === card.id || !String(draft.name || '').trim()}
+                        className="inline-flex items-center gap-1 rounded-md bg-violet-600 px-2 py-0.5 text-[11px] font-semibold text-white hover:bg-violet-700 disabled:opacity-60"
+                      >
+                        {translatingId === card.id ? <Loader2 size={11} className="animate-spin" /> : <Languages size={11} />}
+                        Translate
+                      </button>
+                    </span>
                     <input
                       dir="rtl"
                       className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm"

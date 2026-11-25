@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const STOREFRONT_CACHE_HEADERS = {
-  'Cache-Control': 'public, max-age=120, s-maxage=120, stale-while-revalidate=300',
+  'Cache-Control': 'private, no-store, no-cache, must-revalidate, max-age=0',
 };
 
 export async function GET() {

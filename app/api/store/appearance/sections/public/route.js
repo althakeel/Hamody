@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
+import Store from '@/models/Store'
 import StorePreference from '@/models/StorePreference'
+import { resolveStorefrontOwnerId } from '@/lib/storefrontSettingsOwner'
 import { getCachedData, setCachedData } from '@/lib/cache'
 import { DEFAULT_FAST_DELIVERY_PAGE, normalizeFastDeliveryPage } from '@/lib/fastDeliveryPageSettings'
 import { DEFAULT_OFFERS_PAGE, normalizeOffersPage } from '@/lib/offersPageSettings'
@@ -235,25 +237,30 @@ export async function GET() {
     if (cached) {
       return NextResponse.json(cached, {
         headers: {
-          'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
+          'Cache-Control': 'no-store',
           'X-Cache': 'HIT',
         },
       })
     }
 
     await connectDB()
-    const preference = await StorePreference.findOne({})
-      .sort({ updatedAt: -1 })
-      .select('appearanceSections updatedAt')
-      .lean()
+    const ownerId = await resolveStorefrontOwnerId('')
+    const store = ownerId
+      ? await Store.findOne({ userId: ownerId, status: { $ne: 'rejected' } }).select('_id').lean()
+      : null
+    const preference = store
+      ? await StorePreference.findOne({ storeId: store._id })
+        .select('appearanceSections updatedAt')
+        .lean()
+      : null
 
     const payload = normalizePublic(preference?.appearanceSections || DEFAULT_APPEARANCE)
     setCachedData(APPEARANCE_CACHE_KEY, payload, 120)
 
     return NextResponse.json(payload, {
       headers: {
-        'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
-        'X-Cache': 'MISS',
+          'Cache-Control': 'no-store',
+          'X-Cache': 'MISS',
       },
     })
   } catch (error) {

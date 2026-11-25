@@ -20,7 +20,7 @@ async function getStoreIdFromRequest(request) {
 
   const idToken = authHeader.replace('Bearer ', '');
   const decodedToken = await getAuth().verifyIdToken(idToken);
-  return authSeller(decodedToken.uid);
+  return authSeller(decodedToken.uid, decodedToken.email || '');
 }
 
 function normalizeBrandLabel(value = '') {

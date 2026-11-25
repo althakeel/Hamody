@@ -202,7 +202,7 @@ const Footer = () => {
             title={method.label}
         >
             <img
-                src={method.image}
+                src={readableUploadUrl(method.image) || method.image}
                 alt={method.label || 'Payment'}
                 className={imageClass}
             />

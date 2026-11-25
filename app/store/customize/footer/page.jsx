@@ -10,6 +10,18 @@ import { readableUploadUrl } from '@/lib/readableUploadUrl'
 import { HAMODY_LOGO_PATH } from '@/lib/brandLogo'
 
 const inputClass = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900'
+
+function paymentMarkSrc(url) {
+  const raw = String(url || '').trim()
+  if (!raw) return ''
+  const readable = readableUploadUrl(raw) || raw
+  if (readable.startsWith('/') || /^https?:\/\//i.test(readable)) return readable
+  return ''
+}
+
+function paymentMethodList(list) {
+  return Array.isArray(list) ? list.filter((item) => item && typeof item === 'object') : []
+}
 const PAYMENT_LABELS = {
   visa: 'Visa',
   mastercard: 'Mastercard',
@@ -74,9 +86,8 @@ export default function FooterCustomizePage() {
           width: Number(logo.footerLogoWidth) > 0 ? Number(logo.footerLogoWidth) : 160,
           height: Number(logo.footerLogoHeight) > 0 ? Number(logo.footerLogoHeight) : 48,
         })
-      } catch (error) {
+      } catch {
         toast.error('Failed to load footer settings')
-        console.error(error)
       } finally {
         if (mounted) setLoading(false)
       }
@@ -90,7 +101,7 @@ export default function FooterCustomizePage() {
   const save = async () => {
     try {
       setSaving(true)
-      const missingImage = form.paymentMethods.some((item) => (
+      const missingImage = paymentMethodList(form.paymentMethods).some((item) => (
         !FOOTER_PAYMENT_METHOD_IDS.includes(item.id) && !String(item.image || '').trim()
       ))
       if (missingImage) {
@@ -111,9 +122,8 @@ export default function FooterCustomizePage() {
       }, { headers })
       setForm(footer)
       toast.success('Footer saved')
-    } catch (error) {
+    } catch {
       toast.error('Could not save the footer')
-      console.error(error)
     } finally {
       setSaving(false)
     }
@@ -122,7 +132,7 @@ export default function FooterCustomizePage() {
   const updatePaymentMethod = (id, patch) => {
     setForm((prev) => ({
       ...prev,
-      paymentMethods: prev.paymentMethods.map((item) => (
+      paymentMethods: paymentMethodList(prev.paymentMethods).map((item) => (
         item.id === id ? { ...item, ...patch } : item
       )),
     }))
@@ -130,13 +140,14 @@ export default function FooterCustomizePage() {
 
   const addPaymentMethod = () => {
     setForm((prev) => {
-      const extraCount = prev.paymentMethods.filter((item) => !FOOTER_PAYMENT_METHOD_IDS.includes(item.id)).length
+      const methods = paymentMethodList(prev.paymentMethods)
+      const extraCount = methods.filter((item) => !FOOTER_PAYMENT_METHOD_IDS.includes(item.id)).length
       if (extraCount >= 12) return prev
       const id = `custom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
       return {
         ...prev,
         paymentMethods: [
-          ...prev.paymentMethods,
+          ...methods,
           { id, label: '', image: '', enabled: true },
         ],
       }
@@ -146,7 +157,7 @@ export default function FooterCustomizePage() {
   const removePaymentMethod = (id) => {
     setForm((prev) => ({
       ...prev,
-      paymentMethods: prev.paymentMethods.filter((item) => item.id !== id),
+      paymentMethods: paymentMethodList(prev.paymentMethods).filter((item) => item.id !== id),
     }))
   }
 
@@ -201,7 +212,7 @@ export default function FooterCustomizePage() {
       const { data } = await axios.post('/api/store/upload-image', formData, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      const url = String(data?.url || '').trim()
+      const url = paymentMarkSrc(data?.url)
       if (!url) throw new Error('Upload returned no URL')
       updatePaymentMethod(id, { image: url })
       toast.success('Image uploaded. Save the footer to publish it.')
@@ -393,17 +404,17 @@ export default function FooterCustomizePage() {
           <button
             type="button"
             onClick={addPaymentMethod}
-            disabled={form.paymentMethods.filter((item) => !FOOTER_PAYMENT_METHOD_IDS.includes(item.id)).length >= 12}
+            disabled={paymentMethodList(form.paymentMethods).filter((item) => !FOOTER_PAYMENT_METHOD_IDS.includes(item.id)).length >= 12}
             className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
           >
             <Plus size={14} /> Add payment mark
           </button>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid min-w-0 gap-3 sm:grid-cols-2">
           {FOOTER_PAYMENT_METHOD_IDS.map((id) => {
-            const method = form.paymentMethods.find((item) => item.id === id)
+            const method = paymentMethodList(form.paymentMethods).find((item) => item.id === id)
             const fallback = DEFAULT_PAYMENT_MARKS.find((item) => item.id === id)
-            const image = method?.image || fallback?.image || ''
+            const image = paymentMarkSrc(method?.image || fallback?.image || '')
             const enabled = method?.enabled !== false
             const isDefaultImage = image === fallback?.image
             const uploading = uploadingPaymentId === id
@@ -455,25 +466,26 @@ export default function FooterCustomizePage() {
               </div>
             )
           })}
-          {form.paymentMethods
-            .filter((item) => !FOOTER_PAYMENT_METHOD_IDS.includes(item.id))
+          {paymentMethodList(form.paymentMethods)
+            .filter((item) => item.id && !FOOTER_PAYMENT_METHOD_IDS.includes(item.id))
             .map((method) => {
               const uploading = uploadingPaymentId === method.id
+              const image = paymentMarkSrc(method.image)
               return (
-                <div key={method.id} className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
-                  <div className="flex h-14 w-24 shrink-0 items-center justify-center rounded-md bg-black px-2">
-                    {method.image ? (
-                      <img src={method.image} alt={method.label || 'Payment'} className="h-9 w-auto max-w-full object-contain" />
+                <div key={method.id} className="flex min-w-0 items-center gap-3 overflow-hidden rounded-lg border border-slate-200 p-3">
+                  <div className="flex h-14 w-24 shrink-0 items-center justify-center overflow-hidden rounded-md bg-black px-2">
+                    {image ? (
+                      <img src={image} alt={method.label || 'Payment'} className="h-9 w-full object-contain" />
                     ) : (
                       <span className="text-[10px] text-slate-400">No image</span>
                     )}
                   </div>
                   <div className="min-w-0 flex-1 space-y-2">
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center justify-between gap-2">
                       <input
                         value={method.label || ''}
                         onChange={(event) => updatePaymentMethod(method.id, { label: event.target.value })}
-                        className={inputClass}
+                        className={`${inputClass} min-w-0`}
                         placeholder="Name, for example Apple Pay"
                       />
                       <label className="inline-flex shrink-0 items-center gap-2 text-xs text-slate-600">
@@ -491,7 +503,7 @@ export default function FooterCustomizePage() {
                         <input
                           type="file"
                           accept="image/*"
-                          className="sr-only"
+                          className="hidden"
                           disabled={uploading}
                           onChange={(event) => {
                             const file = event.target.files?.[0]
@@ -520,7 +532,7 @@ export default function FooterCustomizePage() {
           <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Link columns</h2>
           <button
             type="button"
-            disabled={form.columns.length >= 6}
+            disabled={!Array.isArray(form.columns) || form.columns.length >= 6}
             onClick={() => setForm((prev) => ({
               ...prev,
               columns: [...prev.columns, { title: 'New column', titleAr: '', enabled: true, links: [{ label: 'Link', labelAr: '', href: '/', enabled: true, requiresAuth: false }] }],
@@ -530,7 +542,7 @@ export default function FooterCustomizePage() {
             <Plus size={14} /> Add column
           </button>
         </div>
-        {form.columns.map((column, columnIndex) => (
+        {(Array.isArray(form.columns) ? form.columns : []).map((column, columnIndex) => (
           <div key={`column-${columnIndex}`} className="space-y-3 rounded-lg border border-slate-200 p-3">
             <div className="flex flex-wrap items-center gap-2">
               <label className="inline-flex items-center gap-2 text-sm text-slate-700">
@@ -555,7 +567,7 @@ export default function FooterCustomizePage() {
               <input value={column.title} onChange={(event) => updateColumn(columnIndex, { title: event.target.value })} className={inputClass} placeholder="Column title" />
               <input value={column.titleAr} dir="rtl" onChange={(event) => updateColumn(columnIndex, { titleAr: event.target.value })} className={inputClass} placeholder="العنوان بالعربي" />
             </div>
-            {column.links.map((link, linkIndex) => (
+            {(Array.isArray(column.links) ? column.links : []).map((link, linkIndex) => (
               <div key={`link-${columnIndex}-${linkIndex}`} className="grid gap-2 rounded-lg bg-slate-50 p-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
                 <input value={link.label} onChange={(event) => updateLink(columnIndex, linkIndex, { label: event.target.value })} className={inputClass} placeholder="Link label" />
                 <input value={link.labelAr} dir="rtl" onChange={(event) => updateLink(columnIndex, linkIndex, { labelAr: event.target.value })} className={inputClass} placeholder="الاسم بالعربي" />
@@ -578,7 +590,7 @@ export default function FooterCustomizePage() {
             ))}
             <button
               type="button"
-              disabled={column.links.length >= 12}
+              disabled={!Array.isArray(column.links) || column.links.length >= 12}
               onClick={() => updateColumn(columnIndex, { links: [...column.links, { label: '', labelAr: '', href: '/', enabled: true, requiresAuth: false }] })}
               className="text-xs font-semibold text-slate-700 hover:underline disabled:opacity-50"
             >
@@ -590,7 +602,7 @@ export default function FooterCustomizePage() {
 
       <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
         <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Social links</h2>
-        {form.socialLinks.map((item) => (
+        {(Array.isArray(form.socialLinks) ? form.socialLinks : []).map((item) => (
           <div key={item.id} className="grid items-center gap-2 sm:grid-cols-[8rem_1fr_auto]">
             <span className="text-sm font-medium capitalize text-slate-700">{item.id}</span>
             <input

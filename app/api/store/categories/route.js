@@ -19,11 +19,10 @@ export async function GET(req) {
         const isStoreDashboardRequest = Boolean(req.headers.get('authorization')?.startsWith('Bearer '));
         const cached = !isStoreDashboardRequest ? getCachedData(cacheKey) : null;
         if (cached) {
-            const isDev = process.env.NODE_ENV !== 'production';
             return NextResponse.json(cached, {
                 status: 200,
                 headers: {
-                    'Cache-Control': isDev ? 'no-store' : 'public, s-maxage=300, stale-while-revalidate=900',
+                    'Cache-Control': 'no-store',
                     'X-Cache': 'HIT',
                 },
             });
@@ -68,11 +67,10 @@ export async function GET(req) {
             setCachedData(cacheKey, payload, 300);
         }
 
-        const isDev = process.env.NODE_ENV !== 'production';
         return NextResponse.json(payload, {
             status: 200,
             headers: {
-                'Cache-Control': isDev ? 'no-store' : 'public, s-maxage=300, stale-while-revalidate=900',
+                'Cache-Control': 'no-store',
                 'X-Cache': 'MISS',
             },
         });

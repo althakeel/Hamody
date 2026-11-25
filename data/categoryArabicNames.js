@@ -185,6 +185,9 @@ export const CATEGORY_ARABIC_BY_SLUG = {
   'pipes-fittings': 'أنابيب ووصلات',
 
   'pets-pet-supplies': 'حيوانات أليفة',
+  'pet-food-and-supplies': 'طعام ومستلزمات الحيوانات',
+  'pet-food-supplies': 'طعام ومستلزمات الحيوانات',
+  'pet-food': 'طعام ومستلزمات الحيوانات',
   'dog-supplies': 'مستلزمات الكلاب',
   'dog-food': 'طعام الكلاب',
   'dog-accessories': 'إكسسوارات الكلاب',

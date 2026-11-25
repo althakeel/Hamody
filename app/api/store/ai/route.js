@@ -8,40 +8,10 @@ import {
 } from '@/lib/aiProviderErrors';
 import { getProductAiRuntimeConfig } from '@/lib/productAiConfig';
 import { runInProductAiQueue } from '@/lib/aiRequestQueue';
+import { loadProductImageForAi } from '@/lib/loadProductImageForAi';
 import { NextResponse } from "next/server";
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
-
-async function loadImageFromUrl(imageUrl) {
-    const url = String(imageUrl || '').trim();
-    if (!/^https?:\/\//i.test(url)) {
-        throw new Error('Invalid image URL');
-    }
-
-    const response = await fetch(url, { signal: AbortSignal.timeout(20000) });
-    if (!response.ok) {
-        throw new Error(`Could not load product image (${response.status})`);
-    }
-
-    const buffer = Buffer.from(await response.arrayBuffer());
-    if (buffer.length > MAX_IMAGE_BYTES) {
-        throw new Error('Image is too large for AI autofill. Use an image under 8MB.');
-    }
-
-    const mimeType = String(response.headers.get('content-type') || 'image/jpeg')
-        .split(';')[0]
-        .trim()
-        .toLowerCase();
-
-    if (!mimeType.startsWith('image/')) {
-        throw new Error('The selected media URL is not an image.');
-    }
-
-    return {
-        base64Image: buffer.toString('base64'),
-        mimeType,
-    };
-}
 
 function normalizeBase64Input(base64Image, mimeType) {
     const normalizedMime = String(mimeType || 'image/jpeg').split(';')[0].trim().toLowerCase();
@@ -103,7 +73,7 @@ export async function POST(request) {
 
         let resolvedImage;
         if (imageUrl) {
-            resolvedImage = await loadImageFromUrl(imageUrl);
+            resolvedImage = await loadProductImageForAi(imageUrl);
         } else if (base64Image && mimeType) {
             resolvedImage = normalizeBase64Input(base64Image, mimeType);
         } else {

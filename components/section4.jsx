@@ -30,7 +30,7 @@ const Section4 = ({ sections: initialSections = null, loading: loadingProp = fal
   useEffect(() => {
     let cancelled = false
 
-    fetch('/api/public/featured-sections')
+    fetch(`/api/public/featured-sections?fresh=${Date.now()}`, { cache: 'no-store' })
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => {
         if (cancelled || !data) return
@@ -157,7 +157,8 @@ const HorizontalSlider = ({ section, priority = false }) => {
       try {
         const response = await fetch('/api/products/batch', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          cache: 'no-store',
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
           body: JSON.stringify({ productIds: cappedProductIds }),
         })
 
