@@ -6,8 +6,8 @@ import { useAuth } from '@/lib/useAuth';
 import axios from 'axios';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
-import ProductCarousel from '@/components/ProductCarousel';
-import { HomeProductCarouselSkeleton } from '@/components/home/HomeSectionSkeletons';
+import ProductCard from '@/components/ProductCard';
+import { HomeProductGridSkeleton } from '@/components/home/HomeSectionSkeletons';
 import {
   HOME_SECTION_CAROUSEL_INNER_CLASS,
   HOME_SECTION_CLASS,
@@ -15,11 +15,24 @@ import {
   HOME_SECTION_HEADING_CLASS,
   HOME_SECTION_HEADER_CLASS,
   HOME_SECTION_SUBTITLE_CLASS,
+  PRODUCT_CARD_GRID_CLASS,
 } from '@/lib/storefrontCarousel';
 import { useMemo } from 'react';
 import { filterStorefrontInStockProducts } from '@/lib/productVisibility';
 
-export default function RecommendedProducts() {
+const RECOMMENDED_COLUMNS = 6;
+const RECOMMENDED_ROWS = 3;
+const RECOMMENDED_COUNT = RECOMMENDED_COLUMNS * RECOMMENDED_ROWS;
+
+function recommendedCardClass(index) {
+  if (index >= RECOMMENDED_COUNT) return 'hidden';
+  if (index >= 12) return 'hidden lg:block';
+  if (index >= 9) return 'hidden md:block';
+  if (index >= 6) return 'hidden sm:block';
+  return '';
+}
+
+export default function RecommendedProducts({ initialProducts = [] }) {
   const products = useSelector(state => state.product.list);
   const { user, getToken } = useAuth();
   const [viewedProducts, setViewedProducts] = useState([]);
@@ -27,8 +40,9 @@ export default function RecommendedProducts() {
   const [isNewCustomer, setIsNewCustomer] = useState(true);
   const [sectionEnabled, setSectionEnabled] = useState(true);
   const [manualRecommendedIds, setManualRecommendedIds] = useState([]);
-  const [manualRecommendedProducts, setManualRecommendedProducts] = useState([]);
-  const [settingsLoading, setSettingsLoading] = useState(true);
+  const seededProducts = filterStorefrontInStockProducts(initialProducts).slice(0, RECOMMENDED_COUNT);
+  const [manualRecommendedProducts, setManualRecommendedProducts] = useState(seededProducts);
+  const [settingsReady, setSettingsReady] = useState(false);
   const [batchLoading, setBatchLoading] = useState(false);
 
   const fallbackManualProducts = useMemo(() => {
@@ -41,7 +55,7 @@ export default function RecommendedProducts() {
       manualRecommendedIds
         .map((id) => productMap.get(String(id || '').trim()))
         .filter(Boolean)
-    ).slice(0, 10);
+    ).slice(0, RECOMMENDED_COUNT);
   }, [manualRecommendedIds, products]);
 
   useEffect(() => {
@@ -49,35 +63,18 @@ export default function RecommendedProducts() {
 
     const fetchManualRecommendations = async () => {
       try {
-        let privateResponse = null;
-        let publicResponse = null;
-
-        if (user?.uid) {
-          const token = await getToken().catch(() => null);
-          if (token) {
-            privateResponse = await axios.get('/api/store/explore-interests', {
-              params: { t: Date.now() },
-              headers: { Authorization: `Bearer ${token}` },
-              timeout: 7000
-            }).catch(() => null);
-          }
-        }
-
-        publicResponse = await axios.get('/api/store/explore-interests/public', {
+        const publicResponse = await axios.get('/api/store/explore-interests/public', {
           params: { t: Date.now() },
-          timeout: 7000
-        }).catch(() => null);
+          timeout: 7000,
+          headers: { 'Cache-Control': 'no-cache' },
+        });
 
         if (!isMounted) return;
 
-        const privateCount = Array.isArray(privateResponse?.data?.productIds) ? privateResponse.data.productIds.length : 0;
-        const publicCount = Array.isArray(publicResponse?.data?.productIds) ? publicResponse.data.productIds.length : 0;
-        const chosen = privateCount >= publicCount ? (privateResponse || publicResponse) : (publicResponse || privateResponse);
-
-        const ids = Array.isArray(chosen?.data?.productIds)
-          ? chosen.data.productIds.map((id) => String(id || '').trim()).filter(Boolean)
+        const ids = Array.isArray(publicResponse?.data?.productIds)
+          ? publicResponse.data.productIds.map((id) => String(id || '').trim()).filter(Boolean).slice(0, RECOMMENDED_COUNT)
           : [];
-        setSectionEnabled(chosen?.data?.enabled !== false);
+        setSectionEnabled(publicResponse?.data?.enabled !== false);
         setManualRecommendedIds(ids);
       } catch {
         if (isMounted) {
@@ -85,7 +82,7 @@ export default function RecommendedProducts() {
         }
       } finally {
         if (isMounted) {
-          setSettingsLoading(false);
+          setSettingsReady(true);
         }
       }
     };
@@ -101,6 +98,8 @@ export default function RecommendedProducts() {
     let isMounted = true;
 
     const fetchManualProducts = async () => {
+      if (!settingsReady) return;
+
       if (!Array.isArray(manualRecommendedIds) || manualRecommendedIds.length === 0) {
         setManualRecommendedProducts([]);
         setBatchLoading(false);
@@ -110,15 +109,18 @@ export default function RecommendedProducts() {
       setBatchLoading(true);
       try {
         const response = await axios.post('/api/products/batch', {
-          productIds: manualRecommendedIds,
+          productIds: manualRecommendedIds.slice(0, RECOMMENDED_COUNT),
         }, {
           timeout: 7000,
         });
 
         if (!isMounted) return;
-        setManualRecommendedProducts(
-          filterStorefrontInStockProducts(Array.isArray(response?.data?.products) ? response.data.products : []).slice(0, 10)
-        );
+        const order = new Map(manualRecommendedIds.map((id, index) => [String(id), index]));
+        const loaded = filterStorefrontInStockProducts(Array.isArray(response?.data?.products) ? response.data.products : [])
+          .slice()
+          .sort((a, b) => (order.get(String(a?._id || a?.id || '')) ?? 99) - (order.get(String(b?._id || b?.id || '')) ?? 99))
+          .slice(0, RECOMMENDED_COUNT);
+        setManualRecommendedProducts(loaded);
       } catch {
         if (isMounted) {
           setManualRecommendedProducts([]);
@@ -135,7 +137,7 @@ export default function RecommendedProducts() {
     return () => {
       isMounted = false;
     };
-  }, [manualRecommendedIds]);
+  }, [manualRecommendedIds, settingsReady]);
 
   useEffect(() => {
     const fetchRecentlyViewed = async () => {
@@ -224,7 +226,7 @@ export default function RecommendedProducts() {
             const notViewed = !viewedIds.has(product._id || product.id);
             return categoryMatch && notViewed;
           })
-          .slice(0, 10);
+          .slice(0, RECOMMENDED_COUNT);
 
         setRecommendedProducts(recommended);
       }
@@ -235,10 +237,9 @@ export default function RecommendedProducts() {
 
   const productsToRender = manualRecommendedProducts.length > 0 ? manualRecommendedProducts : fallbackManualProducts;
   const hasManualRecommendations = productsToRender.length > 0;
-  const isLoading = settingsLoading || batchLoading;
 
-  if (isLoading) {
-    return <HomeProductCarouselSkeleton count={6} />;
+  if (batchLoading && productsToRender.length === 0) {
+    return <HomeProductGridSkeleton count={RECOMMENDED_COUNT} />;
   }
 
   if (!sectionEnabled || !hasManualRecommendations || productsToRender.length === 0) {
@@ -252,7 +253,7 @@ export default function RecommendedProducts() {
           <div>
             <span className={`${HOME_SECTION_EYEBROW_CLASS} text-blue-600`}>Personalized</span>
             <h2 className={HOME_SECTION_HEADING_CLASS}>Recommended for You</h2>
-            <p className={`${HOME_SECTION_SUBTITLE_CLASS} max-lg:hidden`}>Curated manually from store settings</p>
+            <p className={`${HOME_SECTION_SUBTITLE_CLASS} max-lg:hidden`}>Chosen in Explore Your Interests</p>
           </div>
           <Link
             href="/recommended"
@@ -263,7 +264,13 @@ export default function RecommendedProducts() {
           </Link>
         </div>
 
-        <ProductCarousel products={productsToRender} priorityCount={4} compactBottom />
+        <div className={PRODUCT_CARD_GRID_CLASS}>
+          {productsToRender.slice(0, RECOMMENDED_COUNT).map((product, index) => (
+            <div key={product._id || product.id || index} className={recommendedCardClass(index)}>
+              <ProductCard product={product} priorityImages={index < RECOMMENDED_COLUMNS} />
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import connectDB from '@/lib/mongodb'
 import Store from '@/models/Store'
 import authSeller from '@/middlewares/authSeller'
@@ -7,13 +8,13 @@ import { getAuth } from '@/lib/firebase-admin'
 
 export const dynamic = 'force-dynamic'
 
-async function getUserIdFromRequest(request) {
+async function getSellerFromRequest(request) {
   const authHeader = request.headers.get('authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) return null
   const idToken = authHeader.split(' ')[1]
   try {
     const decoded = await getAuth().verifyIdToken(idToken)
-    return decoded.uid
+    return { uid: decoded.uid, email: decoded.email || '' }
   } catch {
     return null
   }
@@ -35,9 +36,9 @@ function normalizeCategoryIds(arr) {
 
 export async function GET(request) {
   try {
-    const userId = await getUserIdFromRequest(request)
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const storeId = await authSeller(userId)
+    const seller = await getSellerFromRequest(request)
+    if (!seller?.uid) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const storeId = await authSeller(seller.uid, seller.email)
     if (!storeId) return NextResponse.json({ error: 'Not authorized' }, { status: 401 })
 
     await connectDB()
@@ -58,9 +59,9 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const userId = await getUserIdFromRequest(request)
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const storeId = await authSeller(userId)
+    const seller = await getSellerFromRequest(request)
+    if (!seller?.uid) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const storeId = await authSeller(seller.uid, seller.email)
     if (!storeId) return NextResponse.json({ error: 'Not authorized' }, { status: 401 })
 
     const body = await request.json()
@@ -80,6 +81,13 @@ export async function POST(request) {
     )
 
     invalidateCachePattern('public:explore-interests')
+    invalidateCachePattern('server:homepage')
+    try {
+      revalidatePath('/')
+      revalidateTag('homepage', 'max')
+    } catch {
+      // Safe when called outside a Next.js request context.
+    }
 
     return NextResponse.json({
       message: 'Saved',

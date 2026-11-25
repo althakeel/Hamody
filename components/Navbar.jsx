@@ -52,8 +52,8 @@ import {
   buildCategoryShopLink,
 } from '@/lib/categoryNavigation';
 import { getProductThumbnailUrl } from '@/lib/productMedia';
-import { getProductPath } from '@/lib/productUrl';
 import NewProductTagBadge from '@/components/NewProductTagBadge';
+import { getProductPath } from '@/lib/productUrl';
 import { secureSignOut } from '@/lib/authClient';
 import { showStorefrontActionToast } from '@/lib/storefrontActionToast';
 import { DEFAULT_NAVBAR_LAYOUT, applyUnifiedNavbarText, getNavbarCategoriesButtonAppearance, getNavbarCategoriesButtonLabel, getNavbarSearchAppearance, getUnifiedNavbarFontId, getUnifiedNavbarTextCss, isNavbarItemVisible, normalizeNavbarItemOrder, normalizeNavbarLayout, visibleNavbarExtraButtons } from '@/lib/navbarLayoutSettings';

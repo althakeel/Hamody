@@ -5,7 +5,7 @@ import { getCachedData, setCachedData } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
-const CACHE_KEY = 'public:explore-interests:v2'
+const CACHE_KEY = 'public:explore-interests:v3-approved-store'
 const CACHE_TTL = 120
 
 function normalizeIds(arr) {
@@ -28,7 +28,7 @@ export async function GET() {
     if (cached) {
       return NextResponse.json(cached, {
         headers: {
-          'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
+          'Cache-Control': 'private, no-store, no-cache, must-revalidate, max-age=0',
           'X-Cache': 'HIT',
         },
       })
@@ -36,21 +36,10 @@ export async function GET() {
 
     await connectDB()
 
-    // Prefer a store that already has explore selections saved; fall back to the first store.
-    let store = await Store.findOne({
-      $or: [
-        { 'exploreInterestsProductIds.0': { $exists: true } },
-        { 'exploreInterestsCategoryIds.0': { $exists: true } },
-      ],
-    })
+    const store = await Store.findOne({ status: 'approved' })
+      .sort({ updatedAt: -1 })
       .select('_id exploreInterestsEnabled exploreInterestsProductIds exploreInterestsCategoryIds')
       .lean()
-
-    if (!store) {
-      store = await Store.findOne()
-        .select('_id exploreInterestsEnabled exploreInterestsProductIds exploreInterestsCategoryIds')
-        .lean()
-    }
 
     const productIds = normalizeIds(store?.exploreInterestsProductIds)
     const payload = {
@@ -64,7 +53,7 @@ export async function GET() {
 
     return NextResponse.json(payload, {
       headers: {
-        'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
+        'Cache-Control': 'private, no-store, no-cache, must-revalidate, max-age=0',
         'X-Cache': 'MISS',
       },
     })

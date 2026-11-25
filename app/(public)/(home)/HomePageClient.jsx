@@ -10,16 +10,18 @@ import {
   HomeBannerSkeleton,
   HomeCategoryRowSkeleton,
   HomeCategorySlidersSkeleton,
-  HomeProductCarouselSkeleton,
   HomeProductGridSkeleton,
 } from '@/components/home/HomeSectionSkeletons';
 
+import BannerSliderDirect from '@/components/BannerSlider';
 import HeroBannerSlider from '@/components/HeroBannerSlider';
 import ShopShowcaseSection from '@/components/ShopShowcaseSection';
 import FeaturedProductsSection from '@/components/LatestProducts';
 import SectionReveal from '@/components/SectionReveal';
 import Section3 from '@/components/section3';
 import CategoryInterestSection from '@/components/CategoryInterestSection';
+import RecommendedProducts from '@/components/RecommendedProducts';
+import BrandsBannerProducts from '@/components/BrandsBannerProducts';
 const Section4 = dynamic(() => import('@/components/section4'), {
   ssr: false,
   loading: () => <HomeCategorySlidersSkeleton />,
@@ -39,10 +41,6 @@ const HomeCategories = dynamic(() => import('@/components/HomeCategories'), {
 const RecentSearchProducts = dynamic(() => import('@/components/RecentSearchProducts'), {
   ssr: false,
   loading: () => <HomeProductGridSkeleton count={5} />,
-});
-const RecommendedProducts = dynamic(() => import('@/components/RecommendedProducts'), {
-  ssr: false,
-  loading: () => <HomeProductCarouselSkeleton count={5} />,
 });
 
 export default function HomePageClient({ initialData }) {
@@ -113,6 +111,17 @@ export default function HomePageClient({ initialData }) {
             sectionDescriptionAr={featuredProducts?.sectionDescriptionAr || ''}
           />
         </SectionReveal>
+        {(shopShowcaseConfig?.brandsBannerHidden !== true
+          && (shopShowcaseConfig?.brandsBannerItems || []).some((item) => hasShowcaseBannerImage(item))) ? (
+          <BannerSliderDirect variant="brands" config={shopShowcaseConfig} />
+        ) : null}
+        {shopShowcaseConfig?.brandsBannerHidden !== true ? (
+          <BrandsBannerProducts
+            products={shopShowcase?.brandsBannerProducts || []}
+            title={shopShowcaseConfig?.brandsBannerProductsTitle || ''}
+            titleAr={shopShowcaseConfig?.brandsBannerProductsTitleAr || ''}
+          />
+        ) : null}
         <SectionReveal>
           <CategoryInterestSection />
         </SectionReveal>
@@ -149,7 +158,7 @@ export default function HomePageClient({ initialData }) {
           <RecentSearchProducts />
         </SectionReveal>
         <SectionReveal>
-          <RecommendedProducts />
+          <RecommendedProducts initialProducts={initialData?.recommendedProducts || []} />
         </SectionReveal>
       </div>
     </div>

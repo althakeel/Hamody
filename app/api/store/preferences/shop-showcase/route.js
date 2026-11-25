@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import mongoose from 'mongoose'
 import connectDB from '@/lib/mongodb'
 import StorePreference from '@/models/StorePreference'
@@ -25,6 +25,7 @@ function invalidateShopShowcaseCaches() {
 
   try {
     revalidatePath('/')
+    revalidateTag('homepage', 'max')
   } catch {
     // Safe when called outside a Next.js request context.
   }
@@ -145,7 +146,26 @@ const DEFAULT_SHOWCASE = {
     { id: 'secondary-banner-slider-1', image: '', link: '/shop', alt: 'Lower Banner 1' },
     { id: 'secondary-banner-slider-2', image: '', link: '/shop', alt: 'Lower Banner 2' }
   ],
+  brandsBannerEnabled: false,
+  brandsBannerHidden: false,
+  brandsBannerDesktopInterval: 4000,
+  brandsBannerMobileInterval: 3000,
+  brandsBannerDesktopHeight: 220,
+  brandsBannerMobileHeight: 120,
+  brandsBannerItems: [],
+  brandsBannerCategoryIds: [],
+  brandsBannerProductIds: [],
+  brandsBannerProductsTitle: '',
+  brandsBannerProductsTitleAr: '',
   referralRewardCoins: 25
+}
+
+function normalizeIdList(value, limit = 18) {
+  return Array.from(new Set(
+    (Array.isArray(value) ? value : [])
+      .map((id) => String(id || '').trim())
+      .filter((id) => /^[a-fA-F0-9]{24}$/.test(id))
+  )).slice(0, limit)
 }
 
 function normalizeBannerSliderHeight(value, fallback) {
@@ -190,6 +210,21 @@ function normalizeSecondaryBannerSliderItems(items) {
     }))
 
   return normalized.length ? normalized : DEFAULT_SHOWCASE.secondaryBannerSliderItems
+}
+
+function normalizeBrandsBannerItems(items) {
+  if (!Array.isArray(items)) return []
+
+  return items
+    .slice(0, 6)
+    .map((item, index) => ({
+      id: (item?.id || `brands-banner-${index + 1}`).toString().trim(),
+      ...serializeShowcaseImageFields(item),
+      link: normalizeShowcaseLinkType(item?.linkType) === 'none' ? '' : (item?.link || '').toString().trim(),
+      linkType: normalizeShowcaseLinkType(item?.linkType),
+      targetBlank: Boolean(item?.targetBlank),
+      alt: (item?.alt || `Banner ${index + 1}`).toString().trim(),
+    }))
 }
 
 function normalizeProductBanners(items) {
@@ -335,6 +370,17 @@ function normalizeShopShowcase(data = {}) {
     secondaryBannerSliderMobileHeight: normalizeBannerSliderHeight(data.secondaryBannerSliderMobileHeight, DEFAULT_SHOWCASE.secondaryBannerSliderMobileHeight),
     secondaryBannerSliderPlacement: normalizeSecondaryBannerSliderPlacement(data.secondaryBannerSliderPlacement),
     secondaryBannerSliderItems: normalizeSecondaryBannerSliderItems(data.secondaryBannerSliderItems),
+    brandsBannerEnabled: data.brandsBannerEnabled === true,
+    brandsBannerHidden: data.brandsBannerHidden === true,
+    brandsBannerDesktopInterval: Math.max(1500, Number(data.brandsBannerDesktopInterval) || DEFAULT_SHOWCASE.brandsBannerDesktopInterval),
+    brandsBannerMobileInterval: Math.max(1500, Number(data.brandsBannerMobileInterval) || DEFAULT_SHOWCASE.brandsBannerMobileInterval),
+    brandsBannerDesktopHeight: normalizeBannerSliderHeight(data.brandsBannerDesktopHeight, DEFAULT_SHOWCASE.brandsBannerDesktopHeight),
+    brandsBannerMobileHeight: normalizeBannerSliderHeight(data.brandsBannerMobileHeight, DEFAULT_SHOWCASE.brandsBannerMobileHeight),
+    brandsBannerItems: normalizeBrandsBannerItems(data.brandsBannerItems),
+    brandsBannerCategoryIds: normalizeIdList(data.brandsBannerCategoryIds, 40),
+    brandsBannerProductIds: normalizeIdList(data.brandsBannerProductIds, 18),
+    brandsBannerProductsTitle: normalizeString(data.brandsBannerProductsTitle, '').slice(0, 80),
+    brandsBannerProductsTitleAr: normalizeString(data.brandsBannerProductsTitleAr, '').slice(0, 80),
     referralRewardCoins
   }
 }

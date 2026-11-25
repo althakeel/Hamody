@@ -22,12 +22,21 @@ const sliderFieldMap = {
     mobileInterval: 'secondaryBannerSliderMobileInterval',
     desktopHeight: 'secondaryBannerSliderDesktopHeight',
     mobileHeight: 'secondaryBannerSliderMobileHeight'
+  },
+  brands: {
+    enabled: 'brandsBannerEnabled',
+    items: 'brandsBannerItems',
+    desktopInterval: 'brandsBannerDesktopInterval',
+    mobileInterval: 'brandsBannerMobileInterval',
+    desktopHeight: 'brandsBannerDesktopHeight',
+    mobileHeight: 'brandsBannerMobileHeight'
   }
 };
 
 const DEFAULT_HEIGHTS = {
   primary: { desktop: 220, mobile: 120 },
   secondary: { desktop: 220, mobile: 120 },
+  brands: { desktop: 220, mobile: 120 },
 };
 
 const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, contained = false, config: configProp = null }) => {
@@ -45,7 +54,9 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
       return [];
     }
 
-    if (showcaseConfig?.[fieldMap.enabled] === false) {
+    if (variant === 'brands') {
+      if (showcaseConfig?.brandsBannerHidden === true) return [];
+    } else if (showcaseConfig?.[fieldMap.enabled] === false) {
       return [];
     }
 
@@ -61,7 +72,7 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
         return { ...item, sources };
       })
       .filter(Boolean);
-  }, [fieldMap.enabled, fieldMap.items, isArabic, isLoaded, showcaseConfig]);
+  }, [fieldMap.enabled, fieldMap.items, isArabic, isLoaded, showcaseConfig, variant]);
 
   useEffect(() => {
     if (configProp) {
@@ -155,12 +166,20 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
   const mobileHeight = Math.min(600, Math.max(80, Number(showcaseConfig?.[fieldMap.mobileHeight]) || defaultHeights.mobile));
   const isFullWidth = fullWidth;
   const defaultSpacing = '';
+  const slideAspectRatio = variant === 'secondary'
+    ? '1400 / 175'
+    : variant === 'brands'
+      ? '1600 / 500'
+      : '';
+  const useWideRatio = Boolean(slideAspectRatio);
   const wrapperClassName = `banner-slider relative w-full bg-transparent rounded-none m-0 p-0 ${defaultSpacing} ${
     contained ? 'banner-slider--horizontal' : ''
-  } ${
+  } ${variant === 'brands' ? 'banner-slider--ratio-16-5' : ''} ${variant === 'secondary' ? 'banner-slider--ratio-1400' : ''} ${
         contained || isFullWidth
       ? 'max-w-none px-0'
-      : 'max-w-[1400px] mx-auto px-4 sm:px-6'
+      : variant === 'secondary'
+        ? 'max-w-[1400px] mx-auto px-4 sm:px-6'
+        : 'max-w-[1400px] mx-auto px-4 sm:px-6'
   } ${className}`.trim();
 
   const viewportClassName = `banner-slider__viewport relative w-full overflow-hidden border-0 outline-none isolate touch-pan-y ${cursorClass}`.trim();
@@ -178,7 +197,10 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
         aria-hidden="true"
       >
         <div className={`${viewportClassName} animate-pulse bg-slate-100`}>
-          <div className="banner-slider__slide w-full bg-slate-100" />
+          <div
+            className="banner-slider__slide w-full bg-slate-100"
+            style={slideAspectRatio ? { height: 'auto', aspectRatio: slideAspectRatio } : undefined}
+          />
         </div>
         <style jsx>{`
           .banner-slider__slide {
@@ -201,6 +223,16 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
               height: auto;
               aspect-ratio: 1600 / 500;
             }
+          }
+
+          .banner-slider--ratio-16-5 .banner-slider__slide {
+            height: auto;
+            aspect-ratio: 1600 / 500;
+          }
+
+          .banner-slider--ratio-1400 .banner-slider__slide {
+            height: auto;
+            aspect-ratio: 1400 / 175;
           }
         `}</style>
       </div>
@@ -229,7 +261,9 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
                 key={`${banner.id || sources.desktop || banner.image || 'banner'}-${i}`}
                 onClick={() => handleClick(banner)}
                 className="banner-slider__slide relative shrink-0 grow-0 overflow-hidden"
-                style={{ width: `${slideWidthPercent}%` }}
+                style={useWideRatio
+                  ? { width: `${slideWidthPercent}%`, height: 'auto', aspectRatio: slideAspectRatio }
+                  : { width: `${slideWidthPercent}%`, height: 'var(--banner-slider-mobile-height, 120px)' }}
               >
                 {sources.mobile ? (
                   <Image
@@ -249,7 +283,7 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
                     fill
                     sizes="(max-width: 1024px) 100vw, 1100px"
                     draggable={false}
-                    className={`pointer-events-none hidden object-center md:block lg:hidden ${contained ? 'object-contain' : 'scale-[1.01] object-cover'}`}
+                    className={`pointer-events-none hidden object-center md:block lg:hidden ${contained ? 'object-contain' : useWideRatio ? 'object-cover' : 'scale-[1.01] object-cover'}`}
                     priority={i <= 1}
                   />
                 ) : null}
@@ -260,7 +294,7 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
                     fill
                     sizes="(max-width: 1400px) 100vw, 1400px"
                     draggable={false}
-                    className={`pointer-events-none hidden object-center lg:block ${contained ? 'object-contain' : 'scale-[1.01] object-cover'}`}
+                    className={`pointer-events-none hidden object-center lg:block ${contained ? 'object-contain' : useWideRatio ? 'object-cover' : 'scale-[1.01] object-cover'}`}
                     priority={i <= 1}
                   />
                 ) : null}
@@ -307,6 +341,16 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
             height: auto;
             aspect-ratio: 1600 / 500;
           }
+        }
+
+        .banner-slider--ratio-16-5 .banner-slider__slide {
+          height: auto;
+          aspect-ratio: 1600 / 500;
+        }
+
+        .banner-slider--ratio-1400 .banner-slider__slide {
+          height: auto;
+          aspect-ratio: 1400 / 175;
         }
       `}</style>
     </div>

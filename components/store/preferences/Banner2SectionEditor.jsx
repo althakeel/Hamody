@@ -43,12 +43,12 @@ function sanitizeImageFields(item = {}) {
 }
 
 const BANNER2_IMAGE_SIZES = {
-  image: { width: 1600, height: 500 },
-  tabletImage: { width: 1100, height: 400 },
-  mobileImage: { width: 750, height: 420 },
-  imageAr: { width: 1600, height: 500 },
-  tabletImageAr: { width: 1100, height: 400 },
-  mobileImageAr: { width: 750, height: 420 },
+  image: { width: 1400, height: 175 },
+  tabletImage: { width: 1000, height: 125 },
+  mobileImage: { width: 800, height: 100 },
+  imageAr: { width: 1400, height: 175 },
+  tabletImageAr: { width: 1000, height: 125 },
+  mobileImageAr: { width: 800, height: 100 },
 }
 
 const createBannerSliderItem = (overrides = {}) => ({
@@ -360,94 +360,17 @@ export default function Banner2SectionEditor({ embedded = false }) {
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <h3 className="text-sm font-semibold text-slate-900">Slider position</h3>
-          <p className="mt-1 text-sm text-slate-600">
-            Shown on the homepage after the featured sections. Desktop slides are 1600 × 500.
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
           <h3 className="text-sm font-semibold text-slate-900">Banner size</h3>
           <p className="mt-1 text-sm text-slate-600">
-            Width matches the navbar and homepage sections (max 1400px). Adjust only the banner height below.
+            Width 1400 px · Height 175 px. The homepage Banner 2 slide uses this size.
           </p>
-
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <div className="rounded-lg border border-slate-200 bg-white p-4">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-medium text-slate-700">Width</span>
-                <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                  Same as navbar (1400px max)
-                </span>
-              </div>
-              <p className="mt-2 text-xs text-slate-500">
-                The banner uses the same centered max width and side padding as the rest of the storefront.
-              </p>
+          <div
+            className="mt-4 w-full max-w-xl overflow-hidden rounded-md border border-slate-200 bg-slate-100"
+            style={{ aspectRatio: '1400 / 175' }}
+          >
+            <div className="flex h-full items-center justify-center text-[10px] font-medium uppercase tracking-wide text-slate-500">
+              1400 × 175
             </div>
-
-            <div className="rounded-lg border border-slate-200 bg-white p-4">
-              <div
-                className="w-full overflow-hidden rounded-md border border-slate-200 bg-slate-100"
-                style={{ height: `${Math.min(120, Math.max(40, form.mobileHeight / 2))}px` }}
-              >
-                <div className="flex h-full items-center justify-center text-[10px] font-medium uppercase tracking-wide text-slate-500">
-                  Height preview
-                </div>
-              </div>
-              <p className="mt-2 text-xs text-slate-500">
-                Preview scale is reduced. Actual mobile height: {form.mobileHeight}px
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <label className="block rounded-lg border border-slate-200 bg-white p-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <span className="text-sm font-medium text-slate-700">Desktop height</span>
-                <span className="text-sm font-semibold text-slate-900">{form.desktopHeight}px</span>
-              </div>
-              <input
-                type="range"
-                min="80"
-                max="600"
-                step="10"
-                className="w-full accent-emerald-600"
-                value={form.desktopHeight}
-                onChange={(event) => setForm((prev) => ({ ...prev, desktopHeight: Number(event.target.value) || 220 }))}
-              />
-              <input
-                type="number"
-                min="80"
-                max="600"
-                className="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2"
-                value={form.desktopHeight}
-                onChange={(event) => setForm((prev) => ({ ...prev, desktopHeight: Number(event.target.value) || 220 }))}
-              />
-            </label>
-
-            <label className="block rounded-lg border border-slate-200 bg-white p-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <span className="text-sm font-medium text-slate-700">Mobile height</span>
-                <span className="text-sm font-semibold text-slate-900">{form.mobileHeight}px</span>
-              </div>
-              <input
-                type="range"
-                min="80"
-                max="600"
-                step="10"
-                className="w-full accent-emerald-600"
-                value={form.mobileHeight}
-                onChange={(event) => setForm((prev) => ({ ...prev, mobileHeight: Number(event.target.value) || 120 }))}
-              />
-              <input
-                type="number"
-                min="80"
-                max="600"
-                className="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2"
-                value={form.mobileHeight}
-                onChange={(event) => setForm((prev) => ({ ...prev, mobileHeight: Number(event.target.value) || 120 }))}
-              />
-            </label>
           </div>
         </div>
 

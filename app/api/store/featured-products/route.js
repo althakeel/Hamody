@@ -118,7 +118,7 @@ export async function GET(request) {
             ? Math.floor(Date.now() / (manualRotateHours * 60 * 60 * 1000))
             : 0
         const cacheKey = isPublicRequest
-            ? `public:featured-products:api:v14:${includeProducts}:${visibleCount}:${columns}:${rows}:${excludedProductIds.join(',')}:${manualRotateHours}:${rotateWindow}`
+            ? `public:featured-products:api:v15:${includeProducts}:${visibleCount}:${columns}:${rows}:${categoryIds.join(',')}:${tags.join(',')}:${excludedProductIds.join(',')}:${manualRotateHours}:${rotateWindow}`
             : null
         if (cacheKey) {
             const cached = getCachedData(cacheKey)

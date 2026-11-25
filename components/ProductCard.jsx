@@ -15,7 +15,6 @@ import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
 
 import { getLocalizedProductName } from '@/lib/displayText'
 import { getContentDirection } from '@/lib/storefrontLanguage'
-import { openAddToCartPopup } from '@/lib/addToCartPopup'
 import { PLACEHOLDER_IMAGE as PLACEHOLDER } from '@/lib/mediaUrls'
 import {
   getImageUrlAt,
@@ -33,9 +32,9 @@ import { GTM_EVENTS } from '@/lib/gtmEvents'
 import { STORE_CURRENCY } from '@/lib/storeCurrency'
 import { getProductPath } from '@/lib/productUrl'
 import CurrencySymbol, { StruckPrice } from '@/components/CurrencySymbol'
+import NewProductTagBadge from '@/components/NewProductTagBadge'
 import TimeDeliveryBadge from '@/components/TimeDeliveryBadge'
 import FreeShipRotator from '@/components/FreeShipRotator'
-import NewProductTagBadge from '@/components/NewProductTagBadge'
 import { extractProductKarat } from '@/lib/productKarat'
 import { cardImageSrc } from '@/lib/cardImage'
 
@@ -252,89 +251,40 @@ const ProductCard = ({
       price: priceNum > 0 ? priceNum : undefined,
     }))
     dispatch(uploadCart({ getToken }))
-    openAddToCartPopup(product)
   }
 
-  const renderCartControl = () => {
-    if (isOutOfStock) {
-      return (
-        <div className="rounded-full bg-gray-200 px-2 py-1 text-center text-[10px] font-semibold leading-tight text-gray-600">
-          {t('common.outOfStock')}
-        </div>
-      )
+  const changeQuantity = (event, direction) => {
+    event.preventDefault()
+    event.stopPropagation()
+    const unitPrice = Number(priceNum > 0 ? priceNum : product.price || 0)
+    if (direction < 0) {
+      pushGtmEcommerceEvent(GTM_EVENTS.REMOVE_FROM_CART, {
+        currency: STORE_CURRENCY,
+        value: unitPrice,
+        items: [productToGa4Item(product, { price: unitPrice, quantity: 1 })],
+      })
+      dispatch(removeFromCart({ productId: product._id }))
+    } else {
+      trackProductAddToCart({
+        product,
+        productId: product._id,
+        name: product.name || product.title || 'Product',
+        price: unitPrice,
+        quantity: 1,
+        currency: STORE_CURRENCY,
+      })
+      dispatch(addToCart({
+        productId: product._id,
+        price: priceNum > 0 ? priceNum : undefined,
+      }))
     }
-
-    if (isCartHydrated && itemQuantity > 0) {
-      return (
-        <div className="inline-flex items-center justify-center gap-0.5 rounded-[10px] border border-black/10 bg-white px-0.5 py-0.5 text-black shadow-sm">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              const unitPrice = Number(priceNum > 0 ? priceNum : product.price || 0)
-              pushGtmEcommerceEvent(GTM_EVENTS.REMOVE_FROM_CART, {
-                currency: STORE_CURRENCY,
-                value: unitPrice,
-                items: [productToGa4Item(product, { price: unitPrice, quantity: 1 })],
-              })
-              dispatch(removeFromCart({ productId: product._id }))
-              dispatch(uploadCart({ getToken }))
-            }}
-            className="inline-flex h-7 w-6 items-center justify-center rounded-sm text-black transition hover:bg-black/5"
-            title={itemQuantity === 1 ? 'Delete' : 'Decrease'}
-          >
-            {itemQuantity === 1 ? <Trash2 size={13} /> : <Minus size={13} />}
-          </button>
-          <span className="min-w-[14px] text-center text-xs font-semibold text-black">{itemQuantity}</span>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              const unitPrice = Number(priceNum > 0 ? priceNum : product.price || 0)
-              trackProductAddToCart({
-                product,
-                productId: product._id,
-                name: product.name || product.title || 'Product',
-                price: unitPrice,
-                quantity: 1,
-                currency: STORE_CURRENCY,
-              })
-              dispatch(addToCart({
-                productId: product._id,
-                price: priceNum > 0 ? priceNum : undefined,
-              }))
-              dispatch(uploadCart({ getToken }))
-            }}
-            className="inline-flex h-7 w-6 items-center justify-center rounded-sm text-black transition hover:bg-black/5"
-            title="Add more"
-          >
-            <Plus size={13} />
-          </button>
-        </div>
-      )
-    }
-
-    return (
-      <button
-        type="button"
-        onClick={handleAddToCart}
-        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-transparent p-0 shadow-none outline-none ring-0 transition-opacity duration-200 hover:opacity-70 focus:outline-none focus-visible:outline-none active:scale-95"
-        aria-label={t('common.addToCart')}
-      >
-        <img
-          src="/icons/add-shopping-cart.png"
-          alt=""
-          width={32}
-          height={32}
-          draggable={false}
-          aria-hidden="true"
-          className="h-8 w-8 select-none object-contain"
-        />
-      </button>
-    )
+    dispatch(uploadCart({ getToken }))
   }
+
+  const inCart = isCartHydrated && itemQuantity > 0
+  const cartBarClass = inCart
+    ? 'translate-y-0 opacity-100 pointer-events-auto'
+    : 'translate-y-full opacity-0 pointer-events-none lg:group-hover:translate-y-0 lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto'
 
   const hasCarouselWidth = /flex-\[0_0|flex-shrink-0|shrink-0|w-\[calc|min-w-\[calc|basis-\[calc/.test(className)
   const hasCustomGridWidth = /w-\[calc/.test(className)
@@ -450,29 +400,70 @@ const ProductCard = ({
         )}
 
         <NewProductTagBadge product={product} size="card" />
-        {discount > 0 ? (
-          <span className="pointer-events-none absolute bottom-2 start-2 z-20 flex max-w-[calc(100%-1rem)] flex-col items-start gap-1">
-            <span className="rounded-full bg-[#B12F39] px-2 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wide text-white">
-              {t('common.sale')}
-            </span>
-          </span>
+
+        {!isOutOfStock && !inCart ? (
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            className="absolute bottom-2 end-2 z-20 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-black/10 bg-white text-[#05090D] shadow-sm transition active:scale-95 lg:hidden"
+            aria-label={t('common.addToCart')}
+          >
+            <ShoppingCart size={18} />
+          </button>
+        ) : null}
+
+        {!isOutOfStock ? (
+          <div
+            className={`absolute inset-x-1.5 bottom-1.5 z-20 transition-all duration-500 ease-in-out ${cartBarClass}`}
+            onClick={(event) => event.preventDefault()}
+          >
+            {inCart ? (
+              <div className="flex items-center justify-between overflow-hidden rounded-lg bg-[#C8F404] text-[#05090D]">
+                <button
+                  type="button"
+                  onClick={(event) => changeQuantity(event, -1)}
+                  className="inline-flex h-9 w-10 items-center justify-center font-bold transition hover:bg-black/10"
+                  aria-label={itemQuantity === 1 ? 'Remove from cart' : 'Decrease quantity'}
+                >
+                  {itemQuantity === 1 ? <Trash2 size={15} /> : <Minus size={15} />}
+                </button>
+                <span className="min-w-6 text-center text-sm font-bold">{itemQuantity}</span>
+                <button
+                  type="button"
+                  onClick={(event) => changeQuantity(event, 1)}
+                  className="inline-flex h-9 w-10 items-center justify-center font-bold transition hover:bg-black/10"
+                  aria-label="Increase quantity"
+                >
+                  <Plus size={15} />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleAddToCart}
+                className="flex h-9 w-full items-center justify-center gap-1.5 overflow-hidden rounded-lg bg-[#C8F404] px-2 text-[11px] font-semibold uppercase text-[#05090D] transition active:scale-[0.98] sm:text-[13px]"
+                aria-label={t('common.addToCart')}
+              >
+                <ShoppingCart size={16} />
+                <span>{t('common.addToCart')}</span>
+              </button>
+            )}
+          </div>
         ) : null}
       </div>
 
       <div className={`flex shrink-0 flex-col bg-white ${compactAll ? 'p-1.5' : compactLg ? 'p-2 sm:p-2.5 lg:p-1.5' : 'p-2 sm:p-2.5'}`}>
-        <div className="flex items-start gap-2">
-          <h3 className={`min-w-0 flex-1 overflow-hidden text-start font-semibold leading-tight text-slate-900 ${compactAll ? 'text-[10px]' : compactLg ? 'min-h-[2.5em] text-xs sm:text-sm lg:min-h-0 lg:text-[10px]' : 'min-h-[2.5em] text-xs sm:text-sm'}`}>
-            <bdi
-              dir={getContentDirection(productName)}
-              className={`break-words ${compactAll ? 'line-clamp-1' : compactLg ? 'line-clamp-2 lg:line-clamp-1' : 'line-clamp-2'}`}
-            >
-              {productName}
-            </bdi>
-          </h3>
-          <div className="flex shrink-0 justify-end">
-            {renderCartControl()}
-          </div>
-        </div>
+        <h3 className={`overflow-hidden text-start font-semibold leading-tight text-slate-900 ${compactAll ? 'text-[10px]' : compactLg ? 'min-h-[2.5em] text-xs sm:text-sm lg:min-h-0 lg:text-[10px]' : 'min-h-[2.5em] text-xs sm:text-sm'}`}>
+          <bdi
+            dir={getContentDirection(productName)}
+            className={`break-words ${compactAll ? 'line-clamp-1' : compactLg ? 'line-clamp-2 lg:line-clamp-1' : 'line-clamp-2'}`}
+          >
+            {productName}
+          </bdi>
+        </h3>
+        {isOutOfStock ? (
+          <p className="mt-1 text-[10px] font-semibold text-slate-500">{t('common.outOfStock')}</p>
+        ) : null}
 
         {karat ? (
           <p className={`mt-1 text-start font-medium leading-none text-amber-800 ${compactAll ? 'text-[10px]' : compactLg ? 'text-[11px] lg:text-[10px]' : 'text-[11px] sm:text-xs'}`}>

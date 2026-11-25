@@ -227,6 +227,20 @@ const StorePreferenceSchema = new mongoose.Schema(
         type: [BannerSliderItemSchema],
         default: defaultSecondaryBannerSliderItems
       },
+      brandsBannerEnabled: { type: Boolean, default: false },
+      brandsBannerHidden: { type: Boolean, default: false },
+      brandsBannerDesktopInterval: { type: Number, default: 4000 },
+      brandsBannerMobileInterval: { type: Number, default: 3000 },
+      brandsBannerDesktopHeight: { type: Number, default: 220 },
+      brandsBannerMobileHeight: { type: Number, default: 120 },
+      brandsBannerItems: {
+        type: [BannerSliderItemSchema],
+        default: [],
+      },
+      brandsBannerCategoryIds: { type: [String], default: [] },
+      brandsBannerProductIds: { type: [String], default: [] },
+      brandsBannerProductsTitle: { type: String, trim: true, default: '' },
+      brandsBannerProductsTitleAr: { type: String, trim: true, default: '' },
       referralRewardCoins: { type: Number, default: 25 }
     },
     signinModal: {
@@ -370,6 +384,53 @@ if (!StorePreferenceModel.schema.path('shopShowcase.secondaryBannerSliderItems')
     type: [BannerSliderItemSchema],
     default: defaultSecondaryBannerSliderItems
   }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.brandsBannerEnabled')) {
+  missingShopShowcasePaths.brandsBannerEnabled = { type: Boolean, default: false }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.brandsBannerHidden')) {
+  missingShopShowcasePaths.brandsBannerHidden = { type: Boolean, default: false }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.brandsBannerDesktopInterval')) {
+  missingShopShowcasePaths.brandsBannerDesktopInterval = { type: Number, default: 4000 }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.brandsBannerMobileInterval')) {
+  missingShopShowcasePaths.brandsBannerMobileInterval = { type: Number, default: 3000 }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.brandsBannerDesktopHeight')) {
+  missingShopShowcasePaths.brandsBannerDesktopHeight = { type: Number, default: 220 }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.brandsBannerMobileHeight')) {
+  missingShopShowcasePaths.brandsBannerMobileHeight = { type: Number, default: 120 }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.brandsBannerItems')) {
+  missingShopShowcasePaths.brandsBannerItems = {
+    type: [BannerSliderItemSchema],
+    default: [],
+  }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.brandsBannerCategoryIds')) {
+  missingShopShowcasePaths.brandsBannerCategoryIds = { type: [String], default: [] }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.brandsBannerProductIds')) {
+  missingShopShowcasePaths.brandsBannerProductIds = { type: [String], default: [] }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.brandsBannerProductsTitle')) {
+  missingShopShowcasePaths.brandsBannerProductsTitle = { type: String, trim: true, default: '' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.brandsBannerProductsTitleAr')) {
+  missingShopShowcasePaths.brandsBannerProductsTitleAr = { type: String, trim: true, default: '' }
 }
 
 if (!StorePreferenceModel.schema.path('shopShowcase.leftBlockSource')) {
@@ -680,6 +741,7 @@ function addMissingShowcaseImageFields(nestedSchema) {
   'shopShowcase.lowerFullWidthBannerSliderItems',
   'shopShowcase.bannerSliderItems',
   'shopShowcase.secondaryBannerSliderItems',
+  'shopShowcase.brandsBannerItems',
   'shopShowcase.productBanners',
 ].forEach((pathName) => {
   addMissingShowcaseImageFields(StorePreferenceModel.schema.path(pathName)?.schema)

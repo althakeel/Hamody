@@ -8,6 +8,7 @@ import toast from 'react-hot-toast'
 import { useAuth } from '@/lib/useAuth'
 import ShowcaseBannersEditor from '@/components/store/preferences/ShowcaseBannersEditor'
 import Banner2SectionEditor from '@/components/store/preferences/Banner2SectionEditor'
+import BrandsBannerEditor from '@/components/store/preferences/BrandsBannerEditor'
 import FrontPromoCardsEditor from '@/components/store/preferences/FrontPromoCardsEditor'
 import CategorySliderImagesEditor from '@/components/store/preferences/CategorySliderImagesEditor'
 
@@ -41,6 +42,12 @@ const TABS = [
     label: 'Banner 2 Section',
     description: 'Rotating banner slides after the featured sections.',
     icon: Rows3,
+  },
+  {
+    id: 'brands-banner',
+    label: 'Before Top Brands',
+    description: 'Upload the banner before Top Brands, then choose the categories and products shown under it.',
+    icon: Images,
   },
 ]
 
@@ -129,11 +136,11 @@ function PreferencesContent() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Homepage Showcase Settings</h1>
           <p className="mt-2 text-sm text-slate-600">
-            Manage the homepage front, referral rewards, showcase banners, category slider images, and the Banner 2 slider from one place.
+            Manage the homepage front, referral rewards, showcase banners, category slider images, the banner before Top Brands, and the Banner 2 slider from one place.
           </p>
         </div>
 
-        <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {TABS.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
@@ -200,6 +207,7 @@ function PreferencesContent() {
         {activeTab === 'categories' && <CategorySliderImagesEditor />}
         {activeTab === 'front' && <FrontPromoCardsEditor />}
         {activeTab === 'banner2' && <Banner2SectionEditor embedded />}
+        {activeTab === 'brands-banner' && <BrandsBannerEditor embedded />}
       </div>
     </div>
   )

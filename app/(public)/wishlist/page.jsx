@@ -22,7 +22,6 @@ import { useStorefrontMarket } from "@/lib/useStorefrontMarket";
 import PageTitle from "@/components/PageTitle";
 import CurrencySymbol, { AedText } from "@/components/CurrencySymbol";
 import NewProductTagBadge from "@/components/NewProductTagBadge";
-
 const PLACEHOLDER_IMAGE = "/placeholder.png";
 
 /* ----------------------------------------------------

@@ -19,6 +19,7 @@ export default function NewProductTagBadge({
   const settings = useNewProductTag();
   const { language } = useStorefrontI18n();
 
+  if (settings?.showOnImageOverlay === false) return null;
   if (!shouldShowNewProductTag(product, settings)) return null;
 
   const badges = getVisibleNewProductBadges(settings, language, product);

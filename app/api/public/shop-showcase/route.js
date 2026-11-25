@@ -12,7 +12,7 @@ import { DEFAULT_FRONT_PROMO_CARDS, normalizeFrontPromoCards } from '@/lib/front
 import { resolvePublicStorePreference } from '@/lib/storePreferencePublic'
 import { STOREFRONT_IN_STOCK_FILTER, STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility'
 
-const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v32-banners'
+const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v38-brands-banner-products'
 const SHOWCASE_CACHE_TTL = 180
 let showcaseInflight = null
 
@@ -126,7 +126,26 @@ const DEFAULT_SHOWCASE = {
   secondaryBannerSliderItems: [
     { id: 'secondary-banner-slider-1', image: '', link: '/shop', alt: 'Lower Banner 1' },
     { id: 'secondary-banner-slider-2', image: '', link: '/shop', alt: 'Lower Banner 2' }
-  ]
+  ],
+  brandsBannerEnabled: false,
+  brandsBannerHidden: false,
+  brandsBannerDesktopInterval: 4000,
+  brandsBannerMobileInterval: 3000,
+  brandsBannerDesktopHeight: 220,
+  brandsBannerMobileHeight: 120,
+  brandsBannerItems: [],
+  brandsBannerCategoryIds: [],
+  brandsBannerProductIds: [],
+  brandsBannerProductsTitle: '',
+  brandsBannerProductsTitleAr: '',
+}
+
+function normalizeIdList(value, limit = 18) {
+  return Array.from(new Set(
+    (Array.isArray(value) ? value : [])
+      .map((id) => String(id || '').trim())
+      .filter((id) => /^[a-fA-F0-9]{24}$/.test(id))
+  )).slice(0, limit)
 }
 
 function normalizeBannerSliderHeight(value, fallback) {
@@ -172,6 +191,22 @@ function normalizeSecondaryBannerSliderItems(items) {
     .filter((item) => hasShowcaseBannerImage(item))
 
   return normalized.length ? normalized : DEFAULT_SHOWCASE.secondaryBannerSliderItems
+}
+
+function normalizeBrandsBannerItems(items) {
+  if (!Array.isArray(items)) return []
+
+  return items
+    .slice(0, 6)
+    .map((item, index) => ({
+      id: (item?.id || `brands-banner-${index + 1}`).toString().trim(),
+      ...serializeShowcaseImageFields(item),
+      link: normalizeShowcaseLinkType(item?.linkType) === 'none' ? '' : (item?.link || '').toString().trim(),
+      linkType: normalizeShowcaseLinkType(item?.linkType),
+      targetBlank: Boolean(item?.targetBlank),
+      alt: (item?.alt || `Banner ${index + 1}`).toString().trim(),
+    }))
+    .filter((item) => hasShowcaseBannerImage(item))
 }
 
 function normalizeSecondaryBannerSliderPlacement(value) {
@@ -281,7 +316,18 @@ function normalize(data = {}) {
     secondaryBannerSliderDesktopHeight: normalizeBannerSliderHeight(data.secondaryBannerSliderDesktopHeight, DEFAULT_SHOWCASE.secondaryBannerSliderDesktopHeight),
     secondaryBannerSliderMobileHeight: normalizeBannerSliderHeight(data.secondaryBannerSliderMobileHeight, DEFAULT_SHOWCASE.secondaryBannerSliderMobileHeight),
     secondaryBannerSliderPlacement: normalizeSecondaryBannerSliderPlacement(data.secondaryBannerSliderPlacement),
-    secondaryBannerSliderItems: normalizeSecondaryBannerSliderItems(data.secondaryBannerSliderItems)
+    secondaryBannerSliderItems: normalizeSecondaryBannerSliderItems(data.secondaryBannerSliderItems),
+    brandsBannerEnabled: data.brandsBannerEnabled === true,
+    brandsBannerHidden: data.brandsBannerHidden === true,
+    brandsBannerDesktopInterval: Math.max(1500, Number(data.brandsBannerDesktopInterval) || DEFAULT_SHOWCASE.brandsBannerDesktopInterval),
+    brandsBannerMobileInterval: Math.max(1500, Number(data.brandsBannerMobileInterval) || DEFAULT_SHOWCASE.brandsBannerMobileInterval),
+    brandsBannerDesktopHeight: normalizeBannerSliderHeight(data.brandsBannerDesktopHeight, DEFAULT_SHOWCASE.brandsBannerDesktopHeight),
+    brandsBannerMobileHeight: normalizeBannerSliderHeight(data.brandsBannerMobileHeight, DEFAULT_SHOWCASE.brandsBannerMobileHeight),
+    brandsBannerItems: normalizeBrandsBannerItems(data.brandsBannerItems),
+    brandsBannerCategoryIds: normalizeIdList(data.brandsBannerCategoryIds, 40),
+    brandsBannerProductIds: normalizeIdList(data.brandsBannerProductIds, 18),
+    brandsBannerProductsTitle: String(data.brandsBannerProductsTitle || '').trim().slice(0, 80),
+    brandsBannerProductsTitleAr: String(data.brandsBannerProductsTitleAr || '').trim().slice(0, 80),
   }
 }
 

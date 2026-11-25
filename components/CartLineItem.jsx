@@ -9,7 +9,6 @@ import { resolveCartLinePriceDisplay } from '@/lib/cartPriceDisplay';
 import { getProductThumbnailUrl } from '@/lib/productMedia';
 import { AedText, StruckPrice } from '@/components/CurrencySymbol';
 import NewProductTagBadge from '@/components/NewProductTagBadge';
-
 const LINE_TOTAL_CLASS =
   'text-end tabular-nums text-[clamp(15px,4vw,18px)] font-bold text-slate-900';
 

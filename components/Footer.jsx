@@ -237,7 +237,7 @@ const Footer = () => {
         .filter((column) => column.title && column.links.length);
 
     return (
-        <footer id="storefront-footer" className="bg-black text-white border-t border-white/20 pt-0 pb-[5.25rem] lg:pb-12 lg:pt-12" dir={isArabic ? 'rtl' : 'ltr'}>
+        <footer id="storefront-footer" className="max-w-full overflow-x-clip bg-black text-white border-t border-white/20 pt-0 pb-[5.25rem] lg:pb-12 lg:pt-12" dir={isArabic ? 'rtl' : 'ltr'}>
             <div className={HOME_SECTION_INNER_CLASS}>
                 <div className="space-y-8 py-6 lg:grid lg:grid-cols-6 lg:gap-6 lg:space-y-0 lg:py-2">
                     <div className="min-w-0 lg:col-span-2">
@@ -259,45 +259,45 @@ const Footer = () => {
                                 />
                             </Link>
                         )}
-                        <p className="mb-3 max-w-sm text-sm leading-relaxed text-white">
+                        <p className="mb-3 max-w-full text-sm leading-relaxed text-white sm:max-w-sm">
                             {footerDescription}
                         </p>
                         {operatedByLine ? (
-                            <p className="mb-5 max-w-sm text-xs text-white sm:mb-6">
+                            <p className="mb-5 max-w-full text-xs leading-relaxed text-white sm:mb-6 sm:max-w-sm">
                                 {operatedByLine}
                             </p>
                         ) : null}
                         <div className="mb-5 space-y-3 sm:mb-6">
                             {phoneHref ? (
-                            <div className="flex items-center gap-2 text-sm">
-                                <PhoneIcon />
-                                <a href={phoneHref} className="text-white transition hover:opacity-70">
+                            <div className="flex min-w-0 items-center gap-2 text-sm">
+                                <span className="shrink-0"><PhoneIcon /></span>
+                                <a href={phoneHref} className="min-w-0 break-words text-white transition hover:opacity-70">
                                     {phoneDisplay}
                                 </a>
                             </div>
                             ) : null}
                             {footerContent.email ? (
-                            <div className="flex items-center gap-2 text-sm">
-                                <MailIcon />
-                                <a href={`mailto:${toHamodyText(footerContent.email)}`} className="break-all text-white transition hover:opacity-70">
+                            <div className="flex min-w-0 items-center gap-2 text-sm">
+                                <span className="shrink-0"><MailIcon /></span>
+                                <a href={`mailto:${toHamodyText(footerContent.email)}`} className="min-w-0 break-all text-white transition hover:opacity-70">
                                     {toHamodyText(footerContent.email)}
                                 </a>
                             </div>
                             ) : null}
-                            <div className="flex items-start gap-2 text-sm">
-                                <MapPinIcon />
-                                <span className="min-w-0 leading-relaxed text-white">
+                            <div className="flex min-w-0 items-start gap-2 text-sm">
+                                <span className="mt-0.5 shrink-0"><MapPinIcon /></span>
+                                <span className="min-w-0 flex-1 leading-relaxed text-white">
                                     <span className="block text-[11px] uppercase tracking-wide text-white">
                                         {pickFooterText(footerContent.registeredOfficeLabel, footerContent.registeredOfficeLabelAr)}
                                     </span>
                                     {registeredOfficeLines.map((line) => (
-                                        <span key={`office-${line}`} className="block">{line}</span>
+                                        <span key={`office-${line}`} className="block break-words">{line}</span>
                                     ))}
                                     <span className="mt-2 block text-[11px] uppercase tracking-wide text-white">
                                         {pickFooterText(footerContent.fulfilmentLabel, footerContent.fulfilmentLabelAr)}
                                     </span>
                                     {fulfilmentAddressLines.map((line) => (
-                                        <span key={`fulfilment-${line}`} className="block">{line}</span>
+                                        <span key={`fulfilment-${line}`} className="block break-words">{line}</span>
                                     ))}
                                 </span>
                             </div>
@@ -314,10 +314,10 @@ const Footer = () => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 lg:col-span-4 lg:contents">
+                    <div className="grid grid-cols-1 gap-8 min-[420px]:grid-cols-2 min-[420px]:gap-x-4 min-[420px]:gap-y-8 sm:gap-x-6 lg:col-span-4 lg:contents">
                         {linkSections.map((section) => (
                             <div key={section.title} className="min-w-0">
-                                <h3 className="mb-3 text-xs font-semibold tracking-wider text-white sm:mb-4 sm:text-sm">
+                                <h3 className="mb-3 break-words text-xs font-semibold tracking-wider text-white sm:mb-4 sm:text-sm">
                                     {section.title}
                                 </h3>
                                 <ul className="space-y-2.5 sm:space-y-3">
@@ -325,7 +325,7 @@ const Footer = () => {
                                         <li key={link.path} className="min-w-0">
                                             <Link
                                                 href={link.path}
-                                                className="inline-block text-sm leading-snug text-white transition hover:opacity-70"
+                                                className="block break-words text-sm leading-snug text-white transition hover:opacity-70"
                                                 onClick={(event) => {
                                                     if (!link.requiresAuth || isSignedIn) return;
                                                     event.preventDefault();

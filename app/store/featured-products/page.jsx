@@ -355,7 +355,7 @@ export default function FeaturedProducts() {
     }, [categories, selectedCategoryIds, sourceMode])
 
     const tagQuery = useMemo(() => {
-        if (sourceMode !== 'tag') return ''
+        if (sourceMode !== 'tag' && sourceMode !== 'category') return ''
         return selectedTags.join(',')
     }, [selectedTags, sourceMode])
 
@@ -620,7 +620,7 @@ export default function FeaturedProducts() {
     const sourceSummary = sourceMode === 'manual'
         ? `${selectedProducts.length} selected`
         : sourceMode === 'category'
-            ? `${selectedCategoryIds.length} categories`
+            ? `${selectedCategoryIds.length} categories${selectedTags.length ? ` · ${selectedTags.length} tags` : ''}`
             : sourceMode === 'tag'
                 ? `${selectedTags.length} tags`
                 : 'Auto from latest'
@@ -875,7 +875,7 @@ export default function FeaturedProducts() {
                                 </div>
                             )}
 
-                            {sourceMode === 'tag' && (
+                            {(sourceMode === 'tag' || sourceMode === 'category') && (
                                 <div className="mt-4">
                                     <label className="mb-2 block text-xs font-medium text-slate-500">Tags</label>
                                     <div className="rounded-xl border border-slate-200 bg-white p-2">
@@ -918,7 +918,11 @@ export default function FeaturedProducts() {
                                             className="w-full rounded-lg px-2 py-1.5 text-sm focus:outline-none"
                                         />
                                     </div>
-                                    <p className="mt-1.5 text-[11px] text-slate-400">Add as many tags as you need. Press Enter or comma after each one.</p>
+                                    <p className="mt-1.5 text-[11px] text-slate-400">
+                                        {sourceMode === 'category'
+                                            ? 'Optional. The homepage keeps products from the selected categories that also have one of these tags. Leave empty to use categories only.'
+                                            : 'Add as many tags as you need. Press Enter or comma after each one.'}
+                                    </p>
                                 </div>
                             )}
 
@@ -1187,13 +1191,13 @@ export default function FeaturedProducts() {
                                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                         <div>
                                             <h2 className="text-base font-semibold text-slate-900">
-                                                {sourceMode === 'category' && 'Products in these categories'}
+                                                {sourceMode === 'category' && (selectedTags.length ? 'Products in these categories and tags' : 'Products in these categories')}
                                                 {sourceMode === 'tag' && 'Products with these tags'}
                                                 {sourceMode === 'latest' && 'Newest products'}
                                             </h2>
                                             <p className="text-xs text-slate-500">
                                                 {sourceMode === 'category' && !selectedCategoryIds.length
-                                                    ? 'Select one or more categories on the left.'
+                                                    ? 'Select one or more categories on the left. Tags are optional.'
                                                     : sourceMode === 'tag' && !selectedTags.length
                                                         ? 'Add one or more tags on the left.'
                                                         : 'Select products, then remove the ones that should stay off the homepage.'}
