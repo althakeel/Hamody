@@ -1,5 +1,6 @@
 import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
+import { findOwnedProduct, ownedProductFilter } from '@/lib/ownedProductQuery';
 import authSeller from '@/middlewares/authSeller';
 import { NextResponse } from 'next/server';
 
@@ -31,9 +32,7 @@ export async function POST(request) {
 
     await dbConnect();
 
-    const product = await Product.findOne({ _id: productId, storeId })
-      .select('_id enableFBT fbtProductIds')
-      .lean();
+    const product = await findOwnedProduct(storeId, productId, '_id enableFBT fbtProductIds');
 
     if (!product) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
@@ -49,7 +48,7 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    await Product.findByIdAndUpdate(productId, { enableFBT: nextValue });
+    await Product.updateOne(ownedProductFilter(storeId, productId), { $set: { enableFBT: nextValue } });
 
     return NextResponse.json({
       message: nextValue ? 'Frequently bought together enabled' : 'Frequently bought together disabled',

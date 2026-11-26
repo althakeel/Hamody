@@ -1,5 +1,6 @@
 import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
+import { findOwnedProduct, ownedProductFilter } from '@/lib/ownedProductQuery';
 import authSeller from '@/middlewares/authSeller';
 import { NextResponse } from 'next/server';
 
@@ -31,16 +32,14 @@ export async function POST(request) {
 
     await dbConnect();
 
-    const product = await Product.findOne({ _id: productId, storeId })
-      .select('_id fastDelivery')
-      .lean();
+    const product = await findOwnedProduct(storeId, productId, '_id fastDelivery');
 
     if (!product) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
     const nextValue = !product.fastDelivery;
-    await Product.findByIdAndUpdate(productId, { fastDelivery: nextValue });
+    await Product.updateOne(ownedProductFilter(storeId, productId), { $set: { fastDelivery: nextValue } });
 
     return NextResponse.json({
       message: nextValue ? 'Fast delivery enabled' : 'Fast delivery disabled',

@@ -48,7 +48,7 @@ export async function GET(request, { params }) {
 
     await dbConnect();
 
-    const product = await Product.findById(id)
+    const product = await Product.findOne({ $expr: { $eq: [{ $toString: '$_id' }, String(id)] } })
       .select('enableFBT fbtProductIds fbtBundlePrice fbtBundleDiscount')
       .lean();
     
@@ -176,8 +176,8 @@ export async function PATCH(request, { params }) {
     }
 
     // Update the product
-    const updatedProduct = await Product.findByIdAndUpdate(
-      id,
+    const updatedProduct = await Product.findOneAndUpdate(
+      { $expr: { $eq: [{ $toString: '$_id' }, String(id)] } },
       {
         enableFBT: enableFBT || false,
         fbtProductIds: cleanedFbtIds,

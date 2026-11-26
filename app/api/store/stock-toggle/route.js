@@ -1,5 +1,6 @@
 import dbConnect from "@/lib/mongodb";
 import Product from "@/models/Product";
+import { findOwnedProduct, ownedProductFilter } from "@/lib/ownedProductQuery";
 import authSeller from "@/middlewares/authSeller";
 import { invalidateStorefrontProductCaches } from "@/lib/cache";
 import { getAuth } from "@/lib/firebase-admin";
@@ -52,9 +53,7 @@ export async function POST(request) {
 
     await dbConnect();
 
-    const product = await Product.findOne({ _id: productId, storeId })
-      .select("_id inStock stockQuantity hasVariants variants")
-      .lean();
+    const product = await findOwnedProduct(storeId, productId, "_id inStock stockQuantity hasVariants variants");
 
     if (!product) {
       return NextResponse.json({ error: "no product found" }, { status: 404 });
@@ -84,7 +83,7 @@ export async function POST(request) {
       }
     }
 
-    await Product.findByIdAndUpdate(productId, update);
+    await Product.updateOne(ownedProductFilter(storeId, productId), { $set: update });
     invalidateStorefrontProductCaches();
 
     return NextResponse.json({

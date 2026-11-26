@@ -16,6 +16,7 @@ import { getAuth } from '@/lib/firebase-admin';
 import { sanitizeCategoryIdsForSave, withAncestorCategoryIds } from '@/lib/productCategoryRefs';
 import { collectCategoryBranchIds } from '@/lib/categoryProductStats';
 import { createProductFromJson, updateProductFromJson } from '@/lib/productJsonSave';
+import { findOwnedProduct, ownedProductFilter } from '@/lib/ownedProductQuery';
 import { resolveProductSupplierFields } from '@/lib/supplierServer';
 import { resolveDashboardAccess } from '@/lib/storeAccessControl';
 import {
@@ -496,7 +497,7 @@ export async function GET(request) {
                 return NextResponse.json({ error: 'Invalid product ID' }, { status: 400 });
             }
 
-            const product = await Product.findOne({ _id: productId, storeId }).lean();
+            const product = await findOwnedProduct(storeId, productId);
             if (!product) {
                 return NextResponse.json({ error: 'Product not found' }, { status: 404 });
             }
@@ -758,15 +759,13 @@ export async function PUT(request) {
                     return NextResponse.json({ error: "Product ID required or invalid format" }, { status: 400 });
                 }
 
-                const product = await Product.findById(productId)
-                    .select('_id storeId images')
-                    .lean();
+                const product = await findOwnedProduct(storeId, productId, '_id storeId images');
                 if (!product || String(product.storeId) !== String(storeId)) {
                     return NextResponse.json({ error: "Not authorized" }, { status: 401 });
                 }
 
-                const updated = await Product.findByIdAndUpdate(
-                    productId,
+                const updated = await Product.findOneAndUpdate(
+                    ownedProductFilter(storeId, productId),
                     { images: images.filter(Boolean) },
                     { new: true }
                 ).lean();
@@ -866,9 +865,11 @@ export async function PUT(request) {
 
         let product;
         try {
-                        product = await Product.findById(productId)
-                            .select('_id storeId name slug price AED images description variants attributes inStock shortDescription shortDescriptionAr shortDescription2 specTableEnabled specTableColumns specTableRows imageAspectRatio categories category hasVariants freeShippingEligible useProductsPath fastDelivery stockQuantity sku')
-              .lean();
+                        product = await findOwnedProduct(
+                            storeId,
+                            productId,
+                            '_id storeId name slug price AED images description variants attributes inStock shortDescription shortDescriptionAr shortDescription2 specTableEnabled specTableColumns specTableRows imageAspectRatio categories category hasVariants freeShippingEligible useProductsPath fastDelivery stockQuantity sku',
+                        );
         } catch (err) {
             console.error('Product.findById error:', err, 'productId:', productId);
             return NextResponse.json({ error: "Invalid productId format" }, { status: 400 });
@@ -1067,8 +1068,8 @@ export async function PUT(request) {
         }
         console.log('Product updateData:', updateData);
         console.log('PUT: Saving categories:', updateData.categories);
-        product = await Product.findByIdAndUpdate(
-            productId,
+        product = await Product.findOneAndUpdate(
+            ownedProductFilter(storeId, productId),
             updateData,
             { new: true }
         ).lean();
@@ -1131,11 +1132,11 @@ export async function DELETE(request) {
         const productId = searchParams.get("productId");
         if (!productId) return NextResponse.json({ error: "Product ID required" }, { status: 400 });
 
-        const product = await Product.findById(productId).lean();
-        if (!product || product.storeId !== storeId) return NextResponse.json({ error: "Not authorized" }, { status: 401 });
+        const product = await findOwnedProduct(storeId, productId);
+        if (!product || String(product.storeId) !== String(storeId)) return NextResponse.json({ error: "Not authorized" }, { status: 401 });
 
         const removedSlug = product.slug;
-        await Product.findByIdAndDelete(productId);
+        await Product.deleteOne(ownedProductFilter(storeId, productId));
         try {
             const { recordProductGone } = await import('@/lib/urlRedirects');
             await recordProductGone(removedSlug, 'Product deleted');

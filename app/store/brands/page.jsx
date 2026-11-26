@@ -624,7 +624,7 @@ export default function StoreBrandsPage() {
                         <img
                           src={readableUploadUrl(brand.page.image)}
                           alt=""
-                          className="h-10 w-10 rounded-lg border border-slate-200 bg-white object-contain"
+                          className="h-10 w-10 bg-white object-contain"
                         />
                         <p className="text-[11px] leading-snug text-slate-500">
                           Shown in Top Brands
@@ -790,7 +790,7 @@ export default function StoreBrandsPage() {
                   className="block w-full text-sm text-slate-600"
                 />
                 {imagePreview ? (
-                  <img src={readableUploadUrl(imagePreview)} alt="" className="mt-2 h-20 w-20 rounded-lg border border-slate-200 object-contain" />
+                  <img src={readableUploadUrl(imagePreview)} alt="" className="mt-2 h-20 w-20 bg-white object-contain" />
                 ) : null}
                 {imageFile ? (
                   <p className="mt-2 text-xs font-medium text-teal-700">This logo is saved when you click Save brand page.</p>
@@ -856,7 +856,7 @@ export default function StoreBrandsPage() {
                           className="block w-full text-sm text-slate-600"
                         />
                         {preview ? (
-                          <img src={readableUploadUrl(preview)} alt="" className="mt-2 h-24 w-full rounded-lg border border-slate-200 object-contain" dir={field.rtl ? 'rtl' : 'ltr'} />
+                          <img src={readableUploadUrl(preview)} alt="" className="mt-2 h-24 w-full object-contain" dir={field.rtl ? 'rtl' : 'ltr'} />
                         ) : null}
                       </div>
                     );

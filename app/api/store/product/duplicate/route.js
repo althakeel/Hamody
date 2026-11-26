@@ -3,6 +3,7 @@ import { getAuth } from '@/lib/firebase-admin';
 import authSeller from '@/middlewares/authSeller';
 import connectDB from '@/lib/mongodb';
 import Product from '@/models/Product';
+import { findOwnedProduct } from '@/lib/ownedProductQuery';
 import { invalidateStorefrontProductCaches } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
@@ -53,7 +54,7 @@ export async function POST(request) {
     }
 
     await connectDB();
-    const source = await Product.findOne({ _id: productId, storeId }).lean();
+    const source = await findOwnedProduct(storeId, productId);
     if (!source) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }

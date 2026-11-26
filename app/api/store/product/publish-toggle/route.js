@@ -1,5 +1,6 @@
 import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
+import { findOwnedProduct, ownedProductFilter } from '@/lib/ownedProductQuery';
 import authSeller from '@/middlewares/authSeller';
 import { invalidateStorefrontProductCaches } from '@/lib/cache';
 import { getAuth } from '@/lib/firebase-admin';
@@ -34,9 +35,7 @@ export async function POST(request) {
 
     await dbConnect();
 
-    const product = await Product.findOne({ _id: productId, storeId })
-      .select('_id published slug')
-      .lean();
+    const product = await findOwnedProduct(storeId, productId, '_id published slug');
 
     if (!product) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
@@ -44,7 +43,7 @@ export async function POST(request) {
 
     const nextPublished = product.published === false;
 
-    await Product.findByIdAndUpdate(productId, { published: nextPublished });
+    await Product.updateOne(ownedProductFilter(storeId, productId), { $set: { published: nextPublished } });
     invalidateStorefrontProductCaches();
     try {
       if (nextPublished) {
