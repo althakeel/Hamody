@@ -13,7 +13,7 @@ export const SHOWCASE_IMAGE_GROUPS = [
   {
     id: 'en',
     title: 'English images',
-    hint: 'Used when the storefront is English. Also used as fallback if an Arabic image is empty.',
+    hint: 'Desktop, tablet, and mobile each show only the file uploaded for that screen. English is also used when the Arabic file for the same screen is empty.',
     slots: [
       { key: 'image', label: 'Desktop' },
       { key: 'tabletImage', label: 'Tablet' },

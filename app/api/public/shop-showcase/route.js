@@ -11,8 +11,9 @@ import { normalizeShowcaseLinkType } from '@/lib/showcaseBannerLinks'
 import { DEFAULT_FRONT_PROMO_CARDS, normalizeFrontPromoCards } from '@/lib/frontPromoCards'
 import { resolvePublicStorePreference } from '@/lib/storePreferencePublic'
 import { STOREFRONT_IN_STOCK_FILTER, STOREFRONT_PUBLISHED_FILTER } from '@/lib/productVisibility'
+import { BRANDS_BANNER_PRODUCT_MAX, clampFeaturedColumns, clampFeaturedRows } from '@/lib/featuredProductLimit'
 
-const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v38-brands-banner-products'
+const SHOWCASE_CACHE_KEY = 'public:shop-showcase:v39-brands-grid'
 const SHOWCASE_CACHE_TTL = 180
 let showcaseInflight = null
 
@@ -138,6 +139,8 @@ const DEFAULT_SHOWCASE = {
   brandsBannerProductIds: [],
   brandsBannerProductsTitle: '',
   brandsBannerProductsTitleAr: '',
+  brandsBannerColumns: 6,
+  brandsBannerRows: 3,
 }
 
 function normalizeIdList(value, limit = 18) {
@@ -325,9 +328,11 @@ function normalize(data = {}) {
     brandsBannerMobileHeight: normalizeBannerSliderHeight(data.brandsBannerMobileHeight, DEFAULT_SHOWCASE.brandsBannerMobileHeight),
     brandsBannerItems: normalizeBrandsBannerItems(data.brandsBannerItems),
     brandsBannerCategoryIds: normalizeIdList(data.brandsBannerCategoryIds, 40),
-    brandsBannerProductIds: normalizeIdList(data.brandsBannerProductIds, 18),
+    brandsBannerProductIds: normalizeIdList(data.brandsBannerProductIds, BRANDS_BANNER_PRODUCT_MAX),
     brandsBannerProductsTitle: String(data.brandsBannerProductsTitle || '').trim().slice(0, 80),
     brandsBannerProductsTitleAr: String(data.brandsBannerProductsTitleAr || '').trim().slice(0, 80),
+    brandsBannerColumns: clampFeaturedColumns(data.brandsBannerColumns, 6),
+    brandsBannerRows: clampFeaturedRows(data.brandsBannerRows, 3),
   }
 }
 

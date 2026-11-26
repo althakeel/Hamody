@@ -2801,7 +2801,7 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
               {!isCustomerPickup && checkoutAddressList.length > 0 && !(user && addressFetchError) ? (
                 <div id="checkout-address">
                   {/* Shipping Address Section - Noon.com Style */}
-                  <div className={`bg-white rounded-lg border ${
+                  <div className={`overflow-hidden bg-white rounded-lg border ${
                     fieldHasError('checkout-address')
                     || fieldHasError('checkout-address-area')
                     || fieldHasError('checkout-address-district')
@@ -2827,24 +2827,22 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
                       return (
                         <button
                           type="button"
-                          className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-gray-50 md:gap-3 md:px-4 md:py-3.5"
+                          className="flex w-full min-w-0 items-center gap-2 overflow-hidden px-3 py-2.5 text-left transition-colors hover:bg-gray-50 md:gap-3 md:px-4 md:py-3.5"
                           onClick={() => setShowAddressModal(true)}
                         >
                           <svg className="h-5 w-5 shrink-0 text-[#05090D]" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                           </svg>
-                          <span className="min-w-0 flex-1">
-                            <span className="flex items-center justify-between gap-2">
-                              <span className="truncate text-sm font-semibold text-gray-900">
-                                {t('checkout.deliverTo')} {selectedAddress.name?.toUpperCase() || 'HOME'}
-                              </span>
-                              <span className="shrink-0 text-[11px] font-semibold text-[#05090D] underline decoration-[#C8F404] underline-offset-2 md:text-xs">
-                                {t('checkout.switchAddress')}
-                              </span>
+                          <span className="min-w-0 flex-1 overflow-hidden">
+                            <span className="block truncate text-sm font-semibold text-gray-900">
+                              {t('checkout.deliverTo')} {selectedAddress.name || 'Home'}
                             </span>
-                            <span className="mt-0.5 block text-xs leading-4 text-gray-500 line-clamp-2">
+                            <span className="mt-0.5 block truncate text-xs leading-4 text-gray-500">
                               {addressParts.join(' – ')}
                             </span>
+                          </span>
+                          <span className="shrink-0 whitespace-nowrap text-[11px] font-semibold text-[#05090D] underline decoration-[#C8F404] underline-offset-2 md:text-xs">
+                            {t('checkout.switchAddress')}
                           </span>
                           <svg className="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -3587,13 +3585,13 @@ export default function CheckoutPageUI({ initialCheckoutAlert = null }) {
           </div>
           <div className="mb-4 space-y-3">
             {cartArray.slice(0, 3).map((item) => (
-              <div key={item._cartKey || item._id} className="flex items-center gap-3">
+              <div key={item._cartKey || item._id} className="flex min-w-0 items-center gap-3">
                 <img src={item.image || item.images?.[0] || '/placeholder.png'} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 overflow-hidden">
                   <p className="truncate text-sm font-semibold text-[#05090D]">{item.name}</p>
                   <p className="text-xs text-[#5E6870]">Qty {item._displayQuantity ?? item.quantity}</p>
                 </div>
-                <p className="shrink-0 text-sm font-semibold text-[#05090D]">{item._isFreeGift ? 'FREE' : formatMoney(item._lineTotal ?? item._cartPrice ?? item.price ?? 0)}</p>
+                <p className="shrink-0 whitespace-nowrap text-sm font-semibold text-[#05090D]">{item._isFreeGift ? 'FREE' : formatMoney(item._lineTotal ?? item._cartPrice ?? item.price ?? 0)}</p>
               </div>
             ))}
             {cartArray.length > 3 ? (

@@ -10,6 +10,7 @@ import { applyLargeBannerSliderDefaults, serializeLargeBannerSliderItems } from 
 import { hasShowcaseBannerImage, serializeShowcaseImageFields } from '@/lib/showcaseBannerImages'
 import { normalizeShowcaseLinkType } from '@/lib/showcaseBannerLinks'
 import { DEFAULT_FRONT_PROMO_CARDS, normalizeFrontPromoCards } from '@/lib/frontPromoCards'
+import { BRANDS_BANNER_PRODUCT_MAX, clampFeaturedColumns, clampFeaturedRows } from '@/lib/featuredProductLimit'
 
 function resolveStoreObjectId(storeId) {
   const value = String(storeId || '').trim()
@@ -157,6 +158,8 @@ const DEFAULT_SHOWCASE = {
   brandsBannerProductIds: [],
   brandsBannerProductsTitle: '',
   brandsBannerProductsTitleAr: '',
+  brandsBannerColumns: 6,
+  brandsBannerRows: 3,
   referralRewardCoins: 25
 }
 
@@ -378,9 +381,11 @@ function normalizeShopShowcase(data = {}) {
     brandsBannerMobileHeight: normalizeBannerSliderHeight(data.brandsBannerMobileHeight, DEFAULT_SHOWCASE.brandsBannerMobileHeight),
     brandsBannerItems: normalizeBrandsBannerItems(data.brandsBannerItems),
     brandsBannerCategoryIds: normalizeIdList(data.brandsBannerCategoryIds, 40),
-    brandsBannerProductIds: normalizeIdList(data.brandsBannerProductIds, 18),
+    brandsBannerProductIds: normalizeIdList(data.brandsBannerProductIds, BRANDS_BANNER_PRODUCT_MAX),
     brandsBannerProductsTitle: normalizeString(data.brandsBannerProductsTitle, '').slice(0, 80),
     brandsBannerProductsTitleAr: normalizeString(data.brandsBannerProductsTitleAr, '').slice(0, 80),
+    brandsBannerColumns: clampFeaturedColumns(data.brandsBannerColumns, 6),
+    brandsBannerRows: clampFeaturedRows(data.brandsBannerRows, 3),
     referralRewardCoins
   }
 }

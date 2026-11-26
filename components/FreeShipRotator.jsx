@@ -5,11 +5,11 @@ import { Truck } from 'lucide-react';
 function FreeShipLine({ label, iconSize, textClass, frame }) {
   return (
     <span
-      className={`inline-flex items-center justify-center whitespace-nowrap ${textClass}`}
+      className={`inline-flex max-w-full min-w-0 items-center justify-center ${textClass}`}
       style={{ height: frame }}
     >
       <Truck size={iconSize} strokeWidth={2.4} aria-hidden="true" className="shrink-0" />
-      <span>{label}</span>
+      <span className="truncate">{label}</span>
     </span>
   );
 }
@@ -25,7 +25,7 @@ export default function FreeShipRotator({ label, labels, compact = false }) {
 
   if (lines.length < 2) {
     return (
-      <span className="inline-flex shrink-0 items-center rounded-none bg-[#C8F404] text-[11px] font-bold leading-none tracking-tight text-[#111111] antialiased">
+      <span className="inline-flex max-w-full min-w-0 items-center overflow-hidden rounded-none bg-[#C8F404] text-[11px] font-bold leading-none tracking-tight text-[#111111] antialiased">
         {line(lines[0], 'static')}
       </span>
     );
@@ -33,7 +33,7 @@ export default function FreeShipRotator({ label, labels, compact = false }) {
 
   return (
     <span
-      className="relative inline-flex shrink-0 overflow-hidden rounded-none bg-[#C8F404] text-[11px] font-bold leading-none tracking-tight text-[#111111] antialiased"
+      className="relative inline-flex max-w-full min-w-0 overflow-hidden rounded-none bg-[#C8F404] text-[11px] font-bold leading-none tracking-tight text-[#111111] antialiased"
       style={{ height: frame, minHeight: frame, maxHeight: frame }}
     >
       <span className="invisible grid" aria-hidden="true">

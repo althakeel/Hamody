@@ -120,6 +120,8 @@ export default function HomePageClient({ initialData }) {
             products={shopShowcase?.brandsBannerProducts || []}
             title={shopShowcaseConfig?.brandsBannerProductsTitle || ''}
             titleAr={shopShowcaseConfig?.brandsBannerProductsTitleAr || ''}
+            columns={shopShowcaseConfig?.brandsBannerColumns}
+            rows={shopShowcaseConfig?.brandsBannerRows}
           />
         ) : null}
         <SectionReveal>

@@ -65,6 +65,7 @@ const getAEDPrice = (product) => parseAmount(
 const ProductCard = ({
   product,
   priorityImages = false,
+  deferImages = false,
   className = '',
   onCardClick,
   compact = false,
@@ -110,12 +111,35 @@ const ProductCard = ({
   const [hovered, setHovered] = useState(false)
   const [showCardVideo, setShowCardVideo] = useState(false)
   const [isCartHydrated, setIsCartHydrated] = useState(false)
+  const [imageReady, setImageReady] = useState(priorityImages || !deferImages)
   const cardVideoRef = useRef(null)
   const cardRef = useRef(null)
 
   useEffect(() => {
     setIsCartHydrated(true)
   }, [])
+
+  useEffect(() => {
+    if (priorityImages || !deferImages) {
+      setImageReady(true)
+      return undefined
+    }
+    const node = cardRef.current
+    if (!node || typeof IntersectionObserver === 'undefined') {
+      setImageReady(true)
+      return undefined
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return
+        setImageReady(true)
+        observer.disconnect()
+      },
+      { root: null, rootMargin: '480px 0px', threshold: 0 },
+    )
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [deferImages, priorityImages, productId])
 
   useEffect(() => {
     // Skip per-card observers on dense homepage grids unless a list id is provided.
@@ -204,6 +228,7 @@ const ProductCard = ({
   }, [product._id, cardPreview.type, cardPreview.videoSrc])
 
   useEffect(() => {
+    if (deferImages && !priorityImages && !imageReady) return undefined
     if (cardPreview.type !== 'delayed-video') return undefined
 
     const video = cardVideoRef.current
@@ -228,7 +253,7 @@ const ProductCard = ({
       if (delayTimer) window.clearTimeout(delayTimer)
       video.removeEventListener('canplaythrough', startDelayTimer)
     }
-  }, [cardPreview.type, cardPreview.delayMs, cardPreview.videoSrc])
+  }, [cardPreview.type, cardPreview.delayMs, cardPreview.videoSrc, deferImages, imageReady, priorityImages])
 
   const handleAddToCart = (e) => {
     e.preventDefault()
@@ -284,7 +309,7 @@ const ProductCard = ({
   const inCart = isCartHydrated && itemQuantity > 0
   const cartBarClass = inCart
     ? 'translate-y-0 opacity-100 pointer-events-auto'
-    : 'translate-y-full opacity-0 pointer-events-none lg:group-hover:translate-y-0 lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto'
+    : 'translate-y-full opacity-0 pointer-events-none xl:group-hover:translate-y-0 xl:group-hover:opacity-100 xl:group-hover:pointer-events-auto'
 
   const hasCarouselWidth = /flex-\[0_0|flex-shrink-0|shrink-0|w-\[calc|min-w-\[calc|basis-\[calc/.test(className)
   const hasCustomGridWidth = /w-\[calc/.test(className)
@@ -292,6 +317,8 @@ const ProductCard = ({
   const compactLg = useCompactLayout && compactDesktopOnly
   const compactAll = useCompactLayout && !compactDesktopOnly
   const imageAspectClass = 'aspect-square w-full shrink-0'
+  const showCardMedia = priorityImages || !deferImages || imageReady
+  const imageLoading = priorityImages ? undefined : (deferImages ? 'eager' : 'lazy')
 
   return (
     <Link
@@ -313,7 +340,7 @@ const ProductCard = ({
       className={`group ${PRODUCT_CARD_SHELL_CLASS} transition-colors duration-200 ${hasCarouselWidth ? 'hover:shadow-sm' : 'shadow-none hover:bg-slate-50/80'} ${hasCarouselWidth ? '' : hasCustomGridWidth ? 'min-w-0' : PRODUCT_CARD_CELL_CLASS} ${compactAll ? 'h-full' : ''} ${className}`.trim()}
     >
       <div className={`relative w-full shrink-0 overflow-hidden bg-white ${imageAspectClass}`}>
-        {cardPreview.type === 'delayed-video' && !showCardVideo ? (
+        {showCardMedia && cardPreview.type === 'delayed-video' && !showCardVideo ? (
           <>
             <Image
               src={cardPreview.imageSrc}
@@ -323,7 +350,8 @@ const ProductCard = ({
               sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, 14vw"
               quality={priorityImages ? 70 : 65}
               priority={priorityImages}
-              loading={priorityImages ? undefined : 'lazy'}
+              fetchPriority={priorityImages ? 'high' : 'auto'}
+              loading={imageLoading}
               onError={(e) => {
                 const img = e.currentTarget
                 if (img.dataset.fallback === '1') {
@@ -344,7 +372,7 @@ const ProductCard = ({
               aria-hidden="true"
             />
           </>
-        ) : cardPreview.type === 'video' || (cardPreview.type === 'delayed-video' && showCardVideo) ? (
+        ) : showCardMedia && (cardPreview.type === 'video' || (cardPreview.type === 'delayed-video' && showCardVideo)) ? (
           <video
             ref={cardPreview.type === 'delayed-video' ? cardVideoRef : undefined}
             src={cardPreview.videoSrc}
@@ -355,17 +383,18 @@ const ProductCard = ({
             playsInline
             preload="metadata"
           />
-        ) : (
+        ) : showCardMedia ? (
           <>
             <Image
               src={primaryImage}
               alt={productName}
               fill
-              className={`object-contain object-center bg-white transition-opacity duration-500 ease-out ${hasSecondary && hovered ? 'opacity-0' : 'opacity-100'}`}
+              className={`object-contain object-center bg-white ${hasSecondary && hovered ? 'opacity-0' : 'opacity-100'}`}
               sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, 14vw"
               quality={priorityImages ? 70 : 65}
               priority={priorityImages}
-              loading={priorityImages ? undefined : 'lazy'}
+              fetchPriority={priorityImages ? 'high' : 'auto'}
+              loading={imageLoading}
               onError={(e) => {
                 const img = e.currentTarget
                 if (img.dataset.fallback === '1') {
@@ -397,24 +426,13 @@ const ProductCard = ({
               />
             ) : null}
           </>
-        )}
+        ) : null}
 
         <NewProductTagBadge product={product} size="card" />
 
-        {!isOutOfStock && !inCart ? (
-          <button
-            type="button"
-            onClick={handleAddToCart}
-            className="absolute bottom-2 end-2 z-20 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-black/10 bg-white text-[#05090D] shadow-sm transition active:scale-95 lg:hidden"
-            aria-label={t('common.addToCart')}
-          >
-            <ShoppingCart size={18} />
-          </button>
-        ) : null}
-
         {!isOutOfStock ? (
           <div
-            className={`absolute inset-x-1.5 bottom-1.5 z-20 transition-all duration-500 ease-in-out ${cartBarClass}`}
+            className={`absolute inset-x-1.5 bottom-1.5 z-20 hidden transition-all duration-500 ease-in-out xl:block ${cartBarClass}`}
             onClick={(event) => event.preventDefault()}
           >
             {inCart ? (
@@ -453,7 +471,7 @@ const ProductCard = ({
       </div>
 
       <div className={`flex shrink-0 flex-col bg-white ${compactAll ? 'p-1.5' : compactLg ? 'p-2 sm:p-2.5 lg:p-1.5' : 'p-2 sm:p-2.5'}`}>
-        <h3 className={`overflow-hidden text-start font-semibold leading-tight text-slate-900 ${compactAll ? 'text-[10px]' : compactLg ? 'min-h-[2.5em] text-xs sm:text-sm lg:min-h-0 lg:text-[10px]' : 'min-h-[2.5em] text-xs sm:text-sm'}`}>
+        <h3 className={`overflow-hidden text-start font-semibold leading-snug tracking-normal text-slate-950 antialiased ${compactAll ? 'text-[11px]' : compactLg ? 'min-h-[2.5em] text-xs sm:text-sm lg:min-h-0 lg:text-[11px]' : 'min-h-[2.5em] text-xs sm:text-sm'}`}>
           <bdi
             dir={getContentDirection(productName)}
             className={`break-words ${compactAll ? 'line-clamp-1' : compactLg ? 'line-clamp-2 lg:line-clamp-1' : 'line-clamp-2'}`}
@@ -471,31 +489,68 @@ const ProductCard = ({
           </p>
         ) : null}
 
-        {livePrice > 0 ? (
-          <div className="mt-1 flex min-w-0 items-baseline justify-start">
-            <span dir="ltr" className="inline-flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-              <span className={`inline-flex items-baseline gap-0.5 font-semibold leading-none text-slate-950 ${compactAll ? 'text-xs' : compactLg ? 'text-sm sm:text-base lg:text-xs' : 'text-sm sm:text-base'}`}>
-                <CurrencySymbol currency={market.currency} />
-                <span>{formatDisplay(convertedPrice, language)}</span>
-              </span>
-              {comparePrice > 0 ? (
-                <StruckPrice className="gap-0.5 text-[10px] leading-none text-slate-400 sm:text-xs">
+        <div className="mt-1 flex items-center justify-between gap-2">
+          {livePrice > 0 ? (
+            <div className="flex min-w-0 items-baseline justify-start">
+              <span dir="ltr" className="inline-flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                <span className={`inline-flex items-baseline gap-0.5 font-semibold leading-none tracking-normal text-slate-950 antialiased ${compactAll ? 'text-xs' : compactLg ? 'text-sm sm:text-base lg:text-xs' : 'text-sm sm:text-base'}`}>
                   <CurrencySymbol currency={market.currency} />
-                  <span>{formatDisplay(convertedAED, language)}</span>
-                </StruckPrice>
-              ) : null}
-              {discount > 0 ? (
-                <span className="whitespace-nowrap text-[10px] font-semibold leading-none text-[#B12F39]">
-                  {t('common.offPercent', {
-                    discount: formatNumber(discount, language, { maximumFractionDigits: 0 }),
-                  })}
+                  <span>{formatDisplay(convertedPrice, language)}</span>
                 </span>
-              ) : null}
-            </span>
-          </div>
-        ) : null}
+                {comparePrice > 0 ? (
+                  <StruckPrice className="gap-0.5 text-[10px] leading-none text-slate-400 sm:text-xs">
+                    <CurrencySymbol currency={market.currency} />
+                    <span>{formatDisplay(convertedAED, language)}</span>
+                  </StruckPrice>
+                ) : null}
+                {discount > 0 ? (
+                  <span className="whitespace-nowrap text-[10px] font-semibold leading-none text-[#B12F39]">
+                    {t('common.offPercent', {
+                      discount: formatNumber(discount, language, { maximumFractionDigits: 0 }),
+                    })}
+                  </span>
+                ) : null}
+              </span>
+            </div>
+          ) : <span className="min-w-0 flex-1" />}
 
-        <div className="mt-1.5 flex h-[18px] max-w-full items-center justify-end overflow-hidden">
+          {!isOutOfStock ? (
+            <div className="shrink-0 xl:hidden" onClick={(event) => event.preventDefault()}>
+              {inCart ? (
+                <div className="flex items-center overflow-hidden rounded-full bg-[#C8F404] text-[#05090D] shadow-[0_6px_16px_rgba(5,9,13,0.14)]">
+                  <button
+                    type="button"
+                    onClick={(event) => changeQuantity(event, -1)}
+                    className="inline-flex h-9 w-8 items-center justify-center font-bold transition hover:bg-black/10"
+                    aria-label={itemQuantity === 1 ? 'Remove from cart' : 'Decrease quantity'}
+                  >
+                    {itemQuantity === 1 ? <Trash2 size={14} /> : <Minus size={14} />}
+                  </button>
+                  <span className="min-w-4 text-center text-sm font-bold">{itemQuantity}</span>
+                  <button
+                    type="button"
+                    onClick={(event) => changeQuantity(event, 1)}
+                    className="inline-flex h-9 w-8 items-center justify-center font-bold transition hover:bg-black/10"
+                    aria-label="Increase quantity"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-[#05090D] shadow-[0_6px_16px_rgba(5,9,13,0.16)] transition duration-200 ease-out [@media(hover:hover)]:hover:-translate-y-1 [@media(hover:hover)]:hover:bg-[#C8F404] [@media(hover:hover)]:hover:shadow-[0_12px_22px_rgba(5,9,13,0.22)] active:scale-95"
+                  aria-label={t('common.addToCart')}
+                >
+                  <ShoppingCart size={18} />
+                </button>
+              )}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="mt-1.5 flex h-[18px] w-full min-w-0 max-w-full items-center justify-start overflow-hidden">
           {product?.freeShippingEligible || product?.fastDelivery ? (
             <FreeShipRotator
               compact

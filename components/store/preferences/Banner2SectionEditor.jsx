@@ -345,7 +345,7 @@ export default function Banner2SectionEditor({ embedded = false }) {
           <div>
             <h2 className="text-base font-semibold text-slate-900">Banner slider</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Each slide can have English and Arabic images for desktop, tablet, and mobile, plus a category, product, or custom link. The slider appears on the homepage after the featured sections.
+              Upload a desktop image to show it on desktop only. Tablet and mobile stay empty until those images are added. Arabic uses the English file for the same screen when its own file is empty.
             </p>
           </div>
           <label className="inline-flex cursor-pointer items-center gap-2">

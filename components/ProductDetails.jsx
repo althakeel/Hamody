@@ -3668,11 +3668,13 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
                   </h2>
                   <ProductCarousel
                     products={relatedProducts}
-                    priorityCount={6}
+                    priorityCount={3}
                     showArrows={false}
                     showMobileArrows
                     edgeBleed
                     compactBottom
+                    cardsPerRow={2}
+                    cardWidthVariant="relatedPeek"
                   />
                 </div>
               ) : null}
@@ -4282,8 +4284,10 @@ const ProductDetails = ({ product, reviews = [], loadingReviews = false, onRevie
 
             <ProductCarousel
               products={relatedProducts}
-              priorityCount={6}
+              priorityCount={3}
               showArrows
+              cardsPerRow={2}
+              cardWidthVariant="relatedPeek"
             />
           </div>
         </div>

@@ -5,12 +5,45 @@ import Link from 'next/link';
 import { Filter, Loader2, X } from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
 import ProductFilterSidebar from '@/components/ProductFilterSidebar';
+import { cardImageSrc } from '@/lib/cardImage';
 import { decodeHtmlEntities } from '@/lib/displayText';
+import { getProductThumbnailUrl } from '@/lib/productMedia';
 import { PRODUCT_CARD_GRID_CLASS_5 } from '@/lib/storefrontCarousel';
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 import { sortOutOfStockLast } from '@/lib/productVisibility';
 
-const CATEGORY_PRODUCTS_PAGE_SIZE = 100;
+const CATEGORY_PRODUCTS_PAGE_SIZE = 40;
+const EAGER_CARD_COUNT = 15;
+
+const warmedCardImages = new Set();
+
+function warmCardImages(products = [], limit = 24) {
+  if (typeof window === 'undefined') return;
+  const queue = [];
+  for (const product of products.slice(0, limit)) {
+    const src = cardImageSrc(getProductThumbnailUrl(product));
+    if (!src || src.startsWith('data:') || warmedCardImages.has(src)) continue;
+    warmedCardImages.add(src);
+    queue.push(src);
+  }
+  let active = 0;
+  const pump = () => {
+    while (active < 4 && queue.length) {
+      const src = queue.shift();
+      active += 1;
+      const img = new Image();
+      const done = () => {
+        active -= 1;
+        pump();
+      };
+      img.onload = done;
+      img.onerror = done;
+      img.decoding = 'async';
+      img.src = src;
+    }
+  };
+  pump();
+}
 function applyProductFilters(products, activeFilters) {
   return products.filter((product) => {
     if (activeFilters.categories.length > 0) {
@@ -102,6 +135,9 @@ export default function CategoryProductsPanel({
   const sentinelRef = useRef(null);
   const loadingMoreLockRef = useRef(false);
   const requestIdRef = useRef(0);
+  const incomingKeyRef = useRef('');
+  const pageCacheRef = useRef(new Map());
+  const pageInflightRef = useRef(new Map());
   const [activeFilters, setActiveFilters] = useState({
     categories: [],
     priceRange: { min: 0, max: 100000 },
@@ -111,15 +147,53 @@ export default function CategoryProductsPanel({
   });
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
+  const incomingKey = `${categoryId}|${moreProductsHref}|${products.map((product) => String(product?._id || product?.slug || '')).join(',')}|${totalCount}`;
+
+  const buildPageUrl = useCallback((pageNumber) => {
+    const params = new URLSearchParams({
+      page: String(pageNumber),
+      limit: String(CATEGORY_PRODUCTS_PAGE_SIZE),
+    });
+    if (categoryId) params.set('categoryId', categoryId);
+    return moreProductsHref
+      ? `${moreProductsHref}${moreProductsHref.includes('?') ? '&' : '?'}${params.toString()}`
+      : `/api/public/category-products?${params.toString()}`;
+  }, [categoryId, moreProductsHref]);
+
+  const requestPage = useCallback((pageNumber) => {
+    const cache = pageCacheRef.current;
+    const inflight = pageInflightRef.current;
+    const cached = cache.get(pageNumber);
+    if (cached) return Promise.resolve(cached);
+    const pending = inflight.get(pageNumber);
+    if (pending) return pending;
+    const job = fetch(buildPageUrl(pageNumber))
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Failed to load products');
+        cache.set(pageNumber, data);
+        return data;
+      })
+      .finally(() => {
+        inflight.delete(pageNumber);
+      });
+    inflight.set(pageNumber, job);
+    return job;
+  }, [buildPageUrl]);
+
   useEffect(() => {
+    if (incomingKeyRef.current === incomingKey) return undefined;
+    incomingKeyRef.current = incomingKey;
     requestIdRef.current += 1;
     loadingMoreLockRef.current = false;
+    pageCacheRef.current = new Map();
+    pageInflightRef.current = new Map();
     setPageProducts(products);
     setPage(1);
     setTotal(Number(totalCount) || products.length);
     setLoadError('');
     setLoadingPage(false);
-  }, [categoryId, products, totalCount]);
+  }, [incomingKey, products, totalCount]);
 
   const totalPages = Math.max(1, Math.ceil((total || pageProducts.length) / CATEGORY_PRODUCTS_PAGE_SIZE));
 
@@ -131,22 +205,11 @@ export default function CategoryProductsPanel({
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
     loadingMoreLockRef.current = true;
-    setLoadingPage(true);
+    const alreadyCached = pageCacheRef.current.has(nextPage);
+    if (!alreadyCached) setLoadingPage(true);
     setLoadError('');
     try {
-      const params = new URLSearchParams({
-        page: String(nextPage),
-        limit: String(CATEGORY_PRODUCTS_PAGE_SIZE),
-      });
-      if (categoryId) params.set('categoryId', categoryId);
-      const requestUrl = moreProductsHref
-        ? `${moreProductsHref}${moreProductsHref.includes('?') ? '&' : '?'}${params.toString()}`
-        : `/api/public/category-products?${params.toString()}`;
-      const res = await fetch(requestUrl);
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to load products');
-      }
+      const data = await requestPage(nextPage);
       if (requestIdRef.current !== requestId) return;
       const incoming = Array.isArray(data.products) ? data.products : [];
       setPageProducts((current) => {
@@ -169,9 +232,29 @@ export default function CategoryProductsPanel({
       setLoadingPage(false);
       loadingMoreLockRef.current = false;
     }
-  }, [categoryId, moreProductsHref, page, totalPages]);
+  }, [categoryId, moreProductsHref, page, requestPage, totalPages]);
 
   const hasMoreProducts = page < totalPages;
+
+  useEffect(() => {
+    if ((!categoryId && !moreProductsHref) || !hasMoreProducts) return undefined;
+    const nextPage = page + 1;
+    const timer = window.setTimeout(() => {
+      requestPage(nextPage)
+        .then((data) => {
+          warmCardImages(Array.isArray(data?.products) ? data.products : [], 24);
+        })
+        .catch(() => {});
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [categoryId, hasMoreProducts, moreProductsHref, page, requestPage]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      warmCardImages(pageProducts.slice(EAGER_CARD_COUNT), 24);
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [pageProducts]);
 
   useEffect(() => {
     const node = sentinelRef.current;
@@ -198,6 +281,7 @@ export default function CategoryProductsPanel({
 
   const filteredAndSortedProducts = useMemo(() => {
     const filtered = applyProductFilters(pageProducts, activeFilters);
+    if (!activeFilters.sortBy || activeFilters.sortBy === 'newest') return filtered;
     return sortProducts(filtered, activeFilters.sortBy);
   }, [pageProducts, activeFilters]);
 
@@ -233,8 +317,13 @@ export default function CategoryProductsPanel({
   const productsGrid =
     filteredAndSortedProducts.length > 0 ? (
       <div className={PRODUCT_CARD_GRID_CLASS_5}>
-        {filteredAndSortedProducts.map((product) => (
-          <ProductCard key={String(product._id || product.slug)} product={product} />
+        {filteredAndSortedProducts.map((product, index) => (
+          <ProductCard
+            key={String(product._id || product.slug)}
+            product={product}
+            priorityImages={index < EAGER_CARD_COUNT}
+            deferImages={index >= EAGER_CARD_COUNT}
+          />
         ))}
       </div>
     ) : (

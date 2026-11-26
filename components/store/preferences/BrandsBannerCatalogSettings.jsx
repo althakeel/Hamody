@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import axios from 'axios'
-
-const MAX_PRODUCTS = 18
+import toast from 'react-hot-toast'
+import { BRANDS_BANNER_PRODUCT_MAX, clampFeaturedColumns, clampFeaturedRows } from '@/lib/featuredProductLimit'
 
 function categoryRows(categories = []) {
   const list = Array.isArray(categories) ? categories : []
@@ -36,12 +36,69 @@ function productId(product) {
   return String(product?._id || product?.id || '').trim()
 }
 
+function expandCategoryIds(categories = [], selectedIds = []) {
+  const childrenByParent = new Map()
+  const addChild = (parentId, childId) => {
+    const parent = String(parentId || '').trim()
+    const child = String(childId || '').trim()
+    if (!parent || !child || parent === child) return
+    const list = childrenByParent.get(parent) || []
+    if (!list.includes(child)) list.push(child)
+    childrenByParent.set(parent, list)
+  }
+  const visit = (item) => {
+    const id = String(item?._id || item?.id || '').trim()
+    if (!id) return
+    addChild(item?.parentId, id)
+    ;(Array.isArray(item?.children) ? item.children : []).forEach((child) => {
+      addChild(id, child?._id || child?.id)
+      visit(child)
+    })
+  }
+  ;(Array.isArray(categories) ? categories : []).forEach(visit)
+
+  const result = new Set(selectedIds.map((id) => String(id || '').trim()).filter(Boolean))
+  const stack = [...result]
+  while (stack.length) {
+    const current = stack.pop()
+    ;(childrenByParent.get(current) || []).forEach((childId) => {
+      if (result.has(childId)) return
+      result.add(childId)
+      stack.push(childId)
+    })
+  }
+  return [...result].slice(0, 200)
+}
+
+function productCategoryIds(product) {
+  const ids = []
+  const add = (value) => {
+    if (!value) return
+    if (Array.isArray(value)) {
+      value.forEach(add)
+      return
+    }
+    if (typeof value === 'object') {
+      add(value._id || value.id)
+      return
+    }
+    const id = String(value).trim()
+    if (id) ids.push(id)
+  }
+  add(product?.category)
+  add(product?.categories)
+  add(product?.categoryId)
+  return ids
+}
+
 export default function BrandsBannerCatalogSettings({
   categories = [],
   categoryIds = [],
   productIds = [],
   productsTitle = '',
   productsTitleAr = '',
+  columns = 6,
+  rows = 3,
   getToken,
   onChange,
 }) {
@@ -49,8 +106,12 @@ export default function BrandsBannerCatalogSettings({
   const [results, setResults] = useState([])
   const [searching, setSearching] = useState(false)
   const [details, setDetails] = useState({})
-  const rows = useMemo(() => categoryRows(categories), [categories])
+  const categoryList = useMemo(() => categoryRows(categories), [categories])
   const selectedSet = useMemo(() => new Set(productIds), [productIds])
+  const columnCount = clampFeaturedColumns(columns, 6)
+  const rowCount = clampFeaturedRows(rows, 3)
+  const selectionVersion = useRef(0)
+  const seededCategoriesRef = useRef('')
 
   useEffect(() => {
     let active = true
@@ -93,21 +154,27 @@ export default function BrandsBannerCatalogSettings({
       }
       try {
         setSearching(true)
-        const token = await getToken()
-        if (!token) return
-        const { data } = await axios.get('/api/store/product', {
-          params: {
-            page: 1,
-            limit: 24,
-            manage: 'true',
-            inStock: 'true',
-            search: trimmed.length >= 2 ? trimmed : undefined,
-            categories: categoryIds.length ? categoryIds.join(',') : undefined,
-          },
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        const scope = categoryIds.length ? expandCategoryIds(categories, categoryIds) : []
+        const products = trimmed.length >= 2
+          ? await (async () => {
+            const token = await getToken()
+            if (!token) return []
+            const { data } = await axios.get('/api/store/product', {
+              params: {
+                page: 1,
+                limit: 24,
+                manage: 'true',
+                inStock: 'true',
+                search: trimmed,
+                categories: scope.length ? scope.join(',') : undefined,
+              },
+              headers: { Authorization: `Bearer ${token}` },
+            })
+            return Array.isArray(data?.products) ? data.products : []
+          })()
+          : await loadCategoryProducts(scope)
         if (!active) return
-        setResults(Array.isArray(data?.products) ? data.products : [])
+        setResults(products)
       } catch {
         if (active) setResults([])
       } finally {
@@ -119,24 +186,138 @@ export default function BrandsBannerCatalogSettings({
       active = false
       clearTimeout(handle)
     }
-  }, [query, categoryIds, getToken])
+  }, [query, categoryIds, categories, getToken])
 
-  const patch = (next) => onChange({
-    categoryIds,
-    productIds,
-    productsTitle,
-    productsTitleAr,
-    ...next,
-  })
+  useEffect(() => {
+    const key = categoryIds.join(',')
+    if (!key || !categories.length) return undefined
+    if (productIds.length) {
+      seededCategoriesRef.current = key
+      return undefined
+    }
+    if (seededCategoriesRef.current === key) return undefined
+    const version = selectionVersion.current
+    let active = true
 
-  const toggleCategory = (id) => {
-    const next = categoryIds.includes(id)
+    const fillSelectedCategories = async () => {
+      try {
+        const products = await loadCategoryProducts(expandCategoryIds(categories, categoryIds))
+        if (!active || selectionVersion.current !== version) return
+        seededCategoriesRef.current = key
+        if (!products.length) return
+        rememberProducts(products)
+        onChange({ productIds: products.map(productId).filter(Boolean) })
+      } catch {
+        if (active) toast.error('Could not load products for the selected categories')
+      }
+    }
+
+    fillSelectedCategories()
+    return () => {
+      active = false
+    }
+  }, [categoryIds, productIds.length, categories, getToken])
+
+  const patch = (next) => onChange(next)
+
+  const loadCategoryProducts = async (ids) => {
+    const token = await getToken()
+    if (!token || !ids.length) return []
+    const collected = []
+    const seen = new Set()
+    let page = 1
+    const limit = 100
+    while (collected.length < BRANDS_BANNER_PRODUCT_MAX && page <= 5) {
+      const { data } = await axios.get('/api/store/product', {
+        params: {
+          page,
+          limit,
+          manage: 'true',
+          inStock: 'true',
+          sort: 'newest',
+          categories: ids.join(','),
+        },
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const batch = Array.isArray(data?.products) ? data.products : []
+      batch.forEach((product) => {
+        const id = productId(product)
+        if (!id || seen.has(id) || collected.length >= BRANDS_BANNER_PRODUCT_MAX) return
+        seen.add(id)
+        collected.push(product)
+      })
+      const totalPages = Number(data?.pagination?.totalPages) || 1
+      if (!batch.length || page >= totalPages) break
+      page += 1
+    }
+    return collected
+  }
+
+  const rememberProducts = (products) => {
+    setDetails((current) => {
+      const next = { ...current }
+      products.forEach((product) => {
+        const id = productId(product)
+        if (id) next[id] = product
+      })
+      return next
+    })
+  }
+
+  const toggleCategory = async (id) => {
+    selectionVersion.current += 1
+    const version = selectionVersion.current
+    const turningOff = categoryIds.includes(id)
+    const nextCategories = turningOff
       ? categoryIds.filter((item) => item !== id)
       : [...categoryIds, id].slice(0, 40)
-    patch({ categoryIds: next })
+    const scope = expandCategoryIds(categories, [id])
+    try {
+      const products = await loadCategoryProducts(scope)
+      if (selectionVersion.current !== version) return
+      rememberProducts(products)
+      const matched = new Set(products.map(productId).filter(Boolean))
+      Object.entries(details).forEach(([savedId, product]) => {
+        if (productCategoryIds(product).some((categoryId) => scope.includes(categoryId))) {
+          matched.add(savedId)
+        }
+      })
+      if (turningOff) {
+        patch({
+          categoryIds: nextCategories,
+          productIds: productIds.filter((item) => !matched.has(item)),
+        })
+        return
+      }
+      const nextIds = [...productIds]
+      products.forEach((product) => {
+        const productKey = productId(product)
+        if (!productKey || nextIds.includes(productKey) || nextIds.length >= BRANDS_BANNER_PRODUCT_MAX) return
+        nextIds.push(productKey)
+      })
+      patch({ categoryIds: nextCategories, productIds: nextIds })
+    } catch {
+      if (selectionVersion.current !== version) return
+      toast.error('Could not load products for that category')
+      if (turningOff) {
+        const matched = new Set()
+        Object.entries(details).forEach(([savedId, product]) => {
+          if (productCategoryIds(product).some((categoryId) => scope.includes(categoryId))) {
+            matched.add(savedId)
+          }
+        })
+        patch({
+          categoryIds: nextCategories,
+          productIds: productIds.filter((item) => !matched.has(item)),
+        })
+        return
+      }
+      patch({ categoryIds: nextCategories })
+    }
   }
 
   const toggleProduct = (product) => {
+    selectionVersion.current += 1
     const id = productId(product)
     if (!id) return
     setDetails((current) => ({ ...current, [id]: product }))
@@ -144,7 +325,7 @@ export default function BrandsBannerCatalogSettings({
       patch({ productIds: productIds.filter((item) => item !== id) })
       return
     }
-    if (productIds.length >= MAX_PRODUCTS) return
+    if (productIds.length >= BRANDS_BANNER_PRODUCT_MAX) return
     patch({ productIds: [...productIds, id] })
   }
 
@@ -162,8 +343,45 @@ export default function BrandsBannerCatalogSettings({
       <div>
         <h3 className="text-sm font-semibold text-slate-900">Categories and products</h3>
         <p className="mt-1 text-sm text-slate-600">
-          Check categories to connect this section, then choose up to {MAX_PRODUCTS} products. The number is the order customers see under the banner, before Top Brands. If you check categories and do not pick products, the homepage shows in-stock products from those categories.
+          Checking a category selects every in-stock product in that category and its subcategories. The numbered list is the order customers see under the banner, before Top Brands.
         </p>
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-slate-900">Homepage grid</p>
+          <p className="mt-1 text-xs text-slate-500">
+            {columnCount} columns on each row. Every selected product is shown, up to {BRANDS_BANNER_PRODUCT_MAX}.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <label className="text-xs font-medium text-slate-600">
+            Columns
+            <input
+              type="number"
+              min={2}
+              max={6}
+              value={columnCount}
+              onChange={(event) => {
+                patch({ productColumns: clampFeaturedColumns(event.target.value, 6) })
+              }}
+              className="mt-1 block w-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+            />
+          </label>
+          <label className="text-xs font-medium text-slate-600">
+            Rows
+            <input
+              type="number"
+              min={1}
+              max={4}
+              value={rowCount}
+              onChange={(event) => {
+                patch({ productRows: clampFeaturedRows(event.target.value, 3) })
+              }}
+              className="mt-1 block w-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+            />
+          </label>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -195,9 +413,9 @@ export default function BrandsBannerCatalogSettings({
           <p className="text-sm font-semibold text-slate-900">Categories</p>
           <p className="mt-1 text-xs text-slate-500">{categoryIds.length} connected</p>
           <div className="mt-3 max-h-72 space-y-1 overflow-y-auto">
-            {rows.length === 0 ? (
+            {categoryList.length === 0 ? (
               <p className="text-sm text-slate-500">No categories found.</p>
-            ) : rows.map((row) => (
+            ) : categoryList.map((row) => (
               <label
                 key={row.id}
                 className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 hover:bg-slate-50"
@@ -218,7 +436,7 @@ export default function BrandsBannerCatalogSettings({
         <div className="rounded-lg border border-slate-200 bg-white p-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-semibold text-slate-900">Products on the homepage</p>
-            <span className="text-xs text-slate-500">{productIds.length} of {MAX_PRODUCTS}</span>
+            <span className="text-xs text-slate-500">{productIds.length} selected</span>
           </div>
           <input
             className="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
@@ -226,7 +444,7 @@ export default function BrandsBannerCatalogSettings({
             placeholder="Search name or SKU"
             onChange={(event) => setQuery(event.target.value)}
           />
-          <div className="mt-3 max-h-40 space-y-1 overflow-y-auto">
+          <div className="mt-3 max-h-72 space-y-1 overflow-y-auto">
             {searching ? (
               <p className="text-sm text-slate-500">Searching…</p>
             ) : results.length === 0 ? (
@@ -239,7 +457,7 @@ export default function BrandsBannerCatalogSettings({
                   <input
                     type="checkbox"
                     checked={checked}
-                    disabled={!checked && productIds.length >= MAX_PRODUCTS}
+                    disabled={!checked && productIds.length >= BRANDS_BANNER_PRODUCT_MAX}
                     onChange={() => toggleProduct(product)}
                     className="h-4 w-4"
                   />
@@ -252,7 +470,21 @@ export default function BrandsBannerCatalogSettings({
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-white p-3">
-        <p className="text-sm font-semibold text-slate-900">Homepage order</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-semibold text-slate-900">Homepage order</p>
+          <button
+            type="button"
+            onClick={() => {
+              selectionVersion.current += 1
+              seededCategoriesRef.current = categoryIds.join(',')
+              patch({ productIds: [] })
+            }}
+            disabled={!productIds.length}
+            className="rounded border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Remove all
+          </button>
+        </div>
         {productIds.length === 0 ? (
           <p className="mt-2 text-sm text-slate-500">No products selected yet.</p>
         ) : (

@@ -14,6 +14,7 @@ import {
   DEFAULT_CATEGORY_SLIDER_BACKGROUND,
   DEFAULT_CATEGORY_SLIDER_AUTO_SLIDE_INTERVAL_MS,
   normalizeCategorySliderBackground,
+  tryNormalizeCategorySliderBackground,
   normalizeCategorySliderSideImagePosition,
   normalizeCategorySliderAutoSlide,
   normalizeCategorySliderAutoSlideInterval,
@@ -190,6 +191,18 @@ export default function CategorySliderPage() {
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
 
   const [formData, setFormData] = useState(() => emptySliderForm('slider'));
+  const [colorDraft, setColorDraft] = useState(DEFAULT_CATEGORY_SLIDER_BACKGROUND);
+  const [customColors, setCustomColors] = useState([]);
+
+  useEffect(() => {
+    if (!showForm) return undefined;
+    const current = normalizeCategorySliderBackground(formData.backgroundColor);
+    setColorDraft(current);
+    if (!CATEGORY_SLIDER_BACKGROUND_PRESETS.some((preset) => preset.value === current)) {
+      setCustomColors((prev) => (prev.includes(current) ? prev : [...prev, current]));
+    }
+    return undefined;
+  }, [showForm, editingIdx]);
   const isBannerForm = normalizeCategorySliderSectionType(formData.sectionType) === 'banner';
   const [translatingCopy, setTranslatingCopy] = useState(false);
   const [uploadingSideImage, setUploadingSideImage] = useState('');
@@ -1873,16 +1886,24 @@ export default function CategorySliderPage() {
                       Slider panel background
                     </label>
                     <p className="mb-3 text-xs text-gray-500">
-                      Background color for the slider panel on the homepage (title + product row). Works with or without a side image. Click <strong>Update Slider</strong> after changing. Avoid pure white (#ffffff) on a white page — it will look unchanged.
+                      Background color for the slider panel on the homepage (title + product row). Pick a preset or type any hex color, then click <strong>Add color</strong>. Click <strong>Update Slider</strong> to save. Avoid pure white (#ffffff) on a white page — it will look unchanged.
                     </p>
                     <div className="mb-3 flex flex-wrap gap-2">
-                      {CATEGORY_SLIDER_BACKGROUND_PRESETS.map((preset) => {
+                      {[
+                        ...CATEGORY_SLIDER_BACKGROUND_PRESETS,
+                        ...customColors
+                          .filter((value) => !CATEGORY_SLIDER_BACKGROUND_PRESETS.some((preset) => preset.value === value))
+                          .map((value) => ({ label: value, value })),
+                      ].map((preset) => {
                         const selected = normalizeCategorySliderBackground(formData.backgroundColor) === preset.value;
                         return (
                           <button
                             key={preset.value}
                             type="button"
-                            onClick={() => setFormData((prev) => ({ ...prev, backgroundColor: preset.value }))}
+                            onClick={() => {
+                              setColorDraft(preset.value);
+                              setFormData((prev) => ({ ...prev, backgroundColor: preset.value }));
+                            }}
                             className={`inline-flex items-center gap-2 rounded-lg border-2 px-3 py-2 text-xs font-semibold transition ${
                               selected
                                 ? 'border-blue-600 bg-blue-50 text-blue-700'
@@ -1903,17 +1924,49 @@ export default function CategorySliderPage() {
                       <input
                         type="color"
                         value={normalizeCategorySliderBackground(formData.backgroundColor)}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, backgroundColor: e.target.value }))}
+                        onChange={(e) => {
+                          const next = tryNormalizeCategorySliderBackground(e.target.value);
+                          if (!next) return;
+                          setColorDraft(next);
+                          setFormData((prev) => ({ ...prev, backgroundColor: next }));
+                        }}
                         className="h-10 w-14 cursor-pointer rounded border border-gray-200 bg-white p-1"
                         aria-label="Custom background color"
                       />
                       <input
                         type="text"
-                        value={normalizeCategorySliderBackground(formData.backgroundColor)}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, backgroundColor: e.target.value }))}
-                        placeholder="#f3f0ff"
+                        value={colorDraft}
+                        onChange={(e) => {
+                          const nextDraft = e.target.value;
+                          setColorDraft(nextDraft);
+                          const next = tryNormalizeCategorySliderBackground(nextDraft);
+                          if (!next) return;
+                          setFormData((prev) => ({ ...prev, backgroundColor: next }));
+                        }}
+                        placeholder="#13f0ff"
+                        spellCheck={false}
                         className="flex-1 rounded-lg border-2 border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                       />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = tryNormalizeCategorySliderBackground(colorDraft);
+                          if (!next) {
+                            toast.error('Enter a color like #13f0ff');
+                            return;
+                          }
+                          setColorDraft(next);
+                          setFormData((prev) => ({ ...prev, backgroundColor: next }));
+                          setCustomColors((prev) => (
+                            prev.includes(next) || CATEGORY_SLIDER_BACKGROUND_PRESETS.some((preset) => preset.value === next)
+                              ? prev
+                              : [...prev, next]
+                          ));
+                        }}
+                        className="shrink-0 rounded-lg border-2 border-blue-600 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50"
+                      >
+                        Add color
+                      </button>
                     </div>
                     {(() => {
                       const panelColor = normalizeCategorySliderBackground(formData.backgroundColor);

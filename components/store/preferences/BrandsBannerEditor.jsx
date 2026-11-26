@@ -15,6 +15,7 @@ import {
   ShowcaseLocaleImageGroups,
 } from '@/components/store/preferences/bannerEditorShared'
 import BrandsBannerCatalogSettings from '@/components/store/preferences/BrandsBannerCatalogSettings'
+import { BRANDS_BANNER_PRODUCT_MAX, clampFeaturedColumns, clampFeaturedRows } from '@/lib/featuredProductLimit'
 
 const sanitizeImageUrl = (value) => {
   const raw = String(value || '').trim()
@@ -73,6 +74,8 @@ const DEFAULT_FORM = {
   productIds: [],
   productsTitle: '',
   productsTitleAr: '',
+  productColumns: 6,
+  productRows: 3,
 }
 
 function idList(value, limit) {
@@ -126,9 +129,11 @@ export default function BrandsBannerEditor({ embedded = false }) {
           alt: current.alt || `Banner ${index + 1}`,
         })),
         categoryIds: idList(res.data?.shopShowcase?.brandsBannerCategoryIds, 40),
-        productIds: idList(res.data?.shopShowcase?.brandsBannerProductIds, 18),
+        productIds: idList(res.data?.shopShowcase?.brandsBannerProductIds, BRANDS_BANNER_PRODUCT_MAX),
         productsTitle: String(res.data?.shopShowcase?.brandsBannerProductsTitle || ''),
         productsTitleAr: String(res.data?.shopShowcase?.brandsBannerProductsTitleAr || ''),
+        productColumns: Number(res.data?.shopShowcase?.brandsBannerColumns || 6),
+        productRows: Number(res.data?.shopShowcase?.brandsBannerRows || 3),
       })
     } catch (error) {
       toast.error('Failed to load the Top Brands banner')
@@ -260,9 +265,11 @@ export default function BrandsBannerEditor({ embedded = false }) {
         brandsBannerMobileHeight: Number(form.mobileHeight || 120),
         brandsBannerItems,
         brandsBannerCategoryIds: idList(form.categoryIds, 40),
-        brandsBannerProductIds: idList(form.productIds, 18),
+        brandsBannerProductIds: idList(form.productIds, BRANDS_BANNER_PRODUCT_MAX),
         brandsBannerProductsTitle: String(form.productsTitle || '').trim().slice(0, 80),
         brandsBannerProductsTitleAr: String(form.productsTitleAr || '').trim().slice(0, 80),
+        brandsBannerColumns: clampFeaturedColumns(form.productColumns, 6),
+        brandsBannerRows: clampFeaturedRows(form.productRows, 3),
       }, {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -372,6 +379,8 @@ export default function BrandsBannerEditor({ embedded = false }) {
           productIds={form.productIds}
           productsTitle={form.productsTitle}
           productsTitleAr={form.productsTitleAr}
+          columns={form.productColumns}
+          rows={form.productRows}
           getToken={getToken}
           onChange={(next) => setForm((prev) => ({ ...prev, ...next }))}
         />

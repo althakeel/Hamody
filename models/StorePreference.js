@@ -241,6 +241,8 @@ const StorePreferenceSchema = new mongoose.Schema(
       brandsBannerProductIds: { type: [String], default: [] },
       brandsBannerProductsTitle: { type: String, trim: true, default: '' },
       brandsBannerProductsTitleAr: { type: String, trim: true, default: '' },
+      brandsBannerColumns: { type: Number, default: 6 },
+      brandsBannerRows: { type: Number, default: 3 },
       referralRewardCoins: { type: Number, default: 25 }
     },
     signinModal: {
@@ -431,6 +433,14 @@ if (!StorePreferenceModel.schema.path('shopShowcase.brandsBannerProductsTitle'))
 
 if (!StorePreferenceModel.schema.path('shopShowcase.brandsBannerProductsTitleAr')) {
   missingShopShowcasePaths.brandsBannerProductsTitleAr = { type: String, trim: true, default: '' }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.brandsBannerColumns')) {
+  missingShopShowcasePaths.brandsBannerColumns = { type: Number, default: 6 }
+}
+
+if (!StorePreferenceModel.schema.path('shopShowcase.brandsBannerRows')) {
+  missingShopShowcasePaths.brandsBannerRows = { type: Number, default: 3 }
 }
 
 if (!StorePreferenceModel.schema.path('shopShowcase.leftBlockSource')) {

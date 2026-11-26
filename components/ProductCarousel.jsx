@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import ProductCard from '@/components/ProductCard'
-import { getCarouselProductCardClass, getCategorySliderProductCardClass, getHomeSectionProductCardClass, MOBILE_CAROUSEL_BLEED_CLASS, PRODUCT_CARD_CAROUSEL_GAP_CLASS } from '@/lib/storefrontCarousel'
+import { getCarouselProductCardClass, getCategorySliderProductCardClass, getHomeSectionProductCardClass, getRelatedProductsCardClass, MOBILE_CAROUSEL_BLEED_CLASS, PRODUCT_CARD_CAROUSEL_GAP_CLASS } from '@/lib/storefrontCarousel'
 import { useHorizontalCarouselDrag } from '@/lib/useHorizontalCarouselDrag'
 import { useStorefrontI18n } from '@/lib/useStorefrontI18n'
 import { DEFAULT_CATEGORY_SLIDER_AUTO_SLIDE_INTERVAL_MS } from '@/lib/categorySliderTheme'
@@ -93,7 +93,8 @@ export default function ProductCarousel({
   const applyTransformOffset = useCallback((offset) => {
     const track = transformTrackRef.current
     if (!track) return
-    track.style.transform = `translate3d(${-offset}px, 0, 0)`
+    const pixels = Math.round(offset)
+    track.style.transform = `translate3d(${-pixels}px, 0, 0)`
   }, [])
 
   const measureAutoSlideMetrics = useCallback(() => {
@@ -391,7 +392,7 @@ export default function ProductCarousel({
   if (!cappedProducts.length && !leading) return null
 
   const resolvedTransformTrackClassName = [
-    'flex w-full min-w-0 items-stretch will-change-transform [backface-visibility:hidden]',
+    'flex w-full min-w-0 items-stretch',
     PRODUCT_CARD_CAROUSEL_GAP_CLASS,
     compactBottom ? 'pb-0' : 'pb-2',
   ].filter(Boolean).join(' ')
@@ -402,9 +403,7 @@ export default function ProductCarousel({
     isCategorySlider ? 'cursor-grab touch-pan-y select-none active:cursor-grabbing max-md:[touch-action:pan-y]' : 'cursor-grab select-none active:cursor-grabbing',
   ].filter(Boolean).join(' ')
 
-  const resolvedTrackStyle = useTransformAutoSlide
-    ? { ...trackStyle, backfaceVisibility: 'hidden' }
-    : trackStyle
+  const resolvedTrackStyle = trackStyle
 
   const arrowsVisible = showArrows || showMobileArrows
   const arrowVisibilityClass = getArrowVisibilityClass({ showArrows, showMobileArrows })
@@ -420,7 +419,9 @@ export default function ProductCarousel({
     ? getCategorySliderProductCardClass(cardsPerRow)
     : cardWidthVariant === 'homeSection'
       ? getHomeSectionProductCardClass()
-      : getCarouselProductCardClass(cardsPerRow)
+      : cardWidthVariant === 'relatedPeek'
+        ? getRelatedProductsCardClass()
+        : getCarouselProductCardClass(cardsPerRow)
 
   const baseTrackClassName = [
     compactBottom ? trackClassName.replace(' pb-2', ' pb-0') : trackClassName,

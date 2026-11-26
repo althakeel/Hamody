@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import Image from "@/components/SafeNextImage";
 import { useRouter } from "next/navigation";
 import { useInfiniteBannerCarousel } from '@/lib/useInfiniteBannerCarousel';
@@ -33,6 +33,14 @@ const sliderFieldMap = {
   }
 };
 
+function readBannerDevice() {
+  if (typeof window === 'undefined') return 'desktop';
+  const width = window.innerWidth;
+  if (width < 768) return 'mobile';
+  if (width < 1024) return 'tablet';
+  return 'desktop';
+}
+
 const DEFAULT_HEIGHTS = {
   primary: { desktop: 220, mobile: 120 },
   secondary: { desktop: 220, mobile: 120 },
@@ -45,6 +53,7 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
   const [slideInterval, setSlideInterval] = useState(4000);
   const router = useRouter();
   const { isArabic } = useStorefrontI18n();
+  const [device, setDevice] = useState('desktop');
   const fieldMap = sliderFieldMap[variant] || sliderFieldMap.primary;
   const showcaseConfig = configProp ?? fetchedConfig;
   const isLoaded = configProp ? true : fetchComplete;
@@ -67,12 +76,24 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
     return items
       .filter((item) => hasShowcaseBannerImage(item))
       .map((item) => {
-        const sources = pickShowcaseBannerSources(item, isArabic);
+        const sources = pickShowcaseBannerSources(item, isArabic, { deviceStrict: true });
         if (!sources.desktop && !sources.tablet && !sources.mobile) return null;
         return { ...item, sources };
       })
       .filter(Boolean);
   }, [fieldMap.enabled, fieldMap.items, isArabic, isLoaded, showcaseConfig, variant]);
+
+  const visibleBanners = useMemo(
+    () => banners.filter((banner) => banner.sources?.[device]),
+    [banners, device],
+  );
+
+  useLayoutEffect(() => {
+    const updateDevice = () => setDevice(readBannerDevice());
+    updateDevice();
+    window.addEventListener('resize', updateDevice);
+    return () => window.removeEventListener('resize', updateDevice);
+  }, []);
 
   useEffect(() => {
     if (configProp) {
@@ -113,7 +134,7 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
 
   useEffect(() => {
     const updateInterval = () => {
-      const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+      const isMobile = device === 'mobile';
       const intervalMs = isMobile
         ? Math.max(1500, Number(showcaseConfig?.[fieldMap.mobileInterval]) || 3000)
         : Math.max(1500, Number(showcaseConfig?.[fieldMap.desktopInterval]) || 4000);
@@ -123,7 +144,7 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
     updateInterval();
     window.addEventListener('resize', updateInterval);
     return () => window.removeEventListener('resize', updateInterval);
-  }, [fieldMap.desktopInterval, fieldMap.mobileInterval, showcaseConfig]);
+  }, [device, fieldMap.desktopInterval, fieldMap.mobileInterval, showcaseConfig]);
 
   const {
     loopSlides,
@@ -138,8 +159,8 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
     shouldSuppressClick,
     cursorClass,
   } = useInfiniteBannerCarousel({
-    slides: banners,
-    enabled: banners.length > 1,
+    slides: visibleBanners,
+    enabled: visibleBanners.length > 1,
     interval: slideInterval,
   });
 
@@ -239,7 +260,7 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
     );
   }
 
-  if (!banners.length) {
+  if (!visibleBanners.length) {
     return null;
   }
 
@@ -306,7 +327,7 @@ const BannerSlider = ({ className = '', variant = 'primary', fullWidth = false, 
 
       {slideCount > 1 ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-1 z-10 flex justify-center gap-1.5" data-banner-ignore-drag>
-          {banners.map((_, i) => (
+          {visibleBanners.map((_, i) => (
             <button
               type="button"
               key={i}

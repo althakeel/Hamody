@@ -251,7 +251,7 @@ const HorizontalSlider = ({ section, priority = false }) => {
     >
       <div className={`${hasSideImage ? 'mb-3 shrink-0 lg:mb-2' : 'mb-3 lg:mb-5'}`}>
         <div className="flex items-start justify-between gap-3">
-          <h2 className={`min-w-0 text-start font-bold text-gray-900 ${hasSideImage ? 'text-lg lg:line-clamp-1 lg:text-base xl:text-lg' : 'text-xl lg:text-2xl'}`}>
+          <h2 className={`min-w-0 text-start font-bold tracking-normal text-slate-950 antialiased ${hasSideImage ? 'text-lg lg:line-clamp-1 lg:text-lg xl:text-xl' : 'text-xl lg:text-2xl'}`}>
             <bdi dir={getContentDirection(title)}>{title}</bdi>
           </h2>
           {viewAllHref ? (
@@ -270,7 +270,7 @@ const HorizontalSlider = ({ section, priority = false }) => {
         </div>
         {subtitle ? (
           <p
-            className={`text-start text-gray-500 ${hasSideImage ? 'mt-0.5 line-clamp-2 text-xs lg:line-clamp-1 lg:text-[10px] xl:text-xs' : 'mt-0.5 text-xs lg:text-sm'}`}
+            className={`text-start tracking-normal text-slate-600 antialiased ${hasSideImage ? 'mt-0.5 line-clamp-2 text-sm lg:line-clamp-1 lg:text-xs xl:text-sm' : 'mt-0.5 text-sm lg:text-base'}`}
           >
             <bdi dir={getContentDirection(subtitle)}>{subtitle}</bdi>
           </p>

@@ -625,7 +625,7 @@ function ShopContent() {
                                         </span>
                                     )}
                                 </div>
-                                {productsLoading ? (
+                                {productsLoading && products.length === 0 ? (
                                     <CatalogGridSkeleton count={10} />
                                 ) : products.length === 0 ? (
                                     <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
@@ -641,8 +641,13 @@ function ShopContent() {
                                 ) : (
                                     <>
                                         <div className="grid grid-cols-2 items-stretch gap-3 md:grid-cols-3 lg:grid-cols-5">
-                                            {products.map((product) => (
-                                                <ProductCard key={product._id || product.id} product={product} />
+                                            {products.map((product, index) => (
+                                                <ProductCard
+                                                    key={product._id || product.id}
+                                                    product={product}
+                                                    priorityImages={index < 10}
+                                                    deferImages={index >= 10}
+                                                />
                                             ))}
                                         </div>
                                         {hasMoreProducts ? (
