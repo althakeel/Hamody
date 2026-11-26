@@ -11,20 +11,20 @@ const LOGO_GAP = 24;
 function sharpLogoSrc(src) {
   const value = String(src || '').trim();
   if (!value.includes('/api/media/')) return value;
-  return `${value}${value.includes('?') ? '&' : '?'}logo=1`;
+  return `${value}${value.includes('?') ? '&' : '?'}logo=2`;
 }
 
 function BrandLogo({ src, onEmpty }) {
   return (
     <span
-      className="flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-white"
+      className="flex shrink-0 items-center justify-center"
       style={{ width: LOGO_SIZE, height: LOGO_SIZE }}
     >
       <img
         src={sharpLogoSrc(src)}
         alt=""
-        width={320}
-        height={320}
+        width={LOGO_SIZE}
+        height={LOGO_SIZE}
         draggable={false}
         className="h-full w-full object-contain"
         onError={() => onEmpty?.()}
@@ -159,7 +159,7 @@ export default function CategoryInterestSection() {
                   ) : (
                     <div
                       key={card.id}
-                      className="h-20 w-20 shrink-0 animate-pulse rounded-full bg-slate-100"
+                      className="h-20 w-20 shrink-0 animate-pulse bg-slate-100"
                     />
                   )
                 ))}
