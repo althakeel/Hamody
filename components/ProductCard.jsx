@@ -540,10 +540,16 @@ const ProductCard = ({
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-[#05090D] shadow-[0_6px_16px_rgba(5,9,13,0.16)] transition duration-200 ease-out [@media(hover:hover)]:hover:-translate-y-1 [@media(hover:hover)]:hover:bg-[#C8F404] [@media(hover:hover)]:hover:shadow-[0_12px_22px_rgba(5,9,13,0.22)] active:scale-95"
+                  className="group inline-flex h-10 w-10 items-center justify-center rounded-full bg-transparent text-[#05090D] transition duration-200 ease-out [@media(hover:hover)]:hover:-translate-y-1 [@media(hover:hover)]:hover:bg-[#C8F404] [@media(hover:hover)]:hover:shadow-[0_12px_22px_rgba(5,9,13,0.22)] active:scale-95"
                   aria-label={t('common.addToCart')}
                 >
-                  <ShoppingCart size={18} />
+                  <svg
+                    viewBox="0 0 576 512"
+                    aria-hidden="true"
+                    className="h-[18px] w-[18px] fill-current transition duration-200 [@media(hover:hover)]:group-hover:scale-110"
+                  >
+                    <path d="M528.12 301.319l47.273-208C578.806 78.301 567.391 64 551.99 64H159.208l-9.166-44.81C147.758 8.021 137.93 0 126.529 0H24C10.745 0 0 10.745 0 24v16c0 13.255 10.745 24 24 24h69.883l70.248 343.435C147.325 423.865 163.089 440 181.999 440h280c13.255 0 24-10.745 24-24v-16c0-13.255-10.745-24-24-24H218.741l-6.545-32h293.145c11.4 0 21.228-8.021 23.38-19.202zM196.997 416c-17.673 0-32 14.327-32 32s14.327 32 32 32 32-14.327 32-32-14.327-32-32-32zm288 0c-17.673 0-32 14.327-32 32s14.327 32 32 32 32-14.327 32-32-14.327-32-32-32z" />
+                  </svg>
                 </button>
               )}
             </div>

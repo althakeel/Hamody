@@ -45,14 +45,43 @@ async function navbarLogoBytes(bytes) {
     .toBuffer();
 }
 
-export async function GET(_request, { params }) {
+const BRAND_LOGO_PX = 320;
+const logoCache = new Map();
+
+async function brandLogoBytes(key, bytes) {
+  const cached = logoCache.get(key);
+  if (cached) return cached;
+  const sharp = (await import('sharp')).default;
+  // The row draws each mark at 80px. 320px is 4x, so retina screens are not scaling a huge file down.
+  const output = await sharp(bytes, { failOn: 'none' })
+    .rotate()
+    .resize({
+      width: BRAND_LOGO_PX,
+      height: BRAND_LOGO_PX,
+      fit: 'inside',
+      withoutEnlargement: true,
+      kernel: 'lanczos3',
+    })
+    .sharpen({ sigma: 0.6 })
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+  logoCache.set(key, output);
+  return output;
+}
+
+export async function GET(request, { params }) {
   try {
     const { key: parts } = await params;
     const key = (Array.isArray(parts) ? parts : []).map((part) => decodeURIComponent(part)).join('/');
     const file = await loadMedia(key);
+    const logo = new URL(request.url).searchParams.get('logo') === '1';
     const isNavbarLogo = key.startsWith('brands/navbar-logo');
-    const bytes = isNavbarLogo ? await navbarLogoBytes(file.bytes) : file.bytes;
-    const contentType = isNavbarLogo ? 'image/png' : (file.contentType || 'application/octet-stream');
+    const bytes = isNavbarLogo
+      ? await navbarLogoBytes(file.bytes)
+      : logo
+        ? await brandLogoBytes(key, file.bytes)
+        : file.bytes;
+    const contentType = isNavbarLogo || logo ? 'image/png' : (file.contentType || 'application/octet-stream');
     return new NextResponse(bytes, {
       status: 200,
       headers: {

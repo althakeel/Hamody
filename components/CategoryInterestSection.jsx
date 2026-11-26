@@ -8,15 +8,23 @@ import { useStorefrontI18n } from '@/lib/useStorefrontI18n';
 const LOGO_SIZE = 80;
 const LOGO_GAP = 24;
 
+function sharpLogoSrc(src) {
+  const value = String(src || '').trim();
+  if (!value.includes('/api/media/')) return value;
+  return `${value}${value.includes('?') ? '&' : '?'}logo=1`;
+}
+
 function BrandLogo({ src, onEmpty }) {
   return (
     <span
-      className="flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#E6E8EC] bg-white"
+      className="flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-white"
       style={{ width: LOGO_SIZE, height: LOGO_SIZE }}
     >
       <img
-        src={src}
+        src={sharpLogoSrc(src)}
         alt=""
+        width={320}
+        height={320}
         draggable={false}
         className="h-full w-full object-contain"
         onError={() => onEmpty?.()}
@@ -103,8 +111,8 @@ export default function CategoryInterestSection() {
 
         <style>{`
           @keyframes hamody-brand-marquee {
-            from { transform: translate3d(0, 0, 0); }
-            to { transform: translate3d(-50%, 0, 0); }
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
           }
           .hamody-brand-marquee {
             animation: hamody-brand-marquee var(--brand-marquee-duration, 42s) linear infinite;
@@ -137,7 +145,7 @@ export default function CategoryInterestSection() {
                       key={`${copy}-${index}-${card.id}`}
                       href={card.href}
                       aria-label={card.title}
-                      className="flex shrink-0 items-center opacity-90 transition-opacity duration-300 hover:opacity-100"
+                      className="flex shrink-0 items-center"
                     >
                       <BrandLogo
                         src={card.image}
