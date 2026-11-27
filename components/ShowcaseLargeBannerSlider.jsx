@@ -190,8 +190,15 @@ export default function ShowcaseLargeBannerSlider({
     desktop: desktopWidth,
     wide: isFullBleed ? 1920 : 1600,
   };
+  const fullBannerHeight = Math.min(600, Math.max(80, Number(bannerHeight) || 380));
   const fullBannerStyle = bannerVariant === 'full'
-    ? { width: '100%', maxWidth: 'none', borderRadius: 0 }
+    ? {
+        width: '100%',
+        maxWidth: 'none',
+        borderRadius: 0,
+        '--full-banner-mobile-ratio': `768 / ${Math.min(260, Math.round(fullBannerHeight * 0.5))}`,
+        '--full-banner-tablet-ratio': `1024 / ${Math.round(fullBannerHeight * 0.6)}`,
+      }
     : bannerVariant === 'lower' && bannerHeight
       ? { height: '100%', maxHeight: '100%', width: '100%', maxWidth: '100%', borderRadius: 0 }
       : {};
@@ -217,6 +224,7 @@ export default function ShowcaseLargeBannerSlider({
   );
 
   const [failedImages, setFailedImages] = useState(() => new Set());
+  const [mobileRatio, setMobileRatio] = useState('');
 
   const visibleSlides = useMemo(
     () => activeSlides.filter((slide) => {
@@ -261,6 +269,27 @@ export default function ShowcaseLargeBannerSlider({
     });
   }, []);
 
+  const activeMobileSrc = isFullBleed
+    ? String((visibleSlides[activeDotIndex] || visibleSlides[0])?.sources?.mobile || '')
+    : '';
+
+  useEffect(() => {
+    if (!activeMobileSrc) {
+      setMobileRatio('');
+      return undefined;
+    }
+    let cancelled = false;
+    const image = new window.Image();
+    image.onload = () => {
+      if (cancelled || !image.naturalWidth || !image.naturalHeight) return;
+      setMobileRatio(`${image.naturalWidth} / ${image.naturalHeight}`);
+    };
+    image.src = activeMobileSrc;
+    return () => {
+      cancelled = true;
+    };
+  }, [activeMobileSrc]);
+
   if (!visibleSlides.length) {
     if (!fallback || bannerVariant === 'full') return null;
 
@@ -293,7 +322,11 @@ export default function ShowcaseLargeBannerSlider({
     <BannerWrap
       {...(linkProps || {})}
       className={`${bannerRowClassName} ${cursorClass} select-none`.trim()}
-      style={{ gridRow, ...fullBannerStyle }}
+      style={{
+        gridRow,
+        ...fullBannerStyle,
+        ...(mobileRatio ? { '--full-banner-mobile-ratio': mobileRatio } : {}),
+      }}
       dir="ltr"
       onClick={linkProps?.href ? handleLinkClick : undefined}
       onDragStart={(event) => event.preventDefault()}
@@ -302,17 +335,23 @@ export default function ShowcaseLargeBannerSlider({
         {fadeHero ? (
           <div className="pointer-events-none absolute inset-0">
             {visibleSlides.map((slide, index) => (
-              <img
-                key={`fade-${slide.id || slide.sources?.desktop || index}`}
-                src={slide.sources.wide || slide.sources.desktop}
-                alt={index === activeDotIndex ? (slide.alt || fallback?.title || 'Showcase banner') : ''}
-                width={1024}
-                height={304}
-                draggable={false}
-                className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-[900ms] ease-[cubic-bezier(0.4,0,0.2,1)] ${
+              <div
+                key={`fade-${slide.id || slide.sources?.desktop || slide.sources?.mobile || index}`}
+                className={`absolute inset-0 transition-opacity duration-[900ms] ease-[cubic-bezier(0.4,0,0.2,1)] ${
                   index === activeDotIndex ? 'opacity-100' : 'opacity-0'
                 }`}
-              />
+              >
+                <ShowcaseDeviceImages
+                  sources={slide.sources}
+                  alt={index === activeDotIndex ? (slide.alt || fallback?.title || 'Showcase banner') : ''}
+                  loading={index === 0 ? 'eager' : 'lazy'}
+                  fetchPriority={index === 0 ? 'high' : 'auto'}
+                  widths={deviceWidths}
+                  onError={handleImageError}
+                  fit="cover"
+                  keepOriginal
+                />
+              </div>
             ))}
           </div>
         ) : null}
@@ -330,27 +369,18 @@ export default function ShowcaseLargeBannerSlider({
               style={{ width: `${slideWidthPercent}%` }}
             >
               {isFullBleed ? (
-                <img
-                  src={slide.sources.wide || slide.sources.desktop}
-                  srcSet={[
-                    slide.sources.mobile && slide.sources.mobile !== (slide.sources.wide || slide.sources.desktop)
-                      ? `${slide.sources.mobile} 1024w`
-                      : '',
-                    slide.sources.wide || slide.sources.desktop
-                      ? `${slide.sources.wide || slide.sources.desktop} 3072w`
-                      : '',
-                  ].filter(Boolean).join(', ')}
-                  sizes="100vw"
+                fadeHero ? null : (
+                <ShowcaseDeviceImages
+                  sources={slide.sources}
                   alt={slide.alt || fallback?.title || 'Showcase banner'}
-                  width={1024}
-                  height={304}
-                  loading={slideIndex === (visibleSlides.length > 1 ? 1 : 0) ? 'eager' : 'lazy'}
-                  fetchPriority={slideIndex === (visibleSlides.length > 1 ? 1 : 0) ? 'high' : 'auto'}
-                  decoding="async"
-                  draggable={false}
-                  onError={() => handleImageError(slide.sources.wide || slide.sources.desktop)}
-                  className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
+                  loading={slideIndex === 0 ? 'eager' : 'lazy'}
+                  fetchPriority={slideIndex === 0 ? 'high' : 'auto'}
+                  widths={deviceWidths}
+                  onError={handleImageError}
+                  fit="cover"
+                  keepOriginal
                 />
+                )
               ) : (
               <ShowcaseDeviceImages
                 sources={slide.sources}

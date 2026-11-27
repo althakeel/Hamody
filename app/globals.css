@@ -542,7 +542,19 @@ html:has([data-store-language-scope]) #Hamody-root {
         height: auto;
         max-height: none;
         border-radius: 0;
-        aspect-ratio: 1024 / 304;
+        aspect-ratio: var(--full-banner-mobile-ratio, 768 / 190);
+    }
+
+    @media (min-width: 768px) {
+        .shop-showcase-banner-row--full {
+            aspect-ratio: var(--full-banner-tablet-ratio, 1024 / 228);
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .shop-showcase-banner-row--full {
+            aspect-ratio: 1024 / 304;
+        }
     }
 
     .shop-showcase-banner-row--full img {
